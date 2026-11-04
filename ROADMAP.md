@@ -139,7 +139,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
   - `[Navigate]` 支持一对一、多对一、一对多、多对多（中间表）、直达路径、`ExtraFilter`；
   - 可空引用类型决定 JOIN 方式。
 - [x] 4.2 隐式 join：条件、排序、投影里出现多对一导航时自动 JOIN。
-- [~] 4.3 隐式子查询：`Any` / `!Any` / `Count` / `Sum` / `Max` / `Min` / `Average` / `Where(..).聚合`，以及 `GroupJoin()` 合并。
+- [~] 4.3 隐式子查询：`Any` / `!Any` / `Count` / `Sum` / `Max` / `Min` / `Average` / `Where(..).聚合`，以及 `GroupJoin()` 合并（一对多的分组合并已完成；多对多待做）。
 - [~] 4.4 归一管线：内联器、规划器、按叶子往根构造的物化器。对多集合每层一次批量 IN 查询；IN 列表按方言上限分批，PG 用 `ANY`。
 - [ ] 4.5 投影里的嵌套集合：`Where` / `OrderBy` / `Take`（ROW_NUMBER）、`First` / `ElementAt`；`oneOfMany`。
 - [ ] 4.6 可复用投影：`Project(map)`，以及 `[Projection]` 方法由生成器产出表达式。

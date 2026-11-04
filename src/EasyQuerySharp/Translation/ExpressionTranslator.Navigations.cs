@@ -57,7 +57,7 @@ internal sealed partial class ExpressionTranslator
     /// <c>Any(…)</c> → EXISTS、<c>All(p)</c> → NOT EXISTS(… AND NOT p)、<c>Count(…)</c> / <c>Sum</c> / <c>Max</c> / <c>Min</c> / <c>Average</c> → 标量子查询。
     /// 中间可以链 <c>Where</c>、<c>Select</c>、<c>Distinct</c>、<c>Take</c>。
     /// </summary>
-    private bool TryTranslateCollection(MethodCallExpression call, out SqlExpr result)
+    private bool TryTranslateCollection(MethodCallExpression call, out SqlExpr result, bool negated = false)
     {
         result = null!;
         if (call.Method.DeclaringType != typeof(Enumerable) || call.Arguments.Count == 0) return false;
@@ -71,6 +71,15 @@ internal sealed partial class ExpressionTranslator
         }
         if (CollectionNavigation(current) is not var (owner, nav)) return false;
         chain.Reverse();
+
+        // 声明了分组合并的导航：聚合登记到合并的派生表上
+        if (Context?.GroupJoinFor(owner, nav) is { } plan)
+        {
+            result = TranslateGroupJoin(plan, chain, negated);
+            return true;
+        }
+        // 取反只在分组合并时特殊处理（!Any → None 列），其余照常翻译后取反
+        if (negated) return false;
 
         var sub = NewCollectionSubQuery(owner, nav, out var t, out var element);
         LambdaExpression? selector = null;
@@ -147,10 +156,103 @@ internal sealed partial class ExpressionTranslator
         return true;
     }
 
+    /// <summary>
+    /// 分组合并下的集合聚合：链上的 Where 合成这个聚合的条件，Select 是值，Distinct 去重；
+    /// <c>Any</c> / <c>!Any</c>（<paramref name="negated"/>）/ <c>All</c> / <c>Count</c> / <c>Sum</c> / <c>Max</c> / <c>Min</c> / <c>Average</c>。
+    /// <c>Select(x =&gt; x.Col).Count()</c> 计的是非 NULL 的值（SQL 的 COUNT(列)，对应 Java 的 count(x -&gt; x.col)）。
+    /// </summary>
+    private SqlExpr TranslateGroupJoin(GroupJoinPlan plan, List<MethodCallExpression> chain, bool negated)
+    {
+        var t = new ExpressionTranslator(new Dictionary<ParameterExpression, SourceBinding>(_scope)) { Context = plan.InnerContext };
+        var element = new EntityBinding(plan.Element);
+        var filters = new List<SqlExpr>();
+        var filterKeys = new List<string>();
+        LambdaExpression? selector = null;
+        var distinct = false;
+        foreach (var op in chain.Take(chain.Count - 1))
+        {
+            switch (op.Method.Name)
+            {
+                case nameof(Enumerable.Where):
+                    AddFilter(Lambda(op.Arguments[1]), negate: false);
+                    break;
+                case nameof(Enumerable.Select):
+                    selector = Lambda(op.Arguments[1]);
+                    break;
+                case nameof(Enumerable.Distinct):
+                    distinct = true;
+                    break;
+                default:
+                    throw Unsupported(op, "分组合并的集合导航上不支持这个方法");
+            }
+        }
+
+        var terminal = chain[^1];
+        var argument = terminal.Arguments.Count > 1 ? Lambda(terminal.Arguments[1]) : null;
+        GroupAggregate kind;
+        LambdaExpression? valueLambda = null;
+        switch (terminal.Method.Name)
+        {
+            case nameof(Enumerable.Any):
+                if (argument is not null) AddFilter(argument, negate: false);
+                kind = negated ? GroupAggregate.None : GroupAggregate.Any;
+                break;
+            case nameof(Enumerable.All):
+                // All(p) 等于"没有不满足 p 的"
+                AddFilter(argument ?? throw Unsupported(terminal), negate: true);
+                kind = negated ? GroupAggregate.Any : GroupAggregate.None;
+                break;
+            case nameof(Enumerable.Count) or nameof(Enumerable.LongCount):
+                if (argument is not null) AddFilter(argument, negate: false);
+                kind = GroupAggregate.Count;
+                valueLambda = selector;
+                break;
+            case nameof(Enumerable.Sum) or nameof(Enumerable.Max) or nameof(Enumerable.Min) or nameof(Enumerable.Average):
+                kind = terminal.Method.Name switch
+                {
+                    nameof(Enumerable.Sum) => GroupAggregate.Sum,
+                    nameof(Enumerable.Max) => GroupAggregate.Max,
+                    nameof(Enumerable.Min) => GroupAggregate.Min,
+                    _ => GroupAggregate.Avg,
+                };
+                valueLambda = argument ?? selector ?? throw Unsupported(terminal, "聚合需要选择器，如 Sum(x => x.Price)");
+                break;
+            default:
+                throw Unsupported(terminal, "分组合并的集合导航上不支持这个方法");
+        }
+        if (negated && kind is not (GroupAggregate.None or GroupAggregate.Any)) throw Unsupported(terminal, "只有 Any / All 可以取反");
+
+        SqlExpr? value = null;
+        if (valueLambda is not null)
+        {
+            t.Bind(valueLambda, [element]);
+            value = t.Translate(StripConvert(valueLambda.Body));
+        }
+        var filter = filters.Count == 0 ? null : LogicalExpr.And(filters);
+        return plan.Reference(kind, value, filter, distinct, string.Join(" && ", filterKeys), valueLambda is null ? "" : GroupJoinKey(valueLambda));
+
+        void AddFilter(LambdaExpression predicate, bool negate)
+        {
+            var sql = t.ElementPredicate(predicate, element);
+            filters.Add(negate ? Negate(sql) : sql);
+            filterKeys.Add((negate ? "!" : "") + GroupJoinKey(predicate));
+        }
+    }
+
+    // 聚合去重用的结构键：lambda 的文本，参数按位置改名（x => x.A 与 y => y.A 视为相同）
+    private static string GroupJoinKey(LambdaExpression lambda)
+    {
+        var body = lambda.Body;
+        for (var i = 0; i < lambda.Parameters.Count; i++)
+            body = new ParameterReplacer(lambda.Parameters[i], Expression.Parameter(lambda.Parameters[i].Type, "p" + i)).Visit(body);
+        return body.ToString();
+    }
+
     /// <summary><c>x.Cards.Count</c>（List 的 Count 属性）→ 计数子查询。</summary>
     private SqlExpr? TryTranslateCollectionCount(MemberExpression m)
     {
         if (m.Member.Name != "Count" || m.Expression is null || CollectionNavigation(m.Expression) is not var (owner, nav)) return null;
+        if (Context?.GroupJoinFor(owner, nav) is { } plan) return plan.Reference(GroupAggregate.Count, null, null, false, "", "");
         var sub = NewCollectionSubQuery(owner, nav, out _, out _);
         sub.Columns.Add(new SelectColumn(new FunctionExpr(SqlFunctionNames.Count, [LiteralExpr.Star]), null));
         return new SubQueryExpr(sub);

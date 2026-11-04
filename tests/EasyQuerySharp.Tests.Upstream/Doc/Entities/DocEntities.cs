@@ -11,6 +11,7 @@ public class DocBank
 
     public string? Name { get; set; }
 
+    [Navigate(RelationType.OneToMany, TargetProperties = [nameof(DocBankCard.BankId)])]
     public List<DocBankCard>? BankCards { get; set; }
 }
 
@@ -29,12 +30,16 @@ public class DocBankCard
 
     public string? BankId { get; set; }
 
+    [Navigate(RelationType.ManyToOne, SelfProperties = [nameof(Uid)])]
     public DocUser? User { get; set; }
 
+    [Navigate(RelationType.ManyToOne, SelfProperties = [nameof(BankId)], Required = true)]
     public DocBank? Bank { get; set; }
 
+    [Navigate(RelationType.ManyToOne, SelfProperties = [nameof(BankId)])]
     public DocBank? Bank2 { get; set; }
 
+    [Navigate(RelationType.OneToMany, TargetProperties = [nameof(DocPart.CardId)])]
     public List<DocPart>? Parts { get; set; }
 }
 
@@ -63,8 +68,10 @@ public class DocUser
 
     public int? Age { get; set; }
 
+    [Navigate(RelationType.OneToMany, TargetProperties = [nameof(DocBankCard.Uid)])]
     public List<DocBankCard>? BankCards { get; set; }
 
+    [Navigate(RelationType.OneToMany, TargetProperties = [nameof(DocUserBook.Uid)])]
     public List<DocUserBook>? UserBooks { get; set; }
 }
 

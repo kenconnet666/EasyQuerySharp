@@ -134,6 +134,8 @@ internal sealed partial class ExpressionTranslator
                 return Translate(u.Operand);
             case ExpressionType.Not when u.Type == typeof(bool) || u.Type == typeof(bool?):
             {
+                // 分组合并的 !nav.Any(…) 是单独的 None 列（与 Java 的 none() 一致）
+                if (StripConvert(u.Operand) is MethodCallExpression call && TryTranslateCollection(call, out var none, negated: true)) return none;
                 // 条件取反；布尔值（列等）取反是值 (NOT (x))，与 Java 的 not() 一致，用在 WHERE 里时再补 = true
                 var operand = Translate(u.Operand);
                 return IsPredicate(operand) ? Negate(operand) : new FragmentExpr("(NOT ({0}))", [operand]);

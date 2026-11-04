@@ -43,7 +43,11 @@ internal static class QueryCompiler
             {
                 query = new SelectQuery(binding.Table);
                 query.Where.AddRange(filters);
-                translator.Context = new TranslationContext(db.Metadata, table => Filters(db, state, new EntityBinding(table)), query, outerContext);
+                translator.Context = new TranslationContext(db.Metadata, table => Filters(db, state, new EntityBinding(table)), query, outerContext)
+                {
+                    Db = db,
+                    GroupJoinSpecs = state.GroupJoins,
+                };
                 continue;
             }
 
@@ -84,6 +88,7 @@ internal static class QueryCompiler
         query!.Distinct = state.Distinct;
         query.Offset = state.Offset;
         query.Limit = state.Limit;
+        translator.Context?.CompleteGroupJoins();
         return new QueryFrame(query, translator, bindings);
     }
 
@@ -164,6 +169,8 @@ internal static class QueryCompiler
         // 先登记列，再把列表交给 AST；读取函数由调用方按需编译
         projection.Prepare(selector.Body, frame.Bindings[0], relationKeys, state.Selector is null ? (IReadOnlyList<Includes.IncludeSpec>)state.Includes : null);
         frame.Query.Columns.AddRange(projection.Columns);
+        // 分组合并的派生表要等整条查询（含投影）翻译完才知道全部聚合
+        frame.Translator.Context?.CompleteGroupJoins();
         frame.Query.ExplicitProjection = (state.Selector is not null && !state.ImplicitSelector) || state.ForceAlias;
         return (frame, projection);
     }

@@ -53,6 +53,9 @@ public sealed class NavigateAttribute(RelationType relation) : Attribute
     /// <summary>中间表里对应目标表的属性。</summary>
     public string[] TargetMappingProperties { get; init; } = [];
 
+    /// <summary>集合导航上的聚合总是合并成一个分组 LEFT JOIN（对应 Java 的 subQueryToGroupJoin = true），见 <c>Query.GroupJoin</c>。</summary>
+    public bool GroupJoin { get; init; }
+
     /// <summary>
     /// 直达路径（对应 Java 的 directMapping）：这个对一导航等于沿着本实体上的一串对一导航走到底，
     /// 如 <c>DirectMapping = [nameof(ComUser), nameof(MyComUser.MyCompany)]</c>；隐式 JOIN 与直接写 <c>x.ComUser.MyCompany</c> 共用。

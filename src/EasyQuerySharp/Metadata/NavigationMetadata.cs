@@ -23,7 +23,11 @@ public sealed class NavigationMetadata
         TargetMappingColumns = targetMappingColumns;
         ExtraFilter = extraFilter;
         DirectPath = attribute.DirectMapping;
+        GroupJoin = attribute.GroupJoin;
     }
+
+    /// <summary>集合导航上的聚合默认合并成分组 LEFT JOIN。</summary>
+    public bool GroupJoin { get; }
 
     /// <summary>直达路径上依次经过的导航属性名；不是直达导航时为空。</summary>
     public IReadOnlyList<string> DirectPath { get; }

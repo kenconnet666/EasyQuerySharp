@@ -86,6 +86,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>结果读出后依次执行的填充（FillMany / FillOne），参数是本次的结果行。</summary>
     public ImmutableArray<Func<System.Collections.IList, CancellationToken, Task>> Fills { get; init; } = [];
 
+    /// <summary>第一个表来源上要合并成分组 LEFT JOIN 的集合导航（GroupJoin / GroupJoinIf）。</summary>
+    public ImmutableArray<Translation.GroupJoinSpec> GroupJoins { get; init; } = [];
+
     /// <summary>实体查询上的导航带出（Include）；有投影时不生效。</summary>
     public ImmutableArray<Includes.IncludeSpec> Includes { get; init; } = [];
 
@@ -108,8 +111,13 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     public Filtering.ValueFilter ValueFilter { get; init; }
 
     /// <summary>追加一个 Where 条件：先按 <see cref="ValueFilter"/> 去掉值被拒绝的比较，全部去掉时不追加。</summary>
-    public QueryState AddWhere(LambdaExpression predicate) =>
-        Filtering.ValueFilterRewriter.Apply(predicate, ValueFilter) is { } filtered ? this with { Wheres = Wheres.Add(filtered) } : this;
+    public QueryState AddWhere(LambdaExpression predicate)
+    {
+        var filtered = Filtering.ValueFilterRewriter.Apply(predicate, ValueFilter);
+        // 被过滤掉的条件里用过导航时，Java 已经按多表写法给主表起了别名 t，去掉条件后仍保留（逐字对齐）
+        var state = Filtering.ValueFilterRewriter.DroppedNavigation(predicate, filtered) ? this with { ForceAlias = true } : this;
+        return filtered is null ? state : state with { Wheres = state.Wheres.Add(filtered) };
+    }
 
     /// <summary>投影之后再加条件、排序、连接时，把当前查询包成派生表，在外层继续（与 Java 版的 select 之后再 where 一致）。</summary>
     public QueryState Wrap() => new(Db, [new SubQuerySource(this with { Fills = [] })]) { ValueFilter = ValueFilter, Fills = Fills };

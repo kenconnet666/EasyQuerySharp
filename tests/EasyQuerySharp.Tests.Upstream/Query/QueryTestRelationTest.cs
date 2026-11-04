@@ -36,14 +36,14 @@ public sealed class QueryTestRelationTest(MySqlFixture fixture) : MySqlTest(fixt
         listen.AssertParams("%公司%(String),1(Integer),0(Integer),%公司%(String)");
     }
 
-    // 空串被过滤掉：条件和它带来的隐式 JOIN 一起消失
-    [Fact, Upstream("QueryTestRelationTest.java#test2", Deviation = "条件被过滤后 Java 不再 JOIN 但仍给主表写别名 t，C# 单表不写别名")]
+    // 空串被过滤掉：条件和它带来的隐式 JOIN 一起消失，但主表仍写别名 t（与 Java 一致）
+    [Fact, Upstream("QueryTestRelationTest.java#test2")]
     public async Task Test2()
     {
         using var listen = SqlCapture.Listen();
         const string companyName = "";
         await Db.Query<MyComUser>().UseValueFilter(ValueFilter.NotNullOrBlank).Where(su => su.MyCompany!.Name!.Contains(companyName)).ToListAsync(Ct);
-        listen.AssertSql("SELECT `id`,`com_id`,`user_id`,`gw` FROM `my_com_user`");
+        listen.AssertSql("SELECT t.`id`,t.`com_id`,t.`user_id`,t.`gw` FROM `my_com_user` t");
         await Db.Query<MyComUser>().UseValueFilter(ValueFilter.NotNullOrBlank).Where(su => su.MyCompany!.Name!.Contains(companyName))
             .Select(m => new Draft<string?, string?>(m.Gw, m.MyCompany!.Name)).ToListAsync(Ct);
     }
@@ -69,12 +69,12 @@ public sealed class QueryTestRelationTest(MySqlFixture fixture) : MySqlTest(fixt
         listen.AssertParams("1234(String),123(String)");
     }
 
-    [Fact, Upstream("QueryTestRelationTest.java#relationTest0_2", Deviation = "同 test2：条件被过滤后 Java 仍给主表写别名 t")]
+    [Fact, Upstream("QueryTestRelationTest.java#relationTest0_2")]
     public async Task RelationTest0_2()
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<MySignUp>().UseValueFilter(ValueFilter.NotNullOrBlank).Where(m => m.ComUser!.UserId == "" && m.ComId == "123").ToListAsync(Ct);
-        listen.AssertSql("SELECT `id`,`com_id`,`user_id`,`time`,`content` FROM `my_sign_up` WHERE `com_id` = ?");
+        listen.AssertSql("SELECT t.`id`,t.`com_id`,t.`user_id`,t.`time`,t.`content` FROM `my_sign_up` t WHERE t.`com_id` = ?");
     }
 
     [Fact, Upstream("QueryTestRelationTest.java#relationTest0_x")]
@@ -137,13 +137,13 @@ public sealed class QueryTestRelationTest(MySqlFixture fixture) : MySqlTest(fixt
 
     private const string DirectJoin = SignUpJoin + " LEFT JOIN `my_company_info` t2 ON t2.`id` = t1.`com_id`";
 
-    [Fact, Upstream("QueryTestRelationTest.java#testDirectWhere", Deviation = "同 test2：条件被过滤后 Java 仍给主表写别名 t")]
+    [Fact, Upstream("QueryTestRelationTest.java#testDirectWhere")]
     public async Task TestDirectWhere()
     {
         using var listen = SqlCapture.Listen();
         const string val = "";
         await Db.Query<MySignUp>().UseValueFilter(ValueFilter.NotNullOrBlank).Where(m => m.ComUserCompany!.Name!.Contains(val)).ToListAsync(Ct);
-        listen.AssertSql("SELECT `id`,`com_id`,`user_id`,`time`,`content` FROM `my_sign_up`");
+        listen.AssertSql("SELECT t.`id`,t.`com_id`,t.`user_id`,t.`time`,t.`content` FROM `my_sign_up` t");
     }
 
     // 直达导航 ComUserCompany 与手写 ComUser.MyCompany 生成同一组 JOIN，两者同时出现时也只 JOIN 一次
