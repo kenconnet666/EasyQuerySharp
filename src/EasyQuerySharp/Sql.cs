@@ -47,6 +47,12 @@ public static class Sql
     public static bool NotExists<TSelf, T>(Querying.QueryBase<TSelf, T> subQuery) where TSelf : Querying.QueryBase<TSelf, T> =>
         throw OnlyInQuery();
 
+    /// <summary>
+    /// 只返回一个值的子查询 <c>(SELECT …)</c>，可以放在投影、条件、排序里（对应 Java 的 subQueryColumn）。
+    /// 子查询可以引用外层参数：<c>BlogCount = Sql.SubQuery(db.Query&lt;Blog&gt;().Where(b => b.Id == t.Id).Select(b => Sql.Count(b.Id)))</c>。
+    /// </summary>
+    public static T SubQuery<T>(Querying.Query<T> subQuery) => throw OnlyInQuery();
+
     // ---------- 聚合（不分组时作用于整个结果，分组时作用于每组）----------
 
     /// <summary><c>COUNT(*)</c>。</summary>

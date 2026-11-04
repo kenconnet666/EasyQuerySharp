@@ -105,6 +105,15 @@ public sealed class Query<T> : QueryBase<Query<T>, T>
     /// <summary>这条查询里把最近一个实体表换成 <paramref name="tableName"/>（对应 Java 的 asTable）。</summary>
     public Query<T> AsTable(string tableName) => new(QueryStates.WithLast(State, s => s is EntitySource e ? e with { TableName = tableName } : s));
 
+    /// <summary>按当前表名算出新表名（对应 Java 的 asTable(Function)），如分表：<c>.AsTable(name => name + "_202401")</c>。</summary>
+    public Query<T> AsTable(Func<string, string> rename)
+    {
+        ArgumentNullException.ThrowIfNull(rename);
+        return new(QueryStates.WithLast(State, s => s is EntitySource e
+            ? e with { TableName = rename(e.TableName ?? Db.Metadata.Get(e.EntityType).TableName) }
+            : s));
+    }
+
     /// <summary>LEFT JOIN 实体 <typeparamref name="T2"/>。</summary>
     public Query<T, T2> LeftJoin<T2>(Expression<Func<T, T2, bool>> on) => Join<T2>(JoinKind.Left, new EntitySource(typeof(T2)), on);
 

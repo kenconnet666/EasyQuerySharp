@@ -74,3 +74,28 @@ public class TopicInterceptor
     [UpdateIgnore]
     public string? TenantId { get; set; }
 }
+
+/// <summary>对应 Java：dto/TopicUnion（title 列别名 abc）。</summary>
+public class TopicUnion
+{
+    public string? Id { get; set; }
+
+    public int? Stars { get; set; }
+
+    [Column("abc")]
+    public string? Title { get; set; }
+}
+
+/// <summary>对应 Java：dto/TopicSubQueryBlog（多一个子查询列 blogCount）。</summary>
+public class TopicSubQueryBlog
+{
+    public string? Id { get; set; }
+
+    public int? Stars { get; set; }
+
+    public string? Title { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+
+    public long? BlogCount { get; set; }
+}

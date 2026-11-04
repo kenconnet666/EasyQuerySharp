@@ -29,6 +29,9 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     /// <summary>成员名 → 输出列名。投影作为派生表时，外层按成员名找列。</summary>
     public Dictionary<string, string> MemberColumns { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>写了 AS 的成员。作为派生表再投影时，外层只给这些成员写 AS（与 Java 一致：内层带别名的列，外层也带）。</summary>
+    public HashSet<string> AliasedMembers { get; } = new(StringComparer.Ordinal);
+
     /// <summary>投影的是整个实体时的元数据（派生表据此按实体物化）；否则为 null。</summary>
     public EntityMetadata? Entity { get; private set; }
 
@@ -193,14 +196,14 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     }
 
     /// <summary>
-    /// 派生表里的 DTO 整体再投影（投影之后再排序 / 计数时外层的 SELECT）：每个成员一列，总是写别名
+    /// 派生表里的 DTO 整体再投影（投影之后再排序 / 计数时外层的 SELECT）：每个成员一列，内层写了别名的成员外层也写
     /// （Java 版的写法 <c>t1.`id` AS `id`</c>）；按无参构造 + 属性赋值，或按参数名匹配的构造函数（record / 匿名类型）重建。
     /// </summary>
     private Expression ShapeDerivedDto(DerivedBinding binding, Type type, bool topLevel)
     {
         var ordinals = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var (memberName, column) in binding.MemberColumns)
-            ordinals[memberName] = AddColumn(new ColumnExpr(binding.Table, column), column, topLevel ? memberName : null, forceAlias: true);
+            ordinals[memberName] = AddColumn(new ColumnExpr(binding.Table, column), column, topLevel ? memberName : null, forceAlias: binding.AliasedMembers.Contains(memberName));
 
         Expression Read(string memberName, Type valueType) => Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(valueType), _reader,
             Expression.Constant(ordinals[memberName]), Expression.Constant(null, typeof(IValueConverter)));
@@ -226,13 +229,14 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
             Expression.Constant(converter, typeof(IValueConverter)));
     }
 
-    // 返回列序号；源列与别名同名时不写 AS（分组投影、DTO 再投影除外，Java 版在这两处总写 AS）
+    // 返回列序号；源列与别名同名时不写 AS（分组投影总写 AS；DTO 再投影沿用内层是否写了 AS，与 Java 一致）
     private int AddColumn(SqlExpr sql, string? alias, string? memberName, bool forceAlias = false)
     {
         var columnName = (sql as ColumnExpr)?.Name;
         if (alias == columnName && !forceAlias && !alwaysAlias) alias = null;
         _columns.Add(new SelectColumn(sql, alias));
         if (memberName is not null && (alias ?? columnName) is { } output) MemberColumns.TryAdd(memberName, output);
+        if (memberName is not null && alias is not null) AliasedMembers.Add(memberName);
         return _columns.Count - 1;
     }
 

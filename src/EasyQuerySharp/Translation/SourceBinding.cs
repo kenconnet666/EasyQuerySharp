@@ -79,9 +79,15 @@ internal sealed class TupleBinding(IReadOnlyList<SourceBinding> items) : SourceB
 /// 绑定到派生表：成员按内层投影的列名映射。内层投影的是整个实体时带上实体元数据，
 /// 外层的列仍能拿到值转换器，也能按实体整体物化。
 /// </summary>
-internal sealed class DerivedBinding(TableSource table, IReadOnlyDictionary<string, string> memberColumns, EntityMetadata? entity)
+internal sealed class DerivedBinding(
+    TableSource table, IReadOnlyDictionary<string, string> memberColumns, EntityMetadata? entity, IReadOnlySet<string>? aliasedMembers = null)
     : SourceBinding
 {
+    private static readonly HashSet<string> None = [];
+
+    /// <summary>内层投影里写了 AS 的成员（外层再投影时同样写 AS）。</summary>
+    public IReadOnlySet<string> AliasedMembers => aliasedMembers ?? None;
+
     /// <inheritdoc />
     public override TableSource Table => table;
 
