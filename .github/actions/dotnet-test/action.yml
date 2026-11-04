@@ -1,0 +1,49 @@
+# 各 CI 任务共用的步骤：装 .NET SDK、还原、构建、跑测试、失败时上传测试报告。
+# 数据库连接通过调用方任务的 env（EQS_*_CS）传入，require-dbs 列出本任务必须连上的库（连不上判失败，不跳过）。
+name: dotnet test
+description: Build the solution and run tests against the databases provided by the calling job.
+
+inputs:
+  require-dbs:
+    description: 逗号分隔的数据库 Key（见 tests/EasyQuerySharp.Tests.Live/Infrastructure/TestDatabases.cs），写入 EQS_REQUIRE_DBS
+    required: true
+  project:
+    description: 只跑这一个测试项目；为空时跑整个解决方案
+    required: false
+    default: ''
+  report-name:
+    description: 测试报告 artifact 的名字
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-dotnet@v6
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Restore
+      shell: bash
+      run: dotnet restore
+
+    - name: Build
+      shell: bash
+      # Directory.Build.props 已开启 TreatWarningsAsErrors
+      run: dotnet build --no-restore -c Release
+
+    - name: Test
+      shell: bash
+      env:
+        EQS_REQUIRE_DBS: ${{ inputs.require-dbs }}
+      run: |
+        target=()
+        if [[ -n "${{ inputs.project }}" ]]; then target=(--project "${{ inputs.project }}"); fi
+        dotnet test "${target[@]}" --no-build -c Release --report-xunit-trx --results-directory artifacts/test-results
+
+    - name: Upload test results
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.report-name }}
+        path: artifacts/test-results
+        retention-days: 14
