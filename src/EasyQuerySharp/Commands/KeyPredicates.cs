@@ -19,14 +19,13 @@ internal static class KeyPredicates
         return Expression.Lambda<Func<T, bool>>(body, p);
     }
 
-    /// <summary><c>t => ids.Contains(t.Key)</c>；只有一个值时是 <c>t.Key == id</c>（与 Java 的 whereByIds 一致）。</summary>
+    /// <summary><c>t => ids.Contains(t.Key)</c>（只有一个值时也是 IN，与 Java 的 whereByIds 一致）。</summary>
     public static Expression<Func<T, bool>> ByIds<T>(EntityMetadata entity, IEnumerable ids)
     {
         var key = entity.SingleKey;
         var listType = typeof(List<>).MakeGenericType(key.ClrType);
         var values = (IList)Activator.CreateInstance(listType)!;
         foreach (var v in ids) values.Add(ValueReader.ConvertTo(v, key.ClrType));
-        if (values.Count == 1) return ById<T>(entity, values[0]!);
         var p = Expression.Parameter(typeof(T), "t");
         var body = Expression.Call(Expression.Constant(values), listType.GetMethod("Contains")!, Expression.Property(p, key.Property));
         return Expression.Lambda<Func<T, bool>>(body, p);

@@ -43,7 +43,7 @@ for ($n = 2; $n -le $max; $n++) {
     [void]$sb.AppendLine('    /// <summary>第一张表按主键等值。</summary>')
     [void]$sb.AppendLine("    public $self WhereById(object id) => Where(Commands.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));")
     [void]$sb.AppendLine('')
-    [void]$sb.AppendLine('    /// <summary>第一张表按主键 IN（只有一个值时是等值）。</summary>')
+    [void]$sb.AppendLine('    /// <summary>第一张表按主键 IN。</summary>')
     [void]$sb.AppendLine("    public $self WhereByIds(System.Collections.IEnumerable ids) => Where(Commands.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));")
     foreach ($o in @(@('OrderBy', 'false', '升序'), @('OrderByDescending', 'true', '降序'), @('ThenBy', 'false', '升序'), @('ThenByDescending', 'true', '降序'))) {
         [void]$sb.AppendLine('')

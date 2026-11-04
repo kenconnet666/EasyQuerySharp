@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2338 个用例。
 
-合计：已移植 364、偏离 64、不适用 4、骨架 15、待做 1891。
+合计：已移植 364、偏离 78、不适用 4、骨架 15、待做 1877。
 
 ## 按能力
 
@@ -44,7 +44,7 @@
 | 拦截器 | `interceptor` | M5 | 3 | 0 | 0 | 0 | 0 | 3 |
 | 逻辑删除 | `logicDelete` | M5 | 10 | 0 | 0 | 0 | 0 | 10 |
 | 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 0 | 0 | 0 | 0 | 39 |
-| 追踪与差异更新 | `tracking` | M5 | 62 | 22 | 1 | 0 | 0 | 39 |
+| 追踪与差异更新 | `tracking` | M5 | 62 | 22 | 15 | 0 | 0 | 25 |
 | 乐观锁版本 | `version` | M5 | 13 | 0 | 0 | 0 | 0 | 13 |
 | UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 0 | 0 | 0 | 0 | 10 |
 | 写哪些列、批量执行 | `write.strategy` | M5 | 19 | 11 | 6 | 0 | 0 | 2 |
@@ -1947,20 +1947,20 @@
 | QueryTest27.java#testDiff2 | 待做 |  |  |
 | QueryTest28.java#testQueryAggregate | 待做 |  | `SELECT COUNT(*) AS 'value1',SUM((CASE WHEN t.'title' LIKE CONCAT('%',?,'%') THEN t.'stars' ELSE ? EN…` |
 | QueryTest28.java#testQueryAggregate1 | 待做 |  | `SELECT COUNT(*) AS 'value1',SUM((CASE WHEN t.'title' LIKE CONCAT('%',?,'%') THEN t.'stars' ELSE ? EN…` |
-| QueryTest6.java#joinTest1 | 待做 |  | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
-| QueryTest6.java#joinTest2 | 待做 |  | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
-| QueryTest6.java#joinTest3 | 待做 |  | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
-| QueryTest6.java#joinTest4 | 待做 |  | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
-| QueryTest6.java#joinTest5 | 待做 |  | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
-| QueryTest6.java#joinTest6 | 待做 |  | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
-| QueryTest6.java#joinTest7 | 待做 |  | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
-| QueryTest7.java#joinTest1 | 待做 |  | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
-| QueryTest7.java#joinTest2 | 待做 |  | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
-| QueryTest7.java#joinTest3 | 待做 |  | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
-| QueryTest7.java#joinTest4 | 待做 |  | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
-| QueryTest7.java#joinTest5 | 待做 |  | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
-| QueryTest7.java#joinTest6 | 待做 |  | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
-| QueryTest7.java#joinTest7 | 待做 |  | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
+| QueryTest6.java#joinTest1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest6.cs:12：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
+| QueryTest6.java#joinTest2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest6.cs:22：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
+| QueryTest6.java#joinTest3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest6.cs:32：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
+| QueryTest6.java#joinTest4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest6.cs:42：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
+| QueryTest6.java#joinTest5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest6.cs:52：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
+| QueryTest6.java#joinTest6 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest6.cs:62：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
+| QueryTest6.java#joinTest7 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest6.cs:72：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
+| QueryTest7.java#joinTest1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:12：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
+| QueryTest7.java#joinTest2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:22：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
+| QueryTest7.java#joinTest3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:32：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
+| QueryTest7.java#joinTest4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:42：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
+| QueryTest7.java#joinTest5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:52：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
+| QueryTest7.java#joinTest6 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:62：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
+| QueryTest7.java#joinTest7 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:72：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
 | RelationTest.java#testOneToOne | 待做 |  | `SELECT 'id','name' FROM 'school_class'` |
 | TrackTest.java#track1 | 待做 |  |  |
 | TrackTest.java#track2 | 待做 |  |  |
