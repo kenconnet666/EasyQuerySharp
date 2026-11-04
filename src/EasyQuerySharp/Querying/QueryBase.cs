@@ -40,6 +40,12 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     /// <summary>这条查询不加逻辑删除条件。</summary>
     public TSelf DisableLogicDelete() => With(State with { DisableLogicDelete = true });
 
+    /// <summary>追踪作用域里追踪结果实体（作用域里默认就追踪，对应 Java 的 asTracking）。</summary>
+    public TSelf AsTracking() => With(State with { NoTracking = false });
+
+    /// <summary>追踪作用域里也不追踪这条查询的结果（对应 Java 的 asNoTracking）。</summary>
+    public TSelf AsNoTracking() => With(State with { NoTracking = true });
+
     /// <summary>这条查询不应用名为 <paramref name="name"/> 的拦截器。</summary>
     public TSelf DisableInterceptor(string name) => With(State with { DisabledInterceptors = State.DisabledInterceptors.Add(name) });
 
@@ -64,7 +70,16 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         var rows = await Db.Executor.QueryAsync(statement, compiled.Shaper, cancellationToken).ConfigureAwait(false);
         // 投影里的导航带出：每个导航一次 IN 查询，挂回刚读出的行
         await Includes.IncludeRunner.RunAsync(Db, compiled.Includes, cancellationToken).ConfigureAwait(false);
+        Track(rows);
         return rows;
+    }
+
+    // 追踪作用域里，结果是有主键的实体时逐行追踪；同一主键已追踪的，以已追踪的实例替换（与 Java 一致）
+    private void Track(List<TElement> rows)
+    {
+        if (State.NoTracking || !Db.Tracker.Active || !Db.Tracker.CanTrack(typeof(TElement))) return;
+        for (var i = 0; i < rows.Count; i++)
+            if (rows[i] is { } row) rows[i] = (TElement)Db.Tracker.AttachQueried(row);
     }
 
     /// <summary>执行并把每行读成 列名 → 值 的字典（对应 Java 的 toMaps）；列名忽略大小写，重复的列名抛出异常。</summary>

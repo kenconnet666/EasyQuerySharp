@@ -1,0 +1,129 @@
+using EasyQuerySharp.Metadata;
+
+namespace EasyQuerySharp.Tracking;
+
+/// <summary>
+/// 追踪作用域（对应 Java 的 TrackManager.begin / release）：<c>using var scope = db.BeginTracking();</c>。
+/// 作用域内查出的实体默认被追踪（快照下各列的原始值），按实体更新时只写变化的列；
+/// 同一主键的实体再次查询时返回已追踪的那个实例。作用域可以嵌套，最外层释放时清空追踪的实体。
+/// </summary>
+public sealed class TrackingScope : IDisposable
+{
+    private readonly EasyDb _db;
+    private bool _disposed;
+
+    internal TrackingScope(EasyDb db)
+    {
+        _db = db;
+        db.Tracker.Begin();
+    }
+
+    /// <summary>结束这一层作用域。</summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _db.Tracker.Release();
+    }
+}
+
+/// <summary>一个被追踪的实体：当前实例，以及追踪时各列的数据库值快照。</summary>
+internal sealed class TrackedEntry(EntityMetadata entity, object current)
+{
+    public EntityMetadata Entity { get; } = entity;
+
+    public object Current { get; } = current;
+
+    /// <summary>列 → 追踪（或上次写入成功）时的数据库值。</summary>
+    public Dictionary<ColumnMetadata, object?> Original { get; private set; } = Snapshot(entity, current);
+
+    /// <summary>与快照不同的列（主键除外）。</summary>
+    public IEnumerable<ColumnMetadata> ChangedColumns() =>
+        Entity.Columns.Where(c => !c.IsPrimaryKey && !Equals(Original[c], c.GetProviderValue(Current)));
+
+    /// <summary>写入成功后以当前值为新快照。</summary>
+    public void Refresh() => Original = Snapshot(Entity, Current);
+
+    private static Dictionary<ColumnMetadata, object?> Snapshot(EntityMetadata entity, object instance) =>
+        entity.Columns.ToDictionary(c => c, c => c.GetProviderValue(instance));
+}
+
+/// <summary>
+/// 每个 <see cref="EasyDb"/> 一个，借 <see cref="AsyncLocal{T}"/> 让追踪状态跟随当前异步流（与环境事务同样的方式）。
+/// 追踪键是"实体类型 + 主键值"；没有主键的类型（DTO 等）不追踪。
+/// </summary>
+internal sealed class Tracker(MetadataRegistry metadata)
+{
+    private readonly AsyncLocal<State?> _current = new();
+
+    /// <summary>当前是否在追踪作用域里。</summary>
+    public bool Active => _current.Value is { Depth: > 0 };
+
+    public void Begin()
+    {
+        var state = _current.Value;
+        if (state is null || state.Depth == 0) _current.Value = state = new State();
+        state.Depth++;
+    }
+
+    public void Release()
+    {
+        if (_current.Value is not { } state || state.Depth == 0) return;
+        if (--state.Depth == 0) state.Entries.Clear();
+    }
+
+    /// <summary>类型能否追踪：有主键的实体。</summary>
+    public bool CanTrack(Type type) => type.IsClass && !ScalarTypes.IsScalar(type) && metadata.Get(type).KeyColumns.Count > 0;
+
+    /// <summary>
+    /// 显式开始追踪（对应 Java 的 addTracking）：不在作用域里返回 false；同一主键已追踪了另一个实例时抛出异常。
+    /// </summary>
+    public bool Add(object entity)
+    {
+        if (!Active) return false;
+        return ReferenceEquals(Attach(entity), entity)
+            ? true
+            : throw new InvalidOperationException($"{entity.GetType().Name} 主键 {KeyOf(metadata.Get(entity.GetType()), entity)} 已追踪了另一个实例");
+    }
+
+    /// <summary>查询结果的追踪：同一主键已追踪时返回已追踪的实例（查询结果以它为准）。</summary>
+    public object AttachQueried(object entity) => Attach(entity);
+
+    public bool Remove(object entity) =>
+        _current.Value is { Depth: > 0 } state && state.Entries.Remove(KeyOf(metadata.Get(entity.GetType()), entity));
+
+    /// <summary>实体是否被追踪（按主键找到的正是这个实例）。</summary>
+    public TrackedEntry? Find(object entity)
+    {
+        if (_current.Value is not { Depth: > 0 } state) return null;
+        var meta = metadata.Get(entity.GetType());
+        if (meta.KeyColumns.Count == 0) return null;
+        return state.Entries.TryGetValue(KeyOf(meta, entity), out var entry) && ReferenceEquals(entry.Current, entity) ? entry : null;
+    }
+
+    private object Attach(object entity)
+    {
+        var state = _current.Value ?? throw new InvalidOperationException("不在追踪作用域里");
+        var meta = metadata.Get(entity.GetType());
+        if (meta.KeyColumns.Count == 0) throw new InvalidOperationException($"{meta.Type.Name} 没有主键，不能追踪");
+        var key = KeyOf(meta, entity);
+        if (state.Entries.TryGetValue(key, out var existing)) return existing.Current;
+        state.Entries[key] = new TrackedEntry(meta, entity);
+        return entity;
+    }
+
+    // 类型 + 各主键值；主键为 null 的实体没法追踪
+    private static string KeyOf(EntityMetadata meta, object entity)
+    {
+        var values = meta.KeyColumns.Select(k => k.GetProviderValue(entity)
+            ?? throw new InvalidOperationException($"{meta.Type.Name} 的主键 {k.PropertyName} 为 null，不能追踪")).ToList();
+        return meta.Type.FullName + ":" + string.Join(",", values.Select(v => Convert.ToString(v, System.Globalization.CultureInfo.InvariantCulture)));
+    }
+
+    private sealed class State
+    {
+        public int Depth { get; set; }
+
+        public Dictionary<string, TrackedEntry> Entries { get; } = new(StringComparer.Ordinal);
+    }
+}

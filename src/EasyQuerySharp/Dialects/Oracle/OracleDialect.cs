@@ -64,6 +64,23 @@ public class OracleDialect : SqlDialect
         }
     }
 
+    /// <summary>Oracle 的类型转换（对应 Java 的 OracleCastSQLFunction）。</summary>
+    public override string CastTemplate(Type targetType) => targetType switch
+    {
+        _ when targetType == typeof(bool) => "CASE WHEN {0} IN ('1','true','TRUE') THEN 1 ELSE 0 END",
+        _ when targetType == typeof(char) => "SUBSTR(TO_CHAR({0}), 1, 1)",
+        _ when targetType == typeof(TimeOnly) || targetType == typeof(TimeSpan) => "TO_TIMESTAMP({0},'HH24:MI:SS.FF6')",
+        _ when targetType == typeof(DateOnly) => "TO_TIMESTAMP({0},'YYYY-MM-DD')",
+        _ when targetType == typeof(DateTime) || targetType == typeof(DateTimeOffset) => "TO_TIMESTAMP({0},'YYYY-MM-DD HH24:MI:SS.FF6')",
+        _ when targetType == typeof(decimal) => "CAST({0} AS DECIMAL(18,4))",
+        _ when targetType == typeof(double) || targetType == typeof(float) => "CAST({0} AS FLOAT)",
+        _ when targetType == typeof(int) => "CAST({0} AS INT)",
+        _ when targetType == typeof(long) || targetType == typeof(uint) || targetType == typeof(ulong) => "CAST({0} AS BIGINT)",
+        _ when IsInteger(targetType) => "CAST({0} AS NUMBER)",
+        _ when targetType == typeof(Guid) || targetType == typeof(string) => "TO_CHAR({0})",
+        _ => base.CastTemplate(targetType),
+    };
+
     /// <inheritdoc />
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {

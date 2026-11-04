@@ -24,6 +24,12 @@ public static class Sql
     /// <example><code>.Select(b => Sql.Raw&lt;long&gt;("rank() over(order by {0} desc)", b.Stars))</code></example>
     public static T Raw<T>(string template, params object?[] arguments) => throw OnlyInQuery();
 
+    /// <summary>
+    /// 转换成 <typeparamref name="T"/>（对应 Java 的 toNumber / asStr / cast），写法按方言，如 MySQL 的 <c>CAST(x AS SIGNED)</c>。
+    /// 常见写法也能直接用：<c>int.Parse(t.Title)</c>、<c>Convert.ToInt64(x)</c>、<c>t.Stars.ToString()</c>。
+    /// </summary>
+    public static T Cast<T>(object? value) => throw OnlyInQuery();
+
     /// <summary>值在给定集合里（<c>IN (…)</c>）；与 <c>ids.Contains(x)</c> 等价，写法更接近 SQL。</summary>
     public static bool In<T>(this T value, params T[] values) => throw OnlyInQuery();
 

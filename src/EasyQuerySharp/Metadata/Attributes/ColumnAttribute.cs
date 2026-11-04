@@ -39,4 +39,10 @@ public sealed class InsertIgnoreAttribute : Attribute;
 
 /// <summary>按实体更新时不写这一列（表达式更新里显式写的仍然生效）。</summary>
 [AttributeUsage(AttributeTargets.Property)]
-public sealed class UpdateIgnoreAttribute : Attribute;
+public sealed class UpdateIgnoreAttribute : Attribute
+{
+    /// <summary>
+    /// 实体被追踪且这一列确实改了时仍然写（对应 Java 的 updateSetInTrackDiff）：整行更新时忽略、差异更新时照常写。
+    /// </summary>
+    public bool WhenTrackedChanged { get; init; }
+}

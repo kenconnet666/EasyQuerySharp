@@ -114,6 +114,7 @@ public sealed class SqlRenderer
             case LikeExpr l: Dialect.WriteLike(this, l); break;
             case FunctionExpr f: Dialect.WriteFunction(this, f); break;
             case FragmentExpr f: WriteFragment(f); break;
+            case CastExpr c: WriteFragment(new FragmentExpr(Dialect.CastTemplate(c.TargetType), [c.Operand])); break;
             case CaseExpr c: WriteCase(c); break;
             case ExistsExpr e: Append(e.Negated ? "NOT EXISTS(" : "EXISTS(").WriteSelect(e.Query).Append(")"); break;
             case SubQueryExpr s: Append("(").WriteSelect(s.Query).Append(")"); break;

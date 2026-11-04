@@ -30,6 +30,25 @@ public class SqlServerDialect : SqlDialect
         if (query.Limit is { } limit) renderer.Append(" FETCH NEXT ").Append(limit.ToString(CultureInfo.InvariantCulture)).Append(" ROWS ONLY");
     }
 
+    /// <summary>SQL Server 的类型转换（对应 Java 的 MsSQLCastSQLFunction）。</summary>
+    public override string CastTemplate(Type targetType) => targetType switch
+    {
+        _ when targetType == typeof(bool) => "(cast({0} as varchar) not in ('0','false'))",
+        _ when targetType == typeof(byte) || targetType == typeof(sbyte) => "cast({0} as tinyint)",
+        _ when targetType == typeof(char) => "substring(cast({0} as nvarchar),1,1)",
+        _ when targetType == typeof(TimeOnly) || targetType == typeof(TimeSpan) => "cast({0} as time)",
+        _ when targetType == typeof(DateOnly) => "cast({0} as date)",
+        _ when targetType == typeof(DateTime) || targetType == typeof(DateTimeOffset) => "cast({0} as datetime)",
+        _ when targetType == typeof(decimal) => "cast({0} as decimal(36,18))",
+        _ when targetType == typeof(double) || targetType == typeof(float) => "cast({0} as decimal(32,16))",
+        _ when targetType == typeof(short) || targetType == typeof(ushort) => "cast({0} as smallint)",
+        _ when targetType == typeof(int) => "cast({0} as int)",
+        _ when IsInteger(targetType) => "cast({0} as bigint)",
+        _ when targetType == typeof(Guid) => "cast({0} as uniqueidentifier)",
+        _ when targetType == typeof(string) => "cast({0} as nvarchar(max))",
+        _ => base.CastTemplate(targetType),
+    };
+
     /// <inheritdoc />
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {

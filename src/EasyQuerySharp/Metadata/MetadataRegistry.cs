@@ -90,6 +90,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
                 AutoSelect = attr?.AutoSelect ?? true,
                 InsertIgnore = property.IsDefined(typeof(InsertIgnoreAttribute)),
                 UpdateIgnore = property.IsDefined(typeof(UpdateIgnoreAttribute)),
+                UpdateWhenTrackedChanged = property.GetCustomAttribute<UpdateIgnoreAttribute>()?.WhenTrackedChanged ?? false,
                 Converter = attr?.Converter is { } converterType ? CreateConverter(converterType, property) : null,
                 DbType = attr?.DbType,
                 Comment = attr?.Comment,

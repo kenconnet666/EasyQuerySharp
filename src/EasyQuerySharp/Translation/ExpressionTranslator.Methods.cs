@@ -24,6 +24,9 @@ internal sealed partial class ExpressionTranslator
             var (l, r) = TranslatePair(call.Object, call.Arguments[0]);
             return new BinaryExpr(l, SqlBinaryOperator.Equal, r);
         }
+        // 无参 ToString()：数字、日期等转字符串（任意类型的 ToString 都是同一个形状，不进函数表）
+        if (method.Name == nameof(ToString) && call.Arguments.Count == 0 && call.Object is not null)
+            return new CastExpr(Translate(call.Object), typeof(string));
 
         throw Unsupported(call);
     }
@@ -73,6 +76,8 @@ internal sealed partial class ExpressionTranslator
             case nameof(Sql.Exists):
             case nameof(Sql.NotExists):
                 return TranslateExists(call.Arguments[0], call.Method.Name == nameof(Sql.NotExists));
+            case nameof(Sql.Cast):
+                return new CastExpr(Translate(StripConvert(call.Arguments[0])), call.Method.GetGenericArguments()[0]);
             case nameof(Sql.SubQuery):
                 return new SubQueryExpr(TranslateSubQuery(call.Arguments[0]).Query);
             case nameof(Sql.In) or nameof(Sql.NotIn) when IsQueryType(call.Arguments[1].Type):

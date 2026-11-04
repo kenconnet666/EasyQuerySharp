@@ -75,6 +75,24 @@ public class TopicInterceptor
     public string? TenantId { get; set; }
 }
 
+/// <summary>对应 Java：entity/TopicLarge（title 整行更新时忽略、差异更新时照写；title1 总是忽略）。</summary>
+[Table("t_topic")]
+public class TopicLarge
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public int? Stars { get; set; }
+
+    [UpdateIgnore(WhenTrackedChanged = true)]
+    public string? Title { get; set; }
+
+    [UpdateIgnore]
+    public string? Title1 { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+}
+
 /// <summary>对应 Java：dto/TopicUnion（title 列别名 abc）。</summary>
 public class TopicUnion
 {

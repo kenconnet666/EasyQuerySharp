@@ -75,6 +75,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>关闭逻辑删除过滤。</summary>
     public bool DisableLogicDelete { get; init; }
 
+    /// <summary>追踪作用域里也不追踪这条查询的结果（AsNoTracking）。</summary>
+    public bool NoTracking { get; init; }
+
     /// <summary>关闭的拦截器名字；包含 <c>*</c> 表示全部关闭。</summary>
     public ImmutableHashSet<string> DisabledInterceptors { get; init; } = [];
 

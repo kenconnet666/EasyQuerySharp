@@ -33,6 +33,24 @@ public class PostgreSqlDialect : SqlDialect
         renderer.Append(") ESCAPE '\\'");
     }
 
+    /// <summary>PostgreSQL 的 <c>(x)::类型</c> 转换（对应 Java 的 PgSQLCastSQLFunction）。</summary>
+    public override string CastTemplate(Type targetType) => targetType switch
+    {
+        _ when targetType == typeof(bool) => "(({0})::varchar not in ('0','false','f','no'))",
+        _ when targetType == typeof(byte) || targetType == typeof(sbyte) || targetType == typeof(short) => "({0})::int2",
+        _ when targetType == typeof(char) => "substr(({0})::char, 1, 1)",
+        _ when targetType == typeof(TimeOnly) || targetType == typeof(TimeSpan) => "({0})::time",
+        _ when targetType == typeof(DateOnly) => "({0})::date",
+        _ when targetType == typeof(DateTime) || targetType == typeof(DateTimeOffset) => "({0})::timestamp",
+        _ when targetType == typeof(decimal) => "({0})::numeric",
+        _ when targetType == typeof(double) || targetType == typeof(float) => "({0})::float8",
+        _ when targetType == typeof(int) || targetType == typeof(ushort) => "({0})::int4",
+        _ when targetType == typeof(long) || targetType == typeof(uint) || targetType == typeof(ulong) => "({0})::int8",
+        _ when targetType == typeof(Guid) => "({0})::uuid",
+        _ when targetType == typeof(string) => "({0})::text",
+        _ => base.CastTemplate(targetType),
+    };
+
     /// <inheritdoc />
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {

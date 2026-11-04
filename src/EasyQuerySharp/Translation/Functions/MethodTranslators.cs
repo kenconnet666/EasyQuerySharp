@@ -69,6 +69,18 @@ internal static class MethodTranslators
                      .Where(m => m.Name == nameof(string.Format) && m.GetParameters()[0].ParameterType == s))
             Add(format, TranslateFormat);
 
+        // ---------- 类型转换：Parse / Convert.ToXxx → CAST（对应 Java 的 toNumber / asStr / cast）----------
+        foreach (var target in new[]
+                 {
+                     typeof(byte), typeof(short), typeof(int), typeof(long), typeof(decimal), typeof(double), typeof(float),
+                     typeof(bool), typeof(DateTime), typeof(DateOnly), typeof(TimeOnly), typeof(Guid),
+                 })
+            Add(target.GetMethod("Parse", [s]), Cast(target));
+        foreach (var convert in typeof(Convert).GetMethods(BindingFlags.Public | BindingFlags.Static)
+                     .Where(m => m.Name.StartsWith("To", StringComparison.Ordinal) && m.Name != nameof(Convert.ToBase64String)
+                                 && m.GetParameters() is [{ ParameterType: var p }] && (p == typeof(object) || p == s)))
+            Add(convert, Cast(convert.ReturnType));
+
         // ---------- 日期 ----------
         // 格式串在 SQL 里是字面量（Java 版的写法），由方言转换格式符
         foreach (var dateType in new[] { typeof(DateTime), typeof(DateTimeOffset), typeof(DateOnly) })
@@ -99,6 +111,9 @@ internal static class MethodTranslators
     }
 
     private static MethodTranslator Unary(string function) => (t, c) => Fn(function, t.Translate(c.Object!));
+
+    // 唯一参数转换成目标类型；Convert.ToString 等同 CAST 为字符串
+    private static MethodTranslator Cast(Type target) => (t, c) => new CastExpr(t.Translate(c.Arguments[0]), target);
 
     private static FunctionExpr Fn(string name, params SqlExpr[] args) => new(name, args);
 

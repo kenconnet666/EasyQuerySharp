@@ -92,6 +92,9 @@ public abstract class WriteCommandBase<TSelf, T>
 
     private protected EntityTableSource NewTable() => new(Entity) { TableNameOverride = TableName };
 
+    /// <summary>按实体写入时定位这一行的条件，默认是主键等值。</summary>
+    private protected virtual IEnumerable<SqlExpr> EntityPredicates(EntityTableSource table, T entity) => KeyPredicates.ForEntity(table, entity);
+
     /// <summary>
     /// 条件：逻辑删除（未关闭时）、拦截器过滤、用户条件；按实体写入时再加该实体的主键条件。
     /// 按条件写入且没有任何用户条件时，除非调用过 <see cref="All"/>，否则拒绝。
@@ -104,7 +107,7 @@ public abstract class WriteCommandBase<TSelf, T>
         var result = new List<SqlExpr>();
         if (applyLogicDelete && !LogicDeleteDisabled && QueryCompiler.LogicDeleteFilter(table) is { } ld) result.Add(ld);
         result.AddRange(Db.Interceptors.QueryFilters(table, DisabledInterceptors));
-        if (entity is not null) result.AddRange(KeyPredicates.ForEntity(table, entity));
+        if (entity is not null) result.AddRange(EntityPredicates(table, entity));
         foreach (var where in _wheres)
         {
             var translator = new ExpressionTranslator([]);

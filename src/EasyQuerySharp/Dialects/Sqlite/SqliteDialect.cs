@@ -28,6 +28,24 @@ public class SqliteDialect : SqlDialect
         Oracle.OracleDialect.WriteInstrComparison(renderer, predicate);
     }
 
+    /// <summary>SQLite 的类型转换（对应 Java 的 SQLiteCastSQLFunction）。</summary>
+    public override string CastTemplate(Type targetType) => targetType switch
+    {
+        _ when targetType == typeof(bool) => "({0} NOT IN ('0','false'))",
+        _ when targetType == typeof(char) => "substr(cast({0} as character), 1, 1)",
+        _ when targetType == typeof(TimeOnly) || targetType == typeof(TimeSpan) => "time({0})",
+        _ when targetType == typeof(DateOnly) => "date({0})",
+        _ when targetType == typeof(DateTime) || targetType == typeof(DateTimeOffset) => "datetime({0})",
+        _ when targetType == typeof(decimal) => "cast({0} as decimal(36,18))",
+        _ when targetType == typeof(double) || targetType == typeof(float) => "cast({0} as double)",
+        _ when targetType == typeof(byte) || targetType == typeof(sbyte) => "cast({0} as int2)",
+        _ when targetType == typeof(short) || targetType == typeof(ushort) => "CAST({0} AS SMALLINT)",
+        _ when IsInteger(targetType) => "CAST({0} AS SIGNED)",
+        _ when targetType == typeof(Guid) => "substr(cast({0} as character), 1, 36)",
+        _ when targetType == typeof(string) => "cast({0} as character)",
+        _ => base.CastTemplate(targetType),
+    };
+
     /// <inheritdoc />
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {

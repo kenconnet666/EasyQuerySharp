@@ -39,7 +39,7 @@ internal static class AutoProjection
         IEnumerable<Expression> parts = body is NewExpression n ? n.Arguments : [body];
         return parts.Select(p => Translation.ExpressionTranslator.StripConvert(p) is MemberExpression m
                 ? m.Member.Name
-                : throw new ArgumentException($"排除列只能写属性访问：{selector}", nameof(selector)))
+                : throw new ArgumentException($"列清单只能写属性访问，如 t => new {{ t.Id, t.Title }}：{selector}", nameof(selector)))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
     }
 }

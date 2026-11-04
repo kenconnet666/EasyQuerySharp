@@ -42,6 +42,9 @@ public sealed class ColumnMetadata
     /// <summary>按实体更新时是否忽略。</summary>
     public bool UpdateIgnore { get; internal init; }
 
+    /// <summary>按实体更新时忽略，但实体被追踪且这一列变了时仍然写（<see cref="UpdateIgnoreAttribute.WhenTrackedChanged"/>）。</summary>
+    public bool UpdateWhenTrackedChanged { get; internal init; }
+
     /// <summary>值转换器；没有时为 null。</summary>
     public IValueConverter? Converter { get; internal init; }
 

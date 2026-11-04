@@ -30,7 +30,10 @@ public sealed class EasyDb
         Metadata = new MetadataRegistry(options.NameConversion);
         Executor = new SqlExecutor(this);
         CodeFirst = new Schema.CodeFirst(this);
+        Tracker = new Tracking.Tracker(Metadata);
     }
+
+    internal Tracking.Tracker Tracker { get; }
 
     /// <summary>按实体建表、删表（code-first）。</summary>
     public Schema.CodeFirst CodeFirst { get; }
@@ -93,11 +96,42 @@ public sealed class EasyDb
     /// <summary>按主键整行更新一个或多个实体（每个一条 UPDATE）。</summary>
     public UpdateCommand<T> Update<T>(params IEnumerable<T> entities) where T : class => new(this, entities.ToList());
 
+    /// <summary>按字典插入到 <paramref name="tableName"/>（键是列名，对应 Java 的 mapInsertable）。</summary>
+    public MapInsertCommand InsertMap(string tableName, params IEnumerable<IReadOnlyDictionary<string, object?>> rows) => new(this, tableName, rows.ToList());
+
+    /// <summary>按字典更新 <paramref name="tableName"/>（键是列名，对应 Java 的 mapUpdatable），用 WhereColumns 指定定位列。</summary>
+    public MapUpdateCommand UpdateMap(string tableName, params IEnumerable<IReadOnlyDictionary<string, object?>> rows) => new(this, tableName, rows.ToList());
+
     /// <summary>按条件删除：<c>db.Delete&lt;T&gt;().Where(…)</c>。有逻辑删除列时改写成更新。</summary>
     public DeleteCommand<T> Delete<T>() where T : class => new(this, null);
 
     /// <summary>按主键删除一个或多个实体。</summary>
     public DeleteCommand<T> Delete<T>(params IEnumerable<T> entities) where T : class => new(this, entities.ToList());
+
+    /// <summary>
+    /// 开启追踪作用域（见 <see cref="Tracking.TrackingScope"/>）：作用域内查出的实体被追踪，按实体更新时只写变化的列。
+    /// </summary>
+    /// <example><code>
+    /// using var tracking = db.BeginTracking();
+    /// var topic = await db.Query&lt;Topic&gt;().WhereById("7").FirstAsync();
+    /// topic.Title = "new";
+    /// await db.Update(topic).ExecuteAsync();   // UPDATE t_topic SET title = ? WHERE id = ?
+    /// </code></example>
+    public Tracking.TrackingScope BeginTracking() => new(this);
+
+    /// <summary>把实体加入当前追踪作用域（以它此刻的值为原始值）；不在作用域里返回 false（对应 Java 的 addTracking）。</summary>
+    public bool AddTracking(object entity)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        return Tracker.Add(entity);
+    }
+
+    /// <summary>不再追踪这个实体；不在作用域里或本就没追踪时返回 false。</summary>
+    public bool RemoveTracking(object entity)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        return Tracker.Remove(entity);
+    }
 
     /// <summary>开启环境事务（见 <see cref="EasyTransaction"/>）。</summary>
     public EasyTransaction BeginTransaction(IsolationLevel isolation = IsolationLevel.Unspecified) => new(this, isolation);

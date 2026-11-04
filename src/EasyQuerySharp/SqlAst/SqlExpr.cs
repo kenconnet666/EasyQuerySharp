@@ -268,3 +268,16 @@ public sealed class SubQueryExpr(SelectQuery query) : SqlExpr
     /// <summary>子查询。</summary>
     public SelectQuery Query { get; } = query;
 }
+
+/// <summary>
+/// 类型转换（对应 Java 的 toNumber / asStr / cast）：写法因方言而异，渲染时由 <see cref="Dialects.SqlDialect.CastTemplate"/> 决定，
+/// 如 MySQL 的 <c>CAST(x AS SIGNED)</c>、PostgreSQL 的 <c>(x)::int4</c>。
+/// </summary>
+public sealed class CastExpr(SqlExpr operand, Type targetType) : SqlExpr
+{
+    /// <summary>被转换的表达式。</summary>
+    public SqlExpr Operand { get; } = operand;
+
+    /// <summary>目标 CLR 类型（可空类型已取底层类型）。</summary>
+    public Type TargetType { get; } = Nullable.GetUnderlyingType(targetType) ?? targetType;
+}

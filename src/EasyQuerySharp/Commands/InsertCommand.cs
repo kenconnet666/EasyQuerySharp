@@ -20,6 +20,7 @@ public sealed class InsertCommand<T> where T : class
     private ColumnStrategy _strategy = ColumnStrategy.OnlyNotNull;
     private ImmutableHashSet<string> _disabled = [];
     private string? _tableName;
+    private readonly Dictionary<string, string> _columnSql = new(StringComparer.Ordinal);
 
     internal InsertCommand(EasyDb db, IReadOnlyList<T> entities)
     {
@@ -56,6 +57,19 @@ public sealed class InsertCommand<T> where T : class
     public InsertCommand<T> AsTable(string tableName)
     {
         _tableName = tableName;
+        return this;
+    }
+
+    /// <summary>
+    /// 这一列的值用 SQL 模板包一层（对应 Java 的 columnConfigure）：<c>{0}</c> 是列，<c>{1}</c> 是实体上的值，
+    /// 如 <c>.ColumnSql(t => t.Id, "sde.next_rowid('sde',{1})")</c>。
+    /// </summary>
+    public InsertCommand<T> ColumnSql<TValue>(System.Linq.Expressions.Expression<Func<T, TValue>> column, string template)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(template);
+        var member = ExpressionTranslator.StripConvert(column.Body) as System.Linq.Expressions.MemberExpression
+                     ?? throw new ArgumentException($"需要直接的属性访问，如 t => t.Title：{column}", nameof(column));
+        _columnSql[member.Member.Name] = template;
         return this;
     }
 
@@ -106,8 +120,11 @@ public sealed class InsertCommand<T> where T : class
             var value = column.GetProviderValue(entity);
             if (_strategy == ColumnStrategy.OnlyNotNull && value is null) continue;
             if (_strategy == ColumnStrategy.OnlyNull && value is not null) continue;
-            columns.Add(table.Column(column));
-            values.Add(ExpressionTranslator.Parameter(value, column.Converter?.ProviderType ?? column.ClrType));
+            var target = table.Column(column);
+            SqlExpr parameter = ExpressionTranslator.Parameter(value, column.Converter?.ProviderType ?? column.ClrType);
+            if (_columnSql.TryGetValue(column.PropertyName, out var template)) parameter = new FragmentExpr(template, [target, parameter]);
+            columns.Add(target);
+            values.Add(parameter);
         }
 
         var keyColumn = _fillKeys ? _entity.KeyColumns.FirstOrDefault(k => k.IsGenerated) : null;

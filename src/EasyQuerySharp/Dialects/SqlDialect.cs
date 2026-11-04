@@ -55,6 +55,30 @@ public abstract class SqlDialect
     public virtual void WriteLike(SqlRenderer renderer, LikeExpr predicate) =>
         renderer.Write(predicate.Operand).Append(predicate.Negated ? " NOT LIKE " : " LIKE ").Write(predicate.Pattern);
 
+    /// <summary>
+    /// 类型转换的模板，<c>{0}</c> 是被转换的表达式（逐字对应 Java 各方言的 CastSQLFunction）。
+    /// 默认是 MySQL 的写法；不支持的目标类型抛出 <see cref="NotSupportedException"/>。
+    /// </summary>
+    public virtual string CastTemplate(Type targetType) => targetType switch
+    {
+        _ when targetType == typeof(bool) => " CAST({0} AS SIGNED)",
+        _ when targetType == typeof(char) => "SUBSTR(CAST({0} AS CHAR), 1, 1)",
+        _ when targetType == typeof(TimeOnly) || targetType == typeof(TimeSpan) => "CAST({0} AS TIME)",
+        _ when targetType == typeof(DateOnly) => "CAST({0} AS DATE)",
+        _ when targetType == typeof(DateTime) || targetType == typeof(DateTimeOffset) => "CAST({0} AS DATETIME)",
+        _ when targetType == typeof(decimal) => "CAST({0} AS DECIMAL(36,18))",
+        _ when targetType == typeof(double) || targetType == typeof(float) => "CAST({0} AS DECIMAL(32,16))",
+        _ when IsInteger(targetType) => "CAST({0} AS SIGNED)",
+        _ when targetType == typeof(Guid) => "SUBSTR(CAST({0} AS CHAR), 1, 36)",
+        _ when targetType == typeof(string) => "CAST({0} AS CHAR)",
+        _ => throw new NotSupportedException($"{Name} 不支持转换到 {targetType.Name}"),
+    };
+
+    /// <summary>是否整数类型（byte / short / int / long 及无符号版本）。</summary>
+    protected static bool IsInteger(Type type) =>
+        type == typeof(byte) || type == typeof(sbyte) || type == typeof(short) || type == typeof(ushort)
+        || type == typeof(int) || type == typeof(uint) || type == typeof(long) || type == typeof(ulong);
+
     // ---------- DDL（code-first）----------
 
     /// <summary>
