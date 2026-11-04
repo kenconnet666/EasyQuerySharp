@@ -1,0 +1,37 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml,props,targets,csproj,slnx}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_using_directive_placement = outside_namespace
+dotnet_sort_system_directives_first = true
+csharp_style_var_for_built_in_types = true
+csharp_style_var_when_type_is_apparent = true
+csharp_style_var_elsewhere = true
+csharp_prefer_braces = when_multiline:suggestion
+# SQL 生成全程用不变区域（InvariantCulture），这条规则在库里保留；测试与工具里只是噪音
+dotnet_diagnostic.CA1305.severity = warning
+
+[{tests,tools,samples,docs}/**.cs]
+dotnet_diagnostic.CA1305.severity = none
+# 测试方法名沿用 Java 用例名（如 Query0_1），不强制命名规则
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1515.severity = none
+dotnet_diagnostic.CA1861.severity = none
+
+[*.cs]
+# 返回类型保持抽象（SqlExpr / Expression），便于后续扩展分支；这条性能建议在这里只是噪音
+dotnet_diagnostic.CA1859.severity = none

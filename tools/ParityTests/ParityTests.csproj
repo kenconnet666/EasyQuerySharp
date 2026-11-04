@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- 对照工具：扫描 Java 用例与 C# 的 [Upstream] 标注，生成 docs/parity-tests.md 与测试骨架；见 docs/decisions/0003-testing-and-parity.md -->
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+</Project>
