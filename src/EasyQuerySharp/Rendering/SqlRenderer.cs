@@ -186,6 +186,16 @@ public sealed class SqlRenderer
             case EntityTableSource e: WriteTableName(e); break;
             case DerivedTableSource d: Append("(").WriteSelect(d.Query).Append(")"); break;
             case RawTableSource raw: Append("(").Append(raw.Sql).Append(")"); break;
+            case UnionTableSource u:
+                // 与 Java 逐字一致：( (q1)  UNION  (q2) )
+                Append("( ");
+                for (var i = 0; i < u.Parts.Count; i++)
+                {
+                    if (i > 0) Append(u.All ? "  UNION ALL  " : "  UNION  ");
+                    Append("(").WriteSelect(u.Parts[i]).Append(")");
+                }
+                Append(" )");
+                break;
         }
         if (table.Alias is not null) Append(" ").Append(table.Alias);
         return this;

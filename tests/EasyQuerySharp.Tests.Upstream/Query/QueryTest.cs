@@ -6,7 +6,7 @@ using EasyQuerySharp.Tests.Upstream.Infrastructure;
 namespace EasyQuerySharp.Tests.Upstream;
 
 /// <summary>对应 Java：QueryTest.java。</summary>
-public sealed class QueryTest(MySqlFixture fixture) : MySqlTest(fixture)
+public sealed partial class QueryTest(MySqlFixture fixture) : MySqlTest(fixture)
 {
     private const string BlogColumns =
         "`id`,`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`title`,`content`,`url`,`star`,`publish_time`,`score`,`status`,`order`,`is_top`,`top`";

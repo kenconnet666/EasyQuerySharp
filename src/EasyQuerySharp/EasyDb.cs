@@ -64,7 +64,8 @@ public sealed class EasyDb
         Executor.ExecuteAsync(RawSql.FromInterpolated(Options.Dialect, sql), cancellationToken);
 
     /// <summary>
-    /// 执行原生查询 SQL（对应 Java 的 sqlQuery）：<typeparamref name="T"/> 是实体或 DTO 时按列名映射，是标量时取第一列。
+    /// 执行原生查询 SQL（对应 Java 的 sqlQuery / sqlQueryMap）：<typeparamref name="T"/> 是实体或 DTO 时按列名映射，
+    /// 是标量时取第一列，是 <c>Dictionary&lt;string, object?&gt;</c> 时整行读成字典。
     /// </summary>
     public Task<List<T>> SqlQueryAsync<T>(string sql, IReadOnlyList<object?>? parameters = null, CancellationToken cancellationToken = default) =>
         Executor.QueryAsync(RawSql.FromPositional(Options.Dialect, sql, parameters ?? []), RowReader<T>(), cancellationToken);
@@ -73,10 +74,11 @@ public sealed class EasyDb
     public Task<List<T>> SqlQueryAsync<T>(FormattableString sql, CancellationToken cancellationToken = default) =>
         Executor.QueryAsync(RawSql.FromInterpolated(Options.Dialect, sql), RowReader<T>(), cancellationToken);
 
-    // 标量取第一列；实体 / DTO 按列名映射
+    // 标量取第一列；字典整行；实体 / DTO 按列名映射
     private Func<DbDataReader, T> RowReader<T>()
     {
         if (ScalarTypes.IsScalar(typeof(T))) return r => Materialization.ValueReader.Read<T>(r, 0, null);
+        if (typeof(T) == typeof(Dictionary<string, object?>)) return r => (T)(object)Materialization.EntityMaterializer.ReadDictionary(r);
         var entity = Metadata.Get<T>();
         return r => Materialization.EntityMaterializer.ReadByName<T>(r, entity);
     }

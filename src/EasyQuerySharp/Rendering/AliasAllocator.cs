@@ -61,6 +61,8 @@ internal static class AliasAllocator
             Collect(derived.Query, tables);
             if (derived.ReserveExtraAlias) tables.Add(Placeholder.Instance);
         }
+        if (table is UnionTableSource union)
+            foreach (var part in union.Parts) Collect(part, tables);
         if (!tables.Contains(table)) tables.Add(table);
     }
 

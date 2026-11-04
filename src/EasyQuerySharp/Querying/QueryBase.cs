@@ -67,6 +67,17 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         return rows;
     }
 
+    /// <summary>执行并把每行读成 列名 → 值 的字典（对应 Java 的 toMaps）；列名忽略大小写，重复的列名抛出异常。</summary>
+    public Task<List<Dictionary<string, object?>>> ToDictionariesAsync(CancellationToken cancellationToken = default) =>
+        Db.Executor.QueryAsync(ToStatement(), Materialization.EntityMaterializer.ReadDictionary, cancellationToken);
+
+    /// <summary>第一行读成字典（追加 LIMIT 1）；没有时返回 null（对应 Java 的 toMap）。</summary>
+    public async Task<Dictionary<string, object?>?> FirstDictionaryOrDefaultAsync(CancellationToken cancellationToken = default)
+    {
+        var list = await With(State with { Limit = 1 }).ToDictionariesAsync(cancellationToken).ConfigureAwait(false);
+        return list.Count == 0 ? null : list[0];
+    }
+
     /// <summary>第一行（追加 LIMIT 1）；没有时返回 null（对应 Java 的 firstOrNull）。</summary>
     public async Task<TElement?> FirstOrDefaultAsync(CancellationToken cancellationToken = default)
     {
@@ -133,8 +144,8 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         return new Page<TElement>(rows, total, page, size);
     }
 
-    // 聚合时不需要用户的投影；投影后的查询先包一层再聚合
-    private protected QueryState ForAggregate() => State.HasSelector && (State.Distinct || State.Offset is not null || State.Limit is not null)
+    // 聚合时不需要用户的投影；去重、分页、分组后的投影先包一层再聚合
+    private protected QueryState ForAggregate() => State.HasSelector && (State.Distinct || State.Offset is not null || State.Limit is not null || State.GroupKey is not null)
         ? State.Wrap()
         : State with { Selector = null };
 

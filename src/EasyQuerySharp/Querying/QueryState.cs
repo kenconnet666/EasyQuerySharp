@@ -27,6 +27,9 @@ internal sealed record EntitySource(Type EntityType) : QuerySource
 /// <summary>子查询作为派生表。</summary>
 internal sealed record SubQuerySource(QueryState Inner) : QuerySource;
 
+/// <summary>多条查询做 UNION / UNION ALL 后作为派生表，列按第一条查询的投影访问。</summary>
+internal sealed record UnionSource(ImmutableArray<QueryState> Parts, bool All) : QuerySource;
+
 /// <summary>原生 SQL 作为派生表，列按实体的列名访问（对应 Java 的 queryable(sql, Class)）。</summary>
 internal sealed record RawSqlSource(string Sql, Type EntityType) : QuerySource;
 
@@ -86,6 +89,7 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     {
         EntitySource e => e.EntityType,
         SubQuerySource s => s.Inner.ElementType,
+        UnionSource u => u.Parts[0].ElementType,
         RawSqlSource r => r.EntityType,
         _ => throw new NotSupportedException(Sources[0].GetType().Name),
     };

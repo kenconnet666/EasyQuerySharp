@@ -29,6 +29,7 @@ dotnet_diagnostic.CA1305.severity = warning
 dotnet_diagnostic.CA1305.severity = none
 # 测试方法名沿用 Java 用例名（如 Query0_1），不强制命名规则
 dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1711.severity = none
 dotnet_diagnostic.CA1515.severity = none
 dotnet_diagnostic.CA1861.severity = none
 # 查询表达式里的 ToLower / CompareTo 等会翻译成 SQL，区域设置规则不适用

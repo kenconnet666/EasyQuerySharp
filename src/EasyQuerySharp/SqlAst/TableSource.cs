@@ -56,3 +56,16 @@ public sealed class RawTableSource(string sql) : TableSource
     /// <summary>原生 SQL（不含外层括号）。</summary>
     public string Sql { get; } = sql;
 }
+
+/// <summary>
+/// 集合运算作为派生表：<c>( (SELECT …)  UNION  (SELECT …) ) t2</c>（对应 Java 的 union / unionAll）。
+/// 每个分支各自编号别名，外层别名排在全部分支之后。
+/// </summary>
+public sealed class UnionTableSource(IReadOnlyList<SelectQuery> parts, bool all) : TableSource
+{
+    /// <summary>参与运算的各个查询，至少两个。</summary>
+    public IReadOnlyList<SelectQuery> Parts { get; } = parts;
+
+    /// <summary>true 为 UNION ALL（保留重复行），false 为 UNION。</summary>
+    public bool All { get; } = all;
+}

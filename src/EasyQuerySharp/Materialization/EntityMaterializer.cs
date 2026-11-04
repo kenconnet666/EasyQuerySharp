@@ -39,7 +39,10 @@ public static class EntityMaterializer
         var instance = entity.Factory();
         for (var i = 0; i < reader.FieldCount; i++)
         {
-            var column = entity.Columns.FirstOrDefault(c => string.Equals(c.Name, reader.GetName(i), StringComparison.OrdinalIgnoreCase));
+            var name = reader.GetName(i);
+            // 先按列名、再按属性名（与 Java 一致：create_time AS createTime 也能映射）
+            var column = entity.Columns.FirstOrDefault(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase))
+                ?? entity.Columns.FirstOrDefault(c => string.Equals(c.PropertyName, name, StringComparison.OrdinalIgnoreCase));
             if (column?.Setter is null || reader.IsDBNull(i)) continue;
             var raw = reader.GetValue(i);
             var value = column.Converter is null
@@ -48,6 +51,22 @@ public static class EntityMaterializer
             column.Setter(instance, value);
         }
         return (T)instance;
+    }
+
+    /// <summary>
+    /// 把当前行读成 列名 → 值 的字典（对应 Java 的 toMap / sqlQueryMap），列名忽略大小写，NULL 读成 null。
+    /// 列名重复时抛出异常（与 Java 一致，避免后一列静默覆盖前一列）。
+    /// </summary>
+    public static Dictionary<string, object?> ReadDictionary(DbDataReader reader)
+    {
+        var row = new Dictionary<string, object?>(reader.FieldCount, StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < reader.FieldCount; i++)
+        {
+            var name = reader.GetName(i);
+            if (!row.TryAdd(name, reader.IsDBNull(i) ? null : reader.GetValue(i)))
+                throw new InvalidOperationException($"结果集里有重复的列名：{name}");
+        }
+        return row;
     }
 
     private static bool AllKeysNull(DbDataReader reader, int start, IReadOnlyList<ColumnMetadata> columns)

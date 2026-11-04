@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Collections;
 using System.Linq.Expressions;
 using EasyQuerySharp.SqlAst;
@@ -61,6 +62,22 @@ public sealed class Query<T> : QueryBase<Query<T>, T>
 
     /// <summary>投影到 DTO、匿名类型或标量。投影之后再 Where / OrderBy 会把它包成派生表。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T, TResult>> selector) => new(Open with { Selector = selector });
+
+    /// <summary>
+    /// 与其它查询做 UNION（去重），结果作为派生表继续 Where / Select / 分页：
+    /// <c>q1.Union(q2, q3).Where(t => t.Id == "1")</c>。各查询的投影列须一一对应。
+    /// </summary>
+    public Query<T> Union(params IEnumerable<Query<T>> others) => SetOperation(others, all: false);
+
+    /// <summary>与其它查询做 UNION ALL（保留重复行），其余同 <see cref="Union"/>。</summary>
+    public Query<T> UnionAll(params IEnumerable<Query<T>> others) => SetOperation(others, all: true);
+
+    private Query<T> SetOperation(IEnumerable<Query<T>> others, bool all)
+    {
+        var parts = others.Select(o => o.State).Prepend(State).ToImmutableArray();
+        if (parts.Length < 2) throw new ArgumentException("至少需要另一条查询参与集合运算", nameof(others));
+        return new(new QueryState(Db, [new UnionSource(parts, all)]));
+    }
 
     /// <summary>
     /// 按属性名自动投影到 DTO（对应 Java 的 select(Dto.class)）：DTO 的每个可写属性取实体上的同名列，

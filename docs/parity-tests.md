@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2338 个用例。
 
-合计：已移植 163、偏离 19、不适用 0、骨架 15、待做 2141。
+合计：已移植 198、偏离 20、不适用 1、骨架 15、待做 2104。
 
 ## 按能力
 
@@ -12,13 +12,13 @@
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
 | 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 70 | 17 | 0 | 0 | 315 |
 | 分页结果 | `query.page` | M1 | 22 | 3 | 0 | 0 | 0 | 19 |
-| 原生 SQL | `sql.native` | M1 | 50 | 0 | 0 | 0 | 0 | 50 |
+| 原生 SQL | `sql.native` | M1 | 50 | 7 | 0 | 0 | 0 | 43 |
 | 删除 | `write.delete` | M1 | 21 | 0 | 0 | 0 | 0 | 21 |
-| 插入 | `write.insert` | M1 | 48 | 0 | 0 | 0 | 1 | 47 |
+| 插入 | `write.insert` | M1 | 48 | 4 | 0 | 0 | 1 | 43 |
 | 更新 | `write.update` | M1 | 50 | 0 | 0 | 0 | 0 | 50 |
 | CASE WHEN | `expr.case` | M2 | 27 | 0 | 0 | 0 | 0 | 27 |
-| 日期函数 | `func.date` | M2 | 100 | 2 | 0 | 0 | 0 | 98 |
-| 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 8 | 0 | 0 | 0 | 51 |
+| 日期函数 | `func.date` | M2 | 100 | 3 | 0 | 0 | 0 | 97 |
+| 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 10 | 0 | 0 | 0 | 49 |
 | 字符串聚合（joining） | `func.joining` | M2 | 29 | 0 | 0 | 0 | 5 | 24 |
 | JSON 函数 | `func.json` | M2 | 12 | 0 | 0 | 0 | 0 | 12 |
 | 数学函数 | `func.math` | M2 | 4 | 0 | 0 | 0 | 0 | 4 |
@@ -26,12 +26,12 @@
 | 行锁 | `lock` | M2 | 28 | 0 | 0 | 0 | 0 | 28 |
 | 窗口函数 | `window` | M2 | 44 | 0 | 0 | 0 | 0 | 44 |
 | CTE | `query.cte` | M3 | 11 | 0 | 0 | 0 | 0 | 11 |
-| 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 6 | 1 | 0 | 2 | 74 |
-| 显式 join | `query.join` | M3 | 88 | 7 | 0 | 0 | 0 | 81 |
-| 无实体的 Map 查询、toMap | `query.map` | M3 | 11 | 0 | 0 | 0 | 0 | 11 |
+| 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 9 | 1 | 0 | 2 | 71 |
+| 显式 join | `query.join` | M3 | 88 | 11 | 1 | 1 | 0 | 75 |
+| 无实体的 Map 查询、toMap | `query.map` | M3 | 11 | 2 | 0 | 0 | 0 | 9 |
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 0 | 0 | 0 | 0 | 2 |
 | 流式读取 | `query.stream` | M3 | 9 | 0 | 0 | 0 | 0 | 9 |
-| union / union all | `query.union` | M3 | 18 | 0 | 0 | 0 | 1 | 17 |
+| union / union all | `query.union` | M3 | 18 | 12 | 0 | 0 | 1 | 5 |
 | 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 35 | 0 | 0 | 0 | 1 | 34 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 0 | 0 | 0 | 0 | 4 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 0 | 0 | 0 | 0 | 56 |
@@ -162,63 +162,63 @@
 | NumberFunctionsTest.java#subtractMySQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:22：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.'score' - ?) AS 'value1',(t.'score' - ?) AS 'value2',(t.'score' - ?) AS 'value3',(t.'score…` |
 | NumberFunctionsTest.java#subtractORACLE | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:22：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" - ?) AS "value1",(t."score" - ?) AS "value2",(t."score" - ?) AS "value3",(t."score…` |
 | NumberFunctionsTest.java#subtractPGSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:22：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" - ?) AS "value1",(t."score" - ?) AS "value2",(t."score" - ?) AS "value3",(t."score…` |
-| QueryTest.java#query0 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:16 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
-| QueryTest.java#query0_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:26 | `SELECT x.'id',x.'create_time',x.'username',x.'phone',x.'id_card',x.'address' FROM 'easy-query-test'.…` |
-| QueryTest.java#query0_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:36 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
-| QueryTest.java#query1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:46 | `SELECT x.'id',x.'create_time',x.'update_time',x.'create_by',x.'update_by',x.'deleted',x.'title',x.'c…` |
-| QueryTest.java#query100 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:228 |  |
-| QueryTest.java#query101 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:235 |  |
-| QueryTest.java#query101_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:242 |  |
-| QueryTest.java#query102 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:249 |  |
-| QueryTest.java#query102_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:263 |  |
-| QueryTest.java#query108 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:785 |  |
-| QueryTest.java#query2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:56 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest.java#query27 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:284 | `SELECT t.'title',t.'content',t.'url',t.'star',t.'publish_time',t.'score',t.'status',t.'order',t.'is_…` |
-| QueryTest.java#query3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:67 | `SELECT 1 FROM 't_blog' WHERE 'deleted' = ? AND 'id' = ? LIMIT 1` |
-| QueryTest.java#query30 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:291 | `SELECT * FROM 't_blog' t` |
-| QueryTest.java#query31 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:299 | `SELECT * FROM 't_blog' t` |
-| QueryTest.java#query37 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:310 | `update t_blog set content='{…}' where id='1'` |
-| QueryTest.java#query38 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:319 | `update t_blog set content=? where id=?` |
-| QueryTest.java#query39 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:328：Java 的第 4、5 块把 url 选了两次（allFields 再加 url），C# 成员初始化不能给同一成员赋两次值，这两块只选一次 url | `SELECT t.'url' AS 'my_url' FROM 't_blog' t WHERE t.'deleted' = ?` |
-| QueryTest.java#query4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:78 | `SELECT 1 as id FROM 't_blog' WHERE 'deleted' = ? AND 'id' = ? LIMIT 1` |
-| QueryTest.java#query42 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:352 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest.java#query45 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:360 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE EXISTS(SELECT 1 FROM 't_blo…` |
-| QueryTest.java#query46 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:373 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE NOT EXISTS(SELECT 1 FROM 't…` |
-| QueryTest.java#query47 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:384 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest.java#query48 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:404 |  |
-| QueryTest.java#query49 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:412 |  |
-| QueryTest.java#query5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:89 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest.java#query51 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:420 | `SELECT DISTINCT t.'id' FROM 't_topic' t WHERE t.'id' IS NOT NULL` |
-| QueryTest.java#query58 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:429 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE t.'id' IN (SELECT t1.'id' F…` |
-| QueryTest.java#query59 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:461 |  |
-| QueryTest.java#query5_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:437 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest.java#query5_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:450 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest.java#query6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:104 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest.java#query60 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:468 |  |
-| QueryTest.java#query72 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:477 | `SELECT t.'score',t.'status' AS 'status1',t.'order',t.'is_top',t.'top' FROM 't_blog' t WHERE t.'delet…` |
-| QueryTest.java#query73 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:486 | `SELECT t.'score',t.'status' AS 'status1',t.'order',t.'is_top',t.'top' FROM 't_blog' t WHERE t.'delet…` |
-| QueryTest.java#query74 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:493 | `SELECT t.'score',t.'status' AS 'status1',t.'order',t.'is_top',t.'top' FROM 't_blog' t WHERE t.'delet…` |
-| QueryTest.java#query75 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:501 | `SELECT t.'order' AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND t.'id' = ? LIMIT 1` |
-| QueryTest.java#query76 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:509 | `SELECT t.'status' AS 'status1',t.'order',t.'is_top',t.'top' FROM 't_blog' t WHERE t.'deleted' = ? AN…` |
-| QueryTest.java#query8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:143 | `SELECT 'id','stars','title','create_time' FROM 't_topic' LIMIT 1` |
-| QueryTest.java#query82 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:517 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
-| QueryTest.java#query83 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:527 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
-| QueryTest.java#query83_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:527 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
-| QueryTest.java#query84 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:535 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
-| QueryTest.java#query85 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:535 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
-| QueryTest.java#query86 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:545 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
-| QueryTest.java#query87 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:545 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
-| QueryTest.java#query88 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:535 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
-| QueryTest.java#query88_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:555 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
-| QueryTest.java#query9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:151 |  |
-| QueryTest.java#query90_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:562 |  |
-| QueryTest.java#query92 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:566 |  |
-| QueryTest.java#query93 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:570 |  |
-| QueryTest.java#query94 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:574 |  |
-| QueryTest.java#query95 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:578 |  |
-| QueryTest.java#query96 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:582 |  |
-| QueryTest.java#query97 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:586 |  |
-| QueryTest.java#query98 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:590 |  |
+| QueryTest.java#query0 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:16 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
+| QueryTest.java#query0_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:26 | `SELECT x.'id',x.'create_time',x.'username',x.'phone',x.'id_card',x.'address' FROM 'easy-query-test'.…` |
+| QueryTest.java#query0_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:36 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
+| QueryTest.java#query1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:46 | `SELECT x.'id',x.'create_time',x.'update_time',x.'create_by',x.'update_by',x.'deleted',x.'title',x.'c…` |
+| QueryTest.java#query100 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:228 |  |
+| QueryTest.java#query101 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:235 |  |
+| QueryTest.java#query101_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:242 |  |
+| QueryTest.java#query102 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:249 |  |
+| QueryTest.java#query102_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:263 |  |
+| QueryTest.java#query108 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:785 |  |
+| QueryTest.java#query2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:56 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest.java#query27 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:284 | `SELECT t.'title',t.'content',t.'url',t.'star',t.'publish_time',t.'score',t.'status',t.'order',t.'is_…` |
+| QueryTest.java#query3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:67 | `SELECT 1 FROM 't_blog' WHERE 'deleted' = ? AND 'id' = ? LIMIT 1` |
+| QueryTest.java#query30 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:291 | `SELECT * FROM 't_blog' t` |
+| QueryTest.java#query31 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:299 | `SELECT * FROM 't_blog' t` |
+| QueryTest.java#query37 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:310 | `update t_blog set content='{…}' where id='1'` |
+| QueryTest.java#query38 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:319 | `update t_blog set content=? where id=?` |
+| QueryTest.java#query39 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:328：Java 的第 4、5 块把 url 选了两次（allFields 再加 url），C# 成员初始化不能给同一成员赋两次值，这两块只选一次 url | `SELECT t.'url' AS 'my_url' FROM 't_blog' t WHERE t.'deleted' = ?` |
+| QueryTest.java#query4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:78 | `SELECT 1 as id FROM 't_blog' WHERE 'deleted' = ? AND 'id' = ? LIMIT 1` |
+| QueryTest.java#query42 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:352 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest.java#query45 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:360 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE EXISTS(SELECT 1 FROM 't_blo…` |
+| QueryTest.java#query46 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:373 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE NOT EXISTS(SELECT 1 FROM 't…` |
+| QueryTest.java#query47 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:384 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest.java#query48 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:404 |  |
+| QueryTest.java#query49 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:412 |  |
+| QueryTest.java#query5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:89 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest.java#query51 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:420 | `SELECT DISTINCT t.'id' FROM 't_topic' t WHERE t.'id' IS NOT NULL` |
+| QueryTest.java#query58 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:429 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE t.'id' IN (SELECT t1.'id' F…` |
+| QueryTest.java#query59 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:461 |  |
+| QueryTest.java#query5_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:437 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest.java#query5_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:450 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest.java#query6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:104 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest.java#query60 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:468 |  |
+| QueryTest.java#query72 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:477 | `SELECT t.'score',t.'status' AS 'status1',t.'order',t.'is_top',t.'top' FROM 't_blog' t WHERE t.'delet…` |
+| QueryTest.java#query73 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:486 | `SELECT t.'score',t.'status' AS 'status1',t.'order',t.'is_top',t.'top' FROM 't_blog' t WHERE t.'delet…` |
+| QueryTest.java#query74 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:493 | `SELECT t.'score',t.'status' AS 'status1',t.'order',t.'is_top',t.'top' FROM 't_blog' t WHERE t.'delet…` |
+| QueryTest.java#query75 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:501 | `SELECT t.'order' AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND t.'id' = ? LIMIT 1` |
+| QueryTest.java#query76 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:509 | `SELECT t.'status' AS 'status1',t.'order',t.'is_top',t.'top' FROM 't_blog' t WHERE t.'deleted' = ? AN…` |
+| QueryTest.java#query8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:143 | `SELECT 'id','stars','title','create_time' FROM 't_topic' LIMIT 1` |
+| QueryTest.java#query82 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:517 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
+| QueryTest.java#query83 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:527 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
+| QueryTest.java#query83_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:527 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
+| QueryTest.java#query84 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:535 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
+| QueryTest.java#query85 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:535 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
+| QueryTest.java#query86 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:545 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
+| QueryTest.java#query87 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:545 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
+| QueryTest.java#query88 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:535 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
+| QueryTest.java#query88_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:555 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
+| QueryTest.java#query9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:151 |  |
+| QueryTest.java#query90_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:562 |  |
+| QueryTest.java#query92 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:566 |  |
+| QueryTest.java#query93 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:570 |  |
+| QueryTest.java#query94 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:574 |  |
+| QueryTest.java#query95 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:578 |  |
+| QueryTest.java#query96 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:582 |  |
+| QueryTest.java#query97 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:586 |  |
+| QueryTest.java#query98 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:590 |  |
 | QueryTest10.java#test223 | 待做 |  | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'title' <> ? AND ('title' = ? OR 'tit…` |
 | QueryTest11.java#testOrder2 | 待做 |  | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE 'topic_type' LIKE ?` |
 | QueryTest11.java#testOrder3 | 待做 |  | `SELECT t.'id' AS 'id',t.'title' AS 'name' FROM 't_topic_type' t WHERE t.'topic_type' LIKE ?` |
@@ -486,9 +486,9 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| QueryTest.java#query12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:753 |  |
-| QueryTest.java#query13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:760 |  |
-| QueryTest.java#query50 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:772 |  |
+| QueryTest.java#query12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:753 |  |
+| QueryTest.java#query13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:760 |  |
+| QueryTest.java#query50 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:772 |  |
 | QueryTest11.java#testx | 待做 |  |  |
 | QueryTest15.java#aaa | 待做 |  |  |
 | QueryTest15.java#aaa1 | 待做 |  |  |
@@ -522,13 +522,13 @@
 | QueryNativeSQLTest.java#testNativeSQL1 | 待做 |  |  |
 | QueryTest.java#query11_2 | 待做 |  | `SELECT t.'id',rank() over(order by t2.'stars' desc) as rank1 FROM 't_blog' t LEFT JOIN (SELECT t1.'i…` |
 | QueryTest.java#query11_3 | 待做 |  | `SELECT t.'id',rank() over(order by t2.'stars' desc) as rank1 FROM 't_blog' t LEFT JOIN (SELECT t1.'i…` |
-| QueryTest.java#query32 | 待做 |  | `SELECT * FROM 't_blog' t where t.id=?` |
-| QueryTest.java#query33 | 待做 |  | `SELECT * FROM 't_blog' t` |
-| QueryTest.java#query34 | 待做 |  | `SELECT * FROM 't_blog' t where t.id=?` |
-| QueryTest.java#query35 | 待做 |  | `SELECT * FROM 't_blog' t` |
-| QueryTest.java#query36 | 待做 |  | `SELECT * FROM 't_blog' t where t.id=?` |
-| QueryTest.java#query7_1 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest.java#query7_2 | 待做 |  | `SELECT 'id','create_time' AS createTime,'update_time' AS updateTime,'create_by' AS createBy,'update_…` |
+| QueryTest.java#query32 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.NativeSql.cs:8 | `SELECT * FROM 't_blog' t where t.id=?` |
+| QueryTest.java#query33 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.NativeSql.cs:12 | `SELECT * FROM 't_blog' t` |
+| QueryTest.java#query34 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.NativeSql.cs:16 | `SELECT * FROM 't_blog' t where t.id=?` |
+| QueryTest.java#query35 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.NativeSql.cs:20 | `SELECT * FROM 't_blog' t` |
+| QueryTest.java#query36 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.NativeSql.cs:24 | `SELECT * FROM 't_blog' t where t.id=?` |
+| QueryTest.java#query7_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.NativeSql.cs:28 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest.java#query7_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.NativeSql.cs:28 | `SELECT 'id','create_time' AS createTime,'update_time' AS updateTime,'create_by' AS createBy,'update_…` |
 | QueryTest10.java#test6 | 待做 |  | `SELECT t.'id' AS 'value1' FROM 't_topic' t GROUP BY t.'id'` |
 | QueryTest11.java#testx1 | 待做 |  | `SELECT 1 AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND DATE_FORMAT(t.'create_time','%Y-%m-%d'…` |
 | QueryTest12.java#testNum1 | 待做 |  | `SELECT SUM(t.'score')-SUM(t.'score') AS 'score' FROM 't_blog' t WHERE t.'deleted' = ?` |
@@ -620,10 +620,10 @@
 | MyTest2.java#testTuple7 | 待做 |  | `SELECT YEAR(t.'create_time') AS 'value1',MONTH(t.'create_time') AS 'value2',DAYOFMONTH(t.'create_tim…` |
 | MyTest2.java#testTuple8 | 待做 |  | `SELECT YEAR(t.'create_time') AS 'value1',MONTH(t.'create_time') AS 'value2',DAYOFMONTH(t.'create_tim…` |
 | MyTest2.java#testTuple9 | 待做 |  | `SELECT timestampdiff(DAY, t.'update_time', t.'create_time') AS 'value1',timestampdiff(HOUR, t.'updat…` |
-| QueryTest.java#query69 | 待做 |  |  |
-| QueryTest.java#query70 | 待做 |  |  |
-| QueryTest.java#query70_1 | 待做 |  |  |
-| QueryTest.java#query71 | 待做 |  |  |
+| QueryTest.java#query69 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.NativeSql.cs:91 |  |
+| QueryTest.java#query70 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.NativeSql.cs:105 |  |
+| QueryTest.java#query70_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.NativeSql.cs:105 |  |
+| QueryTest.java#query71 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.NativeSql.cs:117 |  |
 | QueryTest15.java#test2 | 待做 |  | `SELECT 'id','first_name','last_name','birthday',CONCAT('first_name','last_name') AS 'full_name',CEIL…` |
 | QueryTest15.java#test3 | 待做 |  | `SELECT 'id','first_name','last_name','birthday',CONCAT('first_name','last_name') AS 'full_name',CEIL…` |
 | QueryTest18.java#test111 | 待做 |  |  |
@@ -749,8 +749,8 @@
 | MyTest2.java#testSelect4 | 待做 |  | `SELECT t.'id',t.'title',DATE_FORMAT(t.'create_time','%Y-%m-%d') AS 'title' FROM 't_topic' t WHERE t.…` |
 | MyTest2.java#testTuple4 | 待做 |  | `SELECT date_add(t.'create_time', interval (?) month) AS 'value1' FROM 't_blog' t WHERE t.'deleted' =…` |
 | MyTest2.java#testTuple5 | 待做 |  | `SELECT date_add(date_add(t.'create_time', interval (?) month), interval (?) day) AS 'value1' FROM 't…` |
-| QueryTest.java#query68 | 待做 |  | `SELECT t.'id',t.'username',t.'phone',t.'id_card',t.'address',IFNULL(t.'create_time',?) AS 'create_ti…` |
-| QueryTest.java#query7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:117 |  |
+| QueryTest.java#query68 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Joins.cs:101 | `SELECT t.'id',t.'username',t.'phone',t.'id_card',t.'address',IFNULL(t.'create_time',?) AS 'create_ti…` |
+| QueryTest.java#query7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:117 |  |
 | QueryTest10.java#test222 | 待做 |  |  |
 | QueryTest10.java#testDraft12 | 待做 |  | `SELECT t.'id' AS 'value1',REPLACE(LOWER(t.'title'),?,?) AS 'value2',UPPER(t.'title') AS 'value3',SUB…` |
 | QueryTest10.java#testDraft13 | 待做 |  | `SELECT t.'id' AS 'value1',TRIM(LOWER(t.'title')) AS 'value2',UPPER(TRIM(t.'title')) AS 'value3',SUBS…` |
@@ -847,8 +847,8 @@
 | GeneralFunctionsTest.java#nullOrDefaultMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:60 | `SELECT 'id','uid','code','type','bank_id' FROM 'doc_bank_card' WHERE IFNULL('code',?) = ?` |
 | GeneralFunctionsTest.java#nullOrDefaultORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:60 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE NVL("code",?) = ?` |
 | GeneralFunctionsTest.java#nullOrDefaultPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:60 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE COALESCE("code",?) = ?` |
-| QueryTest.java#query16_1_1 | 待做 |  | `SELECT COUNT(1) FROM (SELECT IFNULL(t1.'id',?) AS 'id',SUM(t1.'score') AS 'score' FROM 't_topic' t I…` |
-| QueryTest.java#query16_1_3 | 待做 |  | `SELECT COUNT(1) FROM (SELECT IFNULL(t1.'id',?) AS 'id',SUM(t1.'score') AS 'score' FROM 't_topic' t I…` |
+| QueryTest.java#query16_1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Joins.cs:16 | `SELECT COUNT(1) FROM (SELECT IFNULL(t1.'id',?) AS 'id',SUM(t1.'score') AS 'score' FROM 't_topic' t I…` |
+| QueryTest.java#query16_1_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Joins.cs:16 | `SELECT COUNT(1) FROM (SELECT IFNULL(t1.'id',?) AS 'id',SUM(t1.'score') AS 'score' FROM 't_topic' t I…` |
 | QueryTest10.java#testDraft9 | 待做 |  | `SELECT IFNULL(t.'title',?) AS 'title',t.'id' AS 'id',t.'stars' AS 'stars' FROM 't_topic' t ORDER BY …` |
 | QueryTest11.java#testx27 | 待做 |  | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE IFNULL('topic_type'…` |
 | QueryTest11.java#testx28 | 待做 |  | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE IFNULL('topic_type'…` |
@@ -1001,22 +1001,22 @@
 | MyTest2.java#testTuple1 | 待做 |  | `SELECT t.'content' AS 'value1',CHAR_LENGTH(t.'content') AS 'value2' FROM 't_blog' t WHERE t.'deleted…` |
 | MyTest2.java#testTuple1_1 | 待做 |  | `SELECT t.'content' AS 'value1',CHAR_LENGTH(t.'content') AS 'value2' FROM 't_blog' t WHERE t.'deleted…` |
 | MyTest2.java#testTuple2 | 待做 |  | `SELECT t.'content' AS 'value1',CHAR_LENGTH(t.'content') AS 'value2' FROM 't_blog' t WHERE t.'deleted…` |
-| QueryTest.java#query102_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:256 |  |
-| QueryTest.java#query103 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:270 |  |
-| QueryTest.java#query104 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:277 |  |
-| QueryTest.java#query112 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:683 |  |
-| QueryTest.java#query114 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:683 |  |
-| QueryTest.java#query115 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:690 |  |
-| QueryTest.java#query116 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:697 |  |
-| QueryTest.java#query117 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:706 |  |
-| QueryTest.java#query118 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:697 |  |
-| QueryTest.java#query119 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:706 |  |
-| QueryTest.java#query120 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:714 |  |
-| QueryTest.java#query89 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:728 |  |
-| QueryTest.java#query89_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:732 |  |
-| QueryTest.java#query90 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:728 |  |
-| QueryTest.java#query91 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:728 |  |
-| QueryTest.java#query99 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:736 |  |
+| QueryTest.java#query102_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:256 |  |
+| QueryTest.java#query103 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:270 |  |
+| QueryTest.java#query104 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:277 |  |
+| QueryTest.java#query112 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:683 |  |
+| QueryTest.java#query114 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:683 |  |
+| QueryTest.java#query115 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:690 |  |
+| QueryTest.java#query116 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:697 |  |
+| QueryTest.java#query117 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:706 |  |
+| QueryTest.java#query118 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:697 |  |
+| QueryTest.java#query119 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:706 |  |
+| QueryTest.java#query120 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:714 |  |
+| QueryTest.java#query89 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:728 |  |
+| QueryTest.java#query89_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:732 |  |
+| QueryTest.java#query90 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:728 |  |
+| QueryTest.java#query91 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:728 |  |
+| QueryTest.java#query99 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:736 |  |
 | QueryTest10.java#testDraft11 | 待做 |  | `SELECT t.'id' AS 'value1',LOWER(t.'title') AS 'value2',UPPER(t.'title') AS 'value3' FROM 't_topic' t…` |
 | QueryTest10.java#testDraft17 | 待做 |  | `SELECT t.'id' AS 'value1',REPLACE(LOWER(t.'title'),?,?) AS 'value2' FROM 't_topic' t WHERE REPLACE(L…` |
 | QueryTest10.java#testDraft18 | 待做 |  | `SELECT t.'id' AS 'value1',STRCMP(t.'title',t.'id') AS 'value2' FROM 't_topic' t WHERE STRCMP(t.'titl…` |
@@ -1205,16 +1205,16 @@
 | EntityQueryAggregateTest5.java#test9 | 待做 |  | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' GROUP BY t.'id',t1…` |
 | GeneralFunctionsTest.java#limitOrderTest1 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:231 | `SELECT t1."value1" AS "value1",t1."value2" AS "value2" FROM (SELECT rt1.* FROM (SELECT rt.*, ROWNUM …` |
 | GeneralFunctionsTest.java#limitOrderTest2 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:269 | `SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS "__rownum__" FROM (SELECT t1."value1" AS "value1",t1."valu…` |
-| QueryTest.java#query16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:594 | `SELECT COUNT(1) FROM (SELECT t1.'id' AS 'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN …` |
-| QueryTest.java#query16_1_2 | 待做 |  | `SELECT COUNT(1) FROM (SELECT IFNULL(t1.'id',?) AS 'id',SUM(t1.'score') AS 'score' FROM 't_topic' t I…` |
-| QueryTest.java#query19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:613 |  |
-| QueryTest.java#query19_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:623 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
-| QueryTest.java#query19_2 | 待做 |  | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
-| QueryTest.java#query19_3 | 待做 |  | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
-| QueryTest.java#query20 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:633 | `SELECT t.'id' AS 'id',COUNT(t.'id') AS 'id_count' FROM 't_topic' t WHERE t.'id' = ? GROUP BY t.'id'` |
-| QueryTest.java#query21 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:644：Java 的 Select.of(key1(), …) 不写别名而 .as(…) 写别名；C# 成员初始化无法区分这两种写法，分组投影统一写别名 | `SELECT t.'id',COUNT(t.'id') AS 'id_count' FROM 't_topic' t WHERE t.'id' = ? GROUP BY t.'id'` |
-| QueryTest.java#query43 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:653 |  |
-| QueryTest.java#query44 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:667 | `SELECT t1.'id' AS 'id',t1.'id_count' AS 'id_count' FROM (SELECT t.'id' AS 'id',COUNT(t.'id') AS 'id_…` |
+| QueryTest.java#query16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:594 | `SELECT COUNT(1) FROM (SELECT t1.'id' AS 'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN …` |
+| QueryTest.java#query16_1_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Joins.cs:16 | `SELECT COUNT(1) FROM (SELECT IFNULL(t1.'id',?) AS 'id',SUM(t1.'score') AS 'score' FROM 't_topic' t I…` |
+| QueryTest.java#query19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:613 |  |
+| QueryTest.java#query19_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:623 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
+| QueryTest.java#query19_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Joins.cs:29 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
+| QueryTest.java#query19_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Joins.cs:29 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
+| QueryTest.java#query20 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:633 | `SELECT t.'id' AS 'id',COUNT(t.'id') AS 'id_count' FROM 't_topic' t WHERE t.'id' = ? GROUP BY t.'id'` |
+| QueryTest.java#query21 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:644：Java 的 Select.of(key1(), …) 不写别名而 .as(…) 写别名；C# 成员初始化无法区分这两种写法，分组投影统一写别名 | `SELECT t.'id',COUNT(t.'id') AS 'id_count' FROM 't_topic' t WHERE t.'id' = ? GROUP BY t.'id'` |
+| QueryTest.java#query43 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:653 |  |
+| QueryTest.java#query44 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:667 | `SELECT t1.'id' AS 'id',t1.'id_count' AS 'id_count' FROM (SELECT t.'id' AS 'id',COUNT(t.'id') AS 'id_…` |
 | QueryTest10.java#test2 | 待做 |  | `SELECT t.'id' FROM 't_blog' t WHERE t.'deleted' = ? AND t.'id' = ? GROUP BY t.'id' HAVING MAX(t.'id'…` |
 | QueryTest10.java#test3 | 待做 |  | `SELECT t.'id' FROM 't_blog' t WHERE t.'deleted' = ? AND t.'id' = ? GROUP BY t.'id' HAVING MAX(t.'id'…` |
 | QueryTest10.java#test4 | 待做 |  | `SELECT t.'id' FROM 't_blog' t WHERE t.'deleted' = ? AND t.'id' = ? GROUP BY t.'id' HAVING MAX(t.'id'…` |
@@ -1282,19 +1282,19 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| QueryTest.java#query10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:158 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'dele…` |
-| QueryTest.java#query10_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:188 | `SELECT y.'id',y.'stars',y.'title',y.'create_time' FROM 't_topic' y LEFT JOIN 't_blog' z ON z.'delete…` |
-| QueryTest.java#query11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:195 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
-| QueryTest.java#query111 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:221 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'dele…` |
-| QueryTest.java#query113 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:690 |  |
-| QueryTest.java#query11_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:213 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
-| QueryTest.java#query121 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/QueryTest.cs:740 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'dele…` |
-| QueryTest.java#query17 | 待做 |  | `SELECT COUNT(1) FROM (SELECT t1.'create_time',t1.'update_time',t1.'create_by',t1.'update_by',t1.'del…` |
-| QueryTest.java#query26 | 待做 |  | `SELECT t1.'id',t1.'create_time',t1.'update_time',t1.'create_by',t1.'update_by',t1.'deleted',t1.'titl…` |
-| QueryTest.java#query40 | 待做 |  | `SELECT COUNT(*) FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = ? AND t.'id' = t1.'id' WHE…` |
-| QueryTest.java#query78 | 待做 |  | `SELECT t1.'title',t1.'content',t1.'url',t1.'star',t1.'publish_time',t1.'score',t1.'status',t1.'order…` |
-| QueryTest.java#query79 | 待做 |  | `SELECT t1.'id',t1.'title',t1.'content',t1.'url',t1.'star',t1.'publish_time',t1.'score',t1.'status',t…` |
-| QueryTest.java#query80 | 待做 |  |  |
+| QueryTest.java#query10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:158 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'dele…` |
+| QueryTest.java#query10_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:188 | `SELECT y.'id',y.'stars',y.'title',y.'create_time' FROM 't_topic' y LEFT JOIN 't_blog' z ON z.'delete…` |
+| QueryTest.java#query11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:195 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
+| QueryTest.java#query111 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:221 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'dele…` |
+| QueryTest.java#query113 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:690 |  |
+| QueryTest.java#query11_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:213 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
+| QueryTest.java#query121 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:740 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'dele…` |
+| QueryTest.java#query17 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Joins.cs:48 | `SELECT COUNT(1) FROM (SELECT t1.'create_time',t1.'update_time',t1.'create_by',t1.'update_by',t1.'del…` |
+| QueryTest.java#query26 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Joins.cs:59 | `SELECT t1.'id',t1.'create_time',t1.'update_time',t1.'create_by',t1.'update_by',t1.'deleted',t1.'titl…` |
+| QueryTest.java#query40 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Joins.cs:70 | `SELECT COUNT(*) FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = ? AND t.'id' = t1.'id' WHE…` |
+| QueryTest.java#query78 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Joins.cs:84 | `SELECT t1.'title',t1.'content',t1.'url',t1.'star',t1.'publish_time',t1.'score',t1.'status',t1.'order…` |
+| QueryTest.java#query79 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Joins.cs:98：Java 允许投影里两列都映射到 id、后者覆盖前者；C# 成员初始化同一成员不能赋值两次 | `SELECT t1.'id',t1.'title',t1.'content',t1.'url',t1.'star',t1.'publish_time',t1.'score',t1.'status',t…` |
+| QueryTest.java#query80 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.NativeSql.cs:71：C# 投影的成员名不会重复；重复列名读成字典时报错，用原生 SQL 验证 |  |
 | QueryTest11.java#testx9 | 待做 |  |  |
 | QueryTest12.java#testDoc15 | 待做 |  | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
 | QueryTest12.java#testDoc21 | 待做 |  |  |
@@ -1375,8 +1375,8 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| QueryTest.java#query22 | 待做 |  |  |
-| QueryTest.java#query23 | 待做 |  |  |
+| QueryTest.java#query22 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.NativeSql.cs:58 |  |
+| QueryTest.java#query23 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.NativeSql.cs:62 |  |
 | QueryTest14.java#testDynamicTable2 | 待做 |  | `SELECT t1.'id' AS 'id' FROM (SELECT t.'id' AS 'id' FROM 'aaa' t) t1 LEFT JOIN (SELECT * FROM 'bbb' t…` |
 | QueryTest15.java#test1223 | 待做 |  | `SELECT * FROM '123' WHERE 'name' = ?` |
 | QueryTest15.java#test8 | 待做 |  |  |
@@ -1413,18 +1413,18 @@
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
 | GeneralFunctionsTest.java#unionSQLite | 骨架 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:369 | `SELECT t3."id",t3."stars",t3."title",t3."create_time" FROM ( SELECT t."id",t."stars",t."title",t."cr…` |
-| QueryTest.java#query52 | 待做 |  | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
-| QueryTest.java#query52_1 | 待做 |  | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
-| QueryTest.java#query52_1_1 | 待做 |  | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
-| QueryTest.java#query52_1_2 | 待做 |  | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
-| QueryTest.java#query52_2 | 待做 |  | `SELECT t2.'id',t2.'stars',t2.'title',t2.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
-| QueryTest.java#query52_3 | 待做 |  | `SELECT t2.'id',t2.'stars',t2.'title',t2.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
-| QueryTest.java#query52_3_1 | 待做 |  | `SELECT t2.'id',t2.'stars',t2.'title',t2.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
-| QueryTest.java#query53 | 待做 |  | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
-| QueryTest.java#query54 | 待做 |  | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
-| QueryTest.java#query55 | 待做 |  | `SELECT t3.'create_time',t3.'stars' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't…` |
-| QueryTest.java#query56 | 待做 |  | `SELECT t5.'id',t5.'stars',t5.'title',t5.'create_time' FROM ( (SELECT t3.'id',t3.'stars',t3.'title',t…` |
-| QueryTest.java#query57 | 待做 |  |  |
+| QueryTest.java#query52 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Union.cs:21 | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
+| QueryTest.java#query52_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Union.cs:21 | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
+| QueryTest.java#query52_1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Union.cs:26 | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
+| QueryTest.java#query52_1_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Union.cs:26 | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
+| QueryTest.java#query52_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Union.cs:35 | `SELECT t2.'id',t2.'stars',t2.'title',t2.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
+| QueryTest.java#query52_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Union.cs:35 | `SELECT t2.'id',t2.'stars',t2.'title',t2.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
+| QueryTest.java#query52_3_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Union.cs:39 | `SELECT t2.'id',t2.'stars',t2.'title',t2.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
+| QueryTest.java#query53 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Union.cs:47 | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
+| QueryTest.java#query54 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Union.cs:50 | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
+| QueryTest.java#query55 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Union.cs:53 | `SELECT t3.'create_time',t3.'stars' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't…` |
+| QueryTest.java#query56 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Union.cs:58 | `SELECT t5.'id',t5.'stars',t5.'title',t5.'create_time' FROM ( (SELECT t3.'id',t3.'stars',t3.'title',t…` |
+| QueryTest.java#query57 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Union.cs:68 |  |
 | QueryTest.java#query65 | 待做 |  | `SELECT t7.'id',t7.'stars',t7.'title',t7.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
 | QueryTest.java#query66 | 待做 |  | `SELECT t8.'id',t8.'stars',t8.'abc' AS 'abc' FROM ( (SELECT t.'id',t.'stars',t.'title' AS 'abc' FROM …` |
 | QueryTest.java#query67 | 待做 |  | `SELECT t5.'id',t5.'stars',t5.'abc' AS 'abc' FROM ( (SELECT t.'id',t.'stars',t.'title' AS 'abc' FROM …` |
