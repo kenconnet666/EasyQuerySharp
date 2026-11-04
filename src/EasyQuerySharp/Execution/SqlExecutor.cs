@@ -23,6 +23,25 @@ internal sealed class SqlExecutor(EasyDb db)
     public Task<object?> ScalarAsync(SqlStatement statement, CancellationToken ct) =>
         SessionAsync(s => s.ScalarAsync(statement, ct), ct);
 
+    /// <summary>流式查询：连接在枚举结束时释放（有环境事务时用事务的连接）。</summary>
+    public async IAsyncEnumerable<T> StreamAsync<T>(SqlStatement statement, Func<DbDataReader, T> shaper, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+    {
+        DbConnection? owned = null;
+        DbConnection connection;
+        DbTransaction? dbTransaction = null;
+        if (EasyTransaction.Current(db) is { } transaction) (connection, dbTransaction) = await transaction.EnsureStartedAsync(ct).ConfigureAwait(false);
+        else connection = owned = await db.OpenConnectionAsync(ct).ConfigureAwait(false);
+        try
+        {
+            await foreach (var row in new SqlSession(db, connection, dbTransaction).StreamAsync(statement, shaper, ct).ConfigureAwait(false))
+                yield return row;
+        }
+        finally
+        {
+            if (owned is not null) await owned.DisposeAsync().ConfigureAwait(false);
+        }
+    }
+
     /// <summary>在同一个连接上执行一组语句（插入后取自增键这类必须同连接的操作）。</summary>
     public async Task<T> SessionAsync<T>(Func<SqlSession, Task<T>> work, CancellationToken ct)
     {
@@ -86,16 +105,7 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
         var stopwatch = Stopwatch.StartNew();
         try
         {
-            await using var command = connection.CreateCommand();
-            command.CommandText = statement.CommandText;
-            command.Transaction = transaction;
-            for (var i = 0; i < statement.Parameters.Count; i++)
-            {
-                var p = command.CreateParameter();
-                p.ParameterName = db.Options.Dialect.ParameterName(i);
-                p.Value = statement.Parameters[i].Value ?? DBNull.Value;
-                command.Parameters.Add(p);
-            }
+            await using var command = CreateCommand(statement);
             e.Rows = await body(command).ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -109,5 +119,59 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
             e.Elapsed = stopwatch.Elapsed;
             foreach (var l in db.Options.Listeners) l.OnExecuted(e);
         }
+    }
+
+    /// <summary>流式查询：读到一行返回一行，枚举结束（或中途停止）时释放读取器并通知监听器。</summary>
+    public async IAsyncEnumerable<T> StreamAsync<T>(SqlStatement statement, Func<DbDataReader, T> shaper, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
+    {
+        var e = new SqlExecutionEvent(statement, db);
+        foreach (var l in db.Options.Listeners) l.OnExecuting(e);
+        var stopwatch = Stopwatch.StartNew();
+        DbCommand command;
+        DbDataReader reader;
+        try
+        {
+            command = CreateCommand(statement);
+            reader = await command.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            e.Exception = ex;
+            e.Elapsed = stopwatch.Elapsed;
+            foreach (var l in db.Options.Listeners) l.OnExecuted(e);
+            throw new EasyQueryException($"执行 SQL 失败：{ex.Message}{Environment.NewLine}{statement.Text}", statement, ex);
+        }
+        long rows = 0;
+        try
+        {
+            while (await reader.ReadAsync(ct).ConfigureAwait(false))
+            {
+                rows++;
+                yield return shaper(reader);
+            }
+        }
+        finally
+        {
+            await reader.DisposeAsync().ConfigureAwait(false);
+            await command.DisposeAsync().ConfigureAwait(false);
+            e.Rows = rows;
+            e.Elapsed = stopwatch.Elapsed;
+            foreach (var l in db.Options.Listeners) l.OnExecuted(e);
+        }
+    }
+
+    private DbCommand CreateCommand(SqlStatement statement)
+    {
+        var command = connection.CreateCommand();
+        command.CommandText = statement.CommandText;
+        command.Transaction = transaction;
+        for (var i = 0; i < statement.Parameters.Count; i++)
+        {
+            var p = command.CreateParameter();
+            p.ParameterName = db.Options.Dialect.ParameterName(i);
+            p.Value = statement.Parameters[i].Value ?? DBNull.Value;
+            command.Parameters.Add(p);
+        }
+        return command;
     }
 }

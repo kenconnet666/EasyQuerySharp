@@ -167,7 +167,8 @@ public sealed class SqlRenderer
             for (var i = 0; i < q.OrderBy.Count; i++)
             {
                 if (i > 0) Append(",");
-                Write(q.OrderBy[i].Expr).Append(q.OrderBy[i].Descending ? " DESC" : " ASC");
+                Write(q.OrderBy[i].Expr);
+                if (!q.OrderBy[i].Raw) Append(q.OrderBy[i].Descending ? " DESC" : " ASC");
             }
         }
         return this;
@@ -189,7 +190,7 @@ public sealed class SqlRenderer
         {
             case EntityTableSource e: WriteTableName(e); break;
             case DerivedTableSource d: Append("(").WriteSelect(d.Query).Append(")"); break;
-            case RawTableSource raw: Append("(").Append(raw.Sql).Append(")"); break;
+            case RawTableSource raw: Append("(").WriteRawSql(raw).Append(")"); break;
             case UnionTableSource u:
                 // 与 Java 逐字一致：( (q1)  UNION  (q2) )
                 Append("( ");
@@ -241,6 +242,21 @@ public sealed class SqlRenderer
         });
         Write(b.Right);
         if (!b.IsComparison) Append(")");
+    }
+
+    // 原生 SQL 里的 ? 依次换成参数（与 RawSql.FromPositional 同样的约定）
+    private SqlRenderer WriteRawSql(RawTableSource raw)
+    {
+        var parts = raw.Sql.Split('?');
+        if (parts.Length - 1 != raw.Parameters.Count)
+            throw new InvalidOperationException($"原生 SQL 有 {parts.Length - 1} 个 ? 占位，传了 {raw.Parameters.Count} 个参数：{raw.Sql}");
+        Append(parts[0]);
+        for (var i = 1; i < parts.Length; i++)
+        {
+            var value = raw.Parameters[i - 1];
+            Write(new ParameterExpr(value, value?.GetType() ?? typeof(object))).Append(parts[i]);
+        }
+        return this;
     }
 
     private void WriteBlankCheck(BlankCheckExpr b)

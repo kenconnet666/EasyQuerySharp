@@ -74,7 +74,7 @@ internal static class QueryCompiler
         foreach (var order in state.OrderBys)
         {
             translator.Bind(order.Key, bindings);
-            query!.OrderBy.Add(new OrderByItem(translator.Translate(order.Key.Body), order.Descending));
+            query!.OrderBy.Add(new OrderByItem(translator.Translate(order.Key.Body), order.Descending, order.Raw));
         }
         query!.Distinct = state.Distinct;
         query.Offset = state.Offset;
@@ -120,6 +120,8 @@ internal static class QueryCompiler
             // 标量（如 QuerySql<int>("select 1")）取第一列，其余按列名映射
             if (ScalarTypes.IsScalar(typeof(T)))
                 return new CompiledQuery<T>(rawFrame.Query, r => Materialization.ValueReader.Read<T>(r, 0, null));
+            if (typeof(T) == typeof(Dictionary<string, object?>))
+                return new CompiledQuery<T>(rawFrame.Query, r => (T)(object)Materialization.EntityMaterializer.ReadDictionary(r));
             var entity = state.Db.Metadata.Get<T>();
             return new CompiledQuery<T>(rawFrame.Query, r => Materialization.EntityMaterializer.ReadByName<T>(r, entity));
         }
@@ -189,7 +191,7 @@ internal static class QueryCompiler
             case RawSqlSource r:
             {
                 var entity = db.Metadata.Get(r.EntityType);
-                var table = new RawTableSource(r.Sql) { ExplicitAlias = r.Alias };
+                var table = new RawTableSource(r.Sql, r.Parameters) { ExplicitAlias = r.Alias };
                 return new DerivedBinding(table, entity.Columns.ToDictionary(c => c.PropertyName, c => c.Name), entity);
             }
             default:

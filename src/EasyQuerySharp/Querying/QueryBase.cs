@@ -75,6 +75,20 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     /// <summary><paramref name="condition"/> 为 true 时才 <see cref="SortBy"/>。</summary>
     public TSelf SortByIf(bool condition, Filtering.ISortRequest? request) => condition ? SortBy(request) : (TSelf)this;
 
+    /// <summary>
+    /// 追加一个原生排序片段，原样写进 ORDER BY（自带方向，对应 Java 的 orderBy 里的 sql(…)）：<c>.OrderByRaw("user_name ASC")</c>。
+    /// 片段由调用方拼写，不要把用户输入直接拼进去。
+    /// </summary>
+    public TSelf OrderByRaw(string sql)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(sql);
+        var state = Opened();
+        var body = Expression.Call(typeof(Sql).GetMethod(nameof(Sql.Raw))!.MakeGenericMethod(typeof(object)),
+            Expression.Constant(sql), Expression.NewArrayInit(typeof(object)));
+        var parameters = SourceTypes(state).Select((t, i) => Expression.Parameter(t, "t" + i));
+        return With(state with { OrderBys = state.OrderBys.Add(new OrderSpec(Expression.Lambda(body, parameters), false, Raw: true)) });
+    }
+
     // 投影之后再加条件 / 排序要先包一层
     private QueryState Opened() => State.HasSelector ? State.Wrap() : State;
 
@@ -126,6 +140,21 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         if (State.NoTracking || !Db.Tracker.Active || !Db.Tracker.CanTrack(typeof(TElement))) return;
         for (var i = 0; i < rows.Count; i++)
             if (rows[i] is { } row) rows[i] = (TElement)Db.Tracker.AttachQueried(row);
+    }
+
+    /// <summary>
+    /// 流式读取（对应 Java 的 toStreamResult）：边读边返回，适合大结果集，连接在枚举结束时释放。
+    /// 投影里的导航带出（include）不适用于流式读取；追踪作用域里照常追踪。
+    /// </summary>
+    /// <example><code>await foreach (var blog in db.Query&lt;Blog&gt;().OrderBy(b => b.Id).ToAsyncEnumerable(ct)) { … }</code></example>
+    public async IAsyncEnumerable<TElement> ToAsyncEnumerable([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var compiled = QueryCompiler.Compile<TElement>(State);
+        if (compiled.Includes.Count > 0) throw new NotSupportedException("投影里的导航带出不能流式读取，请用 ToListAsync");
+        var statement = SqlRenderer.Render(Db.Options.Dialect, compiled.Sql);
+        var track = !State.NoTracking && Db.Tracker.Active && Db.Tracker.CanTrack(typeof(TElement));
+        await foreach (var row in Db.Executor.StreamAsync(statement, compiled.Shaper, cancellationToken).ConfigureAwait(false))
+            yield return track && row is { } r ? (TElement)Db.Tracker.AttachQueried(r) : row;
     }
 
     /// <summary>执行并把每行读成 列名 → 值 的字典（对应 Java 的 toMaps）；列名忽略大小写，重复的列名抛出异常。</summary>

@@ -128,7 +128,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [~] 3.2 `GroupBy` / `Having` / 投影里的 `g.Key`，以及 `Rollup` / `Cube` / `Grouping`。
 - [x] 3.3 子查询：`In(subQuery)`、`Exists`、派生表 `AsSubQuery()`。
 - [~] 3.4 `Union` / `UnionAll`（已完成），CTE 的 `With` / `WithRecursive`。
-- [~] 3.5 流式读取 `AsAsyncEnumerable()`，无实体查询 `db.SqlQueryAsync<Dictionary<..>>` 与 `ToDictionariesAsync`（已完成）。
+- [x] 3.5 流式读取 `ToAsyncEnumerable()`，无实体查询 `db.SqlQueryAsync<Dictionary<..>>`、`QuerySql<Dictionary<..>>(sql, params)` 与 `ToDictionariesAsync`。
 - [ ] 3.6 LINQ 查询语法（`from … join … group … select`）的支持测试。
 
 ## M4 导航与对象树（[0002](docs/decisions/0002-object-tree-and-dto.md)）

@@ -53,10 +53,12 @@ public sealed class EasyDb
     public Query<T> Query<T>() => new(new QueryState(this, [new EntitySource(typeof(T))]));
 
     /// <summary>
-    /// 以原生 SQL 为来源开始一条查询（对应 Java 的 queryable(sql, Class)）：它作为派生表 <c>(sql) t</c>，
-    /// 列按 <typeparamref name="T"/> 的列名访问，之后可以照常 Where / Select。
+    /// 以原生 SQL 为来源开始一条查询（对应 Java 的 queryable(sql, Class, params)）：它作为派生表 <c>(sql) t</c>，
+    /// 列按 <typeparamref name="T"/> 的列名访问，之后可以照常 Where / Select / 分页；<c>?</c> 依次对应 <paramref name="parameters"/>。
+    /// <typeparamref name="T"/> 也可以是标量（取第一列）或 <c>Dictionary&lt;string, object?&gt;</c>（整行）。
     /// </summary>
-    public Query<T> QuerySql<T>(string sql) => new(new QueryState(this, [new RawSqlSource(sql, typeof(T))]));
+    public Query<T> QuerySql<T>(string sql, params IReadOnlyList<object?> parameters) =>
+        new(new QueryState(this, [new RawSqlSource(sql, typeof(T), parameters)]));
 
     /// <summary>执行原生写入 SQL，<c>?</c> 依次对应参数（对应 Java 的 sqlExecute），返回受影响的行数。</summary>
     public Task<long> ExecuteSqlAsync(string sql, IReadOnlyList<object?>? parameters = null, CancellationToken cancellationToken = default) =>

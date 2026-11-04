@@ -41,13 +41,16 @@ public sealed class SelectColumn(SqlExpr expr, string? alias)
 }
 
 /// <summary>ORDER BY 里的一项。</summary>
-public sealed class OrderByItem(SqlExpr expr, bool descending)
+public sealed class OrderByItem(SqlExpr expr, bool descending, bool raw = false)
 {
     /// <summary>排序表达式。</summary>
     public SqlExpr Expr { get; } = expr;
 
     /// <summary>是否降序。</summary>
     public bool Descending { get; } = descending;
+
+    /// <summary>原生排序片段（自带方向，不再追加 ASC / DESC）。</summary>
+    public bool Raw { get; } = raw;
 }
 
 /// <summary>一条 SELECT 语句（也用作子查询、派生表）。由查询编译器构建，渲染前不再修改。</summary>

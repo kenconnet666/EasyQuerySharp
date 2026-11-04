@@ -32,10 +32,10 @@ internal sealed record SubQuerySource(QueryState Inner) : QuerySource;
 internal sealed record UnionSource(ImmutableArray<QueryState> Parts, bool All) : QuerySource;
 
 /// <summary>原生 SQL 作为派生表，列按实体的列名访问（对应 Java 的 queryable(sql, Class)）。</summary>
-internal sealed record RawSqlSource(string Sql, Type EntityType) : QuerySource;
+internal sealed record RawSqlSource(string Sql, Type EntityType, IReadOnlyList<object?> Parameters) : QuerySource;
 
 /// <summary>按什么排序。</summary>
-internal sealed record OrderSpec(LambdaExpression Key, bool Descending);
+internal sealed record OrderSpec(LambdaExpression Key, bool Descending, bool Raw = false);
 
 /// <summary>
 /// 查询的不可变描述：链式调用每次返回新的 <see cref="QueryState"/>，只记录 lambda，执行时才由 <see cref="QueryCompiler"/> 翻译。

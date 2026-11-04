@@ -50,11 +50,17 @@ public sealed class DerivedTableSource(SelectQuery query) : TableSource
     public bool ReserveExtraAlias { get; init; }
 }
 
-/// <summary>原生 SQL 作为表来源：<c>(SELECT * FROM t_blog t) t</c>（对应 Java 的 queryable(sql, Class)）。</summary>
-public sealed class RawTableSource(string sql) : TableSource
+/// <summary>
+/// 原生 SQL 作为表来源：<c>(SELECT * FROM t_blog t) t</c>（对应 Java 的 queryable(sql, Class, params)）。
+/// SQL 里的 <c>?</c> 依次对应 <see cref="Parameters"/>。
+/// </summary>
+public sealed class RawTableSource(string sql, IReadOnlyList<object?>? parameters = null) : TableSource
 {
     /// <summary>原生 SQL（不含外层括号）。</summary>
     public string Sql { get; } = sql;
+
+    /// <summary><c>?</c> 占位依次对应的参数值。</summary>
+    public IReadOnlyList<object?> Parameters { get; } = parameters ?? [];
 }
 
 /// <summary>
