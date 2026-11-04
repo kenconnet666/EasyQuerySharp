@@ -80,9 +80,26 @@ internal sealed class TupleBinding(IReadOnlyList<SourceBinding> items) : SourceB
 /// 外层的列仍能拿到值转换器，也能按实体整体物化。
 /// </summary>
 internal sealed class DerivedBinding(
-    TableSource table, IReadOnlyDictionary<string, string> memberColumns, EntityMetadata? entity, IReadOnlySet<string>? aliasedMembers = null)
+    TableSource table, IReadOnlyDictionary<string, string> memberColumns, EntityMetadata? entity, IReadOnlySet<string>? aliasedMembers = null,
+    IReadOnlyDictionary<string, EntityMetadata>? nestedEntities = null)
     : SourceBinding
 {
+    /// <summary>
+    /// 内层投影里嵌着的整个实体（<c>new { b, Rn = … }</c> 的 <c>b</c>、<c>Part</c> 的 <c>Entity</c>）：外层 <c>x.b.Star</c> 经它找列。
+    /// 成员列以 <c>b.Star</c> 的形式登记；没有这个成员时返回 null。
+    /// </summary>
+    public DerivedBinding? Nested(string memberName)
+    {
+        if (nestedEntities?.GetValueOrDefault(memberName) is not { } nested) return null;
+        var prefix = memberName + ".";
+        var columns = memberColumns.Where(kv => kv.Key.StartsWith(prefix, StringComparison.Ordinal))
+            .ToDictionary(kv => kv.Key[prefix.Length..], kv => kv.Value, StringComparer.Ordinal);
+        return new DerivedBinding(table, columns, nested);
+    }
+
+    /// <summary>内层投影里嵌着的整个实体：成员名 → 实体元数据。</summary>
+    public IReadOnlyDictionary<string, EntityMetadata> NestedEntities => nestedEntities ?? new Dictionary<string, EntityMetadata>();
+
     private static readonly HashSet<string> None = [];
 
     /// <summary>内层投影里写了 AS 的成员（外层再投影时同样写 AS）。</summary>

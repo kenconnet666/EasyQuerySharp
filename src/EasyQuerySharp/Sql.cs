@@ -7,7 +7,7 @@ namespace EasyQuerySharp;
 /// 列上的函数做成扩展方法（扩展属性写不进表达式树，见 0001）。
 /// </summary>
 [SuppressMessage("Usage", "CA1801:Review unused parameters", Justification = "参数只在表达式树里被翻译")]
-public static class Sql
+public static partial class Sql
 {
     /// <summary>
     /// 原样的 LIKE：<paramref name="pattern"/> 里的 % 与 _ 由调用方自己写。

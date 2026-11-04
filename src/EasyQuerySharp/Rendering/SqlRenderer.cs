@@ -115,6 +115,7 @@ public sealed class SqlRenderer
             case LikeExpr l: Dialect.WriteLike(this, l); break;
             case FunctionExpr f: Dialect.WriteFunction(this, f); break;
             case FragmentExpr f: WriteFragment(f); break;
+            case WindowExpr w: WriteWindow(w); break;
             case CastExpr c: WriteFragment(new FragmentExpr(Dialect.CastTemplate(c.TargetType), [c.Operand])); break;
             case BlankCheckExpr b: WriteBlankCheck(b); break;
             case CaseExpr c: WriteCase(c); break;
@@ -264,6 +265,33 @@ public sealed class SqlRenderer
         Append("(").Write(b.Operand).Append(isNull).Append(joiner).Write(b.Operand).Append(compare);
         if (b.Whitespace) Append(joiner).Write(new FunctionExpr(SqlFunctionNames.TrimStart, [b.Operand])).Append(compare);
         Append(")");
+    }
+
+    private void WriteWindow(WindowExpr w)
+    {
+        var separator = w.Compact ? "," : ", ";
+        if (!w.Compact) Append("(");
+        Write(w.Function).Append(" OVER (");
+        var any = false;
+        if (w.Partitions.Count > 0)
+        {
+            Append("PARTITION BY ").WriteList(w.Partitions, separator);
+            any = true;
+        }
+        if (w.Orders.Count > 0)
+        {
+            if (any) Append(" ");
+            Append("ORDER BY ");
+            for (var i = 0; i < w.Orders.Count; i++)
+            {
+                if (i > 0) Append(separator);
+                Dialect.WriteOrderByItem(this, w.Orders[i]);
+            }
+            any = true;
+        }
+        if (w.Frame is { } frame) Append(any ? " " : "").Append(frame);
+        Append(")");
+        if (!w.Compact) Append(")");
     }
 
     private void WriteLogical(LogicalExpr l)

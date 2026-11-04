@@ -61,6 +61,8 @@ internal sealed partial class ExpressionTranslator
         ParameterExpression p => _scope.GetValueOrDefault(p),
         // 多表元组的 e.Item2 → 第二个表来源
         MemberExpression { Expression: { } inner } m when BindingOf(inner) is TupleBinding tuple => tuple.Item(m.Member.Name),
+        // 派生表里嵌着的整个实体 x.b → 只含它那些列的派生绑定
+        MemberExpression { Expression: { } inner } m when BindingOf(inner) is DerivedBinding derived && derived.Nested(m.Member.Name) is { } nested => nested,
         // 对一导航 x.User → 隐式 JOIN 的目标表
         MemberExpression m => ToOneNavigation(m),
         _ => null,

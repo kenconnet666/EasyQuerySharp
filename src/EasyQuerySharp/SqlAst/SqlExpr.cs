@@ -309,3 +309,25 @@ public sealed class BlankCheckExpr(SqlExpr operand, bool whitespace, bool negate
     /// <summary>取反。</summary>
     public BlankCheckExpr Negate() => new(Operand, Whitespace, !Negated);
 }
+
+/// <summary>
+/// 窗口函数 <c>f OVER (PARTITION BY … ORDER BY … frame)</c>。<see cref="Compact"/> 为 true 时（LAG / LEAD / FIRST_VALUE 等取值函数）
+/// 不加外层括号、列表用 "," 分隔；否则整体加括号、列表用 ", " 分隔（两种写法都与 Java 一致）。
+/// </summary>
+public sealed class WindowExpr(SqlExpr function, IReadOnlyList<SqlExpr> partitions, IReadOnlyList<OrderByItem> orders, string? frame, bool compact) : SqlExpr
+{
+    /// <summary>OVER 之前的函数。</summary>
+    public SqlExpr Function { get; } = function;
+
+    /// <summary>PARTITION BY 的值。</summary>
+    public IReadOnlyList<SqlExpr> Partitions { get; } = partitions;
+
+    /// <summary>ORDER BY 的项。</summary>
+    public IReadOnlyList<OrderByItem> Orders { get; } = orders;
+
+    /// <summary>frame 子句，如 <c>ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</c>；没有时为 null。</summary>
+    public string? Frame { get; } = frame;
+
+    /// <summary>取值函数的紧凑写法。</summary>
+    public bool Compact { get; } = compact;
+}

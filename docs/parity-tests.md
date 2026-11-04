@@ -3,14 +3,14 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2338 个用例。
 
-合计：已移植 494、偏离 94、不适用 7、骨架 15、待做 1728。
+合计：已移植 499、偏离 94、不适用 8、骨架 15、待做 1722。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 117 | 20 | 2 | 0 | 263 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 117 | 20 | 3 | 0 | 262 |
 | 分页结果 | `query.page` | M1 | 22 | 9 | 2 | 0 | 0 | 11 |
 | 原生 SQL | `sql.native` | M1 | 50 | 13 | 5 | 0 | 0 | 32 |
 | 删除 | `write.delete` | M1 | 21 | 7 | 1 | 2 | 0 | 11 |
@@ -24,7 +24,7 @@
 | 数学函数 | `func.math` | M2 | 4 | 0 | 2 | 1 | 0 | 1 |
 | 字符串函数 | `func.string` | M2 | 128 | 64 | 1 | 0 | 1 | 62 |
 | 行锁 | `lock` | M2 | 28 | 0 | 0 | 0 | 0 | 28 |
-| 窗口函数 | `window` | M2 | 44 | 0 | 0 | 0 | 0 | 44 |
+| 窗口函数 | `window` | M2 | 44 | 5 | 0 | 0 | 0 | 39 |
 | CTE | `query.cte` | M3 | 11 | 0 | 0 | 0 | 0 | 11 |
 | 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 28 | 2 | 0 | 2 | 51 |
 | 显式 join | `query.join` | M3 | 88 | 29 | 2 | 1 | 0 | 56 |
@@ -122,15 +122,15 @@
 | EntityQueryAggregateTest7.java#test7 | 待做 |  | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
 | EntityQueryAggregateTest7.java#test8 | 待做 |  | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
 | EntityQueryAggregateTest7.java#test9 | 待做 |  | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
-| GeneralFunctionsTest.java#likeOracle | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:71 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?,1,1) > 0` |
-| GeneralFunctionsTest.java#likeOracle2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:79 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?,1,1) = 1` |
-| GeneralFunctionsTest.java#likeOracle3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:87 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?,1,1) = (LENGTH("…` |
-| GeneralFunctionsTest.java#likePgSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:95 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE "type" LIKE CONCAT('%',(?)::TEX…` |
-| GeneralFunctionsTest.java#likePgSQL2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:103 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE "type" LIKE CONCAT((?)::TEXT,'%…` |
-| GeneralFunctionsTest.java#likePgSQL3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:111 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE "type" LIKE CONCAT('%',(?)::TEX…` |
-| GeneralFunctionsTest.java#likeSQLite | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:119 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?) > 0` |
-| GeneralFunctionsTest.java#likeSQLite2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:127 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?) = 1` |
-| GeneralFunctionsTest.java#likeSQLite3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:135 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?) = (LENGTH("type…` |
+| GeneralFunctionsTest.java#likeOracle | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:71 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?,1,1) > 0` |
+| GeneralFunctionsTest.java#likeOracle2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:79 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?,1,1) = 1` |
+| GeneralFunctionsTest.java#likeOracle3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:87 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?,1,1) = (LENGTH("…` |
+| GeneralFunctionsTest.java#likePgSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:95 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE "type" LIKE CONCAT('%',(?)::TEX…` |
+| GeneralFunctionsTest.java#likePgSQL2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:103 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE "type" LIKE CONCAT((?)::TEXT,'%…` |
+| GeneralFunctionsTest.java#likePgSQL3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:111 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE "type" LIKE CONCAT('%',(?)::TEX…` |
+| GeneralFunctionsTest.java#likeSQLite | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:119 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?) > 0` |
+| GeneralFunctionsTest.java#likeSQLite2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:127 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?) = 1` |
+| GeneralFunctionsTest.java#likeSQLite3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:135 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?) = (LENGTH("type…` |
 | GenericTest2.java#testAgroalGetUrl | 待做 |  |  |
 | InjectTest.java#injectTest1 | 待做 |  |  |
 | InjectTest.java#injectTest2 | 待做 |  |  |
@@ -146,22 +146,22 @@
 | MyTest2.java#testSelect2 | 待做 |  | `SELECT t.'title' AS 'id',1+1+t.'stars' AS 'title' FROM 't_topic' t WHERE t.'title' IS NOT NULL` |
 | MyTest2.java#testSelect8 | 待做 |  | `SELECT t.'title' FROM 't_topic' t WHERE t.'title' IS NOT NULL AND t.'create_time' <= ?` |
 | MyTest2.java#testTuple3 | 待做 |  | `SELECT date_add(t.'create_time', interval (?) day) AS 'value1' FROM 't_blog' t WHERE t.'deleted' = ?…` |
-| NumberFunctionsTest.java#addMSSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:11：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.[score] + ?) AS [value1],(t.[score] + ?) AS [value2],(t.[score] + ?) AS [value3],(t.[score…` |
-| NumberFunctionsTest.java#addMySQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:11：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.'score' + ?) AS 'value1',(t.'score' + ?) AS 'value2',(t.'score' + ?) AS 'value3',(t.'score…` |
-| NumberFunctionsTest.java#addORACLE | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:11：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" + ?) AS "value1",(t."score" + ?) AS "value2",(t."score" + ?) AS "value3",(t."score…` |
-| NumberFunctionsTest.java#addPGSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:11：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" + ?) AS "value1",(t."score" + ?) AS "value2",(t."score" + ?) AS "value3",(t."score…` |
-| NumberFunctionsTest.java#divideMSSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:44：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.[score] / ?) AS [value1],(t.[score] / t.[score]) AS [value2] FROM [t_blog] t WHERE t.[dele…` |
-| NumberFunctionsTest.java#divideMySQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:44：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.'score' / ?) AS 'value1',(t.'score' / t.'score') AS 'value2' FROM 't_blog' t WHERE t.'dele…` |
-| NumberFunctionsTest.java#divideORACLE | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:44：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" / ?) AS "value1",(t."score" / t."score") AS "value2" FROM "t_blog" t WHERE t."dele…` |
-| NumberFunctionsTest.java#dividePGSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:44：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" / ?) AS "value1",(t."score" / t."score") AS "value2" FROM "t_blog" t WHERE t."dele…` |
-| NumberFunctionsTest.java#multiplyMSSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:33：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.[score] * ?) AS [value1],(t.[score] * t.[score]) AS [value2] FROM [t_blog] t WHERE t.[dele…` |
-| NumberFunctionsTest.java#multiplyMySQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:33：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.'score' * ?) AS 'value1',(t.'score' * t.'score') AS 'value2' FROM 't_blog' t WHERE t.'dele…` |
-| NumberFunctionsTest.java#multiplyORACLE | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:33：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" * ?) AS "value1",(t."score" * t."score") AS "value2" FROM "t_blog" t WHERE t."dele…` |
-| NumberFunctionsTest.java#multiplyPGSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:33：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" * ?) AS "value1",(t."score" * t."score") AS "value2" FROM "t_blog" t WHERE t."dele…` |
-| NumberFunctionsTest.java#subtractMSSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:22：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.[score] - ?) AS [value1],(t.[score] - ?) AS [value2],(t.[score] - ?) AS [value3],(t.[score…` |
-| NumberFunctionsTest.java#subtractMySQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:22：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.'score' - ?) AS 'value1',(t.'score' - ?) AS 'value2',(t.'score' - ?) AS 'value3',(t.'score…` |
-| NumberFunctionsTest.java#subtractORACLE | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:22：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" - ?) AS "value1",(t."score" - ?) AS "value2",(t."score" - ?) AS "value3",(t."score…` |
-| NumberFunctionsTest.java#subtractPGSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:22：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" - ?) AS "value1",(t."score" - ?) AS "value2",(t."score" - ?) AS "value3",(t."score…` |
+| NumberFunctionsTest.java#addMSSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:11：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.[score] + ?) AS [value1],(t.[score] + ?) AS [value2],(t.[score] + ?) AS [value3],(t.[score…` |
+| NumberFunctionsTest.java#addMySQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:11：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.'score' + ?) AS 'value1',(t.'score' + ?) AS 'value2',(t.'score' + ?) AS 'value3',(t.'score…` |
+| NumberFunctionsTest.java#addORACLE | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:11：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" + ?) AS "value1",(t."score" + ?) AS "value2",(t."score" + ?) AS "value3",(t."score…` |
+| NumberFunctionsTest.java#addPGSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:11：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" + ?) AS "value1",(t."score" + ?) AS "value2",(t."score" + ?) AS "value3",(t."score…` |
+| NumberFunctionsTest.java#divideMSSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:44：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.[score] / ?) AS [value1],(t.[score] / t.[score]) AS [value2] FROM [t_blog] t WHERE t.[dele…` |
+| NumberFunctionsTest.java#divideMySQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:44：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.'score' / ?) AS 'value1',(t.'score' / t.'score') AS 'value2' FROM 't_blog' t WHERE t.'dele…` |
+| NumberFunctionsTest.java#divideORACLE | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:44：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" / ?) AS "value1",(t."score" / t."score") AS "value2" FROM "t_blog" t WHERE t."dele…` |
+| NumberFunctionsTest.java#dividePGSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:44：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" / ?) AS "value1",(t."score" / t."score") AS "value2" FROM "t_blog" t WHERE t."dele…` |
+| NumberFunctionsTest.java#multiplyMSSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:33：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.[score] * ?) AS [value1],(t.[score] * t.[score]) AS [value2] FROM [t_blog] t WHERE t.[dele…` |
+| NumberFunctionsTest.java#multiplyMySQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:33：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.'score' * ?) AS 'value1',(t.'score' * t.'score') AS 'value2' FROM 't_blog' t WHERE t.'dele…` |
+| NumberFunctionsTest.java#multiplyORACLE | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:33：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" * ?) AS "value1",(t."score" * t."score") AS "value2" FROM "t_blog" t WHERE t."dele…` |
+| NumberFunctionsTest.java#multiplyPGSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:33：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" * ?) AS "value1",(t."score" * t."score") AS "value2" FROM "t_blog" t WHERE t."dele…` |
+| NumberFunctionsTest.java#subtractMSSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:22：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.[score] - ?) AS [value1],(t.[score] - ?) AS [value2],(t.[score] - ?) AS [value3],(t.[score…` |
+| NumberFunctionsTest.java#subtractMySQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:22：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t.'score' - ?) AS 'value1',(t.'score' - ?) AS 'value2',(t.'score' - ?) AS 'value3',(t.'score…` |
+| NumberFunctionsTest.java#subtractORACLE | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:22：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" - ?) AS "value1",(t."score" - ?) AS "value2",(t."score" - ?) AS "value3",(t."score…` |
+| NumberFunctionsTest.java#subtractPGSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:22：C# 编译期把常量提升为 decimal，参数类型是 BigDecimal 而不是 Integer（值与 SQL 相同） | `SELECT (t."score" - ?) AS "value1",(t."score" - ?) AS "value2",(t."score" - ?) AS "value3",(t."score…` |
 | QueryTest.java#query0 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:16 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
 | QueryTest.java#query0_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:26 | `SELECT x.'id',x.'create_time',x.'username',x.'phone',x.'id_card',x.'address' FROM 'easy-query-test'.…` |
 | QueryTest.java#query0_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:36 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
@@ -278,7 +278,7 @@
 | QueryTest18.java#testFETCHER | 待做 |  | `SELECT t.'id',t.'stars' FROM 't_topic' t WHERE t.'id' = ?` |
 | QueryTest18.java#testFinal | 待做 |  | `SELECT a.'id',a.'create_time',a.'update_time',a.'create_by',a.'update_by',a.'deleted',a.'title',a.'c…` |
 | QueryTest18.java#testMaxEnum | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:81 | `SELECT MAX(t.'topic_type') FROM 't_topic_type' t` |
-| QueryTest18.java#testPartition1 | 待做 |  |  |
+| QueryTest18.java#testPartition1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Windows.cs:35：Java 用例体全部注释掉了 |  |
 | QueryTest18.java#testResultSizeLimit1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:181 |  |
 | QueryTest18.java#testStarStr | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','star',CAST('star'…` |
 | QueryTest19.java#aaa | 待做 |  |  |
@@ -600,7 +600,7 @@
 | DeleteTest.java#deleteTest3_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:37 | `DELETE FROM 't_topic' WHERE 'id' = ?` |
 | DeleteTest.java#deleteTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:37 | `DELETE FROM 't_topic' WHERE 'id' = ?` |
 | DeleteTest.java#deleteTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:48 |  |
-| GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey3 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:200 | `INSERT INTO 't_topic_auto' ('stars','title') VALUES (?,?)` |
+| GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey3 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:200 | `INSERT INTO 't_topic_auto' ('stars','title') VALUES (?,?)` |
 | InsertTest.java#incrementTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:125 | `INSERT INTO 'custom_increment' ('id','name','address') VALUES (mysqlNextId(),?,?)` |
 | InsertTest.java#incrementTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:125 | `INSERT INTO 'custom_increment' ('id','name','address') VALUES (mysqlNextId(),?,?)` |
 | InsertTest.java#insertCustom | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:115 | `INSERT INTO 'xxxxx' ('stars') VALUES (?)` |
@@ -839,14 +839,14 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| GeneralFunctionsTest.java#equalsWithMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:30 | `SELECT (CASE t.[id] WHEN ? THEN 1 ELSE 0 END) AS [value1] FROM [doc_bank_card] t WHERE (CASE t.[code…` |
-| GeneralFunctionsTest.java#equalsWithMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:30 | `SELECT (CASE t.'id' WHEN ? THEN 1 ELSE 0 END) AS 'value1' FROM 'doc_bank_card' t WHERE (CASE t.'code…` |
-| GeneralFunctionsTest.java#equalsWithORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:30 | `SELECT (CASE t."id" WHEN ? THEN 1 ELSE 0 END) AS "value1" FROM "doc_bank_card" t WHERE (CASE t."code…` |
-| GeneralFunctionsTest.java#equalsWithPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:30 | `SELECT (CASE t."id" WHEN ? THEN 1 ELSE 0 END) AS "value1" FROM "doc_bank_card" t WHERE (CASE t."code…` |
-| GeneralFunctionsTest.java#nullOrDefaultMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:60 | `SELECT [id],[uid],[code],[type],[bank_id] FROM [doc_bank_card] WHERE ISNULL([code],?) = ?` |
-| GeneralFunctionsTest.java#nullOrDefaultMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:60 | `SELECT 'id','uid','code','type','bank_id' FROM 'doc_bank_card' WHERE IFNULL('code',?) = ?` |
-| GeneralFunctionsTest.java#nullOrDefaultORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:60 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE NVL("code",?) = ?` |
-| GeneralFunctionsTest.java#nullOrDefaultPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:60 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE COALESCE("code",?) = ?` |
+| GeneralFunctionsTest.java#equalsWithMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:30 | `SELECT (CASE t.[id] WHEN ? THEN 1 ELSE 0 END) AS [value1] FROM [doc_bank_card] t WHERE (CASE t.[code…` |
+| GeneralFunctionsTest.java#equalsWithMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:30 | `SELECT (CASE t.'id' WHEN ? THEN 1 ELSE 0 END) AS 'value1' FROM 'doc_bank_card' t WHERE (CASE t.'code…` |
+| GeneralFunctionsTest.java#equalsWithORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:30 | `SELECT (CASE t."id" WHEN ? THEN 1 ELSE 0 END) AS "value1" FROM "doc_bank_card" t WHERE (CASE t."code…` |
+| GeneralFunctionsTest.java#equalsWithPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:30 | `SELECT (CASE t."id" WHEN ? THEN 1 ELSE 0 END) AS "value1" FROM "doc_bank_card" t WHERE (CASE t."code…` |
+| GeneralFunctionsTest.java#nullOrDefaultMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:60 | `SELECT [id],[uid],[code],[type],[bank_id] FROM [doc_bank_card] WHERE ISNULL([code],?) = ?` |
+| GeneralFunctionsTest.java#nullOrDefaultMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:60 | `SELECT 'id','uid','code','type','bank_id' FROM 'doc_bank_card' WHERE IFNULL('code',?) = ?` |
+| GeneralFunctionsTest.java#nullOrDefaultORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:60 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE NVL("code",?) = ?` |
+| GeneralFunctionsTest.java#nullOrDefaultPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:60 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE COALESCE("code",?) = ?` |
 | QueryTest.java#query16_1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Joins.cs:16 | `SELECT COUNT(1) FROM (SELECT IFNULL(t1.'id',?) AS 'id',SUM(t1.'score') AS 'score' FROM 't_topic' t I…` |
 | QueryTest.java#query16_1_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Joins.cs:16 | `SELECT COUNT(1) FROM (SELECT IFNULL(t1.'id',?) AS 'id',SUM(t1.'score') AS 'score' FROM 't_topic' t I…` |
 | QueryTest10.java#testDraft9 | 待做 |  | `SELECT IFNULL(t.'title',?) AS 'title',t.'id' AS 'id',t.'stars' AS 'stars' FROM 't_topic' t ORDER BY …` |
@@ -914,11 +914,11 @@
 | QueryTest19.java#testaaa | 待做 |  |  |
 | QueryTest22.java#testSelectAnyElement2 | 待做 |  | `SELECT (SELECT GROUP_CONCAT(t1.'code' SEPARATOR ?) FROM 'doc_bank_card' t1 WHERE t1.'uid' = t.'id' A…` |
 | QueryTest26.java#joiningTest | 待做 |  |  |
-| StringFunctionsTest.java#joining2MySQL | 骨架 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:101 | `SELECT t.'code' AS 'value1',GROUP_CONCAT(DISTINCT (CASE WHEN t.'type' = ? THEN t1.'name' ELSE NULL E…` |
-| StringFunctionsTest.java#joiningMSSQL | 骨架 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:137 | `SELECT t.[code] AS [value1],STRING_AGG(DISTINCT (CASE WHEN t.[type] = ? THEN t1.[name] ELSE NULL END…` |
-| StringFunctionsTest.java#joiningMySQL | 骨架 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:173 | `SELECT t.'code' AS 'value1',GROUP_CONCAT(DISTINCT (CASE WHEN t.'type' = ? THEN t1.'name' ELSE NULL E…` |
-| StringFunctionsTest.java#joiningORACLE | 骨架 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:208 | `SELECT t."code" AS "value1",LISTAGG(DISTINCT TO_CHAR((CASE WHEN t."type" = ? THEN t1."name" ELSE NUL…` |
-| StringFunctionsTest.java#joiningPGSQL | 骨架 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:244 | `SELECT t."code" AS "value1",STRING_AGG(DISTINCT ((CASE WHEN t."type" = ? THEN t1."name" ELSE NULL EN…` |
+| StringFunctionsTest.java#joining2MySQL | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:101 | `SELECT t.'code' AS 'value1',GROUP_CONCAT(DISTINCT (CASE WHEN t.'type' = ? THEN t1.'name' ELSE NULL E…` |
+| StringFunctionsTest.java#joiningMSSQL | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:137 | `SELECT t.[code] AS [value1],STRING_AGG(DISTINCT (CASE WHEN t.[type] = ? THEN t1.[name] ELSE NULL END…` |
+| StringFunctionsTest.java#joiningMySQL | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:173 | `SELECT t.'code' AS 'value1',GROUP_CONCAT(DISTINCT (CASE WHEN t.'type' = ? THEN t1.'name' ELSE NULL E…` |
+| StringFunctionsTest.java#joiningORACLE | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:208 | `SELECT t."code" AS "value1",LISTAGG(DISTINCT TO_CHAR((CASE WHEN t."type" = ? THEN t1."name" ELSE NUL…` |
+| StringFunctionsTest.java#joiningPGSQL | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:244 | `SELECT t."code" AS "value1",STRING_AGG(DISTINCT ((CASE WHEN t."type" = ? THEN t1."name" ELSE NULL EN…` |
 | mysql8/MySQL8Test2.java#testGroupConcat1 | 待做 |  | `SELECT t.'id' AS 'value1',GROUP_CONCAT(DISTINCT t.'title' SEPARATOR ?) AS 'value2',GROUP_CONCAT(DIST…` |
 | mysql8/MySQL8Test5.java#testJoining1 | 待做 |  | `SELECT t.'id',t.'name',t.'create_time',t2.'__joining2__' AS '__part__column1' FROM 't_bank' t LEFT J…` |
 | mysql8/MySQL8Test5.java#testJoining2 | 待做 |  | `SELECT t.'id',t.'name',t.'create_time',t2.'__joining2__' AS '__part__column1' FROM 't_bank' t LEFT J…` |
@@ -963,7 +963,7 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| GeneralFunctionsTest.java#testDoubleConcat | 骨架 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:307 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
+| GeneralFunctionsTest.java#testDoubleConcat | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:307 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
 | InsertTest.java#insertTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:15 |  |
 | MathQueryTest.java#testPropertyMath | 待做 |  | `SELECT t.'test_value' AS 'test_value',ABS(t.'test_value') AS 'test_abs',SIGN(t.'test_value') AS 'tes…` |
 | MathQueryTest.java#testPropertyMath2 | 待做 |  | `SELECT t.'test_value' AS 'test_value',ABS(t.'test_value') AS 'test_abs',SIGN(t.'test_value') AS 'tes…` |
@@ -1058,38 +1058,38 @@
 | RelationTest.java#testSub3 | 待做 |  | `SELECT LOWER(t1.'name') FROM 'school_student' t LEFT JOIN 'school_class' t1 ON t1.'id' = t.'class_id…` |
 | RelationTest.java#testSub4 | 待做 |  | `SELECT LOWER(t1.'name') FROM 'school_student' t LEFT JOIN 'school_class' t1 ON t1.'id' = t.'class_id…` |
 | SkipTest.java#test11 | 待做 |  |  |
-| StringFunctionsTest.java#compareToMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:12 | `SELECT (CASE WHEN t.[code] = t.[type] THEN 0 WHEN t.[code] > t.[type] THEN 1 ELSE -1 END) FROM [doc_…` |
-| StringFunctionsTest.java#compareToMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:12 | `SELECT STRCMP(t.'code',t.'type') FROM 'doc_bank_card' t WHERE STRCMP(t.'code',?) = ?` |
-| StringFunctionsTest.java#compareToORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:12 | `SELECT (CASE WHEN t."code" = t."type" THEN 0 WHEN t."code" > t."type" THEN 1 ELSE -1 END) FROM "doc_…` |
-| StringFunctionsTest.java#compareToPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:12 | `SELECT (CASE WHEN t."code" = t."type" THEN 0 WHEN t."code" > t."type" THEN 1 ELSE -1 END) FROM "doc_…` |
-| StringFunctionsTest.java#concatMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:23 | `SELECT CONCAT(?,t.[code],?,t.[type]) FROM [doc_bank_card] t WHERE CONCAT(t.[code],?) = ? AND CONCAT(…` |
-| StringFunctionsTest.java#concatMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:23 | `SELECT CONCAT(?,t.'code',?,t.'type') FROM 'doc_bank_card' t WHERE CONCAT(t.'code',?) = ? AND CONCAT(…` |
-| StringFunctionsTest.java#concatORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:23 | `SELECT ? \|\| t."code" \|\| ? \|\| t."type" FROM "doc_bank_card" t WHERE t."code" \|\| ? = ? AND t."code" \|\|…` |
-| StringFunctionsTest.java#concatPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:23 | `SELECT CONCAT(?,t."code",?,t."type") FROM "doc_bank_card" t WHERE CONCAT(t."code",?) = ? AND CONCAT(…` |
-| StringFunctionsTest.java#leftRightPadMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:34 | `SELECT [id],[uid],[code],[type],[bank_id] FROM [doc_bank_card] WHERE LPAD([code], 4) = ? AND LPAD([c…` |
-| StringFunctionsTest.java#leftRightPadMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:34 | `SELECT 'id','uid','code','type','bank_id' FROM 'doc_bank_card' WHERE LPAD('code', 4) = ? AND LPAD('c…` |
-| StringFunctionsTest.java#leftRightPadORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:34 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE LPAD("code", 4, ' ') = ? AND LP…` |
-| StringFunctionsTest.java#leftRightPadPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:34 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE LPAD("code", 4) = ? AND LPAD("c…` |
-| StringFunctionsTest.java#lengthMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:45 | `SELECT LEN(t.[code]) FROM [doc_bank_card] t WHERE LEN(t.[code]) = ?` |
-| StringFunctionsTest.java#lengthMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:45 | `SELECT CHAR_LENGTH(t.'code') FROM 'doc_bank_card' t WHERE CHAR_LENGTH(t.'code') = ?` |
-| StringFunctionsTest.java#lengthORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:45 | `SELECT LENGTH(t."code") FROM "doc_bank_card" t WHERE LENGTH(t."code") = ?` |
-| StringFunctionsTest.java#lengthPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:45 | `SELECT CHAR_LENGTH(t."code") FROM "doc_bank_card" t WHERE CHAR_LENGTH(t."code") = ?` |
-| StringFunctionsTest.java#lowerUpperMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:56 | `SELECT LOWER(t.[id]) AS [value1],UPPER(t.[id]) AS [value2] FROM [doc_bank_card] t` |
-| StringFunctionsTest.java#lowerUpperMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:56 | `SELECT LOWER(t.'id') AS 'value1',UPPER(t.'id') AS 'value2' FROM 'doc_bank_card' t` |
-| StringFunctionsTest.java#lowerUpperORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:56 | `SELECT LOWER(t."id") AS "value1",UPPER(t."id") AS "value2" FROM "doc_bank_card" t` |
-| StringFunctionsTest.java#lowerUpperPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:56 | `SELECT LOWER(t."id") AS "value1",UPPER(t."id") AS "value2" FROM "doc_bank_card" t` |
-| StringFunctionsTest.java#replaceMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:67 | `SELECT REPLACE(t.[id],?,?) AS [value1] FROM [doc_bank_card] t WHERE REPLACE(t.[code],?,?) = ?` |
-| StringFunctionsTest.java#replaceMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:67 | `SELECT REPLACE(t.'id',?,?) AS 'value1' FROM 'doc_bank_card' t WHERE REPLACE(t.'code',?,?) = ?` |
-| StringFunctionsTest.java#replaceORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:67 | `SELECT REPLACE(t."id",?,?) AS "value1" FROM "doc_bank_card" t WHERE REPLACE(t."code",?,?) = ?` |
-| StringFunctionsTest.java#replacePGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:67 | `SELECT REPLACE(t."id",?,?) AS "value1" FROM "doc_bank_card" t WHERE REPLACE(t."code",?,?) = ?` |
-| StringFunctionsTest.java#subStringMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:78 | `SELECT SUBSTRING(t.[id],1,2) AS [value1],SUBSTRING(t.[id],1,t.[stars]) AS [value2] FROM [t_topic] t` |
-| StringFunctionsTest.java#subStringMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:78 | `SELECT SUBSTR(t.'id',1,2) AS 'value1',SUBSTR(t.'id',1,t.'stars') AS 'value2' FROM 't_topic' t` |
-| StringFunctionsTest.java#subStringORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:78 | `SELECT SUBSTR(t."id",1,2) AS "value1",SUBSTR(t."id",1,t."stars") AS "value2" FROM "t_topic" t` |
-| StringFunctionsTest.java#subStringPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:78 | `SELECT SUBSTR(t."id",1,2) AS "value1",SUBSTR(t."id",1,t."stars") AS "value2" FROM "t_topic" t` |
-| StringFunctionsTest.java#trimMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:89 | `SELECT LTRIM(RTRIM(t.[id])) AS [value1] FROM [doc_bank_card] t WHERE LTRIM(RTRIM(t.[code])) = ? AND …` |
-| StringFunctionsTest.java#trimMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:89 | `SELECT TRIM(t.'id') AS 'value1' FROM 'doc_bank_card' t WHERE TRIM(t.'code') = ? AND LTRIM(t.'code') …` |
-| StringFunctionsTest.java#trimORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:89 | `SELECT TRIM(t."id") AS "value1" FROM "doc_bank_card" t WHERE TRIM(t."code") = ? AND LTRIM(t."code") …` |
-| StringFunctionsTest.java#trimPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/StringFunctionsTest.cs:89 | `SELECT TRIM(t."id") AS "value1" FROM "doc_bank_card" t WHERE TRIM(t."code") = ? AND LTRIM(t."code") …` |
+| StringFunctionsTest.java#compareToMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:12 | `SELECT (CASE WHEN t.[code] = t.[type] THEN 0 WHEN t.[code] > t.[type] THEN 1 ELSE -1 END) FROM [doc_…` |
+| StringFunctionsTest.java#compareToMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:12 | `SELECT STRCMP(t.'code',t.'type') FROM 'doc_bank_card' t WHERE STRCMP(t.'code',?) = ?` |
+| StringFunctionsTest.java#compareToORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:12 | `SELECT (CASE WHEN t."code" = t."type" THEN 0 WHEN t."code" > t."type" THEN 1 ELSE -1 END) FROM "doc_…` |
+| StringFunctionsTest.java#compareToPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:12 | `SELECT (CASE WHEN t."code" = t."type" THEN 0 WHEN t."code" > t."type" THEN 1 ELSE -1 END) FROM "doc_…` |
+| StringFunctionsTest.java#concatMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:23 | `SELECT CONCAT(?,t.[code],?,t.[type]) FROM [doc_bank_card] t WHERE CONCAT(t.[code],?) = ? AND CONCAT(…` |
+| StringFunctionsTest.java#concatMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:23 | `SELECT CONCAT(?,t.'code',?,t.'type') FROM 'doc_bank_card' t WHERE CONCAT(t.'code',?) = ? AND CONCAT(…` |
+| StringFunctionsTest.java#concatORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:23 | `SELECT ? \|\| t."code" \|\| ? \|\| t."type" FROM "doc_bank_card" t WHERE t."code" \|\| ? = ? AND t."code" \|\|…` |
+| StringFunctionsTest.java#concatPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:23 | `SELECT CONCAT(?,t."code",?,t."type") FROM "doc_bank_card" t WHERE CONCAT(t."code",?) = ? AND CONCAT(…` |
+| StringFunctionsTest.java#leftRightPadMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:34 | `SELECT [id],[uid],[code],[type],[bank_id] FROM [doc_bank_card] WHERE LPAD([code], 4) = ? AND LPAD([c…` |
+| StringFunctionsTest.java#leftRightPadMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:34 | `SELECT 'id','uid','code','type','bank_id' FROM 'doc_bank_card' WHERE LPAD('code', 4) = ? AND LPAD('c…` |
+| StringFunctionsTest.java#leftRightPadORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:34 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE LPAD("code", 4, ' ') = ? AND LP…` |
+| StringFunctionsTest.java#leftRightPadPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:34 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE LPAD("code", 4) = ? AND LPAD("c…` |
+| StringFunctionsTest.java#lengthMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:45 | `SELECT LEN(t.[code]) FROM [doc_bank_card] t WHERE LEN(t.[code]) = ?` |
+| StringFunctionsTest.java#lengthMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:45 | `SELECT CHAR_LENGTH(t.'code') FROM 'doc_bank_card' t WHERE CHAR_LENGTH(t.'code') = ?` |
+| StringFunctionsTest.java#lengthORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:45 | `SELECT LENGTH(t."code") FROM "doc_bank_card" t WHERE LENGTH(t."code") = ?` |
+| StringFunctionsTest.java#lengthPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:45 | `SELECT CHAR_LENGTH(t."code") FROM "doc_bank_card" t WHERE CHAR_LENGTH(t."code") = ?` |
+| StringFunctionsTest.java#lowerUpperMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:56 | `SELECT LOWER(t.[id]) AS [value1],UPPER(t.[id]) AS [value2] FROM [doc_bank_card] t` |
+| StringFunctionsTest.java#lowerUpperMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:56 | `SELECT LOWER(t.'id') AS 'value1',UPPER(t.'id') AS 'value2' FROM 'doc_bank_card' t` |
+| StringFunctionsTest.java#lowerUpperORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:56 | `SELECT LOWER(t."id") AS "value1",UPPER(t."id") AS "value2" FROM "doc_bank_card" t` |
+| StringFunctionsTest.java#lowerUpperPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:56 | `SELECT LOWER(t."id") AS "value1",UPPER(t."id") AS "value2" FROM "doc_bank_card" t` |
+| StringFunctionsTest.java#replaceMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:67 | `SELECT REPLACE(t.[id],?,?) AS [value1] FROM [doc_bank_card] t WHERE REPLACE(t.[code],?,?) = ?` |
+| StringFunctionsTest.java#replaceMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:67 | `SELECT REPLACE(t.'id',?,?) AS 'value1' FROM 'doc_bank_card' t WHERE REPLACE(t.'code',?,?) = ?` |
+| StringFunctionsTest.java#replaceORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:67 | `SELECT REPLACE(t."id",?,?) AS "value1" FROM "doc_bank_card" t WHERE REPLACE(t."code",?,?) = ?` |
+| StringFunctionsTest.java#replacePGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:67 | `SELECT REPLACE(t."id",?,?) AS "value1" FROM "doc_bank_card" t WHERE REPLACE(t."code",?,?) = ?` |
+| StringFunctionsTest.java#subStringMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:78 | `SELECT SUBSTRING(t.[id],1,2) AS [value1],SUBSTRING(t.[id],1,t.[stars]) AS [value2] FROM [t_topic] t` |
+| StringFunctionsTest.java#subStringMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:78 | `SELECT SUBSTR(t.'id',1,2) AS 'value1',SUBSTR(t.'id',1,t.'stars') AS 'value2' FROM 't_topic' t` |
+| StringFunctionsTest.java#subStringORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:78 | `SELECT SUBSTR(t."id",1,2) AS "value1",SUBSTR(t."id",1,t."stars") AS "value2" FROM "t_topic" t` |
+| StringFunctionsTest.java#subStringPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:78 | `SELECT SUBSTR(t."id",1,2) AS "value1",SUBSTR(t."id",1,t."stars") AS "value2" FROM "t_topic" t` |
+| StringFunctionsTest.java#trimMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:89 | `SELECT LTRIM(RTRIM(t.[id])) AS [value1] FROM [doc_bank_card] t WHERE LTRIM(RTRIM(t.[code])) = ? AND …` |
+| StringFunctionsTest.java#trimMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:89 | `SELECT TRIM(t.'id') AS 'value1' FROM 'doc_bank_card' t WHERE TRIM(t.'code') = ? AND LTRIM(t.'code') …` |
+| StringFunctionsTest.java#trimORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:89 | `SELECT TRIM(t."id") AS "value1" FROM "doc_bank_card" t WHERE TRIM(t."code") = ? AND LTRIM(t."code") …` |
+| StringFunctionsTest.java#trimPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:89 | `SELECT TRIM(t."id") AS "value1" FROM "doc_bank_card" t WHERE TRIM(t."code") = ? AND LTRIM(t."code") …` |
 | mysql8/ExampleTest.java#test2 | 待做 |  |  |
 
 ### 行锁（`lock`，M2）
@@ -1129,8 +1129,8 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| QueryTest18.java#testPartitionBy1 | 待做 |  | `SELECT t1.'id',t1.'stars',t1.'title',t1.'create_time',t1.'__part__column1' AS '__part__column1' FROM…` |
-| QueryTest18.java#testPartitionBy1_1 | 待做 |  | `SELECT t1.'id',t1.'stars',t1.'title',t1.'create_time',t1.'__part__column1' AS '__part__column1' FROM…` |
+| QueryTest18.java#testPartitionBy1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Windows.cs:11 | `SELECT t1.'id',t1.'stars',t1.'title',t1.'create_time',t1.'__part__column1' AS '__part__column1' FROM…` |
+| QueryTest18.java#testPartitionBy1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Windows.cs:23 | `SELECT t1.'id',t1.'stars',t1.'title',t1.'create_time',t1.'__part__column1' AS '__part__column1' FROM…` |
 | QueryTest26.java#testChunk3 | 待做 |  |  |
 | QueryTest26.java#testChunk4 | 待做 |  |  |
 | QueryTest26.java#testChunk5 | 待做 |  |  |
@@ -1151,9 +1151,9 @@
 | mysql8/MySQL8Test3.java#nextTest2 | 待做 |  |  |
 | mysql8/MySQL8Test3.java#nextTest3 | 待做 |  | `SELECT t.'type' AS 'value1',LAG(t.'type', 1) OVER (ORDER BY t.'open_time' ASC) AS 'value2' FROM 't_b…` |
 | mysql8/MySQL8Test5.java#testOffsetChunk | 待做 |  |  |
-| pgsql/PartitionByTest.java#testPartitionBy16_1 | 待做 |  | `SELECT t1."__part__column1" AS "value1",t1."__part__column2" AS "value2",t1."id" AS "value3" FROM (S…` |
-| pgsql/PartitionByTest.java#testPartitionBy16_2 | 待做 |  | `SELECT t1."__part__column1" AS "value1",t1."__part__column2" AS "value2",t1."id" AS "value3" FROM (S…` |
-| pgsql/PartitionByTest.java#testPartitionBy16_3 | 待做 |  | `SELECT t1."__part__column1" AS "value1",t1."__part__column2" AS "value2",t1."id" AS "value3" FROM (S…` |
+| pgsql/PartitionByTest.java#testPartitionBy16_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PartitionByTest.cs:20 | `SELECT t1."__part__column1" AS "value1",t1."__part__column2" AS "value2",t1."id" AS "value3" FROM (S…` |
+| pgsql/PartitionByTest.java#testPartitionBy16_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PartitionByTest.cs:33 | `SELECT t1."__part__column1" AS "value1",t1."__part__column2" AS "value2",t1."id" AS "value3" FROM (S…` |
+| pgsql/PartitionByTest.java#testPartitionBy16_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PartitionByTest.cs:45 | `SELECT t1."__part__column1" AS "value1",t1."__part__column2" AS "value2",t1."id" AS "value3" FROM (S…` |
 | pgsql/QueryTest.java#testPartitionBy1 | 待做 |  | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
 | pgsql/QueryTest.java#testPartitionBy10 | 待做 |  | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
 | pgsql/QueryTest.java#testPartitionBy11 | 待做 |  | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
@@ -1203,8 +1203,8 @@
 | EntityQueryAggregateTest5.java#test7 | 待做 |  | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
 | EntityQueryAggregateTest5.java#test8 | 待做 |  | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
 | EntityQueryAggregateTest5.java#test9 | 待做 |  | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' GROUP BY t.'id',t1…` |
-| GeneralFunctionsTest.java#limitOrderTest1 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:231 | `SELECT t1."value1" AS "value1",t1."value2" AS "value2" FROM (SELECT rt1.* FROM (SELECT rt.*, ROWNUM …` |
-| GeneralFunctionsTest.java#limitOrderTest2 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:269 | `SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS "__rownum__" FROM (SELECT t1."value1" AS "value1",t1."valu…` |
+| GeneralFunctionsTest.java#limitOrderTest1 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:231 | `SELECT t1."value1" AS "value1",t1."value2" AS "value2" FROM (SELECT rt1.* FROM (SELECT rt.*, ROWNUM …` |
+| GeneralFunctionsTest.java#limitOrderTest2 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:269 | `SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS "__rownum__" FROM (SELECT t1."value1" AS "value1",t1."valu…` |
 | QueryTest.java#query16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:594 | `SELECT COUNT(1) FROM (SELECT t1.'id' AS 'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN …` |
 | QueryTest.java#query16_1_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Joins.cs:16 | `SELECT COUNT(1) FROM (SELECT IFNULL(t1.'id',?) AS 'id',SUM(t1.'score') AS 'score' FROM 't_topic' t I…` |
 | QueryTest.java#query19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.cs:613 |  |
@@ -1412,7 +1412,7 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| GeneralFunctionsTest.java#unionSQLite | 骨架 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:369 | `SELECT t3."id",t3."stars",t3."title",t3."create_time" FROM ( SELECT t."id",t."stars",t."title",t."cr…` |
+| GeneralFunctionsTest.java#unionSQLite | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:369 | `SELECT t3."id",t3."stars",t3."title",t3."create_time" FROM ( SELECT t."id",t."stars",t."title",t."cr…` |
 | QueryTest.java#query52 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Union.cs:21 | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
 | QueryTest.java#query52_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Union.cs:21 | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
 | QueryTest.java#query52_1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.Union.cs:26 | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
@@ -1437,7 +1437,7 @@
 | --- | --- | --- | --- |
 | DirectRelationTest.java#test4 | 待做 |  | `SELECT t.'c1',t.'c2',t.'c3',t.'c4' FROM 'direct1' t` |
 | DirectRelationTest.java#test5 | 待做 |  | `SELECT t.'c1',t.'c2',t.'c3',t.'c4' FROM 'direct1' t` |
-| GeneralFunctionsTest.java#testKingbaseCte | 骨架 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:338 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0+0 AS "deep",t1."id",t1."parent_id",t1."content",t1."user…` |
+| GeneralFunctionsTest.java#testKingbaseCte | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:338 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0+0 AS "deep",t1."id",t1."parent_id",t1."content",t1."user…` |
 | QueryTest14.java#test1 | 待做 |  | `SELECT t.'id',t.'name',t.'password' FROM 't_test_user' t` |
 | QueryTest16.java#test111 | 待做 |  | `SELECT t.'id' AS '__relation__id' FROM 'sys_user' t WHERE t.'deleted' = ?` |
 | QueryTest19.java#testDoc100 | 待做 |  | `SELECT t.'id',t.'name' FROM 't_user' t` |
@@ -1545,8 +1545,8 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| NumberFunctionsTest.java#subQueryMySQL | 骨架 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:78 | `SELECT IFNULL(t2.'__any7__',?) AS 'value1' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__grou…` |
-| NumberFunctionsTest.java#subQueryORACLE | 骨架 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:118 | `SELECT NVL(t2."__any7__",?) AS "value1" FROM "t_sys_user" t LEFT JOIN (SELECT t1."uid" AS "__group_k…` |
+| NumberFunctionsTest.java#subQueryMySQL | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:78 | `SELECT IFNULL(t2.'__any7__',?) AS 'value1' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__grou…` |
+| NumberFunctionsTest.java#subQueryORACLE | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:118 | `SELECT NVL(t2."__any7__",?) AS "value1" FROM "t_sys_user" t LEFT JOIN (SELECT t1."uid" AS "__group_k…` |
 | QueryTest19.java#test1_3 | 待做 |  | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN (SELECT t2.'…` |
 | QueryTest22.java#testDoubleField | 待做 |  | `SELECT IFNULL(t2.'__count3__',0) AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 'my_com_user…` |
 | QueryTest22.java#testManyGroup | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
@@ -1659,24 +1659,24 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| GeneralFunctionsTest.java#countFilterMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:11 | `SELECT COUNT(t.'id') AS 'value1',COUNT(DISTINCT t.'title') AS 'value2',COUNT((CASE WHEN t.'title' <>…` |
-| GeneralFunctionsTest.java#countMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:19 | `SELECT COUNT(t.[id]) AS [value1],COUNT(DISTINCT t.[id]) AS [value2] FROM [doc_bank_card] t` |
-| GeneralFunctionsTest.java#countMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:19 | `SELECT COUNT(t.'id') AS 'value1',COUNT(DISTINCT t.'id') AS 'value2' FROM 'doc_bank_card' t` |
-| GeneralFunctionsTest.java#countORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:19 | `SELECT COUNT(t."id") AS "value1",COUNT(DISTINCT t."id") AS "value2" FROM "doc_bank_card" t` |
-| GeneralFunctionsTest.java#countPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:19 | `SELECT COUNT(t."id") AS "value1",COUNT(DISTINCT t."id") AS "value2" FROM "doc_bank_card" t` |
-| GeneralFunctionsTest.java#maxMinMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:41 | `SELECT MAX(t.[id]) AS [value1],MIN(t.[id]) AS [value2] FROM [doc_bank_card] t` |
-| GeneralFunctionsTest.java#maxMinMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:41 | `SELECT MAX(t.'id') AS 'value1',MIN(t.'id') AS 'value2' FROM 'doc_bank_card' t` |
-| GeneralFunctionsTest.java#maxMinORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:41 | `SELECT MAX(t."id") AS "value1",MIN(t."id") AS "value2" FROM "doc_bank_card" t` |
-| GeneralFunctionsTest.java#maxMinPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:41 | `SELECT MAX(t."id") AS "value1",MIN(t."id") AS "value2" FROM "doc_bank_card" t` |
-| GeneralFunctionsTest.java#minMaxFilterMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:52 | `SELECT MAX(t.'score') AS 'value1',MAX((CASE WHEN t.'title' <> ? THEN t.'score' ELSE NULL END)) AS 'v…` |
-| NumberFunctionsTest.java#avgMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:55 | `SELECT AVG(t.[score]) AS [value1],AVG(DISTINCT t.[score]) AS [value2],AVG(DISTINCT (CASE WHEN t.[tit…` |
-| NumberFunctionsTest.java#avgMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:55 | `SELECT AVG(t.'score') AS 'value1',AVG(DISTINCT t.'score') AS 'value2',AVG(DISTINCT (CASE WHEN t.'tit…` |
-| NumberFunctionsTest.java#avgORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:55 | `SELECT AVG(t."score") AS "value1",AVG(DISTINCT t."score") AS "value2",AVG(DISTINCT (CASE WHEN t."tit…` |
-| NumberFunctionsTest.java#avgPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:55 | `SELECT AVG(t."score") AS "value1",AVG(DISTINCT t."score") AS "value2",AVG(DISTINCT (CASE WHEN t."tit…` |
-| NumberFunctionsTest.java#sumMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:66 | `SELECT SUM(t.[score]) AS [value1],SUM(DISTINCT t.[score]) AS [value2],SUM(DISTINCT t.[score]) AS [va…` |
-| NumberFunctionsTest.java#sumMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:66 | `SELECT SUM(t.'score') AS 'value1',SUM(DISTINCT t.'score') AS 'value2',SUM(DISTINCT t.'score') AS 'va…` |
-| NumberFunctionsTest.java#sumORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:66 | `SELECT SUM(t."score") AS "value1",SUM(DISTINCT t."score") AS "value2",SUM(DISTINCT t."score") AS "va…` |
-| NumberFunctionsTest.java#sumPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/NumberFunctionsTest.cs:66 | `SELECT SUM(t."score") AS "value1",SUM(DISTINCT t."score") AS "value2",SUM(DISTINCT t."score") AS "va…` |
+| GeneralFunctionsTest.java#countFilterMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:11 | `SELECT COUNT(t.'id') AS 'value1',COUNT(DISTINCT t.'title') AS 'value2',COUNT((CASE WHEN t.'title' <>…` |
+| GeneralFunctionsTest.java#countMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:19 | `SELECT COUNT(t.[id]) AS [value1],COUNT(DISTINCT t.[id]) AS [value2] FROM [doc_bank_card] t` |
+| GeneralFunctionsTest.java#countMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:19 | `SELECT COUNT(t.'id') AS 'value1',COUNT(DISTINCT t.'id') AS 'value2' FROM 'doc_bank_card' t` |
+| GeneralFunctionsTest.java#countORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:19 | `SELECT COUNT(t."id") AS "value1",COUNT(DISTINCT t."id") AS "value2" FROM "doc_bank_card" t` |
+| GeneralFunctionsTest.java#countPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:19 | `SELECT COUNT(t."id") AS "value1",COUNT(DISTINCT t."id") AS "value2" FROM "doc_bank_card" t` |
+| GeneralFunctionsTest.java#maxMinMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:41 | `SELECT MAX(t.[id]) AS [value1],MIN(t.[id]) AS [value2] FROM [doc_bank_card] t` |
+| GeneralFunctionsTest.java#maxMinMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:41 | `SELECT MAX(t.'id') AS 'value1',MIN(t.'id') AS 'value2' FROM 'doc_bank_card' t` |
+| GeneralFunctionsTest.java#maxMinORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:41 | `SELECT MAX(t."id") AS "value1",MIN(t."id") AS "value2" FROM "doc_bank_card" t` |
+| GeneralFunctionsTest.java#maxMinPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:41 | `SELECT MAX(t."id") AS "value1",MIN(t."id") AS "value2" FROM "doc_bank_card" t` |
+| GeneralFunctionsTest.java#minMaxFilterMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:52 | `SELECT MAX(t.'score') AS 'value1',MAX((CASE WHEN t.'title' <> ? THEN t.'score' ELSE NULL END)) AS 'v…` |
+| NumberFunctionsTest.java#avgMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:55 | `SELECT AVG(t.[score]) AS [value1],AVG(DISTINCT t.[score]) AS [value2],AVG(DISTINCT (CASE WHEN t.[tit…` |
+| NumberFunctionsTest.java#avgMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:55 | `SELECT AVG(t.'score') AS 'value1',AVG(DISTINCT t.'score') AS 'value2',AVG(DISTINCT (CASE WHEN t.'tit…` |
+| NumberFunctionsTest.java#avgORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:55 | `SELECT AVG(t."score") AS "value1",AVG(DISTINCT t."score") AS "value2",AVG(DISTINCT (CASE WHEN t."tit…` |
+| NumberFunctionsTest.java#avgPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:55 | `SELECT AVG(t."score") AS "value1",AVG(DISTINCT t."score") AS "value2",AVG(DISTINCT (CASE WHEN t."tit…` |
+| NumberFunctionsTest.java#sumMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:66 | `SELECT SUM(t.[score]) AS [value1],SUM(DISTINCT t.[score]) AS [value2],SUM(DISTINCT t.[score]) AS [va…` |
+| NumberFunctionsTest.java#sumMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:66 | `SELECT SUM(t.'score') AS 'value1',SUM(DISTINCT t.'score') AS 'value2',SUM(DISTINCT t.'score') AS 'va…` |
+| NumberFunctionsTest.java#sumORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:66 | `SELECT SUM(t."score") AS "value1",SUM(DISTINCT t."score") AS "value2",SUM(DISTINCT t."score") AS "va…` |
+| NumberFunctionsTest.java#sumPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:66 | `SELECT SUM(t."score") AS "value1",SUM(DISTINCT t."score") AS "value2",SUM(DISTINCT t."score") AS "va…` |
 | QueryTest.java#query61 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.SubQueries.cs:8 |  |
 | QueryTest.java#query63 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.SubQueries.cs:20 | `SELECT t.'id',t.'stars',t.'title',t.'create_time',(SELECT COUNT(t1.'id') FROM 't_blog' t1 WHERE t1.'…` |
 | QueryTest.java#query63_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.SubQueries.cs:35 | `SELECT t.'id',t.'stars',t.'title',t.'create_time',(SELECT SUM(t1.'star') FROM 't_blog' t1 WHERE t1.'…` |
@@ -2054,8 +2054,8 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey | 骨架 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:144 | `INSERT INTO 'doc_bank_card' ('id','code','type') VALUES (?,?,?) ON DUPLICATE KEY UPDATE 'id' = VALUE…` |
-| GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey2 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/GeneralFunctionsTest.cs:175 |  |
+| GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:144 | `INSERT INTO 'doc_bank_card' ('id','code','type') VALUES (?,?,?) ON DUPLICATE KEY UPDATE 'id' = VALUE…` |
+| GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey2 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:175 |  |
 | InsertOrUpdateTest.java#test1 | 待做 |  | `MERGE INTO [t_user] t1 USING (SELECT ? AS [column1],? AS [column2],? AS [column3],? AS [column4],? A…` |
 | InsertTest.java#insertDuplicateKeyUpdate1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:64 | `INSERT INTO 't_topic_auto' ('stars','title','create_time') VALUES (?,?,?) ON DUPLICATE KEY UPDATE 's…` |
 | InsertTest.java#insertDuplicateKeyUpdate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:69 | `INSERT INTO 't_topic_auto' ('stars','title','create_time') VALUES (?,?,?) ON DUPLICATE KEY UPDATE 's…` |

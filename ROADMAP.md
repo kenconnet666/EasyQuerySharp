@@ -112,7 +112,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [x] 2.2 字符串、数学、通用函数：`Sql.Greatest` / `Least` / `NullIf` / `EqualsNullSafe`。
 - [~] 2.3 日期函数：格式串按方言翻译，加减、取部分、`DateDiff`、`DateTrunc`。
 - [~] 2.4 `Sql.Case`，以及带过滤的聚合，例如 `g.Count(p => p.Paid)`。
-- [ ] 2.5 窗口函数：`Sql.Over.*` 系列，包括 frame、`Ntile` / `PercentRank` / `CumeDist`。
+- [~] 2.5 窗口函数：`Sql.Over.*` 系列，包括 frame、`Ntile` / `PercentRank` / `CumeDist`（API、渲染与 `Part<T,…>` 投影已完成；取值函数省略排序时沿用查询的 ORDER BY 待做）。
 - [~] 2.6 字符串聚合 `StringJoin`，以及 JSON 取值。
 - [ ] 2.7 行锁：`ForUpdate` / `ForShare` / `NoWait` / `SkipLocked`。
 - [~] 2.8 SQL Server 和 Oracle 方言的**渲染部分**，只做 SQL 比对：Java 的三组函数测试（约 100 个用例）在 MySQL、MSSQL、PG、Oracle 上各有一份。实库验证放到 M6。

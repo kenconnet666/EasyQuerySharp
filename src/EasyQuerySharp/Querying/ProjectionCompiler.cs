@@ -35,6 +35,9 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     /// <summary>投影的是整个实体时的元数据（派生表据此按实体物化）；否则为 null。</summary>
     public EntityMetadata? Entity { get; private set; }
 
+    /// <summary>嵌在投影里的整个实体（<c>new { b, Rn = … }</c>）：成员名 → 元数据；它的列以 <c>b.Star</c> 登记在 <see cref="MemberColumns"/>。</summary>
+    public Dictionary<string, EntityMetadata> NestedEntities { get; } = new(StringComparer.Ordinal);
+
     private Expression? _shaped;
     private readonly List<(IncludePlan Plan, EntityBinding Owner)> _includes = [];
 
@@ -79,7 +82,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     private Expression Shape(Expression body, MemberInfo? member, bool topLevel)
     {
         if (translator.BindingOf(body) is { } binding)
-            return binding is DerivedBinding { Entity: null } dto ? ShapeDerivedDto(dto, body.Type, topLevel) : ShapeEntity(binding, body.Type, topLevel);
+            return binding is DerivedBinding { Entity: null } dto ? ShapeDerivedDto(dto, body.Type, topLevel) : ShapeEntity(binding, body.Type, topLevel, member);
 
         switch (body)
         {
@@ -173,7 +176,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     }
 
     // 整个实体：顶层时（u => u）记下实体元数据与成员列；嵌在 DTO 里时（new { u, … }）LEFT JOIN 没连上的行读成 null
-    private Expression ShapeEntity(SourceBinding binding, Type type, bool topLevel)
+    private Expression ShapeEntity(SourceBinding binding, Type type, bool topLevel, MemberInfo? member = null)
     {
         var start = _columns.Count;
         var (entity, columns) = binding switch
@@ -185,9 +188,10 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         foreach (var c in columns)
         {
             var sql = binding is DerivedBinding db ? new ColumnExpr(db.Table, db.MemberColumns[c.PropertyName], c) : ((EntityBinding)binding).EntityTable.Column(c);
-            AddColumn(sql, alias: null, topLevel ? c.PropertyName : null);
+            AddColumn(sql, alias: null, topLevel ? c.PropertyName : member is null ? null : member.Name + "." + c.PropertyName);
         }
         if (topLevel) Entity = entity;
+        else if (member is not null) NestedEntities[member.Name] = entity;
 
         return Expression.Convert(
             Expression.Call(EntityMaterializer.ReadMethod, _reader, Expression.Constant(start), Expression.Constant(entity),
@@ -204,15 +208,30 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         var ordinals = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var (memberName, column) in binding.MemberColumns)
             ordinals[memberName] = AddColumn(new ColumnExpr(binding.Table, column), column, topLevel ? memberName : null, forceAlias: binding.AliasedMembers.Contains(memberName));
+        if (topLevel)
+            foreach (var (name, nested) in binding.NestedEntities) NestedEntities[name] = nested;
 
-        Expression Read(string memberName, Type valueType) => Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(valueType), _reader,
-            Expression.Constant(ordinals[memberName]), Expression.Constant(null, typeof(IValueConverter)));
+        Expression Read(string memberName, Type valueType) =>
+            binding.NestedEntities.TryGetValue(memberName, out var nested) ? ReadNested(memberName, nested, valueType)
+            : Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(valueType), _reader,
+                Expression.Constant(ordinals[memberName]), Expression.Constant(null, typeof(IValueConverter)));
+
+        // 嵌着的实体：它的列登记顺序与元数据一致且连续，从第一列开始整体物化
+        Expression ReadNested(string memberName, EntityMetadata nested, Type valueType)
+        {
+            var columns = nested.Columns.Where(c => ordinals.ContainsKey(memberName + "." + c.PropertyName)).ToList();
+            var start = ordinals[memberName + "." + columns[0].PropertyName];
+            return Expression.Convert(
+                Expression.Call(EntityMaterializer.ReadMethod, _reader, Expression.Constant(start), Expression.Constant(nested),
+                    Expression.Constant((IReadOnlyList<ColumnMetadata>)columns), Expression.Constant(true)),
+                valueType);
+        }
 
         var ctor = type.GetConstructor(Type.EmptyTypes);
         if (ctor is not null)
         {
             var bindings = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(p => p.CanWrite && ordinals.ContainsKey(p.Name))
+                .Where(p => p.CanWrite && (ordinals.ContainsKey(p.Name) || binding.NestedEntities.ContainsKey(p.Name)))
                 .Select(p => (MemberBinding)Expression.Bind(p, Read(p.Name, p.PropertyType)));
             return Expression.MemberInit(Expression.New(ctor), bindings);
         }

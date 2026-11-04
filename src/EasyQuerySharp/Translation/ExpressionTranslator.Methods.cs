@@ -12,6 +12,7 @@ internal sealed partial class ExpressionTranslator
         var method = call.Method;
 
         if (method.DeclaringType == typeof(Sql)) return TranslateSqlMarker(call);
+        if (method.DeclaringType == typeof(Sql.Over)) return TranslateWindow(call);
         if (method.DeclaringType is { } declaring && IsGroupType(declaring)) return TranslateGroupAggregate(call);
         if (TryTranslateCollection(call, out var collection)) return collection;
         if (method.DeclaringType == typeof(string) && method.Name is nameof(string.Contains) or nameof(string.StartsWith) or nameof(string.EndsWith) && call.Object is not null)
