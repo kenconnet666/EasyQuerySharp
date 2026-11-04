@@ -127,6 +127,7 @@ internal sealed partial class ExpressionTranslator
         InExpr { SubQuery: { } sub } i => new InExpr(i.Operand, sub, !i.Negated),
         InExpr i => new InExpr(i.Operand, i.Values!, !i.Negated),
         LikeExpr l => l.Negate(),
+        BlankCheckExpr b => b.Negate(),
         IsNullExpr n => new IsNullExpr(n.Operand, !n.Negated),
         ExistsExpr e => new ExistsExpr(e.Query, !e.Negated),
         NotExpr n => n.Operand,
@@ -234,7 +235,7 @@ internal sealed partial class ExpressionTranslator
     internal static bool IsPredicate(SqlExpr e) => e switch
     {
         BinaryExpr b => b.IsComparison,
-        LogicalExpr or NotExpr or IsNullExpr or InExpr or LikeExpr or ExistsExpr => true,
+        LogicalExpr or NotExpr or IsNullExpr or InExpr or LikeExpr or ExistsExpr or BlankCheckExpr => true,
         FragmentExpr { IsPredicate: true } => true,
         LiteralExpr l => l.Sql is "1 = 1" or "1 = 2",
         _ => false,

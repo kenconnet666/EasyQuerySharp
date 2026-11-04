@@ -287,3 +287,22 @@ public sealed class CastExpr(SqlExpr operand, Type targetType) : SqlExpr
     /// <summary>目标 CLR 类型（可空类型已取底层类型）。</summary>
     public Type TargetType { get; } = Nullable.GetUnderlyingType(targetType) ?? targetType;
 }
+
+/// <summary>
+/// 空串判断（对应 Java 的 isEmpty / isBlank 及其取反，C# 的 <c>string.IsNullOrEmpty</c> / <c>IsNullOrWhiteSpace</c>）：
+/// <c>(x IS NULL OR x = '' [OR LTRIM(x) = ''])</c>，取反为 <c>(x IS NOT NULL AND x &lt;&gt; '' [AND LTRIM(x) &lt;&gt; ''])</c>。
+/// </summary>
+public sealed class BlankCheckExpr(SqlExpr operand, bool whitespace, bool negated) : SqlExpr
+{
+    /// <summary>被判断的表达式。</summary>
+    public SqlExpr Operand { get; } = operand;
+
+    /// <summary>true 时空白字符串也算空（IsNullOrWhiteSpace / isBlank）。</summary>
+    public bool Whitespace { get; } = whitespace;
+
+    /// <summary>true 为"不为空"。</summary>
+    public bool Negated { get; } = negated;
+
+    /// <summary>取反。</summary>
+    public BlankCheckExpr Negate() => new(Operand, Whitespace, !Negated);
+}

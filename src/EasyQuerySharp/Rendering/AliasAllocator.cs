@@ -95,6 +95,7 @@ internal static class AliasAllocator
             case FunctionExpr f: foreach (var a in f.Arguments) CollectExpr(a, tables); break;
             case FragmentExpr f: foreach (var a in f.Arguments) CollectExpr(a, tables); break;
             case CastExpr c: CollectExpr(c.Operand, tables); break;
+            case BlankCheckExpr b: CollectExpr(b.Operand, tables); break;
             case CaseExpr c:
                 foreach (var (when, then) in c.Branches) { CollectExpr(when, tables); CollectExpr(then, tables); }
                 if (c.Else is not null) CollectExpr(c.Else, tables);

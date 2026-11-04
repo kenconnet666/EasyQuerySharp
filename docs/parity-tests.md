@@ -3,14 +3,14 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2338 个用例。
 
-合计：已移植 364、偏离 78、不适用 4、骨架 15、待做 1877。
+合计：已移植 379、偏离 78、不适用 4、骨架 15、待做 1862。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 84 | 20 | 0 | 0 | 298 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 90 | 20 | 0 | 0 | 292 |
 | 分页结果 | `query.page` | M1 | 22 | 4 | 0 | 0 | 0 | 18 |
 | 原生 SQL | `sql.native` | M1 | 50 | 8 | 3 | 0 | 0 | 39 |
 | 删除 | `write.delete` | M1 | 21 | 7 | 1 | 2 | 0 | 11 |
@@ -26,7 +26,7 @@
 | 行锁 | `lock` | M2 | 28 | 0 | 0 | 0 | 0 | 28 |
 | 窗口函数 | `window` | M2 | 44 | 0 | 0 | 0 | 0 | 44 |
 | CTE | `query.cte` | M3 | 11 | 0 | 0 | 0 | 0 | 11 |
-| 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 17 | 2 | 0 | 2 | 62 |
+| 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 26 | 2 | 0 | 2 | 53 |
 | 显式 join | `query.join` | M3 | 88 | 18 | 2 | 1 | 0 | 67 |
 | 无实体的 Map 查询、toMap | `query.map` | M3 | 11 | 2 | 0 | 0 | 0 | 9 |
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 0 | 0 | 0 | 0 | 2 |
@@ -377,12 +377,12 @@
 | QueryTest4.java#testSQLFunc5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest4.cs:81：Java 断言固定日期 2023-05-25（种子数据写入日）；C# 断言与客户端格式化结果一致 |  |
 | QueryTest4.java#testSQLFunc6 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest4.cs:82：同 testSQLFunc5 |  |
 | QueryTest5.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest5.cs:123 | `select 1` |
-| QueryTest7.java#forEachTest1 | 待做 |  |  |
-| QueryTest7.java#testBank1 | 待做 |  | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NOT NULL AND 'id' <> '' AND …` |
-| QueryTest7.java#testBank2 | 待做 |  | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NULL OR 'id' = '' OR LTRIM('…` |
-| QueryTest7.java#testEmpty1 | 待做 |  | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NOT NULL AND 'id' <> '')` |
-| QueryTest7.java#testEmpty2 | 待做 |  | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NULL OR 'id' = '')` |
-| QueryTest7.java#testQuery9 | 待做 |  | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NULL OR 'id' = '' OR LTRIM('…` |
+| QueryTest7.java#forEachTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:82 |  |
+| QueryTest7.java#testBank1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:93 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NOT NULL AND 'id' <> '' AND …` |
+| QueryTest7.java#testBank2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:97 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NULL OR 'id' = '' OR LTRIM('…` |
+| QueryTest7.java#testEmpty1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:101 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NOT NULL AND 'id' <> '')` |
+| QueryTest7.java#testEmpty2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:105 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NULL OR 'id' = '')` |
+| QueryTest7.java#testQuery9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:110 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NULL OR 'id' = '' OR LTRIM('…` |
 | QueryTest9.java#selectCount1 | 待做 |  | `SELECT COUNT(*) FROM 't_topic' WHERE 'id' = ?` |
 | QueryTest9.java#testDsl4 | 待做 |  | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NULL OR 'id' = '')` |
 | QueryTest9.java#testQuery7 | 待做 |  | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'content',t.…` |
@@ -1258,15 +1258,15 @@
 | QueryTest28.java#testQueryAggregate2 | 待做 |  | `SELECT COUNT(*) AS 'value1',AVG(t.'stars') AS 'value2' FROM 't_topic' t WHERE t.'title' LIKE CONCAT(…` |
 | QueryTest3.java#query122 | 待做 |  | `SELECT t.'id' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'deleted' = ? AND t.'id' = t1.'id' LEFT J…` |
 | QueryTest3.java#query123 | 待做 |  | `SELECT DISTINCT t.'id' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'deleted' = ? AND t.'id' = t1.'i…` |
-| QueryTest7.java#testQuery10 | 待做 |  | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
-| QueryTest7.java#testQuery11 | 待做 |  | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
-| QueryTest7.java#testQuery12 | 待做 |  | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
-| QueryTest7.java#testQuery13 | 待做 |  | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
-| QueryTest7.java#testQuery14 | 待做 |  | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
-| QueryTest7.java#testQuery15 | 待做 |  | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
-| QueryTest7.java#testQuery16 | 待做 |  | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
-| QueryTest7.java#testQuery17 | 待做 |  | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
-| QueryTest7.java#testQuery18 | 待做 |  | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:127 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:127 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:132 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:136 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:140 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:144 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:148 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery17 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:152 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest7.cs:156 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
 | QueryTest9.java#havingQueryTest1 | 待做 |  | `SELECT t.'id' AS 'id',COUNT(t.'id') AS 'star',MAX(t.'id') AS 'title' FROM 't_blog' t WHERE t.'delete…` |
 | fork/functions/GroupingSqlTest.java#mysqlWithRollupAndNoCube | 待做 |  |  |
 | fork/functions/GroupingSqlTest.java#plainGroupByIsUnchanged | 待做 |  |  |

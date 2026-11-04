@@ -61,6 +61,8 @@ internal static class MethodTranslators
             new BinaryExpr(Fn(SqlFunctionNames.IndexOf, t.Translate(c.Object!), t.Translate(c.Arguments[0])), SqlBinaryOperator.Subtract, LiteralExpr.One));
 
         // ---------- string 静态方法 ----------
+        Add(s.GetMethod(nameof(string.IsNullOrEmpty), [s]), (t, c) => new BlankCheckExpr(t.Translate(c.Arguments[0]), whitespace: false, negated: false));
+        Add(s.GetMethod(nameof(string.IsNullOrWhiteSpace), [s]), (t, c) => new BlankCheckExpr(t.Translate(c.Arguments[0]), whitespace: true, negated: false));
         Add(s.GetMethod(nameof(string.Compare), [s, s]), (t, c) => Fn(SqlFunctionNames.CompareTo, t.Translate(c.Arguments[0]), t.Translate(c.Arguments[1])));
         foreach (var concat in s.GetMethods(BindingFlags.Public | BindingFlags.Static)
                      .Where(m => m.Name == nameof(string.Concat) && m.GetParameters().All(p => p.ParameterType == s || p.ParameterType == typeof(string[]) || p.ParameterType == typeof(object))))

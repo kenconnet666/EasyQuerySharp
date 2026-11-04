@@ -116,6 +116,7 @@ public sealed class SqlRenderer
             case FunctionExpr f: Dialect.WriteFunction(this, f); break;
             case FragmentExpr f: WriteFragment(f); break;
             case CastExpr c: WriteFragment(new FragmentExpr(Dialect.CastTemplate(c.TargetType), [c.Operand])); break;
+            case BlankCheckExpr b: WriteBlankCheck(b); break;
             case CaseExpr c: WriteCase(c); break;
             case ExistsExpr e: Append(e.Negated ? "NOT EXISTS(" : "EXISTS(").WriteSelect(e.Query).Append(")"); break;
             case SubQueryExpr s: Append("(").WriteSelect(s.Query).Append(")"); break;
@@ -240,6 +241,14 @@ public sealed class SqlRenderer
         });
         Write(b.Right);
         if (!b.IsComparison) Append(")");
+    }
+
+    private void WriteBlankCheck(BlankCheckExpr b)
+    {
+        var (isNull, compare, joiner) = b.Negated ? (" IS NOT NULL", " <> ''", " AND ") : (" IS NULL", " = ''", " OR ");
+        Append("(").Write(b.Operand).Append(isNull).Append(joiner).Write(b.Operand).Append(compare);
+        if (b.Whitespace) Append(joiner).Write(new FunctionExpr(SqlFunctionNames.TrimStart, [b.Operand])).Append(compare);
+        Append(")");
     }
 
     private void WriteLogical(LogicalExpr l)
