@@ -165,9 +165,27 @@ internal sealed partial class ExpressionTranslator
         if (op == SqlBinaryOperator.Add && b.Type == typeof(string))
             return new FunctionExpr(SqlFunctionNames.Concat, [.. Flatten(b, ExpressionType.Add).Select(Translate)]);
 
+        // string.Compare(a, b) > 0 / a.CompareTo(b) <= 0 … → a > b（C# 里字符串只能这样比大小；与 1 / -1 比较时仍按函数翻译）
+        if (op is SqlBinaryOperator.LessThan or SqlBinaryOperator.LessThanOrEqual or SqlBinaryOperator.GreaterThan or SqlBinaryOperator.GreaterThanOrEqual
+            && StringComparison(b.Left) is var (x, y) && IsZero(b.Right))
+        {
+            var (l, r) = TranslatePair(x, y);
+            return new BinaryExpr(l, op, r);
+        }
+
         var (left, right) = TranslatePair(b.Left, b.Right);
         return new BinaryExpr(left, op, right);
     }
+
+    // string.Compare(a, b) 或 a.CompareTo(b) 的两个操作数
+    private static (Expression, Expression)? StringComparison(Expression e) => StripConvert(e) switch
+    {
+        MethodCallExpression { Method.Name: nameof(string.Compare), Object: null, Arguments: [var a, var b] } c when c.Method.DeclaringType == typeof(string) => (a, b),
+        MethodCallExpression { Method.Name: nameof(string.CompareTo), Object: { } a, Arguments: [var b] } c when c.Method.DeclaringType == typeof(string) => (a, b),
+        _ => null,
+    };
+
+    private static bool IsZero(Expression e) => !ClientEvaluator.MustTranslate(e) && ClientEvaluator.Evaluate(e) is 0;
 
     private SqlExpr TranslateEquality(BinaryExpression b)
     {

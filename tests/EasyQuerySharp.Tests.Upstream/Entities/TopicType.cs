@@ -85,3 +85,24 @@ public class TopicTypeVO
 
     public DateTime? CreateTime { get; set; }
 }
+
+/// <summary>对应 Java：entity/TopicTypeArrayJson / TopicTypeArrayJsonJackson（对象与对象数组都存成 JSON 列）。</summary>
+[Table("t_topic_type_array")]
+public class TopicTypeArrayJson
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public int? Stars { get; set; }
+
+    [Column(Converter = typeof(JsonValueConverter<TopicTypeJsonValue>))]
+    public TopicTypeJsonValue? Title { get; set; }
+
+    [Column(Converter = typeof(JsonValueConverter<List<TopicTypeJsonValue>>))]
+    public List<TopicTypeJsonValue>? Title2 { get; set; }
+
+    [Column("topic_type")]
+    public int? TopicType { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+}

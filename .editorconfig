@@ -40,6 +40,10 @@ dotnet_diagnostic.CA1310.severity = none
 dotnet_diagnostic.CA1311.severity = none
 # 表达式树里不能用 Span，Substring 拼接会翻译成 SQL
 dotnet_diagnostic.CA1845.severity = none
+# 单字符的 Contains / StartsWith 写成字符串，翻译成 LIKE 时与 Java 用例一致
+dotnet_diagnostic.CA1847.severity = none
+dotnet_diagnostic.CA1865.severity = none
+dotnet_diagnostic.CA1866.severity = none
 
 [*.cs]
 # 返回类型保持抽象（SqlExpr / Expression），便于后续扩展分支；这条性能建议在这里只是噪音

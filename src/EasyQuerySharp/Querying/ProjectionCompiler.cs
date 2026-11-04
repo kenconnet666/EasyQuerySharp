@@ -224,16 +224,19 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     {
         var sql = translator.Translate(body);
         var converter = (sql as ColumnExpr)?.Column?.Converter;
-        var ordinal = AddColumn(sql, member is null ? null : ColumnName(member), member?.Name);
+        // 分组投影里的组内列（g.Column(..)）按普通列处理：同名不写 AS（Java 的 groupTable() 列）
+        var groupColumn = ExpressionTranslator.StripConvert(body) is MethodCallExpression { Method.Name: nameof(IGroup<object, object>.Column) } call
+                          && ExpressionTranslator.IsGroupType(call.Method.DeclaringType!);
+        var ordinal = AddColumn(sql, member is null ? null : ColumnName(member), member?.Name, plainColumn: groupColumn);
         return Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(body.Type), _reader, Expression.Constant(ordinal),
             Expression.Constant(converter, typeof(IValueConverter)));
     }
 
     // 返回列序号；源列与别名同名时不写 AS（分组投影总写 AS；DTO 再投影沿用内层是否写了 AS，与 Java 一致）
-    private int AddColumn(SqlExpr sql, string? alias, string? memberName, bool forceAlias = false)
+    private int AddColumn(SqlExpr sql, string? alias, string? memberName, bool forceAlias = false, bool plainColumn = false)
     {
         var columnName = (sql as ColumnExpr)?.Name;
-        if (alias == columnName && !forceAlias && !alwaysAlias) alias = null;
+        if (alias == columnName && !forceAlias && (!alwaysAlias || plainColumn)) alias = null;
         _columns.Add(new SelectColumn(sql, alias));
         if (memberName is not null && (alias ?? columnName) is { } output) MemberColumns.TryAdd(memberName, output);
         if (memberName is not null && alias is not null) AliasedMembers.Add(memberName);
