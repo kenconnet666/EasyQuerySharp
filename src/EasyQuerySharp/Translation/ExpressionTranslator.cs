@@ -61,6 +61,8 @@ internal sealed partial class ExpressionTranslator
         ParameterExpression p => _scope.GetValueOrDefault(p),
         // 多表元组的 e.Item2 → 第二个表来源
         MemberExpression { Expression: { } inner } m when BindingOf(inner) is TupleBinding tuple => tuple.Item(m.Member.Name),
+        // 对一导航 x.User → 隐式 JOIN 的目标表
+        MemberExpression m => ToOneNavigation(m),
         _ => null,
     };
 
@@ -88,6 +90,7 @@ internal sealed partial class ExpressionTranslator
     private SqlExpr TranslateMember(MemberExpression m)
     {
         if (TryTranslateGroupKey(m) is { } key) return key;
+        if (TryTranslateCollectionCount(m) is { } count) return count;
         if (m.Expression is not null && BindingOf(m.Expression) is { } binding and not GroupBinding and not TupleBinding)
             return binding.Member(m.Member) ?? throw Unsupported(m, $"{m.Member.DeclaringType?.Name}.{m.Member.Name} 不是映射到列的成员");
 

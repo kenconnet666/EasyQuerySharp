@@ -29,7 +29,11 @@ public sealed class EasyDb
         Options = options;
         Metadata = new MetadataRegistry(options.NameConversion);
         Executor = new SqlExecutor(this);
+        CodeFirst = new Schema.CodeFirst(this);
     }
+
+    /// <summary>按实体建表、删表（code-first）。</summary>
+    public Schema.CodeFirst CodeFirst { get; }
 
     /// <summary>配置（创建后不要再修改）。</summary>
     public EasyDbOptions Options { get; }
@@ -77,29 +81,21 @@ public sealed class EasyDb
         return r => Materialization.EntityMaterializer.ReadByName<T>(r, entity);
     }
 
-    /// <summary>插入一个实体。</summary>
-    public InsertCommand<T> Insert<T>(T entity) where T : class => new(this, [entity]);
-
-    /// <summary>插入多个实体（一条多行 INSERT）。</summary>
-    public InsertCommand<T> Insert<T>(IEnumerable<T> entities) where T : class => new(this, entities.ToList());
+    // 单个实体、数组、List 都走同一个 params 集合签名：避免 Insert<T>(T) 把数组 / 列表当成实体
+    /// <summary>插入一个或多个实体（每个一条 INSERT，同一连接上依次执行）。</summary>
+    public InsertCommand<T> Insert<T>(params IEnumerable<T> entities) where T : class => new(this, entities.ToList());
 
     /// <summary>按条件更新：<c>db.Update&lt;T&gt;().Set(…).Where(…)</c>。</summary>
     public UpdateCommand<T> Update<T>() where T : class => new(this, null);
 
-    /// <summary>按主键整行更新一个实体。</summary>
-    public UpdateCommand<T> Update<T>(T entity) where T : class => new(this, [entity]);
-
-    /// <summary>按主键整行更新多个实体（每个一条 UPDATE）。</summary>
-    public UpdateCommand<T> Update<T>(IEnumerable<T> entities) where T : class => new(this, entities.ToList());
+    /// <summary>按主键整行更新一个或多个实体（每个一条 UPDATE）。</summary>
+    public UpdateCommand<T> Update<T>(params IEnumerable<T> entities) where T : class => new(this, entities.ToList());
 
     /// <summary>按条件删除：<c>db.Delete&lt;T&gt;().Where(…)</c>。有逻辑删除列时改写成更新。</summary>
     public DeleteCommand<T> Delete<T>() where T : class => new(this, null);
 
-    /// <summary>按主键删除实体。</summary>
-    public DeleteCommand<T> Delete<T>(T entity) where T : class => new(this, [entity]);
-
-    /// <summary>按主键删除多个实体。</summary>
-    public DeleteCommand<T> Delete<T>(IEnumerable<T> entities) where T : class => new(this, entities.ToList());
+    /// <summary>按主键删除一个或多个实体。</summary>
+    public DeleteCommand<T> Delete<T>(params IEnumerable<T> entities) where T : class => new(this, entities.ToList());
 
     /// <summary>开启环境事务（见 <see cref="EasyTransaction"/>）。</summary>
     public EasyTransaction BeginTransaction(IsolationLevel isolation = IsolationLevel.Unspecified) => new(this, isolation);

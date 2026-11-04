@@ -9,6 +9,7 @@ namespace EasyQuerySharp.Metadata;
 public sealed class MetadataRegistry(NameConversion nameConversion)
 {
     private readonly ConcurrentDictionary<Type, EntityMetadata> _cache = new();
+    private readonly ConcurrentDictionary<(Type, string), NavigationMetadata?> _navigations = new();
 
     /// <summary>当前的命名约定。</summary>
     public NameConversion NameConversion { get; } = nameConversion;
@@ -19,6 +20,51 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
     /// <summary>取实体元数据（首次访问时构建）。</summary>
     public EntityMetadata Get<T>() => Get(typeof(T));
 
+    /// <summary>取实体上名为 <paramref name="property"/> 的导航；不是导航时返回 null。</summary>
+    public NavigationMetadata? FindNavigation(EntityMetadata entity, string property) =>
+        _navigations.GetOrAdd((entity.Type, property), key => entity.NavigationProperties.TryGetValue(key.Item2, out var nav)
+            ? ResolveNavigation(entity, nav.Property, nav.Attribute)
+            : null);
+
+    private NavigationMetadata ResolveNavigation(EntityMetadata self, PropertyInfo property, NavigateAttribute attribute)
+    {
+        var target = Get(ElementType(property.PropertyType));
+        IReadOnlyList<ColumnMetadata> Columns(EntityMetadata entity, string[] names) =>
+            names.Length == 0 ? entity.KeyColumns : names.Select(entity.GetColumn).ToList();
+
+        var mapping = attribute.Mapping is null ? null : Get(attribute.Mapping);
+        if (attribute.Relation == RelationType.ManyToMany && mapping is null)
+            throw new InvalidOperationException($"{self.Type.Name}.{property.Name} 是多对多导航，需要指定 Mapping（中间表实体）");
+
+        return new NavigationMetadata(property, attribute, self, target,
+            Columns(self, attribute.SelfProperties), Columns(target, attribute.TargetProperties),
+            mapping,
+            mapping is null ? [] : attribute.SelfMappingProperties.Select(mapping.GetColumn).ToList(),
+            mapping is null ? [] : attribute.TargetMappingProperties.Select(mapping.GetColumn).ToList(),
+            ExtraFilterOf(self.Type, property, attribute.ExtraFilter));
+    }
+
+    // 导航上的固定条件：本实体上的静态属性 / 字段，类型是 Expression<Func<目标, bool>>
+    private static System.Linq.Expressions.LambdaExpression? ExtraFilterOf(Type owner, PropertyInfo navigation, string? memberName)
+    {
+        if (memberName is null) return null;
+        const BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+        var value = owner.GetProperty(memberName, flags)?.GetValue(null) ?? owner.GetField(memberName, flags)?.GetValue(null);
+        return value as System.Linq.Expressions.LambdaExpression
+               ?? throw new InvalidOperationException($"{owner.Name}.{navigation.Name} 的 ExtraFilter '{memberName}' 必须是返回 Expression<Func<目标, bool>> 的静态成员");
+    }
+
+    /// <summary>集合类型的元素类型；不是集合时返回类型本身。</summary>
+    internal static Type ElementType(Type type)
+    {
+        if (type.IsArray) return type.GetElementType()!;
+        if (type == typeof(string)) return type;
+        var enumerable = type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>)
+            ? type
+            : type.GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+        return enumerable?.GetGenericArguments()[0] ?? type;
+    }
+
     private EntityMetadata Build(Type type)
     {
         var table = type.GetCustomAttribute<TableAttribute>();
@@ -27,8 +73,14 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
         ColumnMetadata? logicDeleteColumn = null;
 
         var ignored = table?.IgnoreProperties ?? [];
+        var navigations = new Dictionary<string, (PropertyInfo, NavigateAttribute)>(StringComparer.Ordinal);
         foreach (var property in OrderedProperties(type))
         {
+            if (property.GetCustomAttribute<NavigateAttribute>() is { } navigate)
+            {
+                navigations[property.Name] = (property, navigate);
+                continue;
+            }
             if (!IsMappable(property) || ignored.Contains(property.Name, StringComparer.OrdinalIgnoreCase)) continue;
             var attr = property.GetCustomAttribute<ColumnAttribute>();
             var column = new ColumnMetadata(property, attr?.Name ?? NameConversion.Convert(property.Name))
@@ -56,6 +108,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
         {
             LogicDelete = logicDelete,
             LogicDeleteColumn = logicDeleteColumn,
+            NavigationProperties = navigations,
         };
     }
 

@@ -55,6 +55,54 @@ public abstract class SqlDialect
     public virtual void WriteLike(SqlRenderer renderer, LikeExpr predicate) =>
         renderer.Write(predicate.Operand).Append(predicate.Negated ? " NOT LIKE " : " LIKE ").Write(predicate.Pattern);
 
+    // ---------- DDL（code-first）----------
+
+    /// <summary>
+    /// 建表语句。默认是标准写法：每列一行 <c>"列" 类型 NULL|NOT NULL</c>，最后是主键约束；MySQL 覆盖成 Java 版的格式。
+    /// </summary>
+    public virtual string CreateTableSql(Metadata.EntityMetadata entity)
+    {
+        var lines = entity.Columns.Select(c => $"{QuoteIdentifier(c.Name)} {ColumnType(c)} {(IsNullable(c) ? "NULL" : "NOT NULL")}").ToList();
+        if (entity.KeyColumns.Count > 0) lines.Add($"PRIMARY KEY ({string.Join(",", entity.KeyColumns.Select(k => QuoteIdentifier(k.Name)))})");
+        return $"CREATE TABLE IF NOT EXISTS {QualifiedTable(entity)} ({string.Join(", ", lines)})";
+    }
+
+    /// <summary>删表语句（表不存在时不报错）。</summary>
+    public virtual string DropTableIfExistsSql(Metadata.EntityMetadata entity) => $"DROP TABLE IF EXISTS {QualifiedTable(entity)}";
+
+    /// <summary>列的数据库类型：<see cref="Metadata.ColumnAttribute.DbType"/> 优先，否则按 CLR 类型映射（<see cref="ClrColumnType"/>）。</summary>
+    public string ColumnType(Metadata.ColumnMetadata column) =>
+        column.DbType ?? ClrColumnType(Nullable.GetUnderlyingType(column.Converter?.ProviderType ?? column.ClrType) ?? column.Converter?.ProviderType ?? column.ClrType, column);
+
+    /// <summary>CLR 类型到列类型的默认映射。默认用标准 SQL 类型名。</summary>
+    protected virtual string ClrColumnType(Type type, Metadata.ColumnMetadata column) => type switch
+    {
+        _ when type == typeof(string) => "VARCHAR(255)",
+        _ when type == typeof(int) || type.IsEnum => "INTEGER",
+        _ when type == typeof(long) => "BIGINT",
+        _ when type == typeof(short) => "SMALLINT",
+        _ when type == typeof(byte) => "SMALLINT",
+        _ when type == typeof(bool) => "BOOLEAN",
+        _ when type == typeof(decimal) => "DECIMAL(16,2)",
+        _ when type == typeof(double) => "DOUBLE PRECISION",
+        _ when type == typeof(float) => "REAL",
+        _ when type == typeof(DateTime) => "TIMESTAMP",
+        _ when type == typeof(DateTimeOffset) => "TIMESTAMP WITH TIME ZONE",
+        _ when type == typeof(DateOnly) => "DATE",
+        _ when type == typeof(TimeOnly) || type == typeof(TimeSpan) => "TIME",
+        _ when type == typeof(Guid) => "CHAR(36)",
+        _ when type == typeof(byte[]) => "BLOB",
+        _ => throw new NotSupportedException($"{column} 的类型 {type.Name} 没有默认的列类型，请用 [Column(DbType = …)] 指定"),
+    };
+
+    /// <summary>列是否可空：主键与非可空值类型不可空，其余可空（与 Java 版一致）。</summary>
+    protected static bool IsNullable(Metadata.ColumnMetadata column) =>
+        !column.IsPrimaryKey && (!column.ClrType.IsValueType || Nullable.GetUnderlyingType(column.ClrType) is not null);
+
+    /// <summary>带 schema 的表名。</summary>
+    protected string QualifiedTable(Metadata.EntityMetadata entity) =>
+        entity.Schema is null ? QuoteIdentifier(entity.TableName) : QuoteIdentifier(entity.Schema) + "." + QuoteIdentifier(entity.TableName);
+
     /// <summary>写一个函数调用：查函数表，没有登记的按 <c>NAME(a,b)</c> 输出。</summary>
     public void WriteFunction(SqlRenderer renderer, FunctionExpr functionCall)
     {

@@ -41,6 +41,10 @@ public sealed class EntityMetadata
     /// <summary>逻辑删除的取值方式。</summary>
     public LogicDeleteAttribute? LogicDelete { get; internal set; }
 
+    /// <summary>声明了 <see cref="NavigateAttribute"/> 的属性（未解析；解析后的信息由 <see cref="MetadataRegistry.FindNavigation"/> 给出）。</summary>
+    internal IReadOnlyDictionary<string, (System.Reflection.PropertyInfo Property, NavigateAttribute Attribute)> NavigationProperties { get; init; } =
+        new Dictionary<string, (System.Reflection.PropertyInfo, NavigateAttribute)>();
+
     /// <summary>创建实体实例（需要无参构造函数）。</summary>
     internal Func<object> Factory { get; }
 

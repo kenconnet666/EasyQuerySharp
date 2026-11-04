@@ -1,0 +1,64 @@
+namespace EasyQuerySharp.Metadata;
+
+/// <summary>导航关系的类型。</summary>
+public enum RelationType
+{
+    /// <summary>一对一：本表的键对应目标表的键。</summary>
+    OneToOne,
+
+    /// <summary>多对一：本表的外键对应目标表的主键。</summary>
+    ManyToOne,
+
+    /// <summary>一对多：本表的主键对应目标表的外键，属性是集合。</summary>
+    OneToMany,
+
+    /// <summary>多对多：经中间表关联，属性是集合。</summary>
+    ManyToMany,
+}
+
+/// <summary>
+/// 把属性声明为导航（对应 Java 的 @Navigate）。导航可以直接写在查询里：
+/// 对一导航 <c>card.User!.Name</c> 生成隐式 JOIN，集合导航 <c>user.BankCards.Any(c => …)</c> 生成隐式子查询。
+/// 未写的键默认取主键：对一导航的 <see cref="TargetProperties"/>、一对多的 <see cref="SelfProperties"/>。
+/// </summary>
+/// <example><code>
+/// [Navigate(RelationType.ManyToOne, SelfProperties = [nameof(Uid)])]
+/// public SysUser? User { get; set; }
+///
+/// [Navigate(RelationType.OneToMany, TargetProperties = [nameof(SysBankCard.Uid)])]
+/// public List&lt;SysBankCard&gt;? BankCards { get; set; }
+///
+/// [Navigate(RelationType.ManyToMany, Mapping = typeof(UserRole),
+///     SelfMappingProperties = [nameof(UserRole.UserId)], TargetMappingProperties = [nameof(UserRole.RoleId)])]
+/// public List&lt;Role&gt;? Roles { get; set; }
+/// </code></example>
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class NavigateAttribute(RelationType relation) : Attribute
+{
+    /// <summary>关系类型。</summary>
+    public RelationType Relation { get; } = relation;
+
+    /// <summary>本表参与关联的属性（多个为复合键）；不写时取主键。</summary>
+    public string[] SelfProperties { get; init; } = [];
+
+    /// <summary>目标表参与关联的属性；不写时取主键。</summary>
+    public string[] TargetProperties { get; init; } = [];
+
+    /// <summary>多对多的中间表实体。</summary>
+    public Type? Mapping { get; init; }
+
+    /// <summary>中间表里对应本表的属性。</summary>
+    public string[] SelfMappingProperties { get; init; } = [];
+
+    /// <summary>中间表里对应目标表的属性。</summary>
+    public string[] TargetMappingProperties { get; init; } = [];
+
+    /// <summary>对一导航是否必然存在：为 true 时隐式 JOIN 用 INNER JOIN，否则 LEFT JOIN（对应 Java 的 required）。</summary>
+    public bool Required { get; init; }
+
+    /// <summary>
+    /// 导航上的固定条件：本实体上一个返回 <c>Expression&lt;Func&lt;目标, bool&gt;&gt;</c> 的静态属性或字段的名字
+    /// （对应 Java 的 extraFilter）。用 <c>nameof</c> 引用。
+    /// </summary>
+    public string? ExtraFilter { get; init; }
+}

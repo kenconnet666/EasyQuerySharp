@@ -43,7 +43,7 @@ internal sealed partial class ExpressionTranslator
 
         SqlExpr? filter = null;
         if (filters.Count > 0)
-            filter = LogicalExpr.And(filters.AsEnumerable().Reverse().Select(f => ElementPredicate(f, group)));
+            filter = LogicalExpr.And(filters.AsEnumerable().Reverse().Select(f => ElementPredicate(f, group.Element)));
 
         SqlExpr Value(int index, SqlExpr otherwise)
         {
@@ -77,9 +77,4 @@ internal sealed partial class ExpressionTranslator
         }
     }
 
-    private SqlExpr ElementPredicate(LambdaExpression lambda, GroupBinding group)
-    {
-        _scope[lambda.Parameters[0]] = group.Element;
-        return TranslatePredicate(lambda.Body);
-    }
 }

@@ -36,6 +36,7 @@ internal static class QueryCompiler
             {
                 query = new SelectQuery(binding.Table);
                 query.Where.AddRange(filters);
+                translator.Context = new TranslationContext(db.Metadata, table => Filters(db, state, new EntityBinding(table)), query);
                 continue;
             }
 
