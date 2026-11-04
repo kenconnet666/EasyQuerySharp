@@ -269,6 +269,11 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
                 valueType);
         }
 
+        // Map：每个键按原样放回字典
+        if (IsMap(type))
+            return Expression.ListInit(Expression.New(type),
+                binding.MemberColumns.Keys.Select(k => Expression.ElementInit(type.GetMethod("Add")!, Expression.Constant(k), Read(k, typeof(object)))));
+
         var ctor = type.GetConstructor(Type.EmptyTypes);
         if (ctor is not null)
         {

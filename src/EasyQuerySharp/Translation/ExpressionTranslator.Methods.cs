@@ -14,6 +14,12 @@ internal sealed partial class ExpressionTranslator
         if (method.DeclaringType == typeof(Sql)) return TranslateSqlMarker(call);
         if (method.DeclaringType == typeof(Sql.Over)) return TranslateWindow(call);
         if (method.DeclaringType is { } declaring && IsGroupType(declaring)) return TranslateGroupAggregate(call);
+        // Map 投影之后再过滤：d["aa"] 是派生表里别名为 aa 的列（Java 的 o.get("aa")）
+        if (method.Name == "get_Item" && call is { Object: { } map, Arguments: [var keyArg] } && BindingOf(map) is DerivedBinding derived
+            && ClientEvaluator.Evaluate(keyArg) is string key)
+            return derived.MemberColumns.TryGetValue(key, out var mapColumn)
+                ? new ColumnExpr(derived.Table, mapColumn)
+                : throw Unsupported(call, $"Map 投影里没有键 {key}");
         if (TryTranslateCollection(call, out var collection)) return collection;
         if (TryTranslateCollectionStringJoin(call, out var joined)) return joined;
         if (method.DeclaringType == typeof(string) && method.Name is nameof(string.Contains) or nameof(string.StartsWith) or nameof(string.EndsWith) && call.Object is not null)
