@@ -225,6 +225,8 @@ public sealed class SqlRenderer
     private void WriteBinary(BinaryExpr b)
     {
         if (!b.IsComparison) Append("(");
+        // Java 把"列 比较 函数"写成原生片段，前面多一个空格（WHERE  t.`a` = IFNULL(…)）；右边是子查询、列、值时没有
+        else if (b.Left is ColumnExpr && b.Right is FunctionExpr or FragmentExpr { IsPredicate: false } or CaseExpr or CastExpr) Append(" ");
         Write(b.Left);
         Append(b.Operator switch
         {

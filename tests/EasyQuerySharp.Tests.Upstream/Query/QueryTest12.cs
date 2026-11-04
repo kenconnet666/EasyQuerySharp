@@ -189,10 +189,10 @@ public sealed partial class QueryTest12(MySqlFixture fixture) : MySqlTest(fixtur
         listen.AssertSql("SELECT MIN(case t.`score` when ? then 1 else 0 end) AS `score` FROM `t_blog` t WHERE t.`deleted` = ? GROUP BY t.`id`");
     }
 
-    // Java 在 eq(表达式) 时多写了一个空格（AND  t.`title`），C# 是单个空格
-    [Theory, Upstream("QueryTest12.java#testSelectPropTypeColumn3", Deviation = "Java 的 WHERE 里多一个空格（AND  t.`title` = SUBSTR(..)），C# 是单个空格"),
-     Upstream("QueryTest12.java#testSelectPropTypeColumn4", Deviation = "同 testSelectPropTypeColumn3"),
-     Upstream("QueryTest12.java#testSelectPropTypeColumn5", Deviation = "同 testSelectPropTypeColumn3"),
+    // "列 = 函数" 前面多一个空格（与 Java 一致）
+    [Theory, Upstream("QueryTest12.java#testSelectPropTypeColumn3"),
+     Upstream("QueryTest12.java#testSelectPropTypeColumn4"),
+     Upstream("QueryTest12.java#testSelectPropTypeColumn5"),
      Upstream("QueryTest12.java#testSelectPropTypeColumn6")]
     [InlineData(1)]
     [InlineData(2)]
@@ -209,8 +209,8 @@ public sealed partial class QueryTest12(MySqlFixture fixture) : MySqlTest(fixtur
         await query.Select(b => new BlogEntity { Score = b.Id == "123" ? 1m : 2m }).ToListAsync(Ct);
         var where = variant switch
         {
-            1 => "t.`title` = SUBSTR(t.`title`,2,2)",
-            2 => "t.`title` = (CASE WHEN t.`title` = t.`id` THEN ? ELSE ? END)",
+            1 => " t.`title` = SUBSTR(t.`title`,2,2)",
+            2 => " t.`title` = (CASE WHEN t.`title` = t.`id` THEN ? ELSE ? END)",
             _ => "(CASE WHEN t.`title` = t.`id` THEN ? ELSE ? END) = t.`title`",
         };
         listen.AssertSql("SELECT (CASE WHEN t.`id` = ? THEN ? ELSE ? END) AS `score` FROM `t_blog` t WHERE t.`deleted` = ? AND " + where);

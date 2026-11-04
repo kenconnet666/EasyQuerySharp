@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2338 个用例。
 
-合计：已移植 745、偏离 105、不适用 16、骨架 15、待做 1457。
+合计：已移植 750、偏离 100、不适用 16、骨架 15、待做 1457。
 
 ## 按能力
 
@@ -16,9 +16,9 @@
 | 删除 | `write.delete` | M1 | 21 | 7 | 1 | 2 | 0 | 11 |
 | 插入 | `write.insert` | M1 | 48 | 28 | 0 | 0 | 1 | 19 |
 | 更新 | `write.update` | M1 | 50 | 20 | 3 | 0 | 0 | 27 |
-| CASE WHEN | `expr.case` | M2 | 27 | 9 | 7 | 0 | 0 | 11 |
+| CASE WHEN | `expr.case` | M2 | 27 | 12 | 4 | 0 | 0 | 11 |
 | 日期函数 | `func.date` | M2 | 100 | 35 | 2 | 4 | 0 | 59 |
-| 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 24 | 4 | 0 | 0 | 31 |
+| 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 26 | 2 | 0 | 0 | 31 |
 | 字符串聚合（joining） | `func.joining` | M2 | 29 | 5 | 1 | 0 | 5 | 18 |
 | JSON 函数 | `func.json` | M2 | 12 | 0 | 0 | 0 | 0 | 12 |
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
@@ -705,9 +705,9 @@
 | QueryTest12.java#testSelectPropTypeColumn10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:245 | `SELECT SUM((CASE WHEN t.'id' = ? THEN ? ELSE ? END)) AS 'star',MIN(case t.'score' when ? then 1 else…` |
 | QueryTest12.java#testSelectPropTypeColumn11 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:258：参数类型：C# 条件表达式两个分支同类型，ELSE 的 2 是 decimal（Java 是 String） | `SELECT SUM((CASE WHEN t.'id' = ? THEN t.'score' ELSE ? END)) AS 'star' FROM 't_blog' t WHERE t.'dele…` |
 | QueryTest12.java#testSelectPropTypeColumn12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:268 | `SELECT SUM((CASE WHEN t.'id' = ? THEN t.'score' ELSE (t.'status' * ?) END)) AS 'star' FROM 't_blog' …` |
-| QueryTest12.java#testSelectPropTypeColumn3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:193：Java 的 WHERE 里多一个空格（AND  t.'title' = SUBSTR(..)），C# 是单个空格 | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
-| QueryTest12.java#testSelectPropTypeColumn4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:194：同 testSelectPropTypeColumn3 | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
-| QueryTest12.java#testSelectPropTypeColumn5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:195：同 testSelectPropTypeColumn3 | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
+| QueryTest12.java#testSelectPropTypeColumn3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:193 | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
+| QueryTest12.java#testSelectPropTypeColumn4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:194 | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
+| QueryTest12.java#testSelectPropTypeColumn5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:195 | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
 | QueryTest12.java#testSelectPropTypeColumn6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:196 | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
 | QueryTest12.java#testSelectPropTypeColumn7 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:220：参数类型：C# 条件表达式两个分支同类型（都是字符串），Java 是 Integer 与 String | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
 | QueryTest12.java#testSelectPropTypeColumn8 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:221：同 testSelectPropTypeColumn7 | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
@@ -853,7 +853,7 @@
 | QueryTest11.java#testx27 | 待做 |  | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE IFNULL('topic_type'…` |
 | QueryTest11.java#testx28 | 待做 |  | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE IFNULL('topic_type'…` |
 | QueryTest17.java#testOptional1 | 待做 |  |  |
-| QueryTest18.java#rangeTest1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Ranges.cs:26：右端为函数时 Java 渲染 'AND  x <= IFNULL(...)'（两个空格），C# 一个空格 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest18.java#rangeTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Ranges.cs:26 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest18.java#rangeTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Ranges.cs:58 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest18.java#test15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.More.cs:17 |  |
 | QueryTest18.java#test1_0 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:11 | `SELECT IFNULL(t.'id',?) AS 'id' FROM 't_topic' t WHERE t.'id' IS NULL` |
@@ -870,7 +870,7 @@
 | QueryTest21.java#joinOrderTest2 | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id' FROM 'doc_bank_card' t LEFT JOIN 'doc_user' t1 O…` |
 | QueryTest21.java#joinOrderTest3 | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id' FROM 'doc_bank_card' t LEFT JOIN 'doc_user' t1 O…` |
 | QueryTest21.java#typeTest | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest23.java#testAdd | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest23.cs:214：Java 在子查询的 WHERE 后多一个空格（WHERE  t.'id' = …），C# 一个空格 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
+| QueryTest23.java#testAdd | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest23.cs:214 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
 | QueryTest24.java#test13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest24.cs:71 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest24.java#testContains4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest24.cs:44 | `SELECT t.'title' AS 'title',IFNULL(t.'content',?) AS 'content' FROM 't_blog' t WHERE t.'deleted' = ?` |
 | QueryTest27.java#staticTestCustomFunction3 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |

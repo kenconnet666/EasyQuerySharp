@@ -22,8 +22,8 @@ public sealed partial class QueryTest18
         listen.AssertParams("false(Boolean)" + parameters);
     }
 
-    // 区间右端是函数时 Java 在 AND 后多一个空格（原生片段拼接的产物），C# 只有一个空格
-    [Fact, Upstream("QueryTest18.java#rangeTest1", Deviation = "右端为函数时 Java 渲染 'AND  x <= IFNULL(...)'（两个空格），C# 一个空格")]
+    // 区间右端是函数时 AND 后多一个空格（与 Java 一致）
+    [Fact, Upstream("QueryTest18.java#rangeTest1")]
     public async Task RangeTest1()
     {
         await AssertRange(b => (b.CreateTime ?? Time1).RangeClosed(Time1, Time2),
@@ -31,7 +31,7 @@ public sealed partial class QueryTest18
         await AssertRange(b => b.CreateTime.RangeClosed(Time1, Time2),
             " AND (`create_time` >= ? AND `create_time` <= ?)", ",2021-01-01T01:01(LocalDateTime),2022-01-01T01:01(LocalDateTime)");
         await AssertRange(b => b.CreateTime.RangeClosed(b.UpdateTime, b.UpdateTime ?? new DateTime(2023, 1, 1, 1, 1, 0)),
-            " AND (`create_time` >= `update_time` AND `create_time` <= IFNULL(`update_time`,?))", ",2023-01-01T01:01(LocalDateTime)");
+            " AND (`create_time` >= `update_time` AND  `create_time` <= IFNULL(`update_time`,?))", ",2023-01-01T01:01(LocalDateTime)");
         await AssertRange(b => Time1.RangeClosed(b.CreateTime, b.UpdateTime) && Time1.RangeClosed(b.CreateTime, b.UpdateTime ?? Time2),
             " AND (? >= `create_time` AND ? <= `update_time`) AND (? >= `create_time` AND ? <= IFNULL(`update_time`,?))",
             ",2021-01-01T01:01(LocalDateTime),2021-01-01T01:01(LocalDateTime),2021-01-01T01:01(LocalDateTime),2021-01-01T01:01(LocalDateTime),2022-01-01T01:01(LocalDateTime)");

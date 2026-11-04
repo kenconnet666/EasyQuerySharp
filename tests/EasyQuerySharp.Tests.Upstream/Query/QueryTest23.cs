@@ -39,7 +39,7 @@ public sealed class QueryTest23(MySqlFixture fixture) : MySqlTest(fixture)
     public async Task FetcherOrder() =>
         Assert.NotEmpty(await Db.Query<BlogEntity>().Select(b => new Draft<decimal?>(Sql.Raw<decimal?>("({0}+{1})/{2}", b.Score, b.Star, b.Order))).ToListAsync(Ct));
 
-    [Fact, Upstream("QueryTest23.java#testAddMulty"), Upstream("QueryTest23.java#testAddMulty2")]
+    [Fact, Upstream("QueryTest23.java#testAddMulty")]
     public async Task TestAddMulty()
     {
         using var listen = SqlCapture.Listen();
@@ -211,13 +211,13 @@ public sealed class QueryTest23(MySqlFixture fixture) : MySqlTest(fixture)
     public void Subquery() { }
 
     // 子查询里引用外层的列做分组、HAVING、排序
-    [Fact, Upstream("QueryTest23.java#testAdd", Deviation = "Java 在子查询的 WHERE 后多一个空格（WHERE  t.`id` = …），C# 一个空格")]
+    [Fact, Upstream("QueryTest23.java#testAdd")]
     public async Task TestAdd()
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<BlogEntity>().Where(b => b.Id == "123" && Sql.Exists(Db.Query<Topic>().Where(t => b.Id == (t.Id ?? "1")).GroupBy(t => t.Id)
             .Having(g => Sql.Count(b.Id) > 1L).OrderBy(g => b.Id).Select(g => g.Key))).ToListAsync(Ct);
-        listen.AssertSql("SELECT t.`id`,t.`create_time`,t.`update_time`,t.`create_by`,t.`update_by`,t.`deleted`,t.`title`,t.`content`,t.`url`,t.`star`,t.`publish_time`,t.`score`,t.`status`,t.`order`,t.`is_top`,t.`top` FROM `t_blog` t WHERE t.`deleted` = ? AND t.`id` = ? AND EXISTS(SELECT 1 FROM `t_topic` t1 WHERE t.`id` = IFNULL(t1.`id`,?) GROUP BY t1.`id` HAVING COUNT(t.`id`) > ? ORDER BY t.`id` ASC)");
+        listen.AssertSql("SELECT t.`id`,t.`create_time`,t.`update_time`,t.`create_by`,t.`update_by`,t.`deleted`,t.`title`,t.`content`,t.`url`,t.`star`,t.`publish_time`,t.`score`,t.`status`,t.`order`,t.`is_top`,t.`top` FROM `t_blog` t WHERE t.`deleted` = ? AND t.`id` = ? AND EXISTS(SELECT 1 FROM `t_topic` t1 WHERE  t.`id` = IFNULL(t1.`id`,?) GROUP BY t1.`id` HAVING COUNT(t.`id`) > ? ORDER BY t.`id` ASC)");
         listen.AssertParams("false(Boolean),123(String),1(String),1(Long)");
     }
 }
