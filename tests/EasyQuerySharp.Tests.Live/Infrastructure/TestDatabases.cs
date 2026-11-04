@@ -1,0 +1,94 @@
+using System.Data.Common;
+using Microsoft.Data.SqlClient;
+using Microsoft.Data.Sqlite;
+using MySqlConnector;
+using Npgsql;
+using Oracle.ManagedDataAccess.Client;
+
+namespace EasyQuerySharp.Tests.Live.Infrastructure;
+
+/// <summary>
+/// 一个可供实库测试连接的数据库。
+/// 连接串取自 <c>EQS_{KEY}_CS</c>（见 <see cref="LocalEnvironment"/>）；进程内数据库（SQLite）自带连接串，总是可用。
+/// </summary>
+/// <param name="Key">短名，用于环境变量名与 <c>EQS_REQUIRE_DBS</c>。</param>
+/// <param name="DisplayName">测试输出里显示的名字。</param>
+/// <param name="Factory">ADO.NET 驱动工厂。</param>
+/// <param name="ParameterPrefix">驱动认的命名参数前缀，Oracle 是 <c>:</c>，其余是 <c>@</c>。</param>
+/// <param name="InProcessConnectionString">进程内数据库的固定连接串；为 null 表示要从环境读。</param>
+public sealed record TestDatabase(
+    string Key,
+    string DisplayName,
+    DbProviderFactory Factory,
+    string ParameterPrefix = "@",
+    string? InProcessConnectionString = null)
+{
+    /// <summary>连接串所在的环境变量名。</summary>
+    public string EnvironmentVariable => $"EQS_{Key.ToUpperInvariant()}_CS";
+
+    /// <summary>
+    /// 是否必须可用：进程内数据库总是必须；其余的在 <c>EQS_REQUIRE_DBS</c> 里列出时必须（CI 设置，防止服务容器没起来时测试被静默跳过）。
+    /// </summary>
+    public bool IsRequired => InProcessConnectionString is not null || TestDatabases.RequiredKeys.Contains(Key);
+
+    /// <summary>
+    /// 打开一个连接。没有配置连接串时：必须可用的数据库直接判失败，其余跳过当前测试。
+    /// </summary>
+    public async Task<DbConnection> OpenAsync(CancellationToken cancellationToken)
+    {
+        var connectionString = InProcessConnectionString ?? LocalEnvironment.Get(EnvironmentVariable);
+        if (connectionString is null)
+        {
+            if (IsRequired) Assert.Fail($"EQS_REQUIRE_DBS 要求 {Key}，但没有配置 {EnvironmentVariable}");
+            Assert.Skip($"没有配置 {EnvironmentVariable}，跳过 {DisplayName}（本地运行 infra/dev/db.sh 生成 .local/db.env）");
+        }
+
+        var connection = Factory.CreateConnection()
+                         ?? throw new InvalidOperationException($"{Factory.GetType().Name} 没有创建出连接");
+        connection.ConnectionString = connectionString;
+        await connection.OpenAsync(cancellationToken);
+        return connection;
+    }
+
+    /// <inheritdoc />
+    public override string ToString() => Key;
+}
+
+/// <summary>实库测试支持的全部数据库。新增方言时在这里登记，并在 infra/dev/compose.yaml 与 CI 里加对应的容器。</summary>
+public static class TestDatabases
+{
+    /// <summary>SQLite 内存库，零基础设施。</summary>
+    public static readonly TestDatabase Sqlite = new("sqlite", "SQLite", SqliteFactory.Instance, InProcessConnectionString: "Data Source=:memory:");
+
+    /// <summary>MySQL 8.4，本地与 CI 都跑。</summary>
+    public static readonly TestDatabase MySql = new("mysql", "MySQL 8.4", MySqlConnectorFactory.Instance);
+
+    /// <summary>MySQL 8.0.18：生产 PolarDB 的内核版本基线。</summary>
+    public static readonly TestDatabase MySql8018 = new("mysql8018", "MySQL 8.0.18 (PolarDB)", MySqlConnectorFactory.Instance);
+
+    /// <summary>MariaDB 11.4 LTS（MySQL 协议）。</summary>
+    public static readonly TestDatabase MariaDb = new("mariadb", "MariaDB 11.4", MySqlConnectorFactory.Instance);
+
+    /// <summary>PostgreSQL 17，本地与 CI 都跑。</summary>
+    public static readonly TestDatabase PostgreSql = new("pg", "PostgreSQL 17", NpgsqlFactory.Instance);
+
+    /// <summary>SQL Server 2022。</summary>
+    public static readonly TestDatabase SqlServer = new("mssql", "SQL Server 2022", SqlClientFactory.Instance);
+
+    /// <summary>Oracle 23ai Free。</summary>
+    public static readonly TestDatabase Oracle = new("oracle", "Oracle 23ai Free", OracleClientFactory.Instance, ParameterPrefix: ":");
+
+    /// <summary>全部登记的数据库。</summary>
+    public static IReadOnlyList<TestDatabase> All { get; } = [Sqlite, MySql, MySql8018, MariaDb, PostgreSql, SqlServer, Oracle];
+
+    /// <summary><c>EQS_REQUIRE_DBS</c>（逗号分隔的 Key）里列出的必须可用的数据库。</summary>
+    public static IReadOnlySet<string> RequiredKeys { get; } =
+        (LocalEnvironment.Get("EQS_REQUIRE_DBS") ?? "")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>按 Key 取数据库。</summary>
+    public static TestDatabase Get(string key) =>
+        All.FirstOrDefault(d => d.Key.Equals(key, StringComparison.OrdinalIgnoreCase))
+        ?? throw new ArgumentException($"未登记的数据库：{key}，可选：{string.Join(", ", All.Select(d => d.Key))}", nameof(key));
+}

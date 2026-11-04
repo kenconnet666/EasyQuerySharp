@@ -1,0 +1,17 @@
+<Project>
+    <!-- 先继承仓库根的公共设置，再加测试项目共有的部分 -->
+    <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+    <PropertyGroup>
+        <!-- xUnit v3 测试项目本身就是可执行程序，由 Microsoft Testing Platform 运行（见 global.json） -->
+        <OutputType>Exe</OutputType>
+        <IsTestProject>true</IsTestProject>
+        <IsPackable>false</IsPackable>
+        <!-- 测试方法不要求写文档注释 -->
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit" />
+    </ItemGroup>
+</Project>

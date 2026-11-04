@@ -1,0 +1,293 @@
+# 本仓库的开发与实库测试数据库，运行在 WSL Debian 的 Docker 里。
+# compose 项目名与端口（统一 4xxxx）都和 easy-query-ts-dev（3xxxx）、vue-tsx-pro-dev（2xxxx）、easy-query-dev 错开，几个项目可以同时运行。
+# 镜像版本与 digest 跟 easy-query-ts 的 infra/dev 保持一致，两边的实库结果可以直接对比。
+#
+# 默认只起本地必测的 MySQL 8.4 与 PostgreSQL 17（SQLite 是进程内的，不需要容器）；其余数据库在 CI 里测，要在本机复现时按 profile 启动，
+# 并在 .local/db.env 里取消对应 EQS_*_CS 一行的注释。
+#
+# 用法：在仓库根目录执行（Windows 下前面加 `wsl -d Debian --`）
+#   bash infra/dev/db.sh up -d                       # MySQL 8.4（43306）、PG 17（45432）
+#   bash infra/dev/db.sh --profile polardb up -d     # 再加 MySQL 8.0.18（PolarDB 基线，43318）
+#   bash infra/dev/db.sh --profile mariadb up -d     # MariaDB 11.4（43307）
+#   bash infra/dev/db.sh --profile mssql up -d       # SQL Server 2022（41433）
+#   bash infra/dev/db.sh --profile oracle up -d      # Oracle 23ai Free（41521，服务名 FREEPDB1，用户 eqs）
+#   bash infra/dev/db.sh --profile dameng up -d      # 达梦 DM8（45236）
+#   bash infra/dev/db.sh --profile opengauss up -d   # openGauss（45433）
+#   bash infra/dev/db.sh --profile clickhouse up -d  # ClickHouse 25.8（48123）
+#   bash infra/dev/db.sh --profile db2 up -d         # Db2 12.1（45000）
+#   bash infra/dev/db.sh --profile tdengine up -d    # TDengine 3.3（46041）
+#   bash infra/dev/db.sh --profile hana up -d        # HANA 2.00.088（49041；首次约 4 分钟、要 12 GB 内存，启动即接受 SAP 许可）
+#   bash infra/dev/db.sh stop
+# 密码与连接串在 .local/（不提交），首次由 db.sh 生成；测试从 .local/db.env 或同名环境变量读 EQS_*_CS。
+name: easy-query-sharp-dev
+
+x-mysql: &mysql
+  restart: unless-stopped
+  mem_limit: 1g
+  environment:
+    MYSQL_ROOT_PASSWORD: ${EQS_DEV_MYSQL_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
+    MYSQL_DATABASE: eqs
+    TZ: Asia/Shanghai
+  healthcheck:
+    test:
+      [
+        CMD-SHELL,
+        'MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysql --protocol=TCP -h 127.0.0.1 -u root -e "SELECT 1" >/dev/null',
+      ]
+    interval: 3s
+    timeout: 3s
+    retries: 40
+    start_period: 20s
+
+services:
+  mysql84:
+    <<: *mysql
+    image: mysql:8.4.11@sha256:1f8411cc085d2f2f92060fca926746cbf97f87b76c3008e9741ad62e604c4ffa
+    command:
+      - --character-set-server=utf8mb4
+      - --max-connections=200
+    ports:
+      - '43306:3306'
+    volumes:
+      - mysql84-data:/var/lib/mysql
+
+  # 生产 PolarDB MySQL 版报告的内核是 8.0.18：MySQL 方言在这里验证不用到 8.0.19+ 的写法
+  mysql8018:
+    <<: *mysql
+    profiles: [polardb]
+    image: mysql:8.0.18@sha256:e1b0fd480a11e5c37425a2591b6fbd32af886bfc6d6f404bd362be5e50a2e632
+    command:
+      - --character-set-server=utf8mb4
+      - --max-connections=200
+    ports:
+      - '43318:3306'
+    volumes:
+      - mysql8018-data:/var/lib/mysql
+
+  mariadb:
+    profiles: [mariadb]
+    image: mariadb:11.4.13@sha256:d1891ede5a559f1086f55053bb8cc1569b0298338c4d72d71725a7f74f6ba620
+    restart: unless-stopped
+    mem_limit: 1g
+    environment:
+      MARIADB_ROOT_PASSWORD: ${EQS_DEV_MARIADB_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
+      MARIADB_DATABASE: eqs
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --max-connections=200
+    healthcheck:
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+      start_period: 20s
+    ports:
+      - '43307:3306'
+    volumes:
+      - mariadb-data:/var/lib/mysql
+
+  postgres:
+    image: postgres:17.11-bookworm@sha256:66aafa11cf15800a3c94763f7e11d1e7b2e37e5e84bc4ce027cb6e1e4bfaf4df
+    restart: unless-stopped
+    mem_limit: 1g
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${EQS_DEV_PG_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
+      POSTGRES_DB: eqs
+      TZ: Asia/Shanghai
+    command: [postgres, -c, max_connections=200]
+    ports:
+      - '45432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD, pg_isready, -h, 127.0.0.1, -U, postgres]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # SQL Server 2022 Developer（免费、功能完整）；2008 的 ROW_NUMBER 分页按方言版本选项渲染，不另起旧版本
+  mssql:
+    profiles: [mssql]
+    # 2022 CU27（16.0.4305.5）
+    image: mcr.microsoft.com/mssql/server:2022-latest@sha256:cf8f0ab2ebe61feec2eed2629061a07d247f791c2a8ddda74a4ac9f06a291718
+    platform: linux/amd64
+    restart: unless-stopped
+    mem_limit: 2g
+    environment:
+      ACCEPT_EULA: 'Y'
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${EQS_DEV_MSSQL_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
+      TZ: Asia/Shanghai
+    ports:
+      - '41433:1433'
+    volumes:
+      - mssql-data:/var/opt/mssql
+    healthcheck:
+      test:
+        [
+          CMD-SHELL,
+          '/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1" -b -o /dev/null',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+
+  # Oracle Database 23ai Free（gvenzl 维护的精简镜像）
+  oracle:
+    profiles: [oracle]
+    image: gvenzl/oracle-free:23-slim@sha256:6d61d267a3b978c24c5ac1790e62e927416a0aec446bd86e4b3a1527562757bd
+    restart: unless-stopped
+    mem_limit: 2g
+    environment:
+      ORACLE_PASSWORD: ${EQS_DEV_ORACLE_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
+      APP_USER: eqs
+      APP_USER_PASSWORD: ${EQS_DEV_ORACLE_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
+      TZ: Asia/Shanghai
+    ports:
+      - '41521:1521'
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    healthcheck:
+      test: [CMD, healthcheck.sh]
+      interval: 5s
+      timeout: 5s
+      retries: 120
+      start_period: 1m
+
+  # 达梦 DM8（社区镜像，官方只提供下载的 tar）：UTF-8、长度按字符、大小写敏感（与官方默认一致）
+  dameng:
+    profiles: [dameng]
+    image: xuxuclassmate/dameng:latest@sha256:c4088323442747a45d58bd33ef59e657c9b85f9e7dd956ba60b36d04a35b141d
+    restart: unless-stopped
+    mem_limit: 2g
+    environment:
+      SYSDBA_PWD: ${EQS_DEV_DAMENG_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
+      UNICODE_FLAG: 1
+      LENGTH_IN_CHAR: 1
+      CASE_SENSITIVE: 1
+      TZ: Asia/Shanghai
+    ports:
+      - '45236:5236'
+    volumes:
+      - dameng-data:/opt/dmdbms/data
+
+  # openGauss（PG 协议；GaussDB 的开源版，人大金仓 PG 模式也走同一方言）
+  opengauss:
+    profiles: [opengauss]
+    image: opengauss/opengauss-server:latest@sha256:d554be1b8b08165a8b19348f0ca236b5d61a4832ffadac0340ded973c34f38e4
+    restart: unless-stopped
+    privileged: true
+    mem_limit: 2g
+    environment:
+      GS_PASSWORD: ${EQS_DEV_OPENGAUSS_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
+      TZ: Asia/Shanghai
+    ports:
+      - '45433:5432'
+    volumes:
+      - opengauss-data:/var/lib/opengauss
+
+  clickhouse:
+    profiles: [clickhouse]
+    image: clickhouse/clickhouse-server:25.8@sha256:0152dd511befe6a2c2ef53e930726179669b08116da78500b37c51c96ff5ee77
+    restart: unless-stopped
+    mem_limit: 2g
+    environment:
+      CLICKHOUSE_USER: eqs
+      CLICKHOUSE_PASSWORD: ${EQS_DEV_CLICKHOUSE_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
+      CLICKHOUSE_DB: eqs
+      TZ: Asia/Shanghai
+    ports:
+      - '48123:8123'
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+
+  # IBM Db2 12.1 Community（privileged；首次初始化要几分钟，日志出现 Setup has completed 后可用）
+  db2:
+    profiles: [db2]
+    image: icr.io/db2_community/db2:12.1.2.0@sha256:9cc0d21df5d86cd9a5ce1c65c390dc10d56b1d38ab6e992c8a08eda677368781
+    restart: unless-stopped
+    privileged: true
+    mem_limit: 4g
+    environment:
+      LICENSE: accept
+      DB2INSTANCE: db2inst1
+      DB2INST1_PASSWORD: ${EQS_DEV_DB2_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
+      DBNAME: eqs
+      ARCHIVE_LOGS: 'false'
+      AUTOCONFIG: 'false'
+      TZ: Asia/Shanghai
+    ports:
+      - '45000:50000'
+    volumes:
+      - db2-data:/database
+
+  # TDengine 3.3（时序库；taosAdapter 的 WebSocket 接口 6041，默认账号 root / taosdata，只给本机测试用）
+  tdengine:
+    profiles: [tdengine]
+    image: tdengine/tdengine:3.3.6.13@sha256:79d32ce8a42f64c7dbfc33946a36b3e176ea23c0cd695a1bc9e8aa889ca03b88
+    restart: unless-stopped
+    mem_limit: 2g
+    environment:
+      TZ: UTC
+    ports:
+      - '46041:6041'
+
+  # HANA 体积大、启动慢，CI 里跑不了，只在本机按需验证
+  hana:
+    profiles: [hana]
+    build: ./hana
+    image: easy-query-sharp-dev/hana:2.00.088
+    platform: linux/amd64
+    hostname: hxehost
+    restart: unless-stopped
+    # SAP 公布的最低内存是 8g；HANA 把 cgroup 上限当物理内存，不要靠调大掩盖失败
+    mem_limit: 12g
+    memswap_limit: 12g
+    shm_size: 2g
+    stop_grace_period: 2m
+    environment:
+      EQ_HANA_PASSWORD: ${EQS_DEV_HANA_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
+      TZ: Asia/Shanghai
+    ports:
+      - '49041:39041'
+      - '49017:39017'
+    volumes:
+      - hana-data:/hana/mounts
+    tmpfs:
+      - /run/eq:size=1m,mode=0700,uid=12000,gid=79
+    entrypoint: [/bin/bash, /eq/start.sh]
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+    sysctls:
+      kernel.shmmax: 1073741824
+      kernel.shmmni: 32768
+      kernel.shmall: 8388608
+      net.ipv4.ip_local_port_range: '40000 60999'
+    healthcheck:
+      test: [CMD, /bin/bash, /eq/health.sh]
+      interval: 5s
+      timeout: 5s
+      retries: 180
+      start_period: 2m
+
+volumes:
+  mysql84-data:
+  mysql8018-data:
+  mariadb-data:
+  postgres-data:
+  mssql-data:
+  oracle-data:
+  dameng-data:
+  opengauss-data:
+  clickhouse-data:
+  db2-data:
+  hana-data:
