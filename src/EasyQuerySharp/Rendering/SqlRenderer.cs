@@ -111,7 +111,7 @@ public sealed class SqlRenderer
             case NotExpr n: Append("NOT (").Write(n.Operand).Append(")"); break;
             case IsNullExpr n: Write(n.Operand).Append(n.Negated ? " IS NOT NULL" : " IS NULL"); break;
             case InExpr i: WriteIn(i); break;
-            case LikeExpr l: Write(l.Operand).Append(l.Negated ? " NOT LIKE " : " LIKE ").Write(l.Pattern); break;
+            case LikeExpr l: Dialect.WriteLike(this, l); break;
             case FunctionExpr f: Dialect.WriteFunction(this, f); break;
             case FragmentExpr f: WriteFragment(f); break;
             case CaseExpr c: WriteCase(c); break;
@@ -122,8 +122,15 @@ public sealed class SqlRenderer
         return this;
     }
 
-    /// <summary>输出一条 SELECT（不含外层括号）。</summary>
+    /// <summary>输出一条 SELECT（不含外层括号）；有分页时交给方言决定是追加子句还是包一层。</summary>
     public SqlRenderer WriteSelect(SelectQuery q)
+    {
+        if (q.Offset is null && q.Limit is null) return WriteUnpagedSelect(q);
+        Dialect.WritePagedSelect(this, q, () => WriteUnpagedSelect(q));
+        return this;
+    }
+
+    private SqlRenderer WriteUnpagedSelect(SelectQuery q)
     {
         if (q.Columns.Count == 0) throw new InvalidOperationException("SELECT 列表为空");
         Append(q.Distinct ? "SELECT DISTINCT " : "SELECT ");
@@ -159,7 +166,6 @@ public sealed class SqlRenderer
                 Write(q.OrderBy[i].Expr).Append(q.OrderBy[i].Descending ? " DESC" : " ASC");
             }
         }
-        if (q.Offset is not null || q.Limit is not null) Dialect.WritePaging(this, q.Offset, q.Limit);
         return this;
     }
 

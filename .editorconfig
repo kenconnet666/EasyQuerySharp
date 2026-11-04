@@ -31,6 +31,12 @@ dotnet_diagnostic.CA1305.severity = none
 dotnet_diagnostic.CA1707.severity = none
 dotnet_diagnostic.CA1515.severity = none
 dotnet_diagnostic.CA1861.severity = none
+# 查询表达式里的 ToLower / CompareTo 等会翻译成 SQL，区域设置规则不适用
+dotnet_diagnostic.CA1304.severity = none
+dotnet_diagnostic.CA1307.severity = none
+dotnet_diagnostic.CA1309.severity = none
+dotnet_diagnostic.CA1310.severity = none
+dotnet_diagnostic.CA1311.severity = none
 
 [*.cs]
 # 返回类型保持抽象（SqlExpr / Expression），便于后续扩展分支；这条性能建议在这里只是噪音

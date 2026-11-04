@@ -47,6 +47,64 @@ public static class Sql
     public static bool NotExists<TSelf, T>(Querying.QueryBase<TSelf, T> subQuery) where TSelf : Querying.QueryBase<TSelf, T> =>
         throw OnlyInQuery();
 
+    // ---------- 聚合（不分组时作用于整个结果，分组时作用于每组）----------
+
+    /// <summary><c>COUNT(*)</c>。</summary>
+    public static long Count() => throw OnlyInQuery();
+
+    /// <summary><c>COUNT(x)</c>：非 NULL 的个数。</summary>
+    public static long Count<T>(T value) => throw OnlyInQuery();
+
+    /// <summary><c>COUNT((CASE WHEN filter THEN x ELSE NULL END))</c>：满足条件的非 NULL 个数（对应 Java 的 count().filter(…)）。</summary>
+    public static long Count<T>(T value, bool filter) => throw OnlyInQuery();
+
+    /// <summary><c>COUNT(DISTINCT x)</c>。</summary>
+    public static long CountDistinct<T>(T value) => throw OnlyInQuery();
+
+    /// <summary><c>COUNT(DISTINCT (CASE WHEN filter THEN x ELSE NULL END))</c>。</summary>
+    public static long CountDistinct<T>(T value, bool filter) => throw OnlyInQuery();
+
+    /// <summary><c>SUM(x)</c>。</summary>
+    public static T Sum<T>(T value) => throw OnlyInQuery();
+
+    /// <summary><c>SUM((CASE WHEN filter THEN x ELSE 0 END))</c>。</summary>
+    public static T Sum<T>(T value, bool filter) => throw OnlyInQuery();
+
+    /// <summary><c>SUM(DISTINCT x)</c>。</summary>
+    public static T SumDistinct<T>(T value) => throw OnlyInQuery();
+
+    /// <summary><c>SUM(DISTINCT (CASE WHEN filter THEN x ELSE 0 END))</c>。</summary>
+    public static T SumDistinct<T>(T value, bool filter) => throw OnlyInQuery();
+
+    /// <summary><c>MAX(x)</c>。</summary>
+    public static T Max<T>(T value) => throw OnlyInQuery();
+
+    /// <summary><c>MAX((CASE WHEN filter THEN x ELSE NULL END))</c>。</summary>
+    public static T Max<T>(T value, bool filter) => throw OnlyInQuery();
+
+    /// <summary><c>MIN(x)</c>。</summary>
+    public static T Min<T>(T value) => throw OnlyInQuery();
+
+    /// <summary><c>MIN((CASE WHEN filter THEN x ELSE NULL END))</c>。</summary>
+    public static T Min<T>(T value, bool filter) => throw OnlyInQuery();
+
+    /// <summary><c>AVG(x)</c>。</summary>
+    public static T Avg<T>(T value) => throw OnlyInQuery();
+
+    /// <summary><c>AVG((CASE WHEN filter THEN x ELSE NULL END))</c>。</summary>
+    public static T Avg<T>(T value, bool filter) => throw OnlyInQuery();
+
+    /// <summary><c>AVG(DISTINCT x)</c>。</summary>
+    public static T AvgDistinct<T>(T value) => throw OnlyInQuery();
+
+    /// <summary><c>AVG(DISTINCT (CASE WHEN filter THEN x ELSE NULL END))</c>。</summary>
+    public static T AvgDistinct<T>(T value, bool filter) => throw OnlyInQuery();
+
+    // ---------- 通用 ----------
+
+    /// <summary><c>(CASE a WHEN b THEN 1 ELSE 0 END)</c>：相等为真（对应 Java 的 equalsWith）。</summary>
+    public static bool EqualsWith<T>(T a, T b) => throw OnlyInQuery();
+
     internal static InvalidOperationException OnlyInQuery() =>
         new("这个方法只能写在 EasyQuerySharp 的查询表达式里，由翻译器转成 SQL，不能直接调用");
 }

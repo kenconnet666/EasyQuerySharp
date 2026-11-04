@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using EasyQuerySharp.Metadata;
 
 namespace EasyQuerySharp.SqlAst;
@@ -166,17 +167,51 @@ public sealed class InExpr : SqlExpr
     public bool Negated { get; }
 }
 
-/// <summary><c>x LIKE ?</c> / <c>x NOT LIKE ?</c>。</summary>
-public sealed class LikeExpr(SqlExpr operand, SqlExpr pattern, bool negated) : SqlExpr
+/// <summary>LIKE 的匹配方式：方言据此选择写法（PG 用 CONCAT + ESCAPE，Oracle / SQLite 改写成 INSTR）。</summary>
+public enum LikeMode
+{
+    /// <summary>原样的模式，% 与 _ 由调用方写（Sql.Like）。</summary>
+    Raw,
+
+    /// <summary>包含（string.Contains）。</summary>
+    Contains,
+
+    /// <summary>以…开头（string.StartsWith）。</summary>
+    StartsWith,
+
+    /// <summary>以…结尾（string.EndsWith）。</summary>
+    EndsWith,
+}
+
+/// <summary>
+/// <c>x LIKE ?</c> / <c>x NOT LIKE ?</c>。<see cref="Pattern"/> 是已经拼好 % 的模式（MySQL 等直接用）；
+/// 非 <see cref="LikeMode.Raw"/> 时 <see cref="Value"/> 是未加 % 的原值，方言可以改用自己的写法。
+/// </summary>
+public sealed class LikeExpr(SqlExpr operand, SqlExpr pattern, bool negated, LikeMode mode = LikeMode.Raw, SqlExpr? value = null) : SqlExpr
 {
     /// <summary>被匹配的表达式。</summary>
     public SqlExpr Operand { get; } = operand;
 
-    /// <summary>模式（通常是已带 % 的参数）。</summary>
+    /// <summary>模式（通常是已带 % 的参数，或 CONCAT('%',列,'%')）。</summary>
     public SqlExpr Pattern { get; } = pattern;
 
     /// <summary>true 为 NOT LIKE。</summary>
     public bool Negated { get; } = negated;
+
+    /// <summary>匹配方式。</summary>
+    public LikeMode Mode { get; } = mode;
+
+    /// <summary>未加 % 的原值（参数或列）；<see cref="LikeMode.Raw"/> 时为 null。</summary>
+    public SqlExpr? Value { get; } = value;
+
+    /// <summary>
+    /// 不是原样模式、且值是含通配符（% 或 _）的常量：只有这时 Java 版才改用 ESCAPE / INSTR 的安全写法，其余情况都是普通的 LIKE ?。
+    /// </summary>
+    [MemberNotNullWhen(true, nameof(Value))]
+    public bool HasWildcardValue => Mode != LikeMode.Raw && Value is ParameterExpr { Value: string text } && text.AsSpan().IndexOfAny("%_") >= 0;
+
+    /// <summary>取反后的同一个 LIKE。</summary>
+    public LikeExpr Negate() => new(Operand, Pattern, !Negated, Mode, Value);
 }
 
 /// <summary>

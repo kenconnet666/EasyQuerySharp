@@ -1,3 +1,5 @@
+using EasyQuerySharp.SqlAst;
+
 namespace EasyQuerySharp.Dialects.MySql;
 
 /// <summary>
@@ -17,4 +19,15 @@ public class MySqlDialect : SqlDialect
 
     /// <inheritdoc />
     public override string? LastInsertIdQuery => "SELECT LAST_INSERT_ID()";
+
+    /// <inheritdoc />
+    protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
+    {
+        base.RegisterFunctions(f);
+        f[SqlFunctionNames.NullOrDefault] = Call("IFNULL");
+        f[SqlFunctionNames.CompareTo] = Call("STRCMP");
+        f[SqlFunctionNames.IndexOf] = Reordered("LOCATE", 1, 0);
+        f[SqlFunctionNames.Ceiling] = Call("CEILING");
+        f[SqlFunctionNames.Truncate] = Call("TRUNCATE");
+    }
 }

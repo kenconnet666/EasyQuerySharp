@@ -12,7 +12,9 @@ internal sealed partial class ExpressionTranslator
         var method = call.Method;
 
         if (method.DeclaringType == typeof(Sql)) return TranslateSqlMarker(call);
-        if (method.DeclaringType == typeof(string)) return TranslateString(call);
+        if (method.DeclaringType == typeof(string) && method.Name is nameof(string.Contains) or nameof(string.StartsWith) or nameof(string.EndsWith) && call.Object is not null)
+            return TranslateString(call);
+        if (Functions.MethodTranslators.TryTranslate(this, call, out var function)) return function;
         if (TryExpandClientCollection(call, out var expanded)) return expanded;
         if (method.Name == "Contains" && TryTranslateCollectionContains(call, out var inExpr)) return inExpr;
         if (method.Name == nameof(Equals) && call.Arguments.Count == 1 && call.Object is not null)
@@ -42,6 +44,30 @@ internal sealed partial class ExpressionTranslator
                     : ((object?[])ClientEvaluator.Evaluate(call.Arguments[1])!).Select(v => (SqlExpr)Parameter(v, v?.GetType() ?? typeof(object))).ToList();
                 return new FragmentExpr(template, args);
             }
+            case nameof(Sql.Count) when call.Arguments.Count == 0:
+                return new FunctionExpr(SqlFunctionNames.Count, [LiteralExpr.Star]);
+            case nameof(Sql.Count):
+                return Aggregate(call, SqlFunctionNames.Count, LiteralExpr.Null);
+            case nameof(Sql.CountDistinct):
+                return Aggregate(call, SqlFunctionNames.CountDistinct, LiteralExpr.Null);
+            // SUM 的过滤用 ELSE 0（没有满足条件的行时和为 0），其余聚合用 ELSE NULL（与 Java 版一致）
+            case nameof(Sql.Sum):
+                return Aggregate(call, SqlFunctionNames.Sum, new ParameterExpr(0L, typeof(long)));
+            case nameof(Sql.SumDistinct):
+                return Aggregate(call, SqlFunctionNames.SumDistinct, new ParameterExpr(0L, typeof(long)));
+            case nameof(Sql.Max):
+                return Aggregate(call, SqlFunctionNames.Max, LiteralExpr.Null);
+            case nameof(Sql.Min):
+                return Aggregate(call, SqlFunctionNames.Min, LiteralExpr.Null);
+            case nameof(Sql.Avg):
+                return Aggregate(call, SqlFunctionNames.Avg, LiteralExpr.Null);
+            case nameof(Sql.AvgDistinct):
+                return Aggregate(call, SqlFunctionNames.AvgDistinct, LiteralExpr.Null);
+            case nameof(Sql.EqualsWith):
+            {
+                var (a, b) = TranslatePair(call.Arguments[0], call.Arguments[1]);
+                return new FunctionExpr(SqlFunctionNames.EqualsWith, [a, b]);
+            }
             case nameof(Sql.Exists):
             case nameof(Sql.NotExists):
                 return TranslateExists(call.Arguments[0], call.Method.Name == nameof(Sql.NotExists));
@@ -63,36 +89,52 @@ internal sealed partial class ExpressionTranslator
         }
     }
 
+    // 聚合：第二个参数是过滤条件时，值包进 CASE WHEN filter THEN x ELSE … END
+    private FunctionExpr Aggregate(MethodCallExpression call, string function, SqlExpr otherwise)
+    {
+        var value = Translate(call.Arguments[0]);
+        if (call.Arguments.Count == 2) value = new CaseExpr([(TranslatePredicate(call.Arguments[1]), value)], otherwise);
+        return new FunctionExpr(function, [value]);
+    }
+
     // string 的实例方法：Contains / StartsWith / EndsWith 翻译成 LIKE，值在客户端拼好 %（与 Java 版的 like 一致）
     private SqlExpr TranslateString(MethodCallExpression call)
     {
         switch (call.Method.Name)
         {
             case nameof(string.Contains) when call.Object is not null && call.Arguments.Count >= 1:
-                return LikeOf(call.Object, call.Arguments[0], "%", "%");
+                return LikeOf(call.Object, call.Arguments[0], LikeMode.Contains);
             case nameof(string.StartsWith) when call.Object is not null && call.Arguments.Count >= 1:
-                return LikeOf(call.Object, call.Arguments[0], "", "%");
+                return LikeOf(call.Object, call.Arguments[0], LikeMode.StartsWith);
             case nameof(string.EndsWith) when call.Object is not null && call.Arguments.Count >= 1:
-                return LikeOf(call.Object, call.Arguments[0], "%", "");
+                return LikeOf(call.Object, call.Arguments[0], LikeMode.EndsWith);
             default:
                 throw Unsupported(call);
         }
     }
 
-    private LikeExpr LikeOf(Expression target, Expression valueExpr, string prefix, string suffix)
+    // Pattern 是拼好 % 的通用写法；同时带上原值与匹配方式，供方言改写（PG 的 ESCAPE、Oracle / SQLite 的 INSTR）
+    private LikeExpr LikeOf(Expression target, Expression valueExpr, LikeMode mode)
     {
         var column = Translate(target);
+        var (prefix, suffix) = mode switch
+        {
+            LikeMode.Contains => ("%", "%"),
+            LikeMode.StartsWith => ("", "%"),
+            _ => ("%", ""),
+        };
         if (ClientEvaluator.DependsOnParameters(valueExpr))
         {
             // 模式本身是列：CONCAT('%',col,'%')
+            var value = Translate(valueExpr);
             var parts = new List<SqlExpr>();
             if (prefix.Length > 0) parts.Add(new LiteralExpr("'%'"));
-            parts.Add(Translate(valueExpr));
+            parts.Add(value);
             if (suffix.Length > 0) parts.Add(new LiteralExpr("'%'"));
-            return new LikeExpr(column, new FunctionExpr(SqlFunctionNames.Concat, parts), false);
+            return new LikeExpr(column, new FunctionExpr(SqlFunctionNames.Concat, parts), false, mode, value);
         }
-        var value = ClientEvaluator.Evaluate(valueExpr)?.ToString();
-        return new LikeExpr(column, new ParameterExpr(prefix + value + suffix, typeof(string)), false);
+        var text = ClientEvaluator.Evaluate(valueExpr)?.ToString();
+        return new LikeExpr(column, new ParameterExpr(prefix + text + suffix, typeof(string)), false, mode, new ParameterExpr(text, typeof(string)));
     }
 
     /// <summary>

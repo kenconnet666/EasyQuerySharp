@@ -111,7 +111,7 @@ internal sealed partial class ExpressionTranslator
     {
         InExpr { SubQuery: { } sub } i => new InExpr(i.Operand, sub, !i.Negated),
         InExpr i => new InExpr(i.Operand, i.Values!, !i.Negated),
-        LikeExpr l => new LikeExpr(l.Operand, l.Pattern, !l.Negated),
+        LikeExpr l => l.Negate(),
         IsNullExpr n => new IsNullExpr(n.Operand, !n.Negated),
         ExistsExpr e => new ExistsExpr(e.Query, !e.Negated),
         NotExpr n => n.Operand,
