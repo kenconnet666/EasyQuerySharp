@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 899、偏离 120、不适用 20、骨架 15、待做 1350。
+合计：已移植 920、偏离 121、不适用 20、骨架 15、待做 1328。
 
 ## 按能力
 
@@ -23,7 +23,7 @@
 | JSON 函数 | `func.json` | M2 | 12 | 0 | 0 | 0 | 0 | 12 |
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
 | 字符串函数 | `func.string` | M2 | 131 | 111 | 2 | 0 | 1 | 17 |
-| 行锁 | `lock` | M2 | 28 | 0 | 0 | 0 | 0 | 28 |
+| 行锁 | `lock` | M2 | 28 | 21 | 1 | 0 | 0 | 6 |
 | 窗口函数 | `window` | M2 | 44 | 10 | 0 | 0 | 0 | 34 |
 | CTE | `query.cte` | M3 | 11 | 2 | 3 | 0 | 0 | 6 |
 | 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 48 | 2 | 1 | 2 | 30 |
@@ -1154,28 +1154,28 @@
 | ForUpdateDialectToSQLSmokeTest.java#duckDBForUpdateThrowsUnsupported | 待做 |  |  |
 | ForUpdateDialectToSQLSmokeTest.java#gaussDBForUpdateToSQLSmoke | 待做 |  |  |
 | ForUpdateDialectToSQLSmokeTest.java#h2ForUpdateToSQLSmoke | 待做 |  |  |
-| ForUpdateDialectToSQLSmokeTest.java#kingbaseESForUpdateToSQLSmoke | 待做 |  |  |
-| ForUpdateDialectToSQLSmokeTest.java#msSQLForUpdateThrowsUnsupported | 待做 |  |  |
-| ForUpdateDialectToSQLSmokeTest.java#msSQLRowNumberForUpdateThrowsUnsupported | 待做 |  |  |
-| ForUpdateDialectToSQLSmokeTest.java#mysqlForUpdateToSQLSmoke | 待做 |  |  |
-| ForUpdateDialectToSQLSmokeTest.java#oracleForUpdateToSQLSmoke | 待做 |  |  |
-| ForUpdateDialectToSQLSmokeTest.java#pgsqlForUpdateToSQLSmoke | 待做 |  |  |
-| ForUpdateDialectToSQLSmokeTest.java#sqliteForUpdateToSQLSmoke | 待做 |  |  |
-| fork/live/LockWaitLiveTest.java#noWaitFailsAndSkipLockedSkips | 待做 |  | `DROP TABLE {…}t_fork_post` |
-| mysql8/ForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery | 待做 |  |  |
-| mysql8/ForUpdateTest.java#testForUpdateBlocksConcurrentTransaction | 待做 |  |  |
-| mysql8/ForUpdateTest.java#testForUpdateDerivedCountAndExistsSqlBehaviorConsistent | 待做 |  |  |
-| mysql8/ForUpdateTest.java#testForUpdateDuplicateCallThrows | 待做 |  |  |
-| mysql8/ForUpdateTest.java#testForUpdateJoinNotSupported | 待做 |  |  |
-| mysql8/ForUpdateTest.java#testForUpdateSqlAppendInTransaction | 待做 |  |  |
-| mysql8/ForUpdateTest.java#testForUpdateWithoutTransactionThrows | 待做 |  |  |
-| pgsql/PgSQLForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery | 待做 |  |  |
-| pgsql/PgSQLForUpdateTest.java#testForUpdateBlocksConcurrentTransaction | 待做 |  |  |
-| pgsql/PgSQLForUpdateTest.java#testForUpdateDerivedCountAndExistsSqlBehaviorConsistent | 待做 |  |  |
-| pgsql/PgSQLForUpdateTest.java#testForUpdateDuplicateCallThrows | 待做 |  |  |
-| pgsql/PgSQLForUpdateTest.java#testForUpdateJoinNotSupported | 待做 |  |  |
-| pgsql/PgSQLForUpdateTest.java#testForUpdateSqlAppendInTransaction | 待做 |  |  |
-| pgsql/PgSQLForUpdateTest.java#testForUpdateWithoutTransactionThrows | 待做 |  |  |
+| ForUpdateDialectToSQLSmokeTest.java#kingbaseESForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:24 |  |
+| ForUpdateDialectToSQLSmokeTest.java#msSQLForUpdateThrowsUnsupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:36 |  |
+| ForUpdateDialectToSQLSmokeTest.java#msSQLRowNumberForUpdateThrowsUnsupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:37 |  |
+| ForUpdateDialectToSQLSmokeTest.java#mysqlForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:21 |  |
+| ForUpdateDialectToSQLSmokeTest.java#oracleForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:27 |  |
+| ForUpdateDialectToSQLSmokeTest.java#pgsqlForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:22 |  |
+| ForUpdateDialectToSQLSmokeTest.java#sqliteForUpdateToSQLSmoke | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:44：SQLite 没有 FOR UPDATE 语法（写事务锁整个库），Java 照样拼出、执行时才报语法错误；C# 渲染时就抛出 NotSupportedException |  |
+| fork/live/LockWaitLiveTest.java#noWaitFailsAndSkipLockedSkips | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/LockWaitLiveTest.cs:29 | `DROP TABLE {…}t_fork_post` |
+| mysql8/ForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ForUpdateTest.cs:49 |  |
+| mysql8/ForUpdateTest.java#testForUpdateBlocksConcurrentTransaction | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ForUpdateTest.cs:46 |  |
+| mysql8/ForUpdateTest.java#testForUpdateDerivedCountAndExistsSqlBehaviorConsistent | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ForUpdateTest.cs:62 |  |
+| mysql8/ForUpdateTest.java#testForUpdateDuplicateCallThrows | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ForUpdateTest.cs:38 |  |
+| mysql8/ForUpdateTest.java#testForUpdateJoinNotSupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ForUpdateTest.cs:30 |  |
+| mysql8/ForUpdateTest.java#testForUpdateSqlAppendInTransaction | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ForUpdateTest.cs:11 |  |
+| mysql8/ForUpdateTest.java#testForUpdateWithoutTransactionThrows | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ForUpdateTest.cs:23 |  |
+| pgsql/PgSQLForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgSqlForUpdateTest.cs:49 |  |
+| pgsql/PgSQLForUpdateTest.java#testForUpdateBlocksConcurrentTransaction | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgSqlForUpdateTest.cs:46 |  |
+| pgsql/PgSQLForUpdateTest.java#testForUpdateDerivedCountAndExistsSqlBehaviorConsistent | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgSqlForUpdateTest.cs:63 |  |
+| pgsql/PgSQLForUpdateTest.java#testForUpdateDuplicateCallThrows | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgSqlForUpdateTest.cs:38 |  |
+| pgsql/PgSQLForUpdateTest.java#testForUpdateJoinNotSupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgSqlForUpdateTest.cs:30 |  |
+| pgsql/PgSQLForUpdateTest.java#testForUpdateSqlAppendInTransaction | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgSqlForUpdateTest.cs:11 |  |
+| pgsql/PgSQLForUpdateTest.java#testForUpdateWithoutTransactionThrows | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgSqlForUpdateTest.cs:23 |  |
 
 ### 窗口函数（`window`，M2）
 

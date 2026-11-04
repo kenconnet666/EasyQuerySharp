@@ -16,6 +16,13 @@ public class SqliteDialect : SqlDialect
     /// <inheritdoc />
     public override string? LastInsertIdQuery => "SELECT last_insert_rowid()";
 
+    /// <summary>
+    /// SQLite 没有行锁语法（写事务锁整个库），FOR UPDATE 会是语法错误，所以直接拒绝。
+    /// Java 版照样拼出 FOR UPDATE，执行时才失败，这里提前报错。
+    /// </summary>
+    public override void WriteLock(SqlRenderer renderer, RowLock rowLock) =>
+        throw new NotSupportedException("SQLite 不支持 FOR UPDATE 行锁：写事务会锁住整个库，需要先占写锁时用 BEGIN IMMEDIATE");
+
     /// <summary>值里含 % 或 _ 时，包含 / 开头 / 结尾改写成 INSTR，避免被当成通配符（与 Java 版一致）。</summary>
     public override void WriteLike(SqlRenderer renderer, LikeExpr predicate)
     {

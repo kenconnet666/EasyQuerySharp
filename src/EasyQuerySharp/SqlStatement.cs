@@ -11,6 +11,9 @@ public sealed record SqlParameterValue(object? Value, Type ClrType);
 /// </summary>
 public sealed record SqlStatement(string CommandText, string Text, IReadOnlyList<SqlParameterValue> Parameters)
 {
+    /// <summary>语句带行锁（FOR UPDATE），只能在事务里执行。</summary>
+    public bool RequiresTransaction { get; init; }
+
     /// <inheritdoc />
     public override string ToString() => Text;
 }

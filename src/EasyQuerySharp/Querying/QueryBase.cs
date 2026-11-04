@@ -103,6 +103,35 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     /// <summary>分页时不做深分页反向排序（对应 Java 的 configure(op -> op.setReverseOrder(false))），见 <see cref="EasyDbOptions.ReverseOffsetThreshold"/>。</summary>
     public TSelf DisableReversePaging() => With(State with { NoReversePaging = true });
 
+    /// <summary>
+    /// 行锁 <c>FOR UPDATE</c>（对应 Java 的 forUpdate）：锁住查到的行直到事务结束。只能在事务里、对单表查询调用一次；
+    /// 锁只写在最外层，计数、Any、分页的语句同样带上。SQL Server、SQLite 不支持，渲染时抛出 <see cref="NotSupportedException"/>。
+    /// </summary>
+    /// <example><code>
+    /// await using var tx = db.BeginTransaction();
+    /// var stock = await db.Query&lt;Stock&gt;().Where(s => s.Id == id).ForUpdate().FirstAsync();
+    /// </code></example>
+    public TSelf ForUpdate() => WithLock(RowLock.ForUpdate);
+
+    /// <summary>与 <see cref="ForUpdate"/> 相同，但行已被别的事务锁住时立即报错而不等待（<c>FOR UPDATE NOWAIT</c>）。</summary>
+    public TSelf ForUpdateNoWait() => WithLock(RowLock.ForUpdateNoWait);
+
+    /// <summary>与 <see cref="ForUpdate"/> 相同，但跳过已被别的事务锁住的行（<c>FOR UPDATE SKIP LOCKED</c>），常用于多个消费者抢任务。</summary>
+    public TSelf ForUpdateSkipLocked() => WithLock(RowLock.ForUpdateSkipLocked);
+
+    // 三种行锁共用的检查（与 Java 一致）：在事务里、单表、只设置一次；隐式导航补出的 JOIN 在渲染时检查
+    private TSelf WithLock(RowLock rowLock)
+    {
+        var name = typeof(TElement).Name;
+        if (Execution.EasyTransaction.Current(Db) is null)
+            throw new InvalidOperationException($"查询 {name} 调用 ForUpdate 前需要先开启事务：db.BeginTransaction()");
+        if (State.Sources.Length > 1 || !State.GroupJoins.IsEmpty)
+            throw new InvalidOperationException($"ForUpdate 只支持单表查询（single-table），查询 {name} 带有连接");
+        if (State.Lock != RowLock.None)
+            throw new InvalidOperationException($"查询 {name} 已经设置过行锁，不支持重复调用（repeated）");
+        return With(State with { Lock = rowLock });
+    }
+
     /// <summary>这条查询不应用名为 <paramref name="name"/> 的拦截器（对应 Java 的 noInterceptor(name)）。</summary>
     public TSelf DisableInterceptor(string name) => With(State with { Interceptors = State.Interceptors.Disable(name) });
 

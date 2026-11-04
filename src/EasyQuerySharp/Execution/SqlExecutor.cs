@@ -95,6 +95,7 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
 
     private async Task RunAsync(SqlStatement statement, Func<DbCommand, Task<long>> body)
     {
+        EnsureTransaction(statement);
         var e = new SqlExecutionEvent(statement, db);
         foreach (var l in db.Options.Listeners) l.OnExecuting(e);
 
@@ -124,6 +125,7 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
     /// <summary>流式查询：读到一行返回一行，枚举结束（或中途停止）时释放读取器并通知监听器。</summary>
     public async IAsyncEnumerable<T> StreamAsync<T>(SqlStatement statement, Func<DbDataReader, T> shaper, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
     {
+        EnsureTransaction(statement);
         var e = new SqlExecutionEvent(statement, db);
         foreach (var l in db.Options.Listeners) l.OnExecuting(e);
         var stopwatch = Stopwatch.StartNew();
@@ -158,6 +160,13 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
             e.Elapsed = stopwatch.Elapsed;
             foreach (var l in db.Options.Listeners) l.OnExecuted(e);
         }
+    }
+
+    // 行锁离开事务就随语句结束立即释放，等于没锁；与 Java 一样执行前拒绝
+    private void EnsureTransaction(SqlStatement statement)
+    {
+        if (statement.RequiresTransaction && transaction is null)
+            throw new InvalidOperationException($"FOR UPDATE 查询需要在事务里执行，请先调用 db.BeginTransaction()：{statement.Text}");
     }
 
     private DbCommand CreateCommand(SqlStatement statement)

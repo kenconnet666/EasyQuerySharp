@@ -102,6 +102,9 @@ public sealed class SelectQuery(TableSource from)
     /// <summary>最多返回的行数。</summary>
     public long? Limit { get; set; }
 
+    /// <summary>行锁；只有最外层查询的生效，作为子查询、派生表时忽略（与 Java 一致）。</summary>
+    public RowLock Lock { get; set; }
+
     /// <summary>
     /// 是否有显式投影（select / 聚合选择器）。Java 版在单表查询上只有显式投影时才加别名 <c>t</c>，
     /// 默认的整实体查询与 COUNT(*) 不加。

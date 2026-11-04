@@ -51,6 +51,18 @@ public abstract class SqlDialect
         WritePaging(renderer, query);
     }
 
+    /// <summary>
+    /// 写最外层查询末尾的行锁子句。默认是 MySQL 8、PostgreSQL、Oracle 共用的写法：
+    /// <c> FOR UPDATE</c>、<c> FOR UPDATE NOWAIT</c>、<c> FOR UPDATE SKIP LOCKED</c>；不支持的方言覆盖成抛出 <see cref="NotSupportedException"/>。
+    /// </summary>
+    public virtual void WriteLock(SqlRenderer renderer, RowLock rowLock) => renderer.Append(rowLock switch
+    {
+        RowLock.ForUpdate => " FOR UPDATE",
+        RowLock.ForUpdateNoWait => " FOR UPDATE NOWAIT",
+        RowLock.ForUpdateSkipLocked => " FOR UPDATE SKIP LOCKED",
+        _ => throw new ArgumentOutOfRangeException(nameof(rowLock), rowLock, null),
+    });
+
     /// <summary>写 LIKE。默认 <c>x LIKE ?</c>（模式里已拼好 %）；方言可按 <see cref="LikeExpr.Mode"/> 改写。</summary>
     public virtual void WriteLike(SqlRenderer renderer, LikeExpr predicate) =>
         renderer.Write(predicate.Operand).Append(predicate.Negated ? " NOT LIKE " : " LIKE ").Write(predicate.Pattern);

@@ -88,6 +88,7 @@ internal static class QueryCompiler
         query!.Distinct = state.Distinct;
         query.Offset = state.Offset;
         query.Limit = state.Limit;
+        query.Lock = state.Lock;
         translator.Context?.CompleteGroupJoins();
         return new QueryFrame(query, translator, bindings);
     }

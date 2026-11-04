@@ -31,7 +31,11 @@ public sealed class SqlRenderer
             r.Append(i == 0 ? "WITH " : " ,").Append(dialect.QuoteIdentifier(ctes[i].Name)).Append(" AS (").WriteSelect(ctes[i].Query).Append(")");
         if (ctes.Count > 0) r.Append(" ");
         r.WriteSelect(query);
-        return r.Build();
+        if (query.Lock == RowLock.None) return r.Build();
+        // 行锁只锁一张表：连接（含隐式导航补出的 JOIN）时各库的语义不同，与 Java 一样直接拒绝
+        if (query.Joins.Count > 0) throw new InvalidOperationException("ForUpdate 只支持单表查询（single-table），这条查询带有 JOIN 或导航连接");
+        dialect.WriteLock(r, query.Lock);
+        return r.Build() with { RequiresTransaction = true };
     }
 
     /// <summary>渲染一条插入。</summary>

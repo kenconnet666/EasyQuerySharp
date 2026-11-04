@@ -110,6 +110,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>分页时不做深分页反向排序（DisableReversePaging）。</summary>
     public bool NoReversePaging { get; init; }
 
+    /// <summary>行锁（ForUpdate / ForUpdateNoWait / ForUpdateSkipLocked）。</summary>
+    public RowLock Lock { get; init; }
+
     /// <summary>这条查询上生效的拦截器。</summary>
     public InterceptorSelection Interceptors { get; init; } = InterceptorSelection.Default;
 
@@ -125,8 +128,8 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
         return filtered is null ? state : state with { Wheres = state.Wheres.Add(filtered) };
     }
 
-    /// <summary>投影之后再加条件、排序、连接时，把当前查询包成派生表，在外层继续（与 Java 版的 select 之后再 where 一致）。</summary>
-    public QueryState Wrap() => new(Db, [new SubQuerySource(this with { Fills = [] })]) { ValueFilter = ValueFilter, Fills = Fills };
+    /// <summary>投影之后再加条件、排序、连接时，把当前查询包成派生表，在外层继续（与 Java 版的 select 之后再 where 一致）。行锁跟到外层：锁只写在最外层查询上。</summary>
+    public QueryState Wrap() => new(Db, [new SubQuerySource(this with { Fills = [], Lock = RowLock.None })]) { ValueFilter = ValueFilter, Fills = Fills, Lock = Lock };
 
     /// <summary>是否已经有投影（之后的条件要包一层）。</summary>
     public bool HasSelector => Selector is not null;
@@ -137,7 +140,7 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// </summary>
     private QuerySource? BareSource =>
         Sources is [EntitySource or CteSource] && Wheres.IsEmpty && OrderBys.IsEmpty && Selector is null && RawSelect is null && GroupKey is null
-        && !Distinct && Offset is null && Limit is null && Includes.IsEmpty && Fills.IsEmpty && !DisableLogicDelete
+        && !Distinct && Offset is null && Limit is null && Includes.IsEmpty && Fills.IsEmpty && !DisableLogicDelete && Lock == RowLock.None
         && Interceptors == InterceptorSelection.Default
             ? Sources[0]
             : null;

@@ -22,6 +22,10 @@ public class SqlServerDialect : SqlDialect
     /// <inheritdoc />
     public override string? LastInsertIdQuery => "SELECT SCOPE_IDENTITY()";
 
+    /// <summary>SQL Server 没有 FOR UPDATE（用表提示 WITH (UPDLOCK, ROWLOCK)），NOWAIT / SKIP LOCKED 也一样，不能悄悄忽略（与 Java 一致）。</summary>
+    public override void WriteLock(SqlRenderer renderer, RowLock rowLock) =>
+        throw new NotSupportedException("SQL Server 不支持 FOR UPDATE 语法，请改用表提示 WITH (UPDLOCK, ROWLOCK)");
+
     /// <summary>OFFSET … ROWS FETCH NEXT … ROWS ONLY；SQL Server 要求有 ORDER BY，没有时补 <c>ORDER BY (SELECT 1)</c>。</summary>
     public override void WritePaging(SqlRenderer renderer, SelectQuery query)
     {

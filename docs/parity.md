@@ -33,7 +33,7 @@
 | 数学函数 | `func.math` | 4 | 映射 `Math.Abs` / `Round` / `Floor` / `Ceiling` / `Pow` / `Sqrt` / `Sign` / `Log` / `Exp` / `Truncate` | M2 |
 | CASE WHEN | `expr.case` | 27 | 三元表达式；多分支用 `Sql.Case().When(..).Then(..).Else(..)`；聚合加过滤：`g.Count(p => p.Paid)` | M2 |
 | 窗口函数 | `window` | 38 | `Sql.Over.RowNumber(w => w.PartitionBy(p => p.UserId).OrderBy(p => p.Id))`；`Lag` / `Lead` / `FirstValue` / `NthValue` / `Ntile`，支持 frame | M2 |
-| 行锁 | `lock` | 27 | `.ForUpdate()` / `.ForUpdate(LockWait.NoWait)` / `.ForUpdate(LockWait.SkipLocked)` / `.ForShare()` | M2 |
+| 行锁 | `lock` | 27 | `.ForUpdate()` / `.ForUpdateNoWait()` / `.ForUpdateSkipLocked()`：只能在事务里、对单表调用，锁写在最外层（计数、Any、分页同样带上）；SQL Server、SQLite 渲染时抛出 NotSupportedException。Java 没有 FOR SHARE，不做 | M2 |
 
 ## 导航与对象树（[0002](decisions/0002-object-tree-and-dto.md)）
 
