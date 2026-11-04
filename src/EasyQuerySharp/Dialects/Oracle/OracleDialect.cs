@@ -73,5 +73,7 @@ public class OracleDialect : SqlDialect
         f[SqlFunctionNames.Length] = Call("LENGTH");
         f[SqlFunctionNames.PadLeft] = Pad("LPAD", "' '");
         f[SqlFunctionNames.PadRight] = Pad("RPAD", "' '");
+        f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("LISTAGG(TO_CHAR(").Write(a[0]).Append("), ").Write(a[1]).Append(") WITHIN GROUP(ORDER BY 1)");
+        f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("LISTAGG(DISTINCT TO_CHAR(").Write(a[0]).Append("), ").Write(a[1]).Append(") WITHIN GROUP(ORDER BY 1)");
     }
 }

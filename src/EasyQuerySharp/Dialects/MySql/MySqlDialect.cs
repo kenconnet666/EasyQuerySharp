@@ -29,5 +29,7 @@ public class MySqlDialect : SqlDialect
         f[SqlFunctionNames.IndexOf] = Reordered("LOCATE", 1, 0);
         f[SqlFunctionNames.Ceiling] = Call("CEILING");
         f[SqlFunctionNames.Truncate] = Call("TRUNCATE");
+        f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("GROUP_CONCAT(").Write(a[0]).Append(" SEPARATOR ").Write(a[1]).Append(")");
+        f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("GROUP_CONCAT(DISTINCT ").Write(a[0]).Append(" SEPARATOR ").Write(a[1]).Append(")");
     }
 }

@@ -33,5 +33,13 @@ public class PostgreSqlDialect : SqlDialect
         renderer.Append(") ESCAPE '\\'");
     }
 
+    /// <inheritdoc />
+    protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
+    {
+        base.RegisterFunctions(f);
+        f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("STRING_AGG((").Write(a[0]).Append(")::TEXT, ").Write(a[1]).Append(")");
+        f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("STRING_AGG(DISTINCT (").Write(a[0]).Append(")::TEXT, ").Write(a[1]).Append(")");
+    }
+
     private static string Escape(string value) => value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
 }

@@ -17,7 +17,7 @@ namespace EasyQuerySharp.Querying;
 /// </list>
 /// 列别名规则与 Java 版的 DTO 映射一致：别名是成员名按命名约定转换后的列名，与源列同名时省略 AS。
 /// </summary>
-internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameConversion naming)
+internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameConversion naming, bool alwaysAlias = false)
 {
     private readonly ParameterExpression _reader = Expression.Parameter(typeof(DbDataReader), "reader");
     private readonly List<SelectColumn> _columns = [];
@@ -45,7 +45,8 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
 
     private Expression Shape(Expression body, MemberInfo? member, bool topLevel)
     {
-        if (translator.BindingOf(body) is { } binding) return ShapeEntity(binding, body.Type, topLevel);
+        if (translator.BindingOf(body) is { } binding)
+            return binding is DerivedBinding { Entity: null } dto ? ShapeDerivedDto(dto, body.Type, topLevel) : ShapeEntity(binding, body.Type, topLevel);
 
         switch (body)
         {
@@ -90,6 +91,31 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
             type);
     }
 
+    /// <summary>
+    /// 派生表里的 DTO 整体再投影（投影之后再排序 / 计数时外层的 SELECT）：每个成员一列，总是写别名
+    /// （Java 版的写法 <c>t1.`id` AS `id`</c>）；按无参构造 + 属性赋值，或按参数名匹配的构造函数（record / 匿名类型）重建。
+    /// </summary>
+    private Expression ShapeDerivedDto(DerivedBinding binding, Type type, bool topLevel)
+    {
+        var ordinals = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (memberName, column) in binding.MemberColumns)
+            ordinals[memberName] = AddColumn(new ColumnExpr(binding.Table, column), column, topLevel ? memberName : null, forceAlias: true);
+
+        Expression Read(string memberName, Type valueType) => Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(valueType), _reader,
+            Expression.Constant(ordinals[memberName]), Expression.Constant(null, typeof(IValueConverter)));
+
+        var ctor = type.GetConstructor(Type.EmptyTypes);
+        if (ctor is not null)
+        {
+            var bindings = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(p => p.CanWrite && ordinals.ContainsKey(p.Name))
+                .Select(p => (MemberBinding)Expression.Bind(p, Read(p.Name, p.PropertyType)));
+            return Expression.MemberInit(Expression.New(ctor), bindings);
+        }
+        var parameterized = type.GetConstructors().OrderByDescending(c => c.GetParameters().Length).First();
+        return Expression.New(parameterized, parameterized.GetParameters().Select(p => Read(p.Name!, p.ParameterType)));
+    }
+
     private Expression ShapeScalar(Expression body, MemberInfo? member)
     {
         var sql = translator.Translate(body);
@@ -99,11 +125,11 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
             Expression.Constant(converter, typeof(IValueConverter)));
     }
 
-    // 返回列序号；源列与别名同名时不写 AS
-    private int AddColumn(SqlExpr sql, string? alias, string? memberName)
+    // 返回列序号；源列与别名同名时不写 AS（分组投影、DTO 再投影除外，Java 版在这两处总写 AS）
+    private int AddColumn(SqlExpr sql, string? alias, string? memberName, bool forceAlias = false)
     {
         var columnName = (sql as ColumnExpr)?.Name;
-        if (alias == columnName) alias = null;
+        if (alias == columnName && !forceAlias && !alwaysAlias) alias = null;
         _columns.Add(new SelectColumn(sql, alias));
         if (memberName is not null && (alias ?? columnName) is { } output) MemberColumns.TryAdd(memberName, output);
         return _columns.Count - 1;

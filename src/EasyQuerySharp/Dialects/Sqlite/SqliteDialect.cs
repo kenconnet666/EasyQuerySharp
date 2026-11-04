@@ -33,5 +33,7 @@ public class SqliteDialect : SqlDialect
     {
         base.RegisterFunctions(f);
         f[SqlFunctionNames.Length] = Call("LENGTH");
+        f[SqlFunctionNames.StringJoin] = Call("GROUP_CONCAT");
+        f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("GROUP_CONCAT(DISTINCT ").Write(a[0]).Append(",").Write(a[1]).Append(")");
     }
 }

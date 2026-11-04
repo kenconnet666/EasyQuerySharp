@@ -51,6 +51,12 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>原生 SQL 的 SELECT 列表（对应 Java 的 select(String)）；结果按列名映射到第一个来源的实体。</summary>
     public string? RawSelect { get; init; }
 
+    /// <summary>分组键 lambda（参数依次对应各来源）；为 null 表示不分组。</summary>
+    public LambdaExpression? GroupKey { get; init; }
+
+    /// <summary>HAVING 条件，lambda 的参数是 <see cref="IGroup{TKey,TElement}"/>。</summary>
+    public ImmutableArray<LambdaExpression> Havings { get; init; } = [];
+
     /// <summary>DISTINCT。</summary>
     public bool Distinct { get; init; }
 

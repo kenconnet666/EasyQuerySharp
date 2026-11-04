@@ -56,6 +56,9 @@ public sealed class Query<T> : QueryBase<Query<T>, T>
     /// <summary>追加降序排序（同 <see cref="OrderByDescending{TKey}"/>）。</summary>
     public Query<T> ThenByDescending<TKey>(Expression<Func<T, TKey>> key) => Order(key, true);
 
+    /// <summary>按键分组（对应 Java 的 groupBy(GroupKeys.of(…))）。多列键写成匿名类型：<c>GroupBy(b => new { b.Status, b.Top })</c>。</summary>
+    public GroupQuery<TKey, T> GroupBy<TKey>(Expression<Func<T, TKey>> key) => new(Open with { GroupKey = key });
+
     /// <summary>投影到 DTO、匿名类型或标量。投影之后再 Where / OrderBy 会把它包成派生表。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T, TResult>> selector) => new(Open with { Selector = selector });
 

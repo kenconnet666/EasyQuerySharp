@@ -46,6 +46,9 @@ public sealed class Query<T1, T2> : QueryBase<Query<T1, T2>, T1>
     /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
     public Query<T1, T2> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, TKey>> key) => condition ? OrderByDescending(key) : this;
 
+    /// <summary>按键分组；组内元素是各表组成的元组，聚合里用 <c>e.Item2.Score</c> 访问第二张表。</summary>
+    public GroupQuery<TKey, (T1, T2)> GroupBy<TKey>(Expression<Func<T1, T2, TKey>> key) => new(State with { GroupKey = key });
+
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, TResult>> selector) => new(State with { Selector = selector });
 
@@ -137,6 +140,9 @@ public sealed class Query<T1, T2, T3> : QueryBase<Query<T1, T2, T3>, T1>
 
     /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
     public Query<T1, T2, T3> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, T3, TKey>> key) => condition ? OrderByDescending(key) : this;
+
+    /// <summary>按键分组；组内元素是各表组成的元组，聚合里用 <c>e.Item2.Score</c> 访问第二张表。</summary>
+    public GroupQuery<TKey, (T1, T2, T3)> GroupBy<TKey>(Expression<Func<T1, T2, T3, TKey>> key) => new(State with { GroupKey = key });
 
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, TResult>> selector) => new(State with { Selector = selector });
@@ -230,6 +236,9 @@ public sealed class Query<T1, T2, T3, T4> : QueryBase<Query<T1, T2, T3, T4>, T1>
     /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
     public Query<T1, T2, T3, T4> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, TKey>> key) => condition ? OrderByDescending(key) : this;
 
+    /// <summary>按键分组；组内元素是各表组成的元组，聚合里用 <c>e.Item2.Score</c> 访问第二张表。</summary>
+    public GroupQuery<TKey, (T1, T2, T3, T4)> GroupBy<TKey>(Expression<Func<T1, T2, T3, T4, TKey>> key) => new(State with { GroupKey = key });
+
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, TResult>> selector) => new(State with { Selector = selector });
 
@@ -321,6 +330,9 @@ public sealed class Query<T1, T2, T3, T4, T5> : QueryBase<Query<T1, T2, T3, T4, 
 
     /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
     public Query<T1, T2, T3, T4, T5> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, TKey>> key) => condition ? OrderByDescending(key) : this;
+
+    /// <summary>按键分组；组内元素是各表组成的元组，聚合里用 <c>e.Item2.Score</c> 访问第二张表。</summary>
+    public GroupQuery<TKey, (T1, T2, T3, T4, T5)> GroupBy<TKey>(Expression<Func<T1, T2, T3, T4, T5, TKey>> key) => new(State with { GroupKey = key });
 
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, TResult>> selector) => new(State with { Selector = selector });
@@ -414,6 +426,9 @@ public sealed class Query<T1, T2, T3, T4, T5, T6> : QueryBase<Query<T1, T2, T3, 
     /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
     public Query<T1, T2, T3, T4, T5, T6> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, TKey>> key) => condition ? OrderByDescending(key) : this;
 
+    /// <summary>按键分组；组内元素是各表组成的元组，聚合里用 <c>e.Item2.Score</c> 访问第二张表。</summary>
+    public GroupQuery<TKey, (T1, T2, T3, T4, T5, T6)> GroupBy<TKey>(Expression<Func<T1, T2, T3, T4, T5, T6, TKey>> key) => new(State with { GroupKey = key });
+
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, TResult>> selector) => new(State with { Selector = selector });
 
@@ -505,6 +520,9 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7> : QueryBase<Query<T1, T2, 
 
     /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, T7, TKey>> key) => condition ? OrderByDescending(key) : this;
+
+    /// <summary>按键分组；组内元素是各表组成的元组，聚合里用 <c>e.Item2.Score</c> 访问第二张表。</summary>
+    public GroupQuery<TKey, (T1, T2, T3, T4, T5, T6, T7)> GroupBy<TKey>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, TKey>> key) => new(State with { GroupKey = key });
 
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, TResult>> selector) => new(State with { Selector = selector });
@@ -598,6 +616,9 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8> : QueryBase<Query<T1, 
     /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, TKey>> key) => condition ? OrderByDescending(key) : this;
 
+    /// <summary>按键分组；组内元素是各表组成的元组，聚合里用 <c>e.Item2.Score</c> 访问第二张表。</summary>
+    public GroupQuery<TKey, (T1, T2, T3, T4, T5, T6, T7, T8)> GroupBy<TKey>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, TKey>> key) => new(State with { GroupKey = key });
+
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, TResult>> selector) => new(State with { Selector = selector });
 
@@ -690,6 +711,9 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> : QueryBase<Query<
     /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TKey>> key) => condition ? OrderByDescending(key) : this;
 
+    /// <summary>按键分组；组内元素是各表组成的元组，聚合里用 <c>e.Item2.Score</c> 访问第二张表。</summary>
+    public GroupQuery<TKey, (T1, T2, T3, T4, T5, T6, T7, T8, T9)> GroupBy<TKey>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TKey>> key) => new(State with { GroupKey = key });
+
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult>> selector) => new(State with { Selector = selector });
 
@@ -781,6 +805,9 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : QueryBase<Q
 
     /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TKey>> key) => condition ? OrderByDescending(key) : this;
+
+    /// <summary>按键分组；组内元素是各表组成的元组，聚合里用 <c>e.Item2.Score</c> 访问第二张表。</summary>
+    public GroupQuery<TKey, (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10)> GroupBy<TKey>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TKey>> key) => new(State with { GroupKey = key });
 
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>> selector) => new(State with { Selector = selector });

@@ -1,3 +1,4 @@
+using EasyQuerySharp.Querying;
 using EasyQuerySharp.Tests.Upstream.Dto;
 using EasyQuerySharp.Tests.Upstream.Entities;
 using EasyQuerySharp.Tests.Upstream.Infrastructure;
@@ -589,6 +590,93 @@ public sealed class QueryTest(MySqlFixture fixture) : MySqlTest(fixture)
     [Fact, Upstream("QueryTest.java#query98")]
     public async Task Query98() =>
         Assert.Null(await Db.Query<BlogEntity>().Where(o => new[] { "1x", "2x" }.Contains(o.Id!)).AverageAsync(o => o.Star, Ct));
+
+    [Fact, Upstream("QueryTest.java#query16")]
+    public void Query16()
+    {
+        var sql = Db.Query<Topic>()
+            .InnerJoin<BlogEntity>((t, t1) => t.Id == t1.Id)
+            .Where((t, b2) => b2.Title != null)
+            .GroupBy((t, b2) => b2.Id)
+            .Select(g => new BlogEntity { Id = g.Key, Score = g.Sum(e => e.Item2.Score) });
+        const string inner = "SELECT t1.`id` AS `id`,SUM(t1.`score`) AS `score` FROM `t_topic` t INNER JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` WHERE t1.`title` IS NOT NULL GROUP BY t1.`id`";
+        Assert.Equal($"SELECT COUNT(1) FROM ({inner}) t2", sql.SelectRaw("COUNT(1)").ToSql());
+        Assert.Equal(inner + " LIMIT 2 OFFSET 2", sql.Limit(2, 2).ToSql());
+        Assert.Equal($"SELECT COUNT(t2.`id`) FROM ({inner}) t2", sql.Select(o => Sql.Count(o.Id)).ToSql());
+    }
+
+    private Query<TopicGroupTestDTO> TopicGroup(string id) => Db.Query<Topic>()
+        .Where(o => o.Id == id)
+        .GroupBy(o => o.Id)
+        .Select(g => new TopicGroupTestDTO { Id = g.Key, IdCount = (int)g.Count(e => e.Id) });
+
+    [Fact, Upstream("QueryTest.java#query19")]
+    public async Task Query19()
+    {
+        var topics = await Db.Query<BlogEntity>()
+            .LeftJoin(TopicGroup("3"), (a, b) => a.Id == b.Id)
+            .Where(o => o.Id != null && o.Id == "3")
+            .ToListAsync(Ct);
+        Assert.Single(topics);
+    }
+
+    [Fact, Upstream("QueryTest.java#query19_1")]
+    public void Query19_1()
+    {
+        var sql = Db.Query<BlogEntity>()
+            .LeftJoin(TopicGroup("3"), (a, b) => a.Id == b.Id)
+            .Where(o => o.Id != null && o.Id == "3")
+            .ToSql();
+        Assert.Equal($"SELECT {Prefixed("t", BlogColumns)} FROM `t_blog` t LEFT JOIN (SELECT t1.`id` AS `id`,COUNT(t1.`id`) AS `id_count` FROM `t_topic` t1 WHERE t1.`id` = ? GROUP BY t1.`id`) t3 ON t.`id` = t3.`id` WHERE t.`deleted` = ? AND t.`id` IS NOT NULL AND t.`id` = ?", sql);
+    }
+
+    [Fact, Upstream("QueryTest.java#query20")]
+    public async Task Query20()
+    {
+        var sql = TopicGroup("3");
+        Assert.Equal("SELECT t.`id` AS `id`,COUNT(t.`id`) AS `id_count` FROM `t_topic` t WHERE t.`id` = ? GROUP BY t.`id`", sql.ToSql());
+        var list = await sql.ToListAsync(Ct);
+        Assert.Single(list);
+        Assert.Equal(1, list[0].IdCount);
+        Assert.Equal("3", list[0].Id);
+    }
+
+    [Fact, Upstream("QueryTest.java#query21", Deviation = "Java 的 Select.of(key1(), …) 不写别名而 .as(…) 写别名；C# 成员初始化无法区分这两种写法，分组投影统一写别名")]
+    public async Task Query21()
+    {
+        var sql = TopicGroup("3");
+        Assert.Equal("SELECT t.`id` AS `id`,COUNT(t.`id`) AS `id_count` FROM `t_topic` t WHERE t.`id` = ? GROUP BY t.`id`", sql.ToSql());
+        var list = await sql.ToListAsync(Ct);
+        Assert.Equal(1, list[0].IdCount);
+    }
+
+    [Fact, Upstream("QueryTest.java#query43")]
+    public async Task Query43()
+    {
+        var first = await Db.Query<BlogEntity>().Where(o => o.Id == "123").GroupBy(b => b.Id)
+            .Select(g => new TopicGroupTestDTO { Id = g.Key, IdCount = (int)g.Count(e => e.Id) })
+            .OrderBy(o => o.Id).FirstOrDefaultAsync(Ct);
+        Assert.Null(first);
+        var second = await Db.Query<BlogEntity>().Where(o => o.Id == "123").GroupBy(b => b.Id)
+            .OrderBy(g => g.Key)
+            .Select(g => new TopicGroupTestDTO { Id = g.Key, IdCount = (int)g.Count(e => e.Id) })
+            .FirstOrDefaultAsync(Ct);
+        Assert.Null(second);
+    }
+
+    [Fact, Upstream("QueryTest.java#query44")]
+    public void Query44()
+    {
+        var ordered = Db.Query<BlogEntity>().Where(o => o.Id == "123").GroupBy(b => b.Id)
+            .Select(g => new TopicGroupTestDTO { Id = g.Key, IdCount = (int)g.Count(e => e.Id) })
+            .OrderBy(o => o.Id);
+        Assert.Equal("SELECT t1.`id` AS `id`,t1.`id_count` AS `id_count` FROM (SELECT t.`id` AS `id`,COUNT(t.`id`) AS `id_count` FROM `t_blog` t WHERE t.`deleted` = ? AND t.`id` = ? GROUP BY t.`id`) t1 ORDER BY t1.`id` ASC", ordered.ToSql());
+
+        var groupOrdered = Db.Query<BlogEntity>().Where(o => o.Id == "123").GroupBy(b => b.Id)
+            .OrderBy(g => g.Key)
+            .Select(g => new TopicGroupTestDTO { Id = g.Key, IdCount = (int)g.Count(e => e.Id) });
+        Assert.Equal("SELECT t.`id` AS `id`,COUNT(t.`id`) AS `id_count` FROM `t_blog` t WHERE t.`deleted` = ? AND t.`id` = ? GROUP BY t.`id` ORDER BY t.`id` ASC", groupOrdered.ToSql());
+    }
 
     [Fact, Upstream("QueryTest.java#query108")]
     public async Task Query108()

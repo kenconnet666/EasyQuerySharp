@@ -20,6 +20,12 @@ internal sealed partial class ExpressionTranslator
     /// <summary>把 lambda 的各参数依次绑定到表来源。</summary>
     public void Bind(LambdaExpression lambda, IReadOnlyList<SourceBinding> sources)
     {
+        // 分组之后的 lambda（Having / OrderBy / Select）只有一个 IGroup 参数，绑定到分组
+        if (Group is not null && lambda.Parameters.Count == 1 && IsGroupType(lambda.Parameters[0].Type))
+        {
+            _scope[lambda.Parameters[0]] = Group;
+            return;
+        }
         if (lambda.Parameters.Count > sources.Count)
             throw new InvalidOperationException($"lambda 有 {lambda.Parameters.Count} 个参数，但只有 {sources.Count} 个表来源：{lambda}");
         for (var i = 0; i < lambda.Parameters.Count; i++) _scope[lambda.Parameters[i]] = sources[i];
@@ -50,8 +56,13 @@ internal sealed partial class ExpressionTranslator
     }
 
     /// <summary>参数绑定的表来源；表达式不是绑定参数时返回 null。</summary>
-    public SourceBinding? BindingOf(Expression expression) =>
-        StripConvert(expression) is ParameterExpression p && _scope.TryGetValue(p, out var b) ? b : null;
+    public SourceBinding? BindingOf(Expression expression) => StripConvert(expression) switch
+    {
+        ParameterExpression p => _scope.GetValueOrDefault(p),
+        // 多表元组的 e.Item2 → 第二个表来源
+        MemberExpression { Expression: { } inner } m when BindingOf(inner) is TupleBinding tuple => tuple.Item(m.Member.Name),
+        _ => null,
+    };
 
     /// <summary>构造参数：枚举转成底层整数，可空类型取底层类型。</summary>
     public static ParameterExpr Parameter(object? value, Type type)
@@ -76,7 +87,8 @@ internal sealed partial class ExpressionTranslator
 
     private SqlExpr TranslateMember(MemberExpression m)
     {
-        if (m.Expression is not null && BindingOf(m.Expression) is { } binding)
+        if (TryTranslateGroupKey(m) is { } key) return key;
+        if (m.Expression is not null && BindingOf(m.Expression) is { } binding and not GroupBinding and not TupleBinding)
             return binding.Member(m.Member) ?? throw Unsupported(m, $"{m.Member.DeclaringType?.Name}.{m.Member.Name} 不是映射到列的成员");
 
         // 可空类型：x.Value 即 x，x.HasValue 即 x IS NOT NULL

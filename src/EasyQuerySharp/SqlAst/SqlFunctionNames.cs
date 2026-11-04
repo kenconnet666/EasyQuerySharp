@@ -119,4 +119,10 @@ public static class SqlFunctionNames
 
     /// <summary>(x)：去重平均值。</summary>
     public const string AvgDistinct = "AvgDistinct";
+
+    /// <summary>(x, separator)：字符串聚合。</summary>
+    public const string StringJoin = "StringJoin";
+
+    /// <summary>(x, separator)：去重字符串聚合。</summary>
+    public const string StringJoinDistinct = "StringJoinDistinct";
 }

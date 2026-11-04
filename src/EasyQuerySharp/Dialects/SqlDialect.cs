@@ -86,6 +86,8 @@ public abstract class SqlDialect
         f[SqlFunctionNames.CountDistinct] = Distinct("COUNT");
         f[SqlFunctionNames.SumDistinct] = Distinct("SUM");
         f[SqlFunctionNames.AvgDistinct] = Distinct("AVG");
+        f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("STRING_AGG(").Write(a[0]).Append(", ").Write(a[1]).Append(")");
+        f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("STRING_AGG(DISTINCT ").Write(a[0]).Append(", ").Write(a[1]).Append(")");
     }
 
     /// <summary><c>NAME(a,b)</c>。</summary>

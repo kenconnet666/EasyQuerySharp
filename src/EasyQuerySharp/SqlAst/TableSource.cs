@@ -42,6 +42,12 @@ public sealed class DerivedTableSource(SelectQuery query) : TableSource
 {
     /// <summary>内部查询。</summary>
     public SelectQuery Query { get; } = query;
+
+    /// <summary>
+    /// 分配别名前先多占一个编号。Java 版把"分组后投影"的查询作为 JOIN 来源时，内部多一层匿名表，
+    /// 外层看到的派生表别名因此跳过一个（如 t3 而不是 t2）；为了 SQL 逐字一致在这里复现。
+    /// </summary>
+    public bool ReserveExtraAlias { get; init; }
 }
 
 /// <summary>原生 SQL 作为表来源：<c>(SELECT * FROM t_blog t) t</c>（对应 Java 的 queryable(sql, Class)）。</summary>

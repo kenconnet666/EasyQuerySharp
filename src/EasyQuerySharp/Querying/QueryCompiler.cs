@@ -55,6 +55,7 @@ internal static class QueryCompiler
             translator.Bind(where, bindings);
             query!.Where.Add(translator.TranslatePredicate(where.Body));
         }
+        if (state.GroupKey is { } groupKey) BuildGroup(query!, translator, bindings, groupKey, state);
         foreach (var order in state.OrderBys)
         {
             translator.Bind(order.Key, bindings);
@@ -64,6 +65,32 @@ internal static class QueryCompiler
         query.Offset = state.Offset;
         query.Limit = state.Limit;
         return new QueryFrame(query, translator, bindings);
+    }
+
+    /// <summary>
+    /// GROUP BY 与 HAVING：键是单个表达式或匿名类型（多列）；之后参数为 IGroup 的 lambda（Having / OrderBy / Select）绑定到分组。
+    /// </summary>
+    private static void BuildGroup(SelectQuery query, ExpressionTranslator translator, List<SourceBinding> bindings, LambdaExpression groupKey, QueryState state)
+    {
+        translator.Bind(groupKey, bindings);
+        var body = ExpressionTranslator.StripConvert(groupKey.Body);
+        List<SqlExpr> keys;
+        List<string>? members = null;
+        if (body is NewExpression { Members: not null } n)
+        {
+            keys = n.Arguments.Select(translator.Translate).ToList();
+            members = n.Members.Select(m => m.Name).ToList();
+        }
+        else keys = [translator.Translate(groupKey.Body)];
+        query.GroupBy.AddRange(keys);
+
+        var element = bindings.Count == 1 ? bindings[0] : new TupleBinding(bindings);
+        translator.Group = new GroupBinding(keys, members, element);
+        foreach (var having in state.Havings)
+        {
+            translator.Bind(having, bindings);
+            query.Having.Add(translator.TranslatePredicate(having.Body));
+        }
     }
 
     /// <summary>完整翻译：按投影（没有时投影到第一个来源的实体）填入 SELECT 列表并生成读取函数。</summary>
@@ -94,7 +121,8 @@ internal static class QueryCompiler
         QueryState state, IReadOnlyDictionary<ParameterExpression, SourceBinding>? outer = null)
     {
         var frame = Build(state, outer);
-        var projection = new ProjectionCompiler(frame.Translator, state.Db.Options.NameConversion);
+        // 分组查询的投影总是写列别名（Java 版的 set / as 写法）
+        var projection = new ProjectionCompiler(frame.Translator, state.Db.Options.NameConversion, alwaysAlias: state.GroupKey is not null);
         LambdaExpression selector;
         if (state.Selector is not null) selector = state.Selector;
         else
@@ -122,7 +150,11 @@ internal static class QueryCompiler
             case SubQuerySource s:
             {
                 var (inner, projection) = CompileSelect(s.Inner);
-                var table = new DerivedTableSource(inner) { ExplicitAlias = s.Alias };
+                var table = new DerivedTableSource(inner)
+                {
+                    ExplicitAlias = s.Alias,
+                    ReserveExtraAlias = s.Join is not null && s.Inner.GroupKey is not null,
+                };
                 return new DerivedBinding(table, projection.MemberColumns, projection.Entity);
             }
             case RawSqlSource r:

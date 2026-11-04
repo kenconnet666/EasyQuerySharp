@@ -56,8 +56,18 @@ internal static class AliasAllocator
 
     private static void CollectTable(TableSource table, List<TableSource> tables)
     {
-        if (table is DerivedTableSource derived) Collect(derived.Query, tables);
+        if (table is DerivedTableSource derived)
+        {
+            Collect(derived.Query, tables);
+            if (derived.ReserveExtraAlias) tables.Add(Placeholder.Instance);
+        }
         if (!tables.Contains(table)) tables.Add(table);
+    }
+
+    // 只占编号、不渲染的表来源
+    private sealed class Placeholder : TableSource
+    {
+        public static readonly Placeholder Instance = new();
     }
 
     // 只关心表达式里出现的子查询；普通列引用的表已经在 FROM / JOIN 里登记

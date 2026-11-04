@@ -50,6 +50,9 @@ for ($n = 2; $n -le $max; $n++) {
         [void]$sb.AppendLine("    public $self $($o[0])<TKey>(bool condition, Expression<Func<$ts, TKey>> key) => condition ? $($o[1])(key) : this;")
     }
     [void]$sb.AppendLine('')
+    [void]$sb.AppendLine('    /// <summary>按键分组；组内元素是各表组成的元组，聚合里用 <c>e.Item2.Score</c> 访问第二张表。</summary>')
+    [void]$sb.AppendLine("    public GroupQuery<TKey, ($ts)> GroupBy<TKey>(Expression<Func<$ts, TKey>> key) => new(State with { GroupKey = key });")
+    [void]$sb.AppendLine('')
     [void]$sb.AppendLine('    /// <summary>投影到 DTO、匿名类型或标量。</summary>')
     [void]$sb.AppendLine("    public Query<TResult> Select<TResult>(Expression<Func<$ts, TResult>> selector) => new(State with { Selector = selector });")
     [void]$sb.AppendLine('')
