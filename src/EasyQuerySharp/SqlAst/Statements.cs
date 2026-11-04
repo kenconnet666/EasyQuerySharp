@@ -40,9 +40,22 @@ public sealed class SelectColumn(SqlExpr expr, string? alias)
     public string? Alias { get; } = alias;
 }
 
-/// <summary>ORDER BY 里的一项。</summary>
-public sealed class OrderByItem(SqlExpr expr, bool descending, bool raw = false)
+/// <summary>排序时 NULL 的位置。</summary>
+public enum NullsOrder
 {
+    /// <summary>NULL 排在最前。</summary>
+    First,
+
+    /// <summary>NULL 排在最后。</summary>
+    Last,
+}
+
+/// <summary>ORDER BY 里的一项。</summary>
+public sealed class OrderByItem(SqlExpr expr, bool descending, bool raw = false, NullsOrder? nulls = null)
+{
+    /// <summary>NULL 的位置；为 null 时由数据库决定。写法由方言决定（见 <see cref="Dialects.SqlDialect.WriteOrderByItem"/>）。</summary>
+    public NullsOrder? Nulls { get; } = nulls;
+
     /// <summary>排序表达式。</summary>
     public SqlExpr Expr { get; } = expr;
 

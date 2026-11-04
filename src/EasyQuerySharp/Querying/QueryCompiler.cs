@@ -74,7 +74,12 @@ internal static class QueryCompiler
         foreach (var order in state.OrderBys)
         {
             translator.Bind(order.Key, bindings);
-            query!.OrderBy.Add(new OrderByItem(translator.Translate(order.Key.Body), order.Descending, order.Raw));
+            // Sql.NullsFirst / NullsLast 只标记 NULL 的位置，排序的是里面的值
+            var (key, nulls) = ExpressionTranslator.StripConvert(order.Key.Body) is MethodCallExpression { Method.Name: nameof(Sql.NullsFirst) or nameof(Sql.NullsLast) } mark
+                               && mark.Method.DeclaringType == typeof(Sql)
+                ? (mark.Arguments[0], mark.Method.Name == nameof(Sql.NullsLast) ? NullsOrder.Last : NullsOrder.First)
+                : (order.Key.Body, (NullsOrder?)null);
+            query!.OrderBy.Add(new OrderByItem(translator.Translate(key), order.Descending, order.Raw, nulls));
         }
         query!.Distinct = state.Distinct;
         query.Offset = state.Offset;

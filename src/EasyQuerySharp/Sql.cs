@@ -30,6 +30,12 @@ public static class Sql
     /// </summary>
     public static T Cast<T>(object? value) => throw OnlyInQuery();
 
+    /// <summary>排序键：NULL 排在最前（对应 Java 的 asc(NULLS_FIRST) / desc(NULLS_FIRST)）：<c>.OrderBy(t => Sql.NullsFirst(t.CreateTime))</c>。</summary>
+    public static T NullsFirst<T>(T value) => throw OnlyInQuery();
+
+    /// <summary>排序键：NULL 排在最后：<c>.OrderByDescending(t => Sql.NullsLast(t.Score))</c>。</summary>
+    public static T NullsLast<T>(T value) => throw OnlyInQuery();
+
     /// <summary>
     /// 条件组：原样输出并加括号 <c>(a AND b)</c>，不与外层的 AND 合并（对应 Java 的 and(x -> …) 分组）。
     /// 结果与不加括号等价，只在需要与既有 SQL 逐字一致时使用。
@@ -85,6 +91,9 @@ public static class Sql
 
     /// <summary><c>COUNT(DISTINCT (CASE WHEN filter THEN x ELSE NULL END))</c>。</summary>
     public static long CountDistinct<T>(T value, bool filter) => throw OnlyInQuery();
+
+    /// <summary>字符串聚合（对应 Java 的 joining）：MySQL 的 <c>GROUP_CONCAT(x SEPARATOR ?)</c>、PG / SQL Server 的 STRING_AGG、Oracle 的 LISTAGG。</summary>
+    public static string StringJoin<T>(T value, string separator) => throw OnlyInQuery();
 
     /// <summary><c>SUM(x)</c>。</summary>
     public static T Sum<T>(T value) => throw OnlyInQuery();

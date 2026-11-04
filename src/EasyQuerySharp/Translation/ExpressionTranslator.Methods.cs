@@ -56,6 +56,8 @@ internal sealed partial class ExpressionTranslator
             case nameof(Sql.CountDistinct):
                 return Aggregate(call, SqlFunctionNames.CountDistinct, LiteralExpr.Null);
             // SUM 的过滤用 ELSE 0（没有满足条件的行时和为 0），其余聚合用 ELSE NULL（与 Java 版一致）
+            case nameof(Sql.StringJoin):
+                return new FunctionExpr(SqlFunctionNames.StringJoin, [Translate(call.Arguments[0]), Translate(call.Arguments[1])]);
             case nameof(Sql.Sum):
                 return Aggregate(call, SqlFunctionNames.Sum, new ParameterExpr(0L, typeof(long)));
             case nameof(Sql.SumDistinct):

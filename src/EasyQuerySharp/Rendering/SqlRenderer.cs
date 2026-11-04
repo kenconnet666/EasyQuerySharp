@@ -167,8 +167,7 @@ public sealed class SqlRenderer
             for (var i = 0; i < q.OrderBy.Count; i++)
             {
                 if (i > 0) Append(",");
-                Write(q.OrderBy[i].Expr);
-                if (!q.OrderBy[i].Raw) Append(q.OrderBy[i].Descending ? " DESC" : " ASC");
+                Dialect.WriteOrderByItem(this, q.OrderBy[i]);
             }
         }
         return this;

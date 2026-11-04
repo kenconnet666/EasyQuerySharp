@@ -64,6 +64,15 @@ public class OracleDialect : SqlDialect
         }
     }
 
+    /// <summary>Oracle 原生支持 NULLS FIRST / LAST（Java 的 OracleOrderByNullsModeSQLFunction）。</summary>
+    public override void WriteOrderByItem(Rendering.SqlRenderer renderer, OrderByItem item)
+    {
+        renderer.Write(item.Expr);
+        if (item.Raw) return;
+        renderer.Append(item.Descending ? " DESC" : " ASC");
+        if (item.Nulls is { } nulls) renderer.Append(nulls == NullsOrder.Last ? " NULLS LAST" : " NULLS FIRST");
+    }
+
     /// <summary>冲突处理要用 MERGE 改写整条语句，计划在 M6 方言铺开时实现；在此之前明确报错，避免生成错误的 SQL。</summary>
     public override void WriteInsertConflict(Rendering.SqlRenderer renderer, InsertConflict conflict) =>
         throw new NotSupportedException($"{Name} 的插入冲突处理（MERGE）尚未实现");

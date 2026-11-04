@@ -55,6 +55,18 @@ public abstract class SqlDialect
     public virtual void WriteLike(SqlRenderer renderer, LikeExpr predicate) =>
         renderer.Write(predicate.Operand).Append(predicate.Negated ? " NOT LIKE " : " LIKE ").Write(predicate.Pattern);
 
+    /// <summary>
+    /// 写 ORDER BY 的一项。指定了 NULL 位置时默认用 CASE 模拟（与 Java 的 OrderByNullsModeSQLFunction 一致，各库通用）：
+    /// <c>CASE WHEN x IS NULL THEN 1 ELSE 0 END ASC,x ASC</c>；原生片段不追加方向。
+    /// </summary>
+    public virtual void WriteOrderByItem(SqlRenderer renderer, OrderByItem item)
+    {
+        if (item.Nulls is { } nulls)
+            renderer.Append("CASE WHEN ").Write(item.Expr).Append(nulls == NullsOrder.Last ? " IS NULL THEN 1 ELSE 0 END ASC," : " IS NULL THEN 0 ELSE 1 END ASC,");
+        renderer.Write(item.Expr);
+        if (!item.Raw) renderer.Append(item.Descending ? " DESC" : " ASC");
+    }
+
     // ---------- 插入冲突（upsert）----------
 
     /// <summary>INSERT 的开头关键字；MySQL 忽略冲突时是 <c>INSERT IGNORE INTO </c>。</summary>

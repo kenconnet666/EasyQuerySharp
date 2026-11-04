@@ -197,11 +197,11 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         await SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false)
         ?? throw new InvalidOperationException($"没有查到 {typeof(TElement).Name}");
 
-    /// <summary>是否有任何一行：<c>SELECT 1 … LIMIT 1</c>。</summary>
+    /// <summary>是否有任何一行：<c>SELECT  1  … LIMIT 1</c>（与 Java 的 any 逐字一致，1 两侧各有一个空格）。</summary>
     public async Task<bool> AnyAsync(CancellationToken cancellationToken = default)
     {
         var frame = QueryCompiler.Build(ForAggregate() with { Limit = 1 });
-        frame.Query.Columns.Add(new SelectColumn(LiteralExpr.One, null));
+        frame.Query.Columns.Add(new SelectColumn(new LiteralExpr(" 1 "), null));
         var statement = SqlRenderer.Render(Db.Options.Dialect, frame.Query);
         var rows = await Db.Executor.QueryAsync(statement, _ => true, cancellationToken).ConfigureAwait(false);
         return rows.Count > 0;
