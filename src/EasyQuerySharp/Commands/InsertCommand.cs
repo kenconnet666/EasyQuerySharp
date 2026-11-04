@@ -77,7 +77,11 @@ public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> wh
     /// <summary>执行，返回受影响的行数（冲突更新时 MySQL 对更新的行计 2，与驱动的返回值一致）。</summary>
     public async Task<long> ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        foreach (var e in _entities) Db.Interceptors.BeforeWrite(e, insert: true, Interceptors);
+        foreach (var e in _entities)
+        {
+            FillKeys(e);
+            Db.Interceptors.BeforeWrite(e, insert: true, Interceptors);
+        }
         return await Db.Executor.SessionAsync(async session =>
         {
             long rows = 0;
@@ -104,6 +108,13 @@ public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> wh
             }
             return rows;
         }, cancellationToken).ConfigureAwait(false);
+    }
+
+    // 主键为 null 且配置了生成器时先生成主键（与 Java 一致：在执行之前写回实体）
+    private void FillKeys(T entity)
+    {
+        foreach (var key in Entity.KeyColumns)
+            if (key.KeyGenerator is { } generator && key.Getter(entity) is null) key.Setter?.Invoke(entity, generator.NewKey(key));
     }
 
     // 返回语句，以及需要回填的生成键列（不需要时为 null）

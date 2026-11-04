@@ -88,6 +88,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
                 IsPrimaryKey = attr?.PrimaryKey ?? false,
                 IsGenerated = attr?.Generated ?? false,
                 GeneratedSql = attr?.GeneratedSql,
+                KeyGenerator = attr?.KeyGenerator is { } keyGenerator ? CreateKeyGenerator(keyGenerator, property) : null,
                 AutoSelect = attr?.AutoSelect ?? true,
                 InsertIgnore = property.IsDefined(typeof(InsertIgnoreAttribute)),
                 UpdateIgnore = property.IsDefined(typeof(UpdateIgnoreAttribute)),
@@ -138,6 +139,11 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
         if (property.IsDefined(typeof(ColumnAttribute))) return true;
         return ScalarTypes.IsScalar(property.PropertyType);
     }
+
+    private static IKeyGenerator CreateKeyGenerator(Type generatorType, PropertyInfo property) =>
+        typeof(IKeyGenerator).IsAssignableFrom(generatorType)
+            ? (IKeyGenerator)(Activator.CreateInstance(generatorType) ?? throw new InvalidOperationException($"无法创建主键生成器 {generatorType.Name}"))
+            : throw new InvalidOperationException($"{property.DeclaringType?.Name}.{property.Name} 的主键生成器 {generatorType.Name} 没有实现 IKeyGenerator");
 
     private static IValueConverter CreateConverter(Type converterType, PropertyInfo property)
     {

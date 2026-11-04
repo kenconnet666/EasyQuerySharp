@@ -25,6 +25,9 @@ public sealed class ColumnAttribute(string? name = null) : Attribute
     /// <summary>默认查询是否选出这一列；为 false 时只有显式选择才会出现在 SELECT 里（对应 Java 的 autoSelect）。</summary>
     public bool AutoSelect { get; init; } = true;
 
+    /// <summary>主键生成器类型，需实现 <see cref="IKeyGenerator"/> 并有无参构造函数；插入时主键为 null 才生成。</summary>
+    public Type? KeyGenerator { get; init; }
+
     /// <summary>值转换器类型，需实现 <see cref="IValueConverter"/> 并有无参构造函数。</summary>
     public Type? Converter { get; init; }
 

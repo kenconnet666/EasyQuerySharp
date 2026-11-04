@@ -79,6 +79,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>关闭逻辑删除过滤。</summary>
     public bool DisableLogicDelete { get; init; }
 
+    /// <summary>结果最多允许的行数（MaxResultSize），超过时报错；为 null 时不限制。</summary>
+    public int? ResultSizeLimit { get; init; }
+
     /// <summary>追踪作用域里也不追踪这条查询的结果（AsNoTracking）。</summary>
     public bool NoTracking { get; init; }
 

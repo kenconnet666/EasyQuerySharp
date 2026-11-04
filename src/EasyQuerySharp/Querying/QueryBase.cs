@@ -127,7 +127,14 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     {
         var compiled = QueryCompiler.Compile<TElement>(State);
         var statement = SqlRenderer.Render(Db.Options.Dialect, compiled.Sql);
-        var rows = await Db.Executor.QueryAsync(statement, compiled.Shaper, cancellationToken).ConfigureAwait(false);
+        var shaper = compiled.Shaper;
+        if (State.ResultSizeLimit is { } limit)
+        {
+            var count = 0;
+            var inner = shaper;
+            shaper = reader => ++count > limit ? throw new ResultSizeLimitException(limit) : inner(reader);
+        }
+        var rows = await Db.Executor.QueryAsync(statement, shaper, cancellationToken).ConfigureAwait(false);
         // 投影里的导航带出：每个导航一次 IN 查询，挂回刚读出的行
         await Includes.IncludeRunner.RunAsync(Db, compiled.Includes, cancellationToken).ConfigureAwait(false);
         Track(rows);
@@ -155,6 +162,32 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         var track = !State.NoTracking && Db.Tracker.Active && Db.Tracker.CanTrack(typeof(TElement));
         await foreach (var row in Db.Executor.StreamAsync(statement, compiled.Shaper, cancellationToken).ConfigureAwait(false))
             yield return track && row is { } r ? (TElement)Db.Tracker.AttachQueried(r) : row;
+    }
+
+    /// <summary>
+    /// 分块读取（对应 Java 的 toChunk / toChunkIf）：每次按 LIMIT / OFFSET 取 <paramref name="size"/> 行，取到不足一块为止。
+    /// 需要稳定的排序（否则块之间可能重复或遗漏）；想提前结束直接跳出 <c>await foreach</c>。
+    /// </summary>
+    /// <example><code>await foreach (var blogs in db.Query&lt;Blog&gt;().OrderBy(b => b.Id).ToChunksAsync(100)) { … }</code></example>
+    public async IAsyncEnumerable<List<TElement>> ToChunksAsync(int size, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
+        for (long offset = 0; ; offset += size)
+        {
+            var chunk = await Limit(offset, size).ToListAsync(cancellationToken).ConfigureAwait(false);
+            if (chunk.Count > 0) yield return chunk;
+            if (chunk.Count < size) yield break;
+        }
+    }
+
+    /// <summary>
+    /// 结果超过 <paramref name="rows"/> 行时抛出 <see cref="ResultSizeLimitException"/>（对应 Java 的 setResultSizeLimit），
+    /// 用来防止误查出整张大表；读到第 rows + 1 行时立即停止。
+    /// </summary>
+    public TSelf MaxResultSize(int rows)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(rows, 0);
+        return With(State with { ResultSizeLimit = rows });
     }
 
     /// <summary>执行并把每行读成 列名 → 值 的字典（对应 Java 的 toMaps）；列名忽略大小写，重复的列名抛出异常。</summary>

@@ -3,21 +3,21 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2338 个用例。
 
-合计：已移植 467、偏离 93、不适用 7、骨架 15、待做 1756。
+合计：已移植 477、偏离 93、不适用 7、骨架 15、待做 1746。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 111 | 20 | 2 | 0 | 269 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 113 | 20 | 2 | 0 | 267 |
 | 分页结果 | `query.page` | M1 | 22 | 9 | 2 | 0 | 0 | 11 |
 | 原生 SQL | `sql.native` | M1 | 50 | 13 | 5 | 0 | 0 | 32 |
 | 删除 | `write.delete` | M1 | 21 | 7 | 1 | 2 | 0 | 11 |
-| 插入 | `write.insert` | M1 | 48 | 17 | 0 | 0 | 1 | 30 |
+| 插入 | `write.insert` | M1 | 48 | 18 | 0 | 0 | 1 | 29 |
 | 更新 | `write.update` | M1 | 50 | 19 | 3 | 0 | 0 | 28 |
 | CASE WHEN | `expr.case` | M2 | 27 | 5 | 7 | 0 | 0 | 15 |
-| 日期函数 | `func.date` | M2 | 100 | 16 | 2 | 0 | 0 | 82 |
+| 日期函数 | `func.date` | M2 | 100 | 17 | 2 | 0 | 0 | 81 |
 | 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 19 | 2 | 0 | 0 | 38 |
 | 字符串聚合（joining） | `func.joining` | M2 | 29 | 3 | 0 | 0 | 5 | 21 |
 | JSON 函数 | `func.json` | M2 | 12 | 0 | 0 | 0 | 0 | 12 |
@@ -27,10 +27,10 @@
 | 窗口函数 | `window` | M2 | 44 | 0 | 0 | 0 | 0 | 44 |
 | CTE | `query.cte` | M3 | 11 | 0 | 0 | 0 | 0 | 11 |
 | 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 28 | 2 | 0 | 2 | 51 |
-| 显式 join | `query.join` | M3 | 88 | 28 | 2 | 1 | 0 | 57 |
+| 显式 join | `query.join` | M3 | 88 | 29 | 2 | 1 | 0 | 56 |
 | 无实体的 Map 查询、toMap | `query.map` | M3 | 11 | 2 | 0 | 0 | 0 | 9 |
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 0 | 0 | 0 | 0 | 2 |
-| 流式读取 | `query.stream` | M3 | 9 | 0 | 0 | 0 | 0 | 9 |
+| 流式读取 | `query.stream` | M3 | 9 | 5 | 0 | 0 | 0 | 4 |
 | union / union all | `query.union` | M3 | 18 | 12 | 3 | 0 | 1 | 2 |
 | 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 35 | 0 | 0 | 0 | 1 | 34 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 0 | 0 | 0 | 0 | 4 |
@@ -273,13 +273,13 @@
 | QueryTest18.java#test125 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest18.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:21 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'id' IS NULL` |
 | QueryTest18.java#test8 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:31：Java 代理对象的 __getMappingPath（导航路径字符串），C# 直接写属性路径字符串，没有对应 API |  |
-| QueryTest18.java#testDraft | 待做 |  |  |
+| QueryTest18.java#testDraft | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:188 |  |
 | QueryTest18.java#testEnum | 待做 |  |  |
 | QueryTest18.java#testFETCHER | 待做 |  | `SELECT t.'id',t.'stars' FROM 't_topic' t WHERE t.'id' = ?` |
 | QueryTest18.java#testFinal | 待做 |  | `SELECT a.'id',a.'create_time',a.'update_time',a.'create_by',a.'update_by',a.'deleted',a.'title',a.'c…` |
 | QueryTest18.java#testMaxEnum | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:81 | `SELECT MAX(t.'topic_type') FROM 't_topic_type' t` |
 | QueryTest18.java#testPartition1 | 待做 |  |  |
-| QueryTest18.java#testResultSizeLimit1 | 待做 |  |  |
+| QueryTest18.java#testResultSizeLimit1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:181 |  |
 | QueryTest18.java#testStarStr | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','star',CAST('star'…` |
 | QueryTest19.java#aaa | 待做 |  |  |
 | QueryTest19.java#aaa1 | 待做 |  | `SELECT 'id','name','age' FROM 'a'.'dbo'.'my_user'` |
@@ -626,7 +626,7 @@
 | QueryTest.java#query71 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.NativeSql.cs:117 |  |
 | QueryTest15.java#test2 | 待做 |  | `SELECT 'id','first_name','last_name','birthday',CONCAT('first_name','last_name') AS 'full_name',CEIL…` |
 | QueryTest15.java#test3 | 待做 |  | `SELECT 'id','first_name','last_name','birthday',CONCAT('first_name','last_name') AS 'full_name',CEIL…` |
-| QueryTest18.java#test111 | 待做 |  |  |
+| QueryTest18.java#test111 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:118 |  |
 | QueryTest27.java#testUUId | 待做 |  |  |
 | QueryTest4.java#testJson1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest4.cs:45 |  |
 | QueryTest4.java#testJson2 | 待做 |  |  |
@@ -786,7 +786,7 @@
 | QueryTest18.java#easyQuery | 待做 |  |  |
 | QueryTest18.java#easyQueryPrint1 | 待做 |  |  |
 | QueryTest18.java#test10 | 待做 |  |  |
-| QueryTest18.java#testxx | 待做 |  | `select * from t_topic where id != ?` |
+| QueryTest18.java#testxx | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:143 | `select * from t_topic where id != ?` |
 | QueryTest19.java#test2 | 待做 |  | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN 't_user_addr…` |
 | QueryTest19.java#testNow | 待做 |  |  |
 | QueryTest2.java#queryTest16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest2.cs:217 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
@@ -1309,7 +1309,7 @@
 | QueryTest15.java#test5 | 待做 |  | `SELECT t.'id',t.'first_name',t.'last_name',t.'birthday',CONCAT(t.'first_name',t.'last_name') AS 'ful…` |
 | QueryTest15.java#test6 | 待做 |  | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
 | QueryTest18.java#test | 待做 |  |  |
-| QueryTest18.java#test124 | 待做 |  | `SELECT t.'id',t.'title',t1.'id' AS 'content',t1.'top' AS 'score' FROM 't_topic' t LEFT JOIN 't_blog'…` |
+| QueryTest18.java#test124 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:134 | `SELECT t.'id',t.'title',t1.'id' AS 'content',t1.'top' AS 'score' FROM 't_topic' t LEFT JOIN 't_blog'…` |
 | QueryTest18.java#test18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:73 |  |
 | QueryTest19.java#mapJoinFixed | 待做 |  | `SELECT t.'id1' AS 'id1',t.'name1' AS 'name1',t1.'id2' AS 'id2',t1.'name2' AS 'name2' FROM 'table1' t…` |
 | QueryTest2.java#query113 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest2.cs:67 |  |
@@ -1399,11 +1399,11 @@
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
 | QueryTest17.java#testOptional | 待做 |  |  |
-| QueryTest18.java#testChunk1 | 待做 |  |  |
-| QueryTest18.java#testChunk2 | 待做 |  |  |
-| QueryTest18.java#testChunk3 | 待做 |  |  |
-| QueryTest18.java#testChunk4 | 待做 |  |  |
-| QueryTest18.java#testStreamChunk1 | 待做 |  |  |
+| QueryTest18.java#testChunk1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:154 |  |
+| QueryTest18.java#testChunk2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:154 |  |
+| QueryTest18.java#testChunk3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:154 |  |
+| QueryTest18.java#testChunk4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:154 |  |
+| QueryTest18.java#testStreamChunk1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:169 |  |
 | QueryTest23.java#subquery | 待做 |  | `select * from t_blog where id <> ?` |
 | QueryTest25.java#test12 | 待做 |  |  |
 | pgsql/QueryTest19.java#testChunk | 待做 |  |  |

@@ -99,4 +99,93 @@ public sealed partial class QueryTest18(MySqlFixture fixture) : MySqlTest(fixtur
         await Db.Query<Topic>().LeftJoin<BlogEntity>((t, b2) => t.Id == b2.Id).Distinct().ToPageAsync(1, 2, Ct);
         listen.AssertSql("SELECT DISTINCT t.`id`,t.`stars`,t.`title`,t.`create_time` FROM `t_topic` t LEFT JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` LIMIT 2");
     }
+
+    /// <summary>对应 Java：MyTestPrimaryKeyGenerator（UUID 字符串主键）。</summary>
+    public sealed class GuidStringKey : Metadata.IKeyGenerator
+    {
+        public object NewKey(Metadata.ColumnMetadata column) => Guid.NewGuid().ToString();
+    }
+
+    /// <summary>对应 Java：entity/MyTestPrimaryKey。</summary>
+    [Metadata.Table("t_test_p")]
+    public sealed class MyTestPrimaryKey
+    {
+        [Metadata.Column(PrimaryKey = true, KeyGenerator = typeof(GuidStringKey))]
+        public string? Id { get; set; }
+    }
+
+    // 主键在执行之前生成并写回实体（即使表不存在、插入失败）
+    [Fact, Upstream("QueryTest18.java#test111")]
+    public async Task Test111()
+    {
+        var entity = new MyTestPrimaryKey();
+        Assert.Null(entity.Id);
+        try
+        {
+            await Db.Insert(entity).ExecuteAsync(Ct);
+        }
+        catch (EasyQueryException)
+        {
+            // 表不存在时插入失败，主键仍已生成
+        }
+        Assert.Equal(36, entity.Id!.Length);
+    }
+
+    [Fact, Upstream("QueryTest18.java#test124")]
+    public async Task Test124()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<Topic>().LeftJoin<BlogEntity>((t, b2) => t.Id == b2.Id)
+            .Select((t, b2) => new BlogEntityVO2 { Id = t.Id, Title = t.Title, Content = b2.Id, Score = b2.Top == true ? 1m : 0m }).ToListAsync(Ct);
+        Assert.StartsWith("SELECT t.`id`,t.`title`,t1.`id` AS `content`,", listen.Last.Statement.Text, StringComparison.Ordinal);
+    }
+
+    [Fact, Upstream("QueryTest18.java#testxx")]
+    public async Task Testxx()
+    {
+        Assert.NotNull(await Db.QuerySql<Topic>("select * from t_topic where id != ? ", "123").Where(t => t.Id != "456").ToPageAsync(1, 2, Ct));
+        var joinTable = Db.QuerySql<Topic>("select * from t_topic where id != ? ", "123");
+        Assert.NotNull(await Db.Query<BlogEntity>().LeftJoin(joinTable, (b, t2) => b.Id == t2.Id)
+            .Where((b1, t2) => b1.CreateTime > DateTime.Now && t2.CreateTime!.Value.ToString("yyyy") == "2014")
+            .Select((b1, t2) => new Draft<string?, string?>(b1.Id, t2.Id)).ToListAsync(Ct));
+    }
+
+    // Java 的 toChunk / toChunkIf（回调返回 false 时停止）：C# 的 await foreach + ToChunksAsync，break 即停止
+    [Theory, Upstream("QueryTest18.java#testChunk1"), Upstream("QueryTest18.java#testChunk2"), Upstream("QueryTest18.java#testChunk3"), Upstream("QueryTest18.java#testChunk4")]
+    [InlineData(20)]
+    [InlineData(3)]
+    public async Task TestChunk1(int size)
+    {
+        var ids = new HashSet<string>();
+        await foreach (var blogs in Db.Query<BlogEntity>().OrderBy(b => b.CreateTime).ThenBy(b => b.Id).ToChunksAsync(size, Ct))
+        {
+            Assert.True(blogs.Count <= size);
+            foreach (var blog in blogs) Assert.True(ids.Add(blog.Id!), "id 重复：" + blog.Id);
+        }
+        Assert.Equal(100, ids.Count);
+    }
+
+    // 流式读取再分块：.NET 10 自带的 AsyncEnumerable.Chunk
+    [Fact, Upstream("QueryTest18.java#testStreamChunk1")]
+    public async Task TestStreamChunk1()
+    {
+        var ids = new HashSet<string>();
+        await foreach (var blogs in Db.Query<BlogEntity>().ToAsyncEnumerable(Ct).Chunk(20).WithCancellation(Ct))
+        {
+            Assert.True(blogs.Length <= 20);
+            foreach (var blog in blogs) Assert.True(ids.Add(blog.Id!));
+        }
+        Assert.Equal(100, ids.Count);
+    }
+
+    [Fact, Upstream("QueryTest18.java#testResultSizeLimit1")]
+    public async Task TestResultSizeLimit1()
+    {
+        var ex = await Assert.ThrowsAsync<ResultSizeLimitException>(() => Db.Query<BlogEntity>().MaxResultSize(10).ToListAsync(Ct));
+        Assert.Equal(10, ex.Limit);
+    }
+
+    [Fact, Upstream("QueryTest18.java#testDraft")]
+    public async Task TestDraft() =>
+        Assert.NotEmpty(await Db.Query<Topic>().Take(100).Where(t => t.Id != "123").Select(t => new Draft<string?, string?>(t.Id, t.Title)).ToListAsync(Ct));
 }

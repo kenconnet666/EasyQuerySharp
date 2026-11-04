@@ -175,7 +175,7 @@ public sealed partial class QueryTest3
     }
 
     // Java 的自定义分页器 MyPager：C# 的 ToPageAsync 已返回总数与当前页
-    [Fact, Upstream("QueryTest3.java#testGenericKey2"), Upstream("QueryTest3.java#testGenericKey2_1")]
+    [Fact, Upstream("QueryTest3.java#testGenericKey2")]
     public async Task TestGenericKey2()
     {
         var page = await Db.Query<TopicGenericKey>().WhereById("1").ToPageAsync(1, 2, Ct);

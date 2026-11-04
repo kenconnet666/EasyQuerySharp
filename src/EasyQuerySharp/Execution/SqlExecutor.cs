@@ -108,7 +108,7 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
             await using var command = CreateCommand(statement);
             e.Rows = await body(command).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not ResultSizeLimitException)
         {
             e.Exception = ex;
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
