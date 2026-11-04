@@ -102,6 +102,9 @@ public sealed class Query<T> : QueryBase<Query<T>, T>
     /// <summary>给最近一个表来源指定别名（对应 Java 的 asAlias）。</summary>
     public Query<T> AsAlias(string alias) => new(QueryStates.WithLast(State, s => s with { Alias = alias }));
 
+    /// <summary>最近一个表来源不加逻辑删除条件（对应 Java 的 tableLogicDelete(() -> false)），其它表照常。</summary>
+    public Query<T> DisableTableLogicDelete() => new(QueryStates.WithLast(State, s => s with { NoLogicDelete = true }));
+
     /// <summary>这条查询里把最近一个实体表换成 <paramref name="tableName"/>（对应 Java 的 asTable）。</summary>
     public Query<T> AsTable(string tableName) => new(QueryStates.WithLast(State, s => s is EntitySource e ? e with { TableName = tableName } : s));
 

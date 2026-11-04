@@ -37,7 +37,7 @@ internal static class QueryCompiler
         {
             var binding = CreateBinding(db, source);
             bindings.Add(binding);
-            var filters = Filters(db, state, binding);
+            var filters = Filters(db, state, binding, source.NoLogicDelete);
 
             if (query is null)
             {
@@ -205,11 +205,11 @@ internal static class QueryCompiler
     }
 
     /// <summary>某个表来源自带的过滤条件：逻辑删除，以及拦截器给出的条件。</summary>
-    private static List<SqlExpr> Filters(EasyDb db, QueryState state, SourceBinding binding)
+    private static List<SqlExpr> Filters(EasyDb db, QueryState state, SourceBinding binding, bool noLogicDelete = false)
     {
         var result = new List<SqlExpr>();
         if (binding is not EntityBinding { EntityTable: var table }) return result;
-        if (!state.DisableLogicDelete && LogicDeleteFilter(table) is { } logicDelete) result.Add(logicDelete);
+        if (!state.DisableLogicDelete && !noLogicDelete && LogicDeleteFilter(table) is { } logicDelete) result.Add(logicDelete);
         result.AddRange(db.Interceptors.QueryFilters(table, state.Interceptors));
         return result;
     }

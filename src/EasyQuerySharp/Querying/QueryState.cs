@@ -11,6 +11,9 @@ internal abstract record QuerySource
     /// <summary>用户指定的别名（AsAlias）。</summary>
     public string? Alias { get; init; }
 
+    /// <summary>这个表来源不加逻辑删除条件（DisableTableLogicDelete）。</summary>
+    public bool NoLogicDelete { get; init; }
+
     /// <summary>与前面表的连接方式；FROM 的第一个来源为 null。</summary>
     public JoinKind? Join { get; init; }
 

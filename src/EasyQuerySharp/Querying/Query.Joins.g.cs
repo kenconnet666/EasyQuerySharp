@@ -64,6 +64,9 @@ public sealed class Query<T1, T2> : QueryBase<Query<T1, T2>, T1>
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, TResult>> selector) => new(State with { Selector = selector });
 
+    /// <summary>最近连接的表不加逻辑删除条件（对应 Java 的 tableLogicDelete(() -> false)），其它表照常。</summary>
+    public Query<T1, T2> DisableTableLogicDelete() => new(QueryStates.WithLast(State, s => s with { NoLogicDelete = true }));
+
     /// <summary>给最近连接的表指定别名（对应 Java 的 asAlias）。</summary>
     public Query<T1, T2> AsAlias(string alias) => new(QueryStates.WithLast(State, s => s with { Alias = alias }));
 
@@ -170,6 +173,9 @@ public sealed class Query<T1, T2, T3> : QueryBase<Query<T1, T2, T3>, T1>
 
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, TResult>> selector) => new(State with { Selector = selector });
+
+    /// <summary>最近连接的表不加逻辑删除条件（对应 Java 的 tableLogicDelete(() -> false)），其它表照常。</summary>
+    public Query<T1, T2, T3> DisableTableLogicDelete() => new(QueryStates.WithLast(State, s => s with { NoLogicDelete = true }));
 
     /// <summary>给最近连接的表指定别名（对应 Java 的 asAlias）。</summary>
     public Query<T1, T2, T3> AsAlias(string alias) => new(QueryStates.WithLast(State, s => s with { Alias = alias }));
@@ -278,6 +284,9 @@ public sealed class Query<T1, T2, T3, T4> : QueryBase<Query<T1, T2, T3, T4>, T1>
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, TResult>> selector) => new(State with { Selector = selector });
 
+    /// <summary>最近连接的表不加逻辑删除条件（对应 Java 的 tableLogicDelete(() -> false)），其它表照常。</summary>
+    public Query<T1, T2, T3, T4> DisableTableLogicDelete() => new(QueryStates.WithLast(State, s => s with { NoLogicDelete = true }));
+
     /// <summary>给最近连接的表指定别名（对应 Java 的 asAlias）。</summary>
     public Query<T1, T2, T3, T4> AsAlias(string alias) => new(QueryStates.WithLast(State, s => s with { Alias = alias }));
 
@@ -384,6 +393,9 @@ public sealed class Query<T1, T2, T3, T4, T5> : QueryBase<Query<T1, T2, T3, T4, 
 
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, TResult>> selector) => new(State with { Selector = selector });
+
+    /// <summary>最近连接的表不加逻辑删除条件（对应 Java 的 tableLogicDelete(() -> false)），其它表照常。</summary>
+    public Query<T1, T2, T3, T4, T5> DisableTableLogicDelete() => new(QueryStates.WithLast(State, s => s with { NoLogicDelete = true }));
 
     /// <summary>给最近连接的表指定别名（对应 Java 的 asAlias）。</summary>
     public Query<T1, T2, T3, T4, T5> AsAlias(string alias) => new(QueryStates.WithLast(State, s => s with { Alias = alias }));
@@ -492,6 +504,9 @@ public sealed class Query<T1, T2, T3, T4, T5, T6> : QueryBase<Query<T1, T2, T3, 
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, TResult>> selector) => new(State with { Selector = selector });
 
+    /// <summary>最近连接的表不加逻辑删除条件（对应 Java 的 tableLogicDelete(() -> false)），其它表照常。</summary>
+    public Query<T1, T2, T3, T4, T5, T6> DisableTableLogicDelete() => new(QueryStates.WithLast(State, s => s with { NoLogicDelete = true }));
+
     /// <summary>给最近连接的表指定别名（对应 Java 的 asAlias）。</summary>
     public Query<T1, T2, T3, T4, T5, T6> AsAlias(string alias) => new(QueryStates.WithLast(State, s => s with { Alias = alias }));
 
@@ -598,6 +613,9 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7> : QueryBase<Query<T1, T2, 
 
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, TResult>> selector) => new(State with { Selector = selector });
+
+    /// <summary>最近连接的表不加逻辑删除条件（对应 Java 的 tableLogicDelete(() -> false)），其它表照常。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7> DisableTableLogicDelete() => new(QueryStates.WithLast(State, s => s with { NoLogicDelete = true }));
 
     /// <summary>给最近连接的表指定别名（对应 Java 的 asAlias）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7> AsAlias(string alias) => new(QueryStates.WithLast(State, s => s with { Alias = alias }));
@@ -706,6 +724,9 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8> : QueryBase<Query<T1, 
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, TResult>> selector) => new(State with { Selector = selector });
 
+    /// <summary>最近连接的表不加逻辑删除条件（对应 Java 的 tableLogicDelete(() -> false)），其它表照常。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8> DisableTableLogicDelete() => new(QueryStates.WithLast(State, s => s with { NoLogicDelete = true }));
+
     /// <summary>给最近连接的表指定别名（对应 Java 的 asAlias）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8> AsAlias(string alias) => new(QueryStates.WithLast(State, s => s with { Alias = alias }));
 
@@ -813,6 +834,9 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> : QueryBase<Query<
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult>> selector) => new(State with { Selector = selector });
 
+    /// <summary>最近连接的表不加逻辑删除条件（对应 Java 的 tableLogicDelete(() -> false)），其它表照常。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> DisableTableLogicDelete() => new(QueryStates.WithLast(State, s => s with { NoLogicDelete = true }));
+
     /// <summary>给最近连接的表指定别名（对应 Java 的 asAlias）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> AsAlias(string alias) => new(QueryStates.WithLast(State, s => s with { Alias = alias }));
 
@@ -919,6 +943,9 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : QueryBase<Q
 
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>> selector) => new(State with { Selector = selector });
+
+    /// <summary>最近连接的表不加逻辑删除条件（对应 Java 的 tableLogicDelete(() -> false)），其它表照常。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> DisableTableLogicDelete() => new(QueryStates.WithLast(State, s => s with { NoLogicDelete = true }));
 
     /// <summary>给最近连接的表指定别名（对应 Java 的 asAlias）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> AsAlias(string alias) => new(QueryStates.WithLast(State, s => s with { Alias = alias }));

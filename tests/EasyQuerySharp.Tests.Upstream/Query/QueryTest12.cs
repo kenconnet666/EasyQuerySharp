@@ -153,4 +153,66 @@ public sealed partial class QueryTest12(MySqlFixture fixture) : MySqlTest(fixtur
         listen.AssertSql("SELECT " + Prefixed("t", BlogColumns) + " FROM `t_blog` t WHERE t.`deleted` = ? AND (FIND_IN_SET(t.`title`,(SELECT GROUP_CONCAT(t1.`title` SEPARATOR ?) FROM `t_blog` t1 WHERE t1.`deleted` = ? AND t1.`id` = ? AND t1.`title` = ?)) OR t.`score` > ?)");
         listen.AssertParams("false(Boolean),,(String),false(Boolean),1(String),2(String),1(BigDecimal)");
     }
+
+    // Java 的 tableLogicDelete(() -> false) 作用于最近一个表来源：C# 的 DisableTableLogicDelete()
+    [Fact, Upstream("QueryTest12.java#testLogicDeleteRecentlyTable")]
+    public async Task TestLogicDeleteRecentlyTable()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<BlogEntity>().LeftJoin<BlogEntity>((b, b2) => b.Id == b2.Id).DisableTableLogicDelete().Where((b1, b2) => b1.Title!.Contains("123")).ToListAsync(Ct);
+        listen.AssertSql("SELECT " + Prefixed("t", BlogColumns) + " FROM `t_blog` t LEFT JOIN `t_blog` t1 ON t.`id` = t1.`id` WHERE t.`deleted` = ? AND t.`title` LIKE ?");
+    }
+
+    [Fact, Upstream("QueryTest12.java#testLogicDeleteRecentlyTable1")]
+    public async Task TestLogicDeleteRecentlyTable1()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<BlogEntity>().DisableTableLogicDelete().LeftJoin<BlogEntity>((b, b2) => b.Id == b2.Id).Where((b1, b2) => b1.Title!.Contains("123")).ToListAsync(Ct);
+        listen.AssertSql("SELECT " + Prefixed("t", BlogColumns) + " FROM `t_blog` t LEFT JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` WHERE t.`title` LIKE ?");
+    }
+
+    [Fact, Upstream("QueryTest12.java#testSelectPropTypeColumn1")]
+    public async Task TestSelectPropTypeColumn1()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<BlogEntity>().GroupBy(b => b.Id)
+            .Select(g => new BlogEntity { Star = g.Sum(e => Sql.Raw<int?>("case {0} when {1} then 1 else 0 end", e.Score, 1)) }).ToListAsync(Ct);
+        listen.AssertSql("SELECT SUM(case t.`score` when ? then 1 else 0 end) AS `star` FROM `t_blog` t WHERE t.`deleted` = ? GROUP BY t.`id`");
+    }
+
+    [Fact, Upstream("QueryTest12.java#testSelectPropTypeColumn2")]
+    public async Task TestSelectPropTypeColumn2()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<BlogEntity>().GroupBy(b => b.Id)
+            .Select(g => new BlogEntity { Score = g.Min(e => Sql.Raw<decimal?>("case {0} when {1} then 1 else 0 end", e.Score, 1)) }).ToListAsync(Ct);
+        listen.AssertSql("SELECT MIN(case t.`score` when ? then 1 else 0 end) AS `score` FROM `t_blog` t WHERE t.`deleted` = ? GROUP BY t.`id`");
+    }
+
+    // Java 在 eq(表达式) 时多写了一个空格（AND  t.`title`），C# 是单个空格
+    [Theory, Upstream("QueryTest12.java#testSelectPropTypeColumn3", Deviation = "Java 的 WHERE 里多一个空格（AND  t.`title` = SUBSTR(..)），C# 是单个空格"),
+     Upstream("QueryTest12.java#testSelectPropTypeColumn4", Deviation = "同 testSelectPropTypeColumn3"),
+     Upstream("QueryTest12.java#testSelectPropTypeColumn5", Deviation = "同 testSelectPropTypeColumn3"),
+     Upstream("QueryTest12.java#testSelectPropTypeColumn6")]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public async Task TestSelectPropTypeColumn3(int variant)
+    {
+        var query = variant switch
+        {
+            1 => Db.Query<BlogEntity>().Where(b => b.Title == b.Title!.Substring(1, 2)),
+            2 => Db.Query<BlogEntity>().Where(b => b.Title == (b.Title == b.Id ? "1" : "2")),
+            _ => Db.Query<BlogEntity>().Where(b => (b.Title == b.Id ? "1" : "2") == b.Title),
+        };
+        using var listen = SqlCapture.Listen();
+        await query.Select(b => new BlogEntity { Score = b.Id == "123" ? 1m : 2m }).ToListAsync(Ct);
+        var where = variant switch
+        {
+            1 => "t.`title` = SUBSTR(t.`title`,2,2)",
+            2 => "t.`title` = (CASE WHEN t.`title` = t.`id` THEN ? ELSE ? END)",
+            _ => "(CASE WHEN t.`title` = t.`id` THEN ? ELSE ? END) = t.`title`",
+        };
+        listen.AssertSql("SELECT (CASE WHEN t.`id` = ? THEN ? ELSE ? END) AS `score` FROM `t_blog` t WHERE t.`deleted` = ? AND " + where);
+    }
 }
