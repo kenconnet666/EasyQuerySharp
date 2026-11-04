@@ -216,32 +216,55 @@ public abstract class WriteCommandBase<TSelf, T> : EntityCommandBase<TSelf, T>
     /// 条件：逻辑删除（未关闭时）、乐观锁版本、拦截器过滤、按实体写入时该实体的定位条件、用户条件（顺序与 Java 一致）。
     /// 按条件写入且没有任何用户条件时，除非调用过 <see cref="All"/>，否则拒绝。
     /// </summary>
-    private protected List<SqlExpr> BuildWhere(EntityTableSource table, T? entity, bool applyLogicDelete)
+    private protected List<SqlExpr> BuildWhere(WriteScope scope, T? entity, bool applyLogicDelete)
     {
         if (entity is null && _wheres.Count == 0 && !AllowAll)
             throw new InvalidOperationException($"{typeof(T).Name} 的更新 / 删除没有条件；确认要整表操作请调用 All()");
 
+        var table = scope.Table;
         var result = new List<SqlExpr>();
         if (applyLogicDelete && !LogicDeleteDisabled && QueryCompiler.LogicDeleteFilter(Db, table) is { } ld) result.Add(ld);
         if (VersionOf(entity) is var (versionColumn, current))
             result.Add(new BinaryExpr(table.Column(versionColumn), SqlBinaryOperator.Equal, ExpressionTranslator.Parameter(current, versionColumn.ClrType)));
         result.AddRange(Db.Interceptors.QueryFilters(table, Interceptors));
         if (entity is not null) result.AddRange(EntityPredicates(table, entity));
-        if (_wheres.Count == 0) return result;
-
-        // 条件里的集合导航翻译成关联子查询，需要翻译上下文；对一导航要 JOIN 到目标表，UPDATE / DELETE 还不支持
-        var scratch = new SelectQuery(table);
-        var context = new TranslationContext(Db.Metadata,
-            (t, logicDelete) => [.. (logicDelete && QueryCompiler.LogicDeleteFilter(Db, t) is { } filter ? [filter] : Array.Empty<SqlExpr>()), .. Db.Interceptors.QueryFilters(t, Interceptors)],
-            scratch) { Db = Db };
-        foreach (var where in _wheres)
-        {
-            var translator = new ExpressionTranslator([]) { Context = context };
-            translator.Bind(where, [new EntityBinding(table)]);
-            result.Add(translator.TranslatePredicate(where.Body));
-        }
-        if (scratch.Joins.Count > 0)
-            throw new NotSupportedException($"{typeof(T).Name} 的更新 / 删除条件里用到了对一导航（需要 JOIN），还不支持；请改写成子查询");
+        foreach (var where in _wheres) result.Add(scope.Translate(where, predicate: true));
         return result;
+    }
+
+    /// <summary>新建一条写入语句的翻译作用域。</summary>
+    private protected WriteScope NewScope() => new(Db, NewTable(), Interceptors);
+
+    /// <summary>
+    /// 一条写入语句的翻译作用域：SET 与条件共用一个翻译上下文，集合导航翻译成关联子查询，
+    /// 对一导航补出的 JOIN 收集起来（别名按出现顺序编号，所以先翻译 SET 再翻译条件，与 Java 一致）。
+    /// </summary>
+    private protected sealed class WriteScope
+    {
+        private readonly SelectQuery _scratch;
+        private readonly TranslationContext _context;
+
+        public WriteScope(EasyDb db, EntityTableSource table, InterceptorSelection interceptors)
+        {
+            Table = table;
+            _scratch = new SelectQuery(table);
+            _context = new TranslationContext(db.Metadata,
+                (t, logicDelete) => [.. (logicDelete && QueryCompiler.LogicDeleteFilter(db, t) is { } filter ? [filter] : Array.Empty<SqlExpr>()), .. db.Interceptors.QueryFilters(t, interceptors)],
+                _scratch) { Db = db };
+        }
+
+        /// <summary>写入的目标表。</summary>
+        public EntityTableSource Table { get; }
+
+        /// <summary>对一导航连接的表；写入里都是 INNER JOIN（与 Java 一致）。</summary>
+        public IEnumerable<JoinClause> Joins => _scratch.Joins.Select(j => new JoinClause(JoinKind.Inner, j.Table, j.On));
+
+        /// <summary>翻译参数为目标实体的 lambda（条件或值）。</summary>
+        public SqlExpr Translate(LambdaExpression lambda, bool predicate)
+        {
+            var translator = new ExpressionTranslator([]) { Context = _context };
+            translator.Bind(lambda, [new EntityBinding(Table)]);
+            return predicate ? translator.TranslatePredicate(lambda.Body) : translator.Translate(lambda.Body);
+        }
     }
 }

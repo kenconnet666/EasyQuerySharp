@@ -21,9 +21,15 @@ internal static class AliasAllocator
         return tables.OfType<CteTableSource>().DistinctBy(c => c.Name, StringComparer.Ordinal).ToList();
     }
 
-    public static void Allocate(TableSource single, IEnumerable<SqlExpr> expressions)
+    /// <summary>UPDATE / DELETE：目标表、连接的表（含 ON 里的子查询），再是 SET / WHERE 里的子查询。</summary>
+    public static void Allocate(TableSource single, IReadOnlyList<JoinClause> joins, IEnumerable<SqlExpr> expressions)
     {
         var tables = new List<TableSource> { single };
+        foreach (var join in joins)
+        {
+            CollectTable(join.Table, tables);
+            if (join.On is not null) CollectExpr(join.On, tables);
+        }
         foreach (var e in expressions) CollectExpr(e, tables);
         Assign(tables, forceAlias: false);
     }

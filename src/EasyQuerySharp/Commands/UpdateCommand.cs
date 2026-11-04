@@ -173,18 +173,20 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     // 按实体更新时，追踪的实体没有变化返回 null（不发语句）
     private RenderedUpdate? Render(T? entity)
     {
-        var table = NewTable();
+        var scope = NewScope();
+        var table = scope.Table;
         var update = new UpdateStatement(table);
         var tracked = entity is null ? null : Db.Tracker.Find(entity);
         if (entity is not null) AddEntitySets(update, table, entity, tracked);
-        AddExpressionSets(update, table);
+        AddExpressionSets(update, scope);
         if (update.Sets.Count == 0)
         {
             if (tracked is not null) return null;
             throw new InvalidOperationException($"{typeof(T).Name} 的更新没有要写的列");
         }
         var newVersion = AddVersionSet(update, table, entity);
-        update.Where.AddRange(BuildWhere(table, entity, applyLogicDelete: true));
+        update.Where.AddRange(BuildWhere(scope, entity, applyLogicDelete: true));
+        update.Joins.AddRange(scope.Joins);
         return new RenderedUpdate(SqlRenderer.Render(Db.Options.Dialect, update), tracked, entity, newVersion);
     }
 
@@ -231,14 +233,13 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
 
     private sealed record RenderedUpdate(SqlStatement Statement, Tracking.TrackedEntry? Tracked, T? Entity, object? NewVersion);
 
-    private void AddExpressionSets(UpdateStatement update, EntityTableSource table)
+    // 值里可以用导航（对一导航补出 JOIN），与条件共用翻译作用域
+    private void AddExpressionSets(UpdateStatement update, WriteScope scope)
     {
         foreach (var set in _sets)
         {
-            var column = table.Column(Entity.GetColumn(set.Member.Name));
-            var translator = new ExpressionTranslator([]);
-            translator.Bind(set.Value, [new EntityBinding(table)]);
-            var value = ExpressionTranslator.ApplyConverter(translator.Translate(set.Value.Body), column);
+            var column = scope.Table.Column(Entity.GetColumn(set.Member.Name));
+            var value = ExpressionTranslator.ApplyConverter(scope.Translate(set.Value, predicate: false), column);
             update.Sets.Add((column, set.Kind switch
             {
                 // 自增 / 自减不加括号：`star` = `star` + ?（Java 版的写法）

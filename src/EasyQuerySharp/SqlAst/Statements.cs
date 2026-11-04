@@ -154,6 +154,9 @@ public sealed class UpdateStatement(EntityTableSource table)
     /// <summary>SET 子句，按书写顺序。</summary>
     public List<(ColumnExpr Column, SqlExpr Value)> Sets { get; } = [];
 
+    /// <summary>条件或 SET 里用到对一导航时连接的表（都是 INNER JOIN，与 Java 一致）；写法由方言决定。</summary>
+    public List<JoinClause> Joins { get; } = [];
+
     /// <summary>WHERE 条件，按 AND 连接。</summary>
     public List<SqlExpr> Where { get; } = [];
 }
@@ -163,6 +166,9 @@ public sealed class DeleteStatement(EntityTableSource table)
 {
     /// <summary>目标表。</summary>
     public EntityTableSource Table { get; } = table;
+
+    /// <summary>条件里用到对一导航时连接的表（都是 INNER JOIN，与 Java 一致）；写法由方言决定。</summary>
+    public List<JoinClause> Joins { get; } = [];
 
     /// <summary>WHERE 条件，按 AND 连接。</summary>
     public List<SqlExpr> Where { get; } = [];

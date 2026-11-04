@@ -52,6 +52,17 @@ public abstract class SqlDialect
     }
 
     /// <summary>
+    /// 写带连接的 UPDATE（SET 或条件里用到对一导航）。标准 SQL 没有统一写法，默认不支持；
+    /// MySQL 写成 <c>UPDATE t INNER JOIN … SET …</c>，PostgreSQL 写成 <c>UPDATE t SET … FROM … WHERE</c>。
+    /// </summary>
+    public virtual void WriteJoinedUpdate(SqlRenderer renderer, UpdateStatement update) =>
+        throw new NotSupportedException($"{Name} 方言还不支持在 UPDATE 里使用对一导航（需要 JOIN），请改写成子查询");
+
+    /// <summary>写带连接的 DELETE（条件里用到对一导航）。默认不支持；MySQL 写成 <c>DELETE t FROM … JOIN</c>，PostgreSQL 写成 <c>DELETE FROM … USING</c>。</summary>
+    public virtual void WriteJoinedDelete(SqlRenderer renderer, DeleteStatement statement) =>
+        throw new NotSupportedException($"{Name} 方言还不支持在 DELETE 里使用对一导航（需要 JOIN），请改写成子查询");
+
+    /// <summary>
     /// 写最外层查询末尾的行锁子句。默认是 MySQL 8、PostgreSQL、Oracle 共用的写法：
     /// <c> FOR UPDATE</c>、<c> FOR UPDATE NOWAIT</c>、<c> FOR UPDATE SKIP LOCKED</c>；不支持的方言覆盖成抛出 <see cref="NotSupportedException"/>。
     /// </summary>

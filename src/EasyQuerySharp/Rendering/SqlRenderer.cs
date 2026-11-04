@@ -63,26 +63,34 @@ public sealed class SqlRenderer
     /// <summary>渲染一条更新。</summary>
     public static SqlStatement Render(SqlDialect dialect, UpdateStatement update)
     {
-        AliasAllocator.Allocate(update.Table, update.Sets.Select(s => s.Value).Concat(update.Where));
+        AliasAllocator.Allocate(update.Table, update.Joins, update.Sets.Select(s => s.Value).Concat(update.Where));
         var r = new SqlRenderer(dialect);
-        r.Append("UPDATE ").WriteTable(update.Table).Append(" SET ");
-        for (var i = 0; i < update.Sets.Count; i++)
-        {
-            if (i > 0) r.Append(",");
-            r.Write(update.Sets[i].Column).Append(" = ").Write(update.Sets[i].Value);
-        }
-        r.WriteWhere(update.Where);
+        if (update.Joins.Count > 0) dialect.WriteJoinedUpdate(r, update);
+        else r.Append("UPDATE ").WriteTable(update.Table).Append(" SET ").WriteSets(update.Sets).WriteWhere(update.Where);
         return r.Build();
     }
 
     /// <summary>渲染一条删除。</summary>
     public static SqlStatement Render(SqlDialect dialect, DeleteStatement delete)
     {
-        AliasAllocator.Allocate(delete.Table, delete.Where);
+        AliasAllocator.Allocate(delete.Table, delete.Joins, delete.Where);
         var r = new SqlRenderer(dialect);
-        r.Append("DELETE FROM ").WriteTable(delete.Table);
-        r.WriteWhere(delete.Where);
+        if (delete.Joins.Count > 0) dialect.WriteJoinedDelete(r, delete);
+        else r.Append("DELETE FROM ").WriteTable(delete.Table).WriteWhere(delete.Where);
         return r.Build();
+    }
+
+    /// <summary>输出 SET 列表 <c>a = ?,b = ?</c>；<paramref name="qualified"/> 为 false 时列不带表别名（PostgreSQL 的 UPDATE … FROM 要求）。</summary>
+    public SqlRenderer WriteSets(IReadOnlyList<(ColumnExpr Column, SqlExpr Value)> sets, bool qualified = true)
+    {
+        for (var i = 0; i < sets.Count; i++)
+        {
+            if (i > 0) Append(",");
+            if (qualified) Write(sets[i].Column);
+            else Append(Dialect.QuoteIdentifier(sets[i].Column.Name));
+            Append(" = ").Write(sets[i].Value);
+        }
+        return this;
     }
 
     /// <summary>追加原样文本（两份输出都追加）。</summary>
@@ -154,19 +162,7 @@ public sealed class SqlRenderer
             if (c.Alias is not null) Append(" AS ").Append(Dialect.QuoteIdentifier(c.Alias));
         }
         Append(" FROM ").WriteTable(q.From);
-        foreach (var j in q.Joins)
-        {
-            Append(j.Kind switch
-            {
-                JoinKind.Inner => " INNER JOIN ",
-                JoinKind.Left => " LEFT JOIN ",
-                JoinKind.Right => " RIGHT JOIN ",
-                JoinKind.Full => " FULL JOIN ",
-                JoinKind.Comma => " , ",
-                _ => " CROSS JOIN ",
-            }).WriteTable(j.Table);
-            if (j.On is not null) Append(" ON ").WritePredicate(j.On);
-        }
+        foreach (var j in q.Joins) WriteJoin(j);
         WriteWhere(q.Where);
         if (q.GroupBy.Count > 0) Append(" GROUP BY ").WriteList(q.GroupBy, ",");
         if (q.Having.Count > 0) Append(" HAVING ").WritePredicate(LogicalExpr.And(q.Having));
@@ -182,17 +178,36 @@ public sealed class SqlRenderer
         return this;
     }
 
+    /// <summary>输出一个 JOIN 子句：<c> INNER JOIN 表 别名 ON 条件</c>。</summary>
+    public SqlRenderer WriteJoin(JoinClause join)
+    {
+        Append(join.Kind switch
+        {
+            JoinKind.Inner => " INNER JOIN ",
+            JoinKind.Left => " LEFT JOIN ",
+            JoinKind.Right => " RIGHT JOIN ",
+            JoinKind.Full => " FULL JOIN ",
+            JoinKind.Comma => " , ",
+            _ => " CROSS JOIN ",
+        }).WriteTable(join.Table);
+        if (join.On is not null) Append(" ON ").WritePredicate(join.On);
+        return this;
+    }
+
     private SqlStatement Build() => new(_command.ToString(), _text.ToString(), _parameters);
 
-    private void WriteWhere(List<SqlExpr> where)
+    /// <summary>输出 <c> WHERE a AND b</c>；没有条件时什么也不写。</summary>
+    public SqlRenderer WriteWhere(IReadOnlyList<SqlExpr> where)
     {
         if (where.Count > 0) Append(" WHERE ").WritePredicate(LogicalExpr.And(where));
+        return this;
     }
 
     // 顶层 AND 平铺输出；其余交给 Write（OR 组自带括号）
     private SqlRenderer WritePredicate(SqlExpr predicate) => Write(predicate);
 
-    private SqlRenderer WriteTable(TableSource table)
+    /// <summary>输出一个表来源（表名、派生表、CTE 引用…），有别名时跟上别名。</summary>
+    public SqlRenderer WriteTable(TableSource table)
     {
         switch (table)
         {

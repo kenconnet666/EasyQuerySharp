@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 943、偏离 121、不适用 20、骨架 15、待做 1305。
+合计：已移植 953、偏离 121、不适用 20、骨架 15、待做 1295。
 
 ## 按能力
 
@@ -46,7 +46,7 @@
 | 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 0 | 0 | 0 | 0 | 39 |
 | 追踪与差异更新 | `tracking` | M5 | 62 | 24 | 15 | 0 | 0 | 23 |
 | 乐观锁版本 | `version` | M5 | 13 | 13 | 0 | 0 | 0 | 0 |
-| UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 0 | 0 | 0 | 0 | 10 |
+| UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
 | 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 11 | 6 | 0 | 0 | 9 |
 | upsert | `write.upsert` | M5 | 13 | 3 | 0 | 0 | 2 | 8 |
 | ClickHouse 方言 | `dialect.clickhouse` | M6 | 4 | 0 | 0 | 0 | 0 | 4 |
@@ -2068,16 +2068,16 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| UpdateDeleteJoinTest.java#testDeleteJoin1 | 待做 |  | `DELETE t FROM 'doc_bank_card' t INNER JOIN 'doc_user' t1 ON t1.'id' = t.'uid' WHERE t1.'name' LIKE ?` |
-| UpdateDeleteJoinTest.java#testDeleteJoin2 | 待做 |  | `DELETE t FROM 'doc_bank_card' t INNER JOIN 'doc_user' t1 ON t1.'id' = t.'uid' WHERE t1.'name' LIKE ?` |
-| UpdateDeleteJoinTest.java#testUpdateJoin1 | 待做 |  | `UPDATE 'doc_bank_card' t INNER JOIN 'doc_user' t1 ON t1.'id' = t.'uid' SET t.'type' = t1.'name' WHER…` |
-| UpdateDeleteJoinTest.java#testUpdateJoin2 | 待做 |  | `UPDATE 'doc_bank_card' t INNER JOIN 'doc_bank' t1 ON t1.'id' = t.'bank_id' INNER JOIN 'doc_user' t2 …` |
-| pgsql/DeleteUpdateJoinTest.java#testDeleteJoin1 | 待做 |  | `DELETE FROM "doc_bank_card" t USING "doc_user" t1 WHERE t1."id" = t."uid" AND t1."name" LIKE ?` |
-| pgsql/DeleteUpdateJoinTest.java#testDeleteJoin2 | 待做 |  | `DELETE FROM "doc_bank_card" t USING "doc_user" t1 WHERE t1."id" = t."uid" AND t1."name" LIKE ?` |
-| pgsql/DeleteUpdateJoinTest.java#testUpdateJoin1 | 待做 |  | `UPDATE "doc_bank_card" t SET "type" = t1."name" FROM "doc_user" t1 WHERE t1."id" = t."uid" AND t1."n…` |
-| pgsql/DeleteUpdateJoinTest.java#testUpdateJoin2 | 待做 |  | `UPDATE "doc_bank_card" t SET "type" = t1."name" FROM "doc_bank" t1 , "doc_user" t2 WHERE t1."id" = t…` |
-| pgsql/DeleteUpdateJoinTest.java#testUpdateJoin3 | 待做 |  |  |
-| pgsql/DeleteUpdateJoinTest.java#testUpdateJoin4 | 待做 |  |  |
+| UpdateDeleteJoinTest.java#testDeleteJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateDeleteJoinTest.cs:30 | `DELETE t FROM 'doc_bank_card' t INNER JOIN 'doc_user' t1 ON t1.'id' = t.'uid' WHERE t1.'name' LIKE ?` |
+| UpdateDeleteJoinTest.java#testDeleteJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateDeleteJoinTest.cs:30 | `DELETE t FROM 'doc_bank_card' t INNER JOIN 'doc_user' t1 ON t1.'id' = t.'uid' WHERE t1.'name' LIKE ?` |
+| UpdateDeleteJoinTest.java#testUpdateJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateDeleteJoinTest.cs:12 | `UPDATE 'doc_bank_card' t INNER JOIN 'doc_user' t1 ON t1.'id' = t.'uid' SET t.'type' = t1.'name' WHER…` |
+| UpdateDeleteJoinTest.java#testUpdateJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateDeleteJoinTest.cs:21 | `UPDATE 'doc_bank_card' t INNER JOIN 'doc_bank' t1 ON t1.'id' = t.'bank_id' INNER JOIN 'doc_user' t2 …` |
+| pgsql/DeleteUpdateJoinTest.java#testDeleteJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgDeleteUpdateJoinTest.cs:59 | `DELETE FROM "doc_bank_card" t USING "doc_user" t1 WHERE t1."id" = t."uid" AND t1."name" LIKE ?` |
+| pgsql/DeleteUpdateJoinTest.java#testDeleteJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgDeleteUpdateJoinTest.cs:59 | `DELETE FROM "doc_bank_card" t USING "doc_user" t1 WHERE t1."id" = t."uid" AND t1."name" LIKE ?` |
+| pgsql/DeleteUpdateJoinTest.java#testUpdateJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgDeleteUpdateJoinTest.cs:11 | `UPDATE "doc_bank_card" t SET "type" = t1."name" FROM "doc_user" t1 WHERE t1."id" = t."uid" AND t1."n…` |
+| pgsql/DeleteUpdateJoinTest.java#testUpdateJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgDeleteUpdateJoinTest.cs:20 | `UPDATE "doc_bank_card" t SET "type" = t1."name" FROM "doc_bank" t1 , "doc_user" t2 WHERE t1."id" = t…` |
+| pgsql/DeleteUpdateJoinTest.java#testUpdateJoin3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgDeleteUpdateJoinTest.cs:31 |  |
+| pgsql/DeleteUpdateJoinTest.java#testUpdateJoin4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgDeleteUpdateJoinTest.cs:45 |  |
 
 ### 写哪些列、批量执行（`write.strategy`，M5）
 

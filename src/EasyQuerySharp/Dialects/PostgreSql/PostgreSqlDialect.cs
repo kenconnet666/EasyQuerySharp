@@ -15,6 +15,34 @@ public class PostgreSqlDialect : SqlDialect
     public override string Name => "pgsql";
 
     /// <summary>
+    /// <c>UPDATE "a" t SET "c" = t1."d" FROM "b" t1 , "e" t2 WHERE 各 ON 条件 AND 原条件</c>（与 Java 逐字一致）：
+    /// 连接的表写在 FROM 里，ON 条件按顺序并入 WHERE；SET 的列不能带表别名。
+    /// </summary>
+    public override void WriteJoinedUpdate(SqlRenderer renderer, UpdateStatement update)
+    {
+        renderer.Append("UPDATE ").WriteTable(update.Table).Append(" SET ").WriteSets(update.Sets, qualified: false).Append(" FROM ");
+        WriteJoinedTables(renderer, update.Joins, update.Where);
+    }
+
+    /// <summary><c>DELETE FROM "a" t USING "b" t1 WHERE 各 ON 条件 AND 原条件</c>（与 Java 逐字一致）。</summary>
+    public override void WriteJoinedDelete(SqlRenderer renderer, DeleteStatement statement)
+    {
+        renderer.Append("DELETE FROM ").WriteTable(statement.Table).Append(" USING ");
+        WriteJoinedTables(renderer, statement.Joins, statement.Where);
+    }
+
+    // 逗号分隔的表，ON 条件按连接顺序排在原条件前面
+    private static void WriteJoinedTables(SqlRenderer renderer, List<JoinClause> joins, List<SqlExpr> where)
+    {
+        for (var i = 0; i < joins.Count; i++)
+        {
+            if (i > 0) renderer.Append(" , ");
+            renderer.WriteTable(joins[i].Table);
+        }
+        renderer.WriteWhere([.. joins.Where(j => j.On is not null).Select(j => j.On!), .. where]);
+    }
+
+    /// <summary>
     /// 值里含 % 或 _ 时，包含 / 开头 / 结尾写成 <c>LIKE CONCAT('%',(?)::TEXT,'%') ESCAPE '\'</c>，参数里的 \ % _ 先转义，
     /// 值里的通配符按字面匹配（与 Java 版一致）。
     /// </summary>

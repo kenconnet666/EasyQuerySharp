@@ -1,3 +1,4 @@
+using EasyQuerySharp.Rendering;
 using EasyQuerySharp.SqlAst;
 
 namespace EasyQuerySharp.Dialects.MySql;
@@ -19,6 +20,22 @@ public class MySqlDialect : SqlDialect
 
     /// <inheritdoc />
     public override string? LastInsertIdQuery => "SELECT LAST_INSERT_ID()";
+
+    /// <summary><c>UPDATE `a` t INNER JOIN `b` t1 ON … SET t.`c` = t1.`d` WHERE …</c>（与 Java 逐字一致）。</summary>
+    public override void WriteJoinedUpdate(SqlRenderer renderer, UpdateStatement update)
+    {
+        renderer.Append("UPDATE ").WriteTable(update.Table);
+        foreach (var join in update.Joins) renderer.WriteJoin(join);
+        renderer.Append(" SET ").WriteSets(update.Sets).WriteWhere(update.Where);
+    }
+
+    /// <summary><c>DELETE t FROM `a` t INNER JOIN `b` t1 ON … WHERE …</c>（与 Java 逐字一致）。</summary>
+    public override void WriteJoinedDelete(SqlRenderer renderer, DeleteStatement statement)
+    {
+        renderer.Append("DELETE ").Append(statement.Table.Alias!).Append(" FROM ").WriteTable(statement.Table);
+        foreach (var join in statement.Joins) renderer.WriteJoin(join);
+        renderer.WriteWhere(statement.Where);
+    }
 
     /// <summary>忽略冲突用 <c>INSERT IGNORE</c>。</summary>
     public override string InsertKeyword(InsertStatement insert) => insert.Conflict is { Ignore: true } ? "INSERT IGNORE INTO " : "INSERT INTO ";

@@ -54,14 +54,16 @@ public sealed class DeleteCommand<T> : WriteCommandBase<DeleteCommand<T>, T> whe
 
     private SqlStatement Render(T? entity)
     {
-        var table = NewTable();
+        var scope = NewScope();
+        var table = scope.Table;
         var logical = !LogicDeleteDisabled && Entity.LogicDeleteColumn is not null;
         if (!logical)
         {
             if (!(_allowDeleteStatement ?? Db.Options.AllowDeleteStatement))
                 throw new InvalidOperationException($"{typeof(T).Name} 不允许物理删除：请用逻辑删除，或调用 AllowDeleteStatement(true)");
             var delete = new DeleteStatement(table);
-            delete.Where.AddRange(BuildWhere(table, entity, applyLogicDelete: false));
+            delete.Where.AddRange(BuildWhere(scope, entity, applyLogicDelete: false));
+            delete.Joins.AddRange(scope.Joins);
             return SqlRenderer.Render(Db.Options.Dialect, delete);
         }
 
@@ -70,7 +72,8 @@ public sealed class DeleteCommand<T> : WriteCommandBase<DeleteCommand<T>, T> whe
         foreach (var (column, value) in strategy.DeletedValues(Entity, Entity.LogicDeleteColumn!))
             update.Sets.Add((table.Column(column), ExpressionTranslator.Parameter(value, column.ClrType)));
         AddVersionSet(update, table, entity);
-        update.Where.AddRange(BuildWhere(table, entity, applyLogicDelete: true));
+        update.Where.AddRange(BuildWhere(scope, entity, applyLogicDelete: true));
+        update.Joins.AddRange(scope.Joins);
         return SqlRenderer.Render(Db.Options.Dialect, update);
     }
 }

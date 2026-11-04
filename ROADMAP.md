@@ -160,7 +160,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [~] 5.5 列加密：与 Java 的 AES / SM4 密文兼容，支持分段 LIKE（`[Encryption]` 与 AES 策略已完成；SM4 待做）。
 - [~] 5.6 upsert：`OnConflictIgnore()` / `OnConflictUpdate()`（MySQL、PG、SQLite 已完成；SQL Server / Oracle 的 MERGE 待做）。
 - [ ] 5.7 写入策略：按列策略只写非空列；批量写入用 `DbBatch`。
-- [~] 5.8 UPDATE / DELETE 里用导航：MySQL 用原生多表语法，其余方言按主键自连接（集合导航翻译成关联子查询已完成；对一导航待做）。
+- [x] 5.8 UPDATE / DELETE 里用导航：集合导航翻译成关联子查询；对一导航生成 JOIN，MySQL 用多表语法，PostgreSQL 用 FROM / USING。SQL Server、Oracle、SQLite 的写法随 M6 实库验证再加（现在抛 NotSupportedException）。
 - [ ] 5.9 INSERT … SELECT。
 - [~] 5.10 追踪：`BeginTracking()` / `AsTracking()` 加差异更新、`WhereColumns` 用原始值（已完成）；不追踪时用 `Changes(before, after)`。
 - [ ] 5.11 聚合根保存：显式声明级联路径、按差异增删改、`OrphanPolicy`、生成键回填、必须在事务里。

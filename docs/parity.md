@@ -53,10 +53,10 @@
 |---|---|---|---|---|
 | 插入 | `write.insert` | 44 | `db.Insert(entity).ExecuteAsync()` / `.ReturnIdAsync()` / `.ReturnEntityAsync()`；`db.Insert<T>().FromQuery(q)`（insert-select） | M1 |
 | 更新 | `write.update` | 50 | `db.Update<T>().Set(u => new T { Age = u.Age + 1 }).Where(..).ExecuteAsync()`；`db.Update(entity)` 按主键整行更新 | M1 |
-| 删除 | `write.delete` | 21 | `db.Delete<T>().Where(..).ExecuteAsync()`；没有条件时必须写 `.All()`；逻辑删除的实体要真删时用 `.Hard()`；条件里可以用集合导航（翻译成关联子查询，表带别名），对一导航还不支持 | M1 |
+| 删除 | `write.delete` | 21 | `db.Delete<T>().Where(..).ExecuteAsync()`；没有条件时必须写 `.All()`；逻辑删除的实体要真删时用 `.Hard()`；条件里可以用集合导航（翻译成关联子查询，表带别名）；对一导航生成 JOIN（见 `write.join`） | M1 |
 | upsert | `write.upsert` | 13 | `.OnConflict(u => u.Id).Merge(u => new { u.Name })` / `.Ignore()`，按方言渲染成 `ON DUPLICATE KEY` / `ON CONFLICT` / `MERGE` | M5 |
 | 写哪些列、批量执行 | `write.strategy` | 19 | `.Columns(ColumnStrategy.NotNull)`；`.Batch()` 用驱动的批处理（`DbBatch`） | M5 |
-| UPDATE / DELETE 里用导航 | `write.join` | 10 | 条件或 set 里用多对一导航时生成 JOIN；MySQL 用原生多表语法，其余方言按主键自连接 | M5 |
+| UPDATE / DELETE 里用导航 | `write.join` | 10 | `db.Update<Card>().Set(c => new Card { Type = c.User!.Name }).Where(c => c.User!.Name!.Contains("x"))`：SET 或条件里的对一导航生成 INNER JOIN（先翻译 SET 再翻译条件，别名按出现顺序）。MySQL：`UPDATE t INNER JOIN … SET` / `DELETE t FROM … JOIN`；PostgreSQL：`UPDATE … SET … FROM … WHERE` / `DELETE FROM … USING`；其余方言暂时抛出 NotSupportedException | M5 |
 | 追踪与差异更新 | `tracking` | 62 | `q.AsTracking()` 加 `db.Update(entity)` 只更新改过的列；不追踪时用 `db.Update<T>().Changes(before, after)` | M5 |
 | 聚合根保存 | `save.aggregate` | 39 | `db.Save(root).Cascade(o => o.Lines).ExecuteAsync()` | M5 |
 
