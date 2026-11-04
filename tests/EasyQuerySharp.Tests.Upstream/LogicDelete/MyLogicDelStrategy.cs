@@ -14,15 +14,23 @@ public sealed class MyLogicDelStrategy : ILogicDeleteStrategy
         [(column, DateTime.Now), (entity.GetColumn("DeletedUser"), CurrentUserHelper.UserId)];
 }
 
-/// <summary>对应 Java：logicdel/CurrentUserHelper，当前用户随异步流程传递。</summary>
+/// <summary>对应 Java：logicdel/CurrentUserHelper，当前用户与租户随异步流程传递（各测试互不影响）。</summary>
 public static class CurrentUserHelper
 {
-    private static readonly AsyncLocal<string?> Current = new();
+    private static readonly AsyncLocal<string?> User = new();
+    private static readonly AsyncLocal<string?> Tenant = new();
 
     /// <summary>当前用户 id。</summary>
     public static string? UserId
     {
-        get => Current.Value;
-        set => Current.Value = value;
+        get => User.Value;
+        set => User.Value = value;
+    }
+
+    /// <summary>当前租户 id。</summary>
+    public static string? TenantId
+    {
+        get => Tenant.Value;
+        set => Tenant.Value = value;
     }
 }

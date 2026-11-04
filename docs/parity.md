@@ -64,7 +64,7 @@
 
 | 能力 | key | 用例数 | C# 写法 | M |
 |---|---|---|---|---|
-| 拦截器 | `interceptor` | 3 | `IQueryFilter<T>` / `IBeforeInsert<T>` / `IBeforeUpdate<T>` / `IAfterWrite`；单条查询上用 `.DisableInterceptor<T>()` 关掉 | M5 |
+| 拦截器 | `interceptor` | 3 | `QueryFilter<T>`（查询、更新、删除自动加条件，返回 null 这次不加）/ `EntityInterceptor<T>`（`BeforeInsert` / `BeforeUpdate` 改实体，`BeforeConditionUpdate` 给按条件更新追加 SET，用户已 Set 的列跳过）；`T` 可以是基类或接口；单条语句上 `.DisableInterceptor("名字")` / `.EnableInterceptor("名字")`，同名的拦截器一起开关 | M5 |
 | 逻辑删除 | `logicDelete` | 10 | `[LogicDelete(LogicDeleteStrategy.Boolean)]` / `DeletedTime`；自定义策略实现 `ILogicDeleteStrategy`（未删除条件 + 删除时写的列），`o.AddLogicDeleteStrategy("名字", 策略)` 注册后写 `[LogicDelete(LogicDeleteStrategy.Custom, StrategyName = "名字")]`。查询自动加条件，删除自动改成更新，按实体更新不写生效的逻辑删除列 | M5 |
 | 乐观锁 | `version` | 13 | `[Version]`（整数列 +1；`[Version(VersionStrategy.NewGuid)]` 写新 Guid）。条件里加 `version = 当前版本`、SET 末尾写下一个版本；按实体写入取实体上的值并在成功后写回，按条件写入必须 `.WithVersion(v)` 或 `.IgnoreVersion()`。冲突时影响 0 行，用 `ExecuteAsync(1, "msg")` 抛 `ConcurrencyException`（与 Java 一样不自动抛） | M5 |
 | 列加密 | `column.encryption` | 8 | `[Encryption(typeof(AesEncryption), SupportLike = true)]`，与 Java 版的密文兼容 | M5 |

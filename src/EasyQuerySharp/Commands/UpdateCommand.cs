@@ -179,6 +179,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         var tracked = entity is null ? null : Db.Tracker.Find(entity);
         if (entity is not null) AddEntitySets(update, table, entity, tracked);
         AddExpressionSets(update, scope);
+        if (entity is null && update.Sets.Count > 0) AddInterceptorSets(update, table);
         if (update.Sets.Count == 0)
         {
             if (tracked is not null) return null;
@@ -232,6 +233,16 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     }
 
     private sealed record RenderedUpdate(SqlStatement Statement, Tracking.TrackedEntry? Tracked, T? Entity, object? NewVersion);
+
+    // 按条件更新：拦截器追加的列（修改人、修改时间…）写在用户的列之后，用户已经 Set 过的列跳过
+    private void AddInterceptorSets(UpdateStatement update, EntityTableSource table)
+    {
+        foreach (var (property, value) in Db.Interceptors.ConditionUpdateSets(typeof(T), _sets.Select(s => s.Member.Name), Interceptors))
+        {
+            var column = Entity.GetColumn(property);
+            update.Sets.Add((table.Column(column), ExpressionTranslator.Parameter(column.Converter is null ? value : column.Converter.ToProvider(value), column.Converter?.ProviderType ?? column.ClrType)));
+        }
+    }
 
     // 值里可以用导航（对一导航补出 JOIN），与条件共用翻译作用域
     private void AddExpressionSets(UpdateStatement update, WriteScope scope)

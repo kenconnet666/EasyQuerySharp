@@ -34,6 +34,14 @@ public sealed class InterceptorRegistry
         }
     }
 
+    /// <summary>按条件更新时各拦截器追加的 SET（属性名 → 值）；<paramref name="assigned"/> 是用户已经 Set 的属性。</summary>
+    internal List<(string Property, object? Value)> ConditionUpdateSets(Type entityType, IEnumerable<string> assigned, InterceptorSelection selection)
+    {
+        var collector = new UpdateSetCollector(assigned);
+        foreach (var interceptor in For<IEntityWriteInterceptor>(entityType, selection)) interceptor.BeforeConditionUpdate(collector);
+        return collector.Sets;
+    }
+
     /// <summary>对实体调用写入前的拦截。</summary>
     internal void BeforeWrite(object entity, bool insert, InterceptorSelection selection)
     {

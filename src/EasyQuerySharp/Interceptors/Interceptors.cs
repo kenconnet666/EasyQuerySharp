@@ -31,6 +31,50 @@ internal interface IEntityWriteInterceptor : IInterceptor
     void BeforeInsert(object entity);
 
     void BeforeUpdate(object entity);
+
+    void BeforeConditionUpdate(UpdateSetCollector collector);
+}
+
+/// <summary>按条件更新时拦截器追加的 SET：属性名 → 值；已经要写的列（用户 Set 过、前面的拦截器加过）不再追加。</summary>
+internal sealed class UpdateSetCollector(IEnumerable<string> assigned)
+{
+    private readonly HashSet<string> _assigned = new(assigned, StringComparer.Ordinal);
+
+    /// <summary>按追加顺序的 SET。</summary>
+    public List<(string Property, object? Value)> Sets { get; } = [];
+
+    public bool IsSet(string property) => _assigned.Contains(property);
+
+    public void Set(string property, object? value)
+    {
+        if (_assigned.Add(property)) Sets.Add((property, value));
+    }
+}
+
+/// <summary>
+/// 按条件更新（<c>db.Update&lt;T&gt;().Set(..)</c>）时追加 SET 的入口，见 <see cref="EntityInterceptor{TEntity}.BeforeConditionUpdate"/>。
+/// 列用属性访问表达式指定，<typeparamref name="TEntity"/> 可以是接口（按属性名对应到实体的列）。
+/// </summary>
+public sealed class UpdateSetBuilder<TEntity>
+{
+    private readonly UpdateSetCollector _collector;
+
+    internal UpdateSetBuilder(UpdateSetCollector collector) => _collector = collector;
+
+    /// <summary>这一列是否已经要写（用户 Set 过，或前面的拦截器加过）。</summary>
+    public bool IsSet<TValue>(Expression<Func<TEntity, TValue>> column) => _collector.IsSet(PropertyOf(column));
+
+    /// <summary>追加 <c>列 = 值</c>；这一列已经要写时忽略（与 Java 的"是否已经 set 了"检查一致）。</summary>
+    public UpdateSetBuilder<TEntity> Set<TValue>(Expression<Func<TEntity, TValue>> column, TValue value)
+    {
+        _collector.Set(PropertyOf(column), value);
+        return this;
+    }
+
+    private static string PropertyOf(LambdaExpression column) =>
+        (column.Body is UnaryExpression { NodeType: ExpressionType.Convert } u ? u.Operand : column.Body) is MemberExpression m
+            ? m.Member.Name
+            : throw new ArgumentException($"需要直接的属性访问，如 e => e.UpdateBy：{column}", nameof(column));
 }
 
 /// <summary>
@@ -60,7 +104,10 @@ public abstract class QueryFilter<TEntity> : IQueryFilterInterceptor
     LambdaExpression? IQueryFilterInterceptor.FilterLambda() => Filter();
 }
 
-/// <summary>写入前修改实体（对应 Java 的 EntityInterceptor）：插入、按实体更新之前调用，常用于填写创建人、修改时间等。</summary>
+/// <summary>
+/// 写入前修改实体（对应 Java 的 EntityInterceptor）：插入、按实体更新之前调用，常用于填写创建人、修改时间等；
+/// 按条件更新没有实体，用 <see cref="BeforeConditionUpdate"/> 追加 SET（对应 Java 的 UpdateSetInterceptor）。
+/// </summary>
 public abstract class EntityInterceptor<TEntity> : IEntityWriteInterceptor
 {
     /// <inheritdoc />
@@ -82,7 +129,17 @@ public abstract class EntityInterceptor<TEntity> : IEntityWriteInterceptor
     {
     }
 
+    /// <summary>
+    /// 按条件更新（<c>db.Update&lt;T&gt;().Set(..)</c>）时调用，追加要写的列，如
+    /// <c>sets.Set(e =&gt; e.UpdateBy, user).Set(e =&gt; e.UpdateTime, DateTime.Now)</c>；用户已经 Set 过的列自动跳过。
+    /// </summary>
+    public virtual void BeforeConditionUpdate(UpdateSetBuilder<TEntity> sets)
+    {
+    }
+
     void IEntityWriteInterceptor.BeforeInsert(object entity) => BeforeInsert((TEntity)entity);
 
     void IEntityWriteInterceptor.BeforeUpdate(object entity) => BeforeUpdate((TEntity)entity);
+
+    void IEntityWriteInterceptor.BeforeConditionUpdate(UpdateSetCollector collector) => BeforeConditionUpdate(new UpdateSetBuilder<TEntity>(collector));
 }

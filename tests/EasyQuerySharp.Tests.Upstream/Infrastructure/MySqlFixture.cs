@@ -62,6 +62,9 @@ public sealed class MySqlFixture : IAsyncLifetime
             o.ReverseOffsetThreshold = 10;
             o.UseMySql(new MySqlDataSource(cs)).AddListener(SqlCapture.Instance)
                 .AddInterceptor(new Interceptors.Topic1Interceptor())
+                .AddInterceptor(new Interceptors.MyEntityInterceptor())
+                .AddInterceptor(new Interceptors.MyTenantInterceptor())
+                .AddInterceptor(new Interceptors.MyTenantInsertInterceptor())
                 .AddLogicDeleteStrategy(nameof(LogicDelete.MyLogicDelStrategy), new LogicDelete.MyLogicDelStrategy());
         });
         await SeedAsync(_db);

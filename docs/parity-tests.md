@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 953、偏离 121、不适用 20、骨架 15、待做 1295。
+合计：已移植 956、偏离 121、不适用 20、骨架 15、待做 1292。
 
 ## 按能力
 
@@ -41,7 +41,7 @@
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 0 | 0 | 0 | 0 | 25 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
 | 列加密 | `column.encryption` | M5 | 8 | 7 | 0 | 0 | 0 | 1 |
-| 拦截器 | `interceptor` | M5 | 3 | 0 | 0 | 0 | 0 | 3 |
+| 拦截器 | `interceptor` | M5 | 3 | 3 | 0 | 0 | 0 | 0 |
 | 逻辑删除 | `logicDelete` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
 | 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 0 | 0 | 0 | 0 | 39 |
 | 追踪与差异更新 | `tracking` | M5 | 62 | 24 | 15 | 0 | 0 | 23 |
@@ -1916,9 +1916,9 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| InterceptorTest.java#test1 | 待做 |  | `SELECT 'id','stars','title','create_time','create_by','update_time','update_by','tenant_id' FROM 't_…` |
-| InterceptorTest.java#test2 | 待做 |  | `SELECT 'id','stars','title','create_time','create_by','update_time','update_by','tenant_id' FROM 't_…` |
-| InterceptorTest.java#test3 | 待做 |  | `SELECT 'id','stars','title','create_time','create_by','update_time','update_by','tenant_id' FROM 't_…` |
+| InterceptorTest.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Interceptors/InterceptorTest.cs:36 | `SELECT 'id','stars','title','create_time','create_by','update_time','update_by','tenant_id' FROM 't_…` |
+| InterceptorTest.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Interceptors/InterceptorTest.cs:48 | `SELECT 'id','stars','title','create_time','create_by','update_time','update_by','tenant_id' FROM 't_…` |
+| InterceptorTest.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Interceptors/InterceptorTest.cs:63 | `SELECT 'id','stars','title','create_time','create_by','update_time','update_by','tenant_id' FROM 't_…` |
 
 ### 逻辑删除（`logicDelete`，M5）
 
