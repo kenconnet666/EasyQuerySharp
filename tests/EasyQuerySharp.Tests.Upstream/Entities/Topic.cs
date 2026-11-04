@@ -19,6 +19,23 @@ public class Topic
     public string? Alias { get; set; }
 }
 
+/// <summary>对应 Java：entity/TopicUpdate（映射到 t_topic，配合 TopicUpdateInterceptor 测试更新拦截）。</summary>
+[Table("t_topic")]
+public class TopicUpdate
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public int? Stars { get; set; }
+
+    public string? Title { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+
+    [ColumnIgnore]
+    public string? Alias { get; set; }
+}
+
 /// <summary>对应 Java：entity/TopicAuto（自增主键）。</summary>
 [Table("t_topic_auto")]
 public class TopicAuto

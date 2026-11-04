@@ -52,7 +52,7 @@
 | 能力 | key | 用例数 | C# 写法 | M |
 |---|---|---|---|---|
 | 插入 | `write.insert` | 44 | `db.Insert(entity).ExecuteAsync()` / `.ReturnIdAsync()` / `.ReturnEntityAsync()`；`db.Insert<T>().FromQuery(q)`（insert-select） | M1 |
-| 更新 | `write.update` | 50 | `db.Update<T>().Set(u => new T { Age = u.Age + 1 }).Where(..).ExecuteAsync()`；`db.Update(entity)` 按主键整行更新 | M1 |
+| 更新 | `write.update` | 50 | `db.Update<T>().Set(u => new T { Age = u.Age + 1 }).Where(..).ExecuteAsync()`；`db.Update(entity)` 按主键整行更新（不写主键、版本列和生效的逻辑删除列）；`.SetColumns(t => new { t.Title, t.Stars })` 限定列并按这个顺序写，`.WhereColumns(..)` 换定位列；没有任何 SET 时抛出异常（Java 是静默返回 0）| M1 |
 | 删除 | `write.delete` | 21 | `db.Delete<T>().Where(..).ExecuteAsync()`；没有条件时必须写 `.All()`；逻辑删除的实体要真删时用 `.Hard()`；条件里可以用集合导航（翻译成关联子查询，表带别名）；对一导航生成 JOIN（见 `write.join`） | M1 |
 | upsert | `write.upsert` | 13 | `.OnConflict(u => u.Id).Merge(u => new { u.Name })` / `.Ignore()`，按方言渲染成 `ON DUPLICATE KEY` / `ON CONFLICT` / `MERGE` | M5 |
 | 写哪些列、批量执行 | `write.strategy` | 19 | `.Columns(ColumnStrategy.NotNull)`；`.Batch()` 用驱动的批处理（`DbBatch`） | M5 |
@@ -64,7 +64,7 @@
 
 | 能力 | key | 用例数 | C# 写法 | M |
 |---|---|---|---|---|
-| 拦截器 | `interceptor` | 3 | `QueryFilter<T>`（查询、更新、删除自动加条件，返回 null 这次不加）/ `EntityInterceptor<T>`（`BeforeInsert` / `BeforeUpdate` 改实体，`BeforeConditionUpdate` 给按条件更新追加 SET，用户已 Set 的列跳过）；`T` 可以是基类或接口；单条语句上 `.DisableInterceptor("名字")` / `.EnableInterceptor("名字")`，同名的拦截器一起开关 | M5 |
+| 拦截器 | `interceptor` | 3 | `QueryFilter<T>`（查询、更新、删除自动加条件，返回 null 这次不加）/ `EntityInterceptor<T>`（`BeforeInsert` / `BeforeUpdate` 改实体，`BeforeConditionUpdate` 给按条件更新追加 SET，用户已 Set 的列跳过）；`T` 可以是基类或接口；单条语句上 `.DisableInterceptor("名字")` / `.EnableInterceptor("名字")`，同名的拦截器一起开关；按实体更新限定了列时 `BeforeEntityUpdateColumns` 可以补列 | M5 |
 | 逻辑删除 | `logicDelete` | 10 | `[LogicDelete(LogicDeleteStrategy.Boolean)]` / `DeletedTime`；自定义策略实现 `ILogicDeleteStrategy`（未删除条件 + 删除时写的列），`o.AddLogicDeleteStrategy("名字", 策略)` 注册后写 `[LogicDelete(LogicDeleteStrategy.Custom, StrategyName = "名字")]`。查询自动加条件，删除自动改成更新，按实体更新不写生效的逻辑删除列 | M5 |
 | 乐观锁 | `version` | 13 | `[Version]`（整数列 +1；`[Version(VersionStrategy.NewGuid)]` 写新 Guid）。条件里加 `version = 当前版本`、SET 末尾写下一个版本；按实体写入取实体上的值并在成功后写回，按条件写入必须 `.WithVersion(v)` 或 `.IgnoreVersion()`。冲突时影响 0 行，用 `ExecuteAsync(1, "msg")` 抛 `ConcurrencyException`（与 Java 一样不自动抛） | M5 |
 | 列加密 | `column.encryption` | 8 | `[Encryption(typeof(AesEncryption), SupportLike = true)]`，与 Java 版的密文兼容 | M5 |

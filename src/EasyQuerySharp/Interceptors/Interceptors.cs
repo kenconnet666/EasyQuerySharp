@@ -33,9 +33,14 @@ internal interface IEntityWriteInterceptor : IInterceptor
     void BeforeUpdate(object entity);
 
     void BeforeConditionUpdate(UpdateSetCollector collector);
+
+    void BeforeEntityUpdateColumns(UpdateSetCollector collector);
 }
 
-/// <summary>按条件更新时拦截器追加的 SET：属性名 → 值；已经要写的列（用户 Set 过、前面的拦截器加过）不再追加。</summary>
+/// <summary>
+/// 拦截器追加的列：属性名 → 值（按条件更新的 SET）；按实体更新补列时只用属性名。
+/// 已经要写的列（用户指定过、前面的拦截器加过）不再追加。
+/// </summary>
 internal sealed class UpdateSetCollector(IEnumerable<string> assigned)
 {
     private readonly HashSet<string> _assigned = new(assigned, StringComparer.Ordinal);
@@ -71,10 +76,31 @@ public sealed class UpdateSetBuilder<TEntity>
         return this;
     }
 
-    private static string PropertyOf(LambdaExpression column) =>
+    internal static string PropertyOf(LambdaExpression column) =>
         (column.Body is UnaryExpression { NodeType: ExpressionType.Convert } u ? u.Operand : column.Body) is MemberExpression m
             ? m.Member.Name
             : throw new ArgumentException($"需要直接的属性访问，如 e => e.UpdateBy：{column}", nameof(column));
+}
+
+/// <summary>
+/// 按实体更新且用 <c>SetColumns</c> 限定了列时补列的入口（对应 Java 的 UpdateEntityColumnInterceptor），
+/// 见 <see cref="EntityInterceptor{TEntity}.BeforeEntityUpdateColumns"/>；补的列写在用户指定的列之后，值取实体上的。
+/// </summary>
+public sealed class UpdateColumnsBuilder<TEntity>
+{
+    private readonly UpdateSetCollector _collector;
+
+    internal UpdateColumnsBuilder(UpdateSetCollector collector) => _collector = collector;
+
+    /// <summary>这一列是否已经要写。</summary>
+    public bool IsIncluded<TValue>(Expression<Func<TEntity, TValue>> column) => _collector.IsSet(UpdateSetBuilder<TEntity>.PropertyOf(column));
+
+    /// <summary>也写这一列；已经要写时忽略。</summary>
+    public UpdateColumnsBuilder<TEntity> Include<TValue>(Expression<Func<TEntity, TValue>> column)
+    {
+        _collector.Set(UpdateSetBuilder<TEntity>.PropertyOf(column), null);
+        return this;
+    }
 }
 
 /// <summary>
@@ -141,5 +167,15 @@ public abstract class EntityInterceptor<TEntity> : IEntityWriteInterceptor
 
     void IEntityWriteInterceptor.BeforeUpdate(object entity) => BeforeUpdate((TEntity)entity);
 
+    /// <summary>
+    /// 按实体更新且用 <c>SetColumns</c> 限定了列时调用，可以补上必须写的列：<c>columns.Include(e =&gt; e.UpdateTime)</c>。
+    /// 配合 <see cref="BeforeUpdate"/> 改实体上的值（对应 Java 的 UpdateEntityColumnInterceptor）。
+    /// </summary>
+    public virtual void BeforeEntityUpdateColumns(UpdateColumnsBuilder<TEntity> columns)
+    {
+    }
+
     void IEntityWriteInterceptor.BeforeConditionUpdate(UpdateSetCollector collector) => BeforeConditionUpdate(new UpdateSetBuilder<TEntity>(collector));
+
+    void IEntityWriteInterceptor.BeforeEntityUpdateColumns(UpdateSetCollector collector) => BeforeEntityUpdateColumns(new UpdateColumnsBuilder<TEntity>(collector));
 }

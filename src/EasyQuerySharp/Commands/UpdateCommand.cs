@@ -35,7 +35,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     private readonly Dictionary<string, string> _columnSql = new(StringComparer.Ordinal);
     private ColumnStrategy? _strategy;
     private List<ColumnMetadata>? _whereColumns;
-    private HashSet<string>? _onlyColumns;
+    private List<string>? _onlyColumns;
     private HashSet<string>? _ignoredColumns;
 
     internal UpdateCommand(EasyDb db, IReadOnlyList<T>? entities) : base(db, entities)
@@ -94,11 +94,12 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     }
 
     /// <summary>
-    /// 按实体更新时只写这些列（对应 Java 的 setColumns(o -> o.stars())）：<c>db.Update(topics).SetColumns(t => new { t.Stars, t.Title })</c>。
+    /// 按实体更新时只写这些列（对应 Java 的 setColumns(o -> o.stars())），SET 按这里的顺序：<c>db.Update(topics).SetColumns(t => new { t.Stars, t.Title })</c>。
+    /// 指定的列即使也在 <see cref="WhereColumns"/> 里也照常写；拦截器可以用 <c>BeforeEntityUpdateColumns</c> 再补列。
     /// </summary>
     public UpdateCommand<T> SetColumns(Expression<Func<T, object?>> columns)
     {
-        _onlyColumns = Querying.AutoProjection.MemberNames(columns);
+        _onlyColumns = Querying.AutoProjection.OrderedMemberNames(columns);
         return this;
     }
 
@@ -194,16 +195,15 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     private void AddEntitySets(UpdateStatement update, EntityTableSource table, T entity, Tracking.TrackedEntry? tracked)
     {
         var skipped = _sets.Select(s => s.Member.Name).ToHashSet(StringComparer.Ordinal);
-        // 显式策略优先；否则追踪的实体只写变化的列
-        var changed = _strategy is null && tracked is not null ? tracked.ChangedColumns().ToHashSet() : null;
-        // 定位列不写进 SET；差异更新时定位列取原始值，改过的定位列照常写（与 Java 一致）
-        if (_whereColumns is not null && changed is null) skipped.UnionWith(_whereColumns.Select(c => c.PropertyName));
-        foreach (var column in Entity.Columns)
+        // 显式策略、显式列优先；否则追踪的实体只写变化的列（与 Java 的优先级一致：用户设置 > 追踪 > 默认）
+        var changed = _strategy is null && _onlyColumns is null && tracked is not null ? tracked.ChangedColumns().ToHashSet() : null;
+        // 定位列不写进 SET；差异更新时定位列取原始值，改过的定位列照常写；显式指定的列照常写（与 Java 一致）
+        if (_whereColumns is not null && changed is null && _onlyColumns is null) skipped.UnionWith(_whereColumns.Select(c => c.PropertyName));
+        foreach (var column in CandidateColumns())
         {
             if (column.IsPrimaryKey || column.IsGenerated || skipped.Contains(column.PropertyName)) continue;
             // 版本列由乐观锁单独写；生效的逻辑删除列已在条件里（Java 不写条件里出现的列）
             if (column == Entity.VersionColumn || (column == Entity.LogicDeleteColumn && !LogicDeleteDisabled)) continue;
-            if (_onlyColumns is not null && !_onlyColumns.Contains(column.PropertyName)) continue;
             if (_ignoredColumns is not null && _ignoredColumns.Contains(column.PropertyName)) continue;
             if (changed is not null && !changed.Contains(column)) continue;
             // 忽略更新的列；标了 WhenTrackedChanged 的在差异更新里照常写
@@ -217,6 +217,12 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
             update.Sets.Add((target, parameter));
         }
     }
+
+    // 要写的候选列：SetColumns 指定时按指定的顺序，拦截器补的列在后面；否则是实体的全部列
+    private IEnumerable<ColumnMetadata> CandidateColumns() =>
+        _onlyColumns is null
+            ? Entity.Columns
+            : Db.Interceptors.EntityUpdateColumns(typeof(T), _onlyColumns, Interceptors).Select(Entity.GetColumn);
 
     // WhereColumns 指定时按这些列定位（追踪的实体取原始值），否则按主键
     private protected override IEnumerable<SqlExpr> EntityPredicates(EntityTableSource table, T entity)

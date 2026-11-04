@@ -42,6 +42,14 @@ public sealed class InterceptorRegistry
         return collector.Sets;
     }
 
+    /// <summary>按实体更新且限定了列时要写的列：用户指定的（按顺序），再是拦截器补的。</summary>
+    internal IEnumerable<string> EntityUpdateColumns(Type entityType, IReadOnlyList<string> chosen, InterceptorSelection selection)
+    {
+        var collector = new UpdateSetCollector(chosen);
+        foreach (var interceptor in For<IEntityWriteInterceptor>(entityType, selection)) interceptor.BeforeEntityUpdateColumns(collector);
+        return chosen.Concat(collector.Sets.Select(s => s.Property));
+    }
+
     /// <summary>对实体调用写入前的拦截。</summary>
     internal void BeforeWrite(object entity, bool insert, InterceptorSelection selection)
     {

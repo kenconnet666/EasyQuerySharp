@@ -121,6 +121,9 @@ public sealed class EasyDb
     /// </code></example>
     public Tracking.TrackingScope BeginTracking() => new(this);
 
+    /// <summary>当前异步流程是否在追踪作用域里（对应 Java 的 currentThreadTracking）。</summary>
+    public bool IsTracking => Tracker.Active;
+
     /// <summary>把实体加入当前追踪作用域（以它此刻的值为原始值）；不在作用域里返回 false（对应 Java 的 addTracking）。</summary>
     public bool AddTracking(object entity)
     {

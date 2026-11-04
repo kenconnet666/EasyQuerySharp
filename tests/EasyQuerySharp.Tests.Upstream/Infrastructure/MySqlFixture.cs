@@ -65,6 +65,7 @@ public sealed class MySqlFixture : IAsyncLifetime
                 .AddInterceptor(new Interceptors.MyEntityInterceptor())
                 .AddInterceptor(new Interceptors.MyTenantInterceptor())
                 .AddInterceptor(new Interceptors.MyTenantInsertInterceptor())
+                .AddInterceptor(new Interceptors.TopicUpdateInterceptor())
                 .AddLogicDeleteStrategy(nameof(LogicDelete.MyLogicDelStrategy), new LogicDelete.MyLogicDelStrategy());
         });
         await SeedAsync(_db);
