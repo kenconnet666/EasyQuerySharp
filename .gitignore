@@ -4,3 +4,7 @@ obj/
 riderModule.iml
 /_ReSharper.Caches/
 /.idea/
+# 本机数据库密码与连接串（infra/dev/db.sh 生成）
+/.local/
+# 测试报告等构建产物
+/artifacts/
