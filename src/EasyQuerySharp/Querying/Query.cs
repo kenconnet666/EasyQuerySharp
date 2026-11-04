@@ -117,6 +117,16 @@ public sealed class Query<T> : QueryBase<Query<T>, T>
             : s));
     }
 
+    /// <summary>
+    /// 自定义最近一个实体表的整个引用写法（对应 Java 的 asTableSegment）：参数是带引号的表名和别名，
+    /// 如 ClickHouse 的 <c>.AsTableSegment((table, alias) =&gt; $"{table} {alias} FINAL")</c>。
+    /// </summary>
+    public Query<T> AsTableSegment(Func<string, string?, string> segment)
+    {
+        ArgumentNullException.ThrowIfNull(segment);
+        return new(QueryStates.WithLast(State, s => s is EntitySource e ? e with { TableSegment = segment } : s));
+    }
+
     /// <summary>LEFT JOIN 实体 <typeparamref name="T2"/>。</summary>
     public Query<T, T2> LeftJoin<T2>(Expression<Func<T, T2, bool>> on) => Join<T2>(JoinKind.Left, new EntitySource(typeof(T2)), on);
 

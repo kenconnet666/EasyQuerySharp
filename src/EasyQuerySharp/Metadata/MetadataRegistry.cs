@@ -83,6 +83,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
             }
             if (!IsMappable(property) || ignored.Contains(property.Name, StringComparer.OrdinalIgnoreCase)) continue;
             var attr = property.GetCustomAttribute<ColumnAttribute>();
+            var computed = property.GetCustomAttribute<ComputedAttribute>() is { } c ? ComputedExpression(type, property, c.ExpressionMember) : null;
             var column = new ColumnMetadata(property, attr?.Name ?? NameConversion.Convert(property.Name))
             {
                 IsPrimaryKey = attr?.PrimaryKey ?? false,
@@ -90,8 +91,9 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
                 GeneratedSql = attr?.GeneratedSql,
                 KeyGenerator = attr?.KeyGenerator is { } keyGenerator ? CreateKeyGenerator(keyGenerator, property) : null,
                 AutoSelect = attr?.AutoSelect ?? true,
-                InsertIgnore = property.IsDefined(typeof(InsertIgnoreAttribute)),
-                UpdateIgnore = property.IsDefined(typeof(UpdateIgnoreAttribute)),
+                InsertIgnore = property.IsDefined(typeof(InsertIgnoreAttribute)) || computed is not null,
+                UpdateIgnore = property.IsDefined(typeof(UpdateIgnoreAttribute)) || computed is not null,
+                Computed = computed,
                 UpdateWhenTrackedChanged = property.GetCustomAttribute<UpdateIgnoreAttribute>()?.WhenTrackedChanged ?? false,
                 Converter = attr?.Converter is { } converterType ? CreateConverter(converterType, property) : null,
                 DbType = attr?.DbType,
@@ -151,6 +153,17 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
             throw new InvalidOperationException($"{property.DeclaringType?.Name}.{property.Name} 的转换器 {converterType.Name} 没有实现 IValueConverter");
         return (IValueConverter)(Activator.CreateInstance(converterType)
                                  ?? throw new InvalidOperationException($"无法创建转换器 {converterType.Name}"));
+    }
+
+    // 计算列：实体上的静态属性 / 字段，值是参数为实体的 lambda
+    private static System.Linq.Expressions.LambdaExpression ComputedExpression(Type entityType, PropertyInfo property, string memberName)
+    {
+        const BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
+        var value = entityType.GetProperty(memberName, flags)?.GetValue(null) ?? entityType.GetField(memberName, flags)?.GetValue(null);
+        return value is System.Linq.Expressions.LambdaExpression { Parameters: [{ } parameter] } lambda && parameter.Type.IsAssignableFrom(entityType)
+            ? lambda
+            : throw new InvalidOperationException(
+                $"{entityType.Name}.{property.Name} 的计算列表达式 {memberName} 必须是 {entityType.Name} 上的静态成员，类型为 Expression<Func<{entityType.Name}, {property.PropertyType.Name}>>");
     }
 }
 

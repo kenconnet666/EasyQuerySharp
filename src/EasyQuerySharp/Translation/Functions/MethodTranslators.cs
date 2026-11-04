@@ -239,7 +239,8 @@ internal static class MethodTranslators
         if (!ClientEvaluator.MustTranslate(e))
             return new LiteralExpr((Convert.ToInt64(ClientEvaluator.Evaluate(e), CultureInfo.InvariantCulture) + add).ToString(CultureInfo.InvariantCulture));
         var sql = t.Translate(e);
-        return add == 0 ? sql : new BinaryExpr(sql, SqlBinaryOperator.Add, new LiteralExpr(add.ToString(CultureInfo.InvariantCulture)));
+        // 与 Java 一致：表达式加偏移写成 x+1（不加括号和空格）
+        return add == 0 ? sql : new FragmentExpr("{0}+" + add.ToString(CultureInfo.InvariantCulture), [sql]);
     }
 
     // char 参数按字符串参数传（SQL 没有 char 类型）

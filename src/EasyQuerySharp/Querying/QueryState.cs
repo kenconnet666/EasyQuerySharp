@@ -26,6 +26,9 @@ internal sealed record EntitySource(Type EntityType) : QuerySource
 {
     /// <summary>覆盖表名（AsTable）。</summary>
     public string? TableName { get; init; }
+
+    /// <summary>整个表引用的写法（AsTableSegment）：(带引号的表名, 别名) → SQL 片段。</summary>
+    public Func<string, string?, string>? TableSegment { get; init; }
 }
 
 /// <summary>子查询作为派生表。</summary>

@@ -188,6 +188,8 @@ public sealed class SqlRenderer
     {
         switch (table)
         {
+            case EntityTableSource { Segment: { } segment } e:
+                return Append(segment(QualifiedName(e), e.Alias));
             case EntityTableSource e: WriteTableName(e); break;
             case DerivedTableSource d: Append("(").WriteSelect(d.Query).Append(")"); break;
             case RawTableSource raw: Append("(").WriteRawSql(raw).Append(")"); break;
@@ -206,11 +208,10 @@ public sealed class SqlRenderer
         return this;
     }
 
-    private SqlRenderer WriteTableName(EntityTableSource e)
-    {
-        if (e.Schema is not null) Append(Dialect.QuoteIdentifier(e.Schema)).Append(".");
-        return Append(Dialect.QuoteIdentifier(e.TableName));
-    }
+    private SqlRenderer WriteTableName(EntityTableSource e) => Append(QualifiedName(e));
+
+    private string QualifiedName(EntityTableSource e) =>
+        (e.Schema is null ? "" : Dialect.QuoteIdentifier(e.Schema) + ".") + Dialect.QuoteIdentifier(e.TableName);
 
     private void WriteParameter(ParameterExpr p)
     {

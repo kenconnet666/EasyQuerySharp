@@ -173,7 +173,7 @@ internal static class QueryCompiler
         {
             case EntitySource e:
             {
-                var table = new EntityTableSource(db.Metadata.Get(e.EntityType)) { ExplicitAlias = e.Alias, TableNameOverride = e.TableName };
+                var table = new EntityTableSource(db.Metadata.Get(e.EntityType)) { ExplicitAlias = e.Alias, TableNameOverride = e.TableName, Segment = e.TableSegment };
                 return new EntityBinding(table);
             }
             case SubQuerySource s:

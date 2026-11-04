@@ -42,6 +42,9 @@ public sealed class ColumnMetadata
     /// <summary>默认查询是否选出。</summary>
     public bool AutoSelect { get; internal init; } = true;
 
+    /// <summary>计算列的表达式（参数是实体）；真实列为 null。见 <see cref="ComputedAttribute"/>。</summary>
+    public System.Linq.Expressions.LambdaExpression? Computed { get; internal init; }
+
     /// <summary>插入时是否忽略。</summary>
     public bool InsertIgnore { get; internal init; }
 

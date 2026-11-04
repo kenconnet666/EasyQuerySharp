@@ -187,6 +187,12 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         };
         foreach (var c in columns)
         {
+            // 计算列就地展开，别名是列名（Java 的 sqlConversion 写法）
+            if (binding is EntityBinding { } owner && c.Computed is { } computed)
+            {
+                AddColumn(translator.TranslateComputed(computed, owner), c.Name, topLevel ? c.PropertyName : member is null ? null : member.Name + "." + c.PropertyName);
+                continue;
+            }
             var sql = binding is DerivedBinding db ? new ColumnExpr(db.Table, db.MemberColumns[c.PropertyName], c) : ((EntityBinding)binding).EntityTable.Column(c);
             AddColumn(sql, alias: null, topLevel ? c.PropertyName : member is null ? null : member.Name + "." + c.PropertyName);
         }

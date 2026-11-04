@@ -130,3 +130,17 @@ public class Topicx
 
     public DateTime? CreateTime { get; set; }
 }
+
+/// <summary>对应 Java：entity/TopicFile（同表 t_topic 的另一个实体）。</summary>
+[Table("t_topic")]
+public class TopicFile
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public int? Stars { get; set; }
+
+    public string? Title { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+}

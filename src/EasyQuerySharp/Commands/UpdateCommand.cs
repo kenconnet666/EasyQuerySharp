@@ -36,6 +36,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     private ColumnStrategy? _strategy;
     private List<ColumnMetadata>? _whereColumns;
     private HashSet<string>? _onlyColumns;
+    private HashSet<string>? _ignoredColumns;
 
     internal UpdateCommand(EasyDb db, IReadOnlyList<T>? entities) : base(db, entities)
     {
@@ -98,6 +99,13 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     public UpdateCommand<T> SetColumns(Expression<Func<T, object?>> columns)
     {
         _onlyColumns = Querying.AutoProjection.MemberNames(columns);
+        return this;
+    }
+
+    /// <summary>按实体更新时不写这些列（对应 Java 的 setIgnoreColumns）：<c>db.Update(blog).IgnoreColumns(b =&gt; new { b.CreateTime, b.CreateBy })</c>。</summary>
+    public UpdateCommand<T> IgnoreColumns(Expression<Func<T, object?>> columns)
+    {
+        _ignoredColumns = Querying.AutoProjection.MemberNames(columns);
         return this;
     }
 
@@ -184,6 +192,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         {
             if (column.IsPrimaryKey || column.IsGenerated || skipped.Contains(column.PropertyName)) continue;
             if (_onlyColumns is not null && !_onlyColumns.Contains(column.PropertyName)) continue;
+            if (_ignoredColumns is not null && _ignoredColumns.Contains(column.PropertyName)) continue;
             if (changed is not null && !changed.Contains(column)) continue;
             // 忽略更新的列；标了 WhenTrackedChanged 的在差异更新里照常写
             if (column.UpdateIgnore && !(changed is not null && column.UpdateWhenTrackedChanged)) continue;

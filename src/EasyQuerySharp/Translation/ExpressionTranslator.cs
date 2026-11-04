@@ -55,6 +55,23 @@ internal sealed partial class ExpressionTranslator
         };
     }
 
+    /// <summary>计算列：表达式的参数绑定到所在的表，就地展开。</summary>
+    public SqlExpr TranslateComputed(LambdaExpression computed, SourceBinding owner)
+    {
+        var parameter = computed.Parameters[0];
+        var previous = _scope.GetValueOrDefault(parameter);
+        _scope[parameter] = owner;
+        try
+        {
+            return Translate(computed.Body);
+        }
+        finally
+        {
+            if (previous is null) _scope.Remove(parameter);
+            else _scope[parameter] = previous;
+        }
+    }
+
     /// <summary>参数绑定的表来源；表达式不是绑定参数时返回 null。</summary>
     public SourceBinding? BindingOf(Expression expression) => StripConvert(expression) switch
     {
@@ -93,6 +110,8 @@ internal sealed partial class ExpressionTranslator
     {
         if (TryTranslateGroupKey(m) is { } key) return key;
         if (TryTranslateCollectionCount(m) is { } count) return count;
+        if (m.Expression is not null && BindingOf(m.Expression) is EntityBinding entity && entity.Entity.FindColumn(m.Member.Name) is { Computed: { } computed })
+            return TranslateComputed(computed, entity);
         if (m.Expression is not null && BindingOf(m.Expression) is { } binding and not GroupBinding and not TupleBinding)
             return binding.Member(m.Member) ?? throw Unsupported(m, $"{m.Member.DeclaringType?.Name}.{m.Member.Name} 不是映射到列的成员");
 
