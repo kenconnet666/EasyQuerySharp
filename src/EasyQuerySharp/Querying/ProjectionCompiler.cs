@@ -88,6 +88,16 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
 
         switch (body)
         {
+            case ListInitExpression li when IsMap(li.Type):
+                return ShapeMap(li);
+            // new Dictionary<string, object?>()：不指定列，SELECT *（Java 的 new MapProxy()）
+            case NewExpression { Arguments.Count: 0 } n when topLevel && IsMap(n.Type):
+                _columns.Add(new SelectColumn(new FragmentExpr("*", []), null));
+                return Expression.Call(ReadMapMethod, _reader);
+            // AutoProjection.EntityMap(o)：实体的全部列，不写 AS，键是列名（Java 的 new MapProxy().selectAll(o)）
+            case MethodCallExpression { Method.Name: nameof(AutoProjection.EntityMap) } call when call.Method.DeclaringType == typeof(AutoProjection):
+                ShapeEntity(translator.BindingOf(call.Arguments[0]) ?? throw new NotSupportedException($"不能把 {call.Arguments[0]} 投影成 Map"), call.Arguments[0].Type, topLevel: false);
+                return Expression.Call(ReadMapMethod, _reader);
             case NewExpression n when n.Constructor is not null:
             {
                 var members = TargetMembers(n);
@@ -271,6 +281,30 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         }
         var parameterized = type.GetConstructors().OrderByDescending(c => c.GetParameters().Length).First();
         return Expression.New(parameterized, parameterized.GetParameters().Select(p => Read(p.Name!, p.ParameterType)));
+    }
+
+    private static readonly MethodInfo ReadMapMethod = typeof(EntityMaterializer).GetMethod(nameof(EntityMaterializer.ReadDictionary))!;
+
+    private static bool IsMap(Type type) => typeof(IDictionary<string, object?>).IsAssignableFrom(type);
+
+    /// <summary>
+    /// Map 投影 <c>new Dictionary&lt;string, object?&gt; { { "id", o.Id }, … }</c>（Java 的 MapProxy.put）：每个键一列，
+    /// 别名就是键且总写 AS（与 Java 一致），读出后按原样的 Add 调用放回字典。
+    /// </summary>
+    private Expression ShapeMap(ListInitExpression map)
+    {
+        var initializers = map.Initializers.Select(init =>
+        {
+            if (init.Arguments.Count != 2 || ClientEvaluator.Evaluate(init.Arguments[0]) is not string key)
+                throw new NotSupportedException($"Map 投影只支持 {{ \"键\", 值 }} 形式的初始化：{init}");
+            var value = ExpressionTranslator.StripConvert(init.Arguments[1]);
+            var sql = ExpressionTranslator.AsValue(translator.Translate(value));
+            var ordinal = AddColumn(sql, key, key, forceAlias: true);
+            var read = Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(value.Type), _reader, Expression.Constant(ordinal),
+                Expression.Constant((sql as ColumnExpr)?.Column?.Converter, typeof(IValueConverter)));
+            return Expression.ElementInit(init.AddMethod, Expression.Constant(key), Coerce(read, init.Arguments[1].Type));
+        });
+        return Expression.ListInit(map.NewExpression, initializers);
     }
 
     private Expression ShapeScalar(Expression body, MemberInfo? member)

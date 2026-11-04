@@ -17,7 +17,7 @@
 | 分组与 having | `query.group` | 78 | `.GroupBy(p => new { p.UserId }).Having(g => g.Count() > 3).Select(g => new { g.Key.UserId, Total = g.Sum(p => p.Amount) })`；`Rollup` / `Cube` / `Grouping()` | M3 |
 | union / union all | `query.union` | 18 | `q1.Union(q2)` / `UnionAll` | M3 |
 | CTE | `query.cte` | 11 | `db.With("x", q)` / `WithRecursive`；派生表 `q.AsSubQuery()` | M3 |
-| 无实体的查询、toMap | `query.map` | 11 | `db.Sql<Dictionary<string, object?>>(...)`；`ToDictionaryAsync` | M3 |
+| 无实体的查询、toMap | `query.map` | 11 | `db.Sql<Dictionary<string, object?>>(...)`；投影成 Map：`Select(o => new Dictionary<string, object?> { { "id", o.Id } })`（逐键，总写 AS）、`Select<Dictionary<string, object?>>()`（全部列）、`new Dictionary<string, object?>()`（`SELECT *`）；`ToDictionaryAsync` | M3 |
 | 流式读取 | `query.stream` | 9 | `await foreach (var x in q.AsAsyncEnumerable())` | M3 |
 | 复用查询 | `query.reuse` | 2 | 查询对象不可变，可以直接复用 | M3 |
 
