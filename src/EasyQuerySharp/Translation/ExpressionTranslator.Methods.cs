@@ -42,9 +42,9 @@ internal sealed partial class ExpressionTranslator
             {
                 var template = (string)ClientEvaluator.Evaluate(call.Arguments[0])!;
                 var args = call.Arguments[1] is NewArrayExpression array
-                    ? array.Expressions.Select(Translate).ToList()
-                    : ((object?[])ClientEvaluator.Evaluate(call.Arguments[1])!).Select(v => (SqlExpr)Parameter(v, v?.GetType() ?? typeof(object))).ToList();
-                return new FragmentExpr(template, args);
+                    ? array.Expressions.Select(RawArgument).ToList()
+                    : ((object?[])ClientEvaluator.Evaluate(call.Arguments[1])!).Select(v => ValueArgument(v)).ToList();
+                return new FragmentExpr(template, args, isPredicate: call.Type == typeof(bool));
             }
             case nameof(Sql.Count) when call.Arguments.Count == 0:
                 return new FunctionExpr(SqlFunctionNames.Count, [LiteralExpr.Star]);
@@ -89,6 +89,20 @@ internal sealed partial class ExpressionTranslator
             default:
                 throw Unsupported(call);
         }
+    }
+
+    // 原生片段的参数：列 / 表达式照常翻译；客户端集合展开成 ?,?,?（对应 Java 的 collection(…)）
+    private SqlExpr RawArgument(Expression argument) =>
+        ClientEvaluator.DependsOnParameters(StripConvert(argument)) ? Translate(StripConvert(argument)) : ValueArgument(ClientEvaluator.Evaluate(argument));
+
+    private static SqlExpr ValueArgument(object? value)
+    {
+        if (value is IEnumerable items and not string and not byte[])
+        {
+            var parameters = items.Cast<object?>().Select(v => (SqlExpr)Parameter(v, v?.GetType() ?? typeof(object))).ToList();
+            return new FragmentExpr(string.Join(",", parameters.Select((_, i) => "{" + i + "}")), parameters);
+        }
+        return Parameter(value, value?.GetType() ?? typeof(object));
     }
 
     // 聚合：第二个参数是过滤条件时，值包进 CASE WHEN filter THEN x ELSE … END

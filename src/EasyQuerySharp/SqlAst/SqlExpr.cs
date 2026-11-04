@@ -230,13 +230,16 @@ public sealed class FunctionExpr(string name, IReadOnlyList<SqlExpr> arguments) 
 /// <summary>
 /// 带占位的原生 SQL 片段：<c>{0}</c>、<c>{1}</c> 处依次替换为参数表达式的渲染结果（对应 Java 的 sqlSegment / sqlNativeSegment）。
 /// </summary>
-public sealed class FragmentExpr(string template, IReadOnlyList<SqlExpr> arguments) : SqlExpr
+public sealed class FragmentExpr(string template, IReadOnlyList<SqlExpr> arguments, bool isPredicate = false) : SqlExpr
 {
     /// <summary>模板文本。</summary>
     public string Template { get; } = template;
 
     /// <summary>模板参数。</summary>
     public IReadOnlyList<SqlExpr> Arguments { get; } = arguments;
+
+    /// <summary>片段本身是条件（<c>Sql.Raw&lt;bool&gt;</c>），用在 WHERE 里不再补 <c>= true</c>。</summary>
+    public bool IsPredicate { get; } = isPredicate;
 }
 
 /// <summary><c>CASE WHEN … THEN … ELSE … END</c>。</summary>

@@ -678,6 +678,110 @@ public sealed class QueryTest(MySqlFixture fixture) : MySqlTest(fixture)
         Assert.Equal("SELECT t.`id` AS `id`,COUNT(t.`id`) AS `id_count` FROM `t_blog` t WHERE t.`deleted` = ? AND t.`id` = ? GROUP BY t.`id` ORDER BY t.`id` ASC", groupOrdered.ToSql());
     }
 
+    private Query<Topic, BlogEntity> TopicBlog() => Db.Query<Topic>().LeftJoin<BlogEntity>((t, t1) => t.Id == t1.Id);
+
+    [Fact, Upstream("QueryTest.java#query112"), Upstream("QueryTest.java#query114")]
+    public async Task Query112()
+    {
+        Assert.Equal(1.2m, await TopicBlog().Where(o => o.Id == "3").SumAsync((t, t1) => t1.Score, Ct) ?? 0m);
+        Assert.Equal(1.2m, await TopicBlog().Where(o => o.Id == "3").SumAsync((t, t1) => t1.Score, Ct));
+    }
+
+    [Fact, Upstream("QueryTest.java#query113"), Upstream("QueryTest.java#query115")]
+    public async Task Query113()
+    {
+        Assert.Null(await TopicBlog().Where(o => o.Id == "3x").SumAsync((t, t1) => t1.Score, Ct));
+        Assert.Equal(0m, await TopicBlog().Where(o => o.Id == "3x").SumAsync((t, t1) => t1.Score, Ct) ?? 0m);
+    }
+
+    [Fact, Upstream("QueryTest.java#query116"), Upstream("QueryTest.java#query118")]
+    public async Task Query116()
+    {
+        Assert.Null(await TopicBlog().Where(o => o.Id == "3x").MaxAsync((t, t1) => t1.Score, Ct));
+        Assert.Equal(0m, await TopicBlog().Where(o => o.Id == "3x").MaxAsync((t, t1) => t1.Score, Ct) ?? 0m);
+        Assert.Null(await TopicBlog().Where(o => o.Id == "3x").MinAsync((t, t1) => t1.Score, Ct));
+        Assert.Equal(0m, await TopicBlog().Where(o => o.Id == "3x").MinAsync((t, t1) => t1.Score, Ct) ?? 0m);
+    }
+
+    [Fact, Upstream("QueryTest.java#query117"), Upstream("QueryTest.java#query119")]
+    public async Task Query117()
+    {
+        string[] ids = ["3x", "3"];
+        Assert.Equal(1.2m, await TopicBlog().Where(o => ids.Contains(o.Id!)).MaxAsync((t, t1) => t1.Score, Ct));
+        Assert.Equal(1.2m, await TopicBlog().Where(o => ids.Contains(o.Id!)).MinAsync((t, t1) => t1.Score, Ct));
+    }
+
+    [Fact, Upstream("QueryTest.java#query120")]
+    public async Task Query120()
+    {
+        string[] hit = ["3", "2", "5"], miss = ["3x", "2x", "5x"], one = ["3x", "2x", "5"];
+        Assert.Equal(1.2m, await TopicBlog().Where((t, b) => hit.Contains(t.Id!)).AverageDecimalAsync((t, t1) => t1.Score, Ct));
+        Assert.Null(await TopicBlog().Where((t, b) => miss.Contains(t.Id!)).AverageDecimalAsync((t, t1) => t1.Score, Ct));
+        Assert.Equal(1.2m, await TopicBlog().Where((t, b) => one.Contains(t.Id!)).AverageDecimalAsync((t, t1) => t1.Score, Ct) ?? 0m);
+        Assert.Equal(0m, await TopicBlog().Where((t, b) => miss.Contains(t.Id!)).AverageDecimalAsync((t, t1) => t1.Score, Ct) ?? 0m);
+        Assert.Equal(3.3333d, await TopicBlog().Where((t, b) => hit.Contains(t.Id!)).AverageAsync((t, t1) => t1.Star, Ct));
+        Assert.Null(await TopicBlog().Where((t, b) => miss.Contains(t.Id!)).AverageAsync((t, t1) => t1.Star, Ct));
+        Assert.Equal(5d, await TopicBlog().Where((t, b) => one.Contains(t.Id!)).AverageAsync((t, t1) => t1.Star, Ct));
+        Assert.Equal(5m, await TopicBlog().Where((t, b) => one.Contains(t.Id!)).AverageDecimalAsync((t, t1) => t1.Star, Ct));
+    }
+
+    [Fact, Upstream("QueryTest.java#query89"), Upstream("QueryTest.java#query90"), Upstream("QueryTest.java#query91")]
+    public async Task Query89() =>
+        Assert.Equal(2.4m, await Db.Query<BlogEntity>().Where(o => new[] { "1", "2" }.Contains(o.Id!)).SumAsync(o => o.Score, Ct) ?? 0m);
+
+    [Fact, Upstream("QueryTest.java#query89_1")]
+    public async Task Query89_1() =>
+        Assert.Equal(0m, await Db.Query<BlogEntity>().Where(o => new[] { "1x", "2x" }.Contains(o.Id!)).SumAsync(o => o.Score, Ct) ?? 0m);
+
+    [Fact, Upstream("QueryTest.java#query99")]
+    public async Task Query99() =>
+        Assert.Equal(1.5m, await Db.Query<BlogEntity>().Where(o => new[] { "1", "2" }.Contains(o.Id!)).AverageDecimalAsync(o => o.Star, Ct));
+
+    [Fact, Upstream("QueryTest.java#query121")]
+    public void Query121()
+    {
+        string[] ids = ["3", "2", "5"];
+        const string head = "SELECT t.`id`,t.`stars`,t.`title`,t.`create_time` FROM `t_topic` t LEFT JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` WHERE t.`id` IN (?,?,?) ORDER BY ";
+        Assert.Equal(head + "t1.`order` ASC", TopicBlog().Where((t, b) => ids.Contains(t.Id!)).OrderBy((t, b) => b.Order).ToSql());
+        Assert.Equal(head + "t1.`order` ASC", TopicBlog().Where((t, b) => Sql.Raw<bool>("{0} IN ({1})", t.Id, ids)).OrderBy((t, b) => b.Order).ToSql());
+        Assert.Equal(head + "t1.`id` ASC", TopicBlog().Where((t, b) => ids.Contains(t.Id!)).OrderByIf(false, (t, b) => b.Order).OrderByIf(true, (t, b) => b.Id).ToSql());
+        Assert.Equal(head + "t1.`order` DESC", TopicBlog().Where((t, b) => ids.Contains(t.Id!)).OrderByDescending((t, b) => b.Order).ToSql());
+        Assert.Equal(head + "t1.`id` DESC,t1.`order` DESC", TopicBlog().Where((t, b) => ids.Contains(t.Id!))
+            .OrderByDescendingIf(false, (t, b) => b.Order).OrderByDescendingIf(true, (t, b) => b.Id).OrderByDescendingIf(true, (t, b) => b.Order).ToSql());
+    }
+
+    [Fact, Upstream("QueryTest.java#query12")]
+    public async Task Query12()
+    {
+        var page = await Db.Query<Topic>().Where(t => t.Id != null).OrderBy(t => t.Id).ToPageAsync(2, 20, Ct);
+        Assert.Equal(20, page.Rows.Count);
+    }
+
+    [Fact, Upstream("QueryTest.java#query13")]
+    public async Task Query13()
+    {
+        var page = await Db.Query<Topic>()
+            .InnerJoin<BlogEntity>((t, b2) => t.Id == b2.Id)
+            .Where((t, b2) => t.Title != null && b2.Id == "3")
+            .Select((t, b2) => b2)
+            .ToPageAsync(1, 20, Ct);
+        Assert.Equal(1, page.Total);
+        Assert.Single(page.Rows);
+    }
+
+    [Fact, Upstream("QueryTest.java#query50")]
+    public async Task Query50()
+    {
+        var query = Db.Query<Topic>().Where(o => o.Id != null).OrderByDescending(o => o.CreateTime);
+        Assert.Equal(10, (await query.ToPageAsync(3, 10, Ct)).Rows.Count);
+        var page8 = await query.ToPageAsync(8, 10, Ct);
+        var limit70 = await query.Limit(70, 10).ToListAsync(Ct);
+        Assert.Equal(page8.Rows.Select(r => r.Id), limit70.Select(r => r.Id));
+        var page6 = await query.ToPageAsync(6, 11, Ct);
+        var limit55 = await query.Limit(55, 11).ToListAsync(Ct);
+        Assert.Equal(page6.Rows.Select(r => r.Id), limit55.Select(r => r.Id));
+    }
+
     [Fact, Upstream("QueryTest.java#query108")]
     public async Task Query108()
     {
