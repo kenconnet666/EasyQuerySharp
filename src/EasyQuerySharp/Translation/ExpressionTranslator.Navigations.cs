@@ -32,7 +32,7 @@ internal sealed partial class ExpressionTranslator
     /// <summary>
     /// 集合导航上的 LINQ 方法 → 隐式子查询：
     /// <c>Any(…)</c> → EXISTS、<c>All(p)</c> → NOT EXISTS(… AND NOT p)、<c>Count(…)</c> / <c>Sum</c> / <c>Max</c> / <c>Min</c> / <c>Average</c> → 标量子查询。
-    /// 中间可以链 <c>Where</c>、<c>Select</c>、<c>Distinct</c>。
+    /// 中间可以链 <c>Where</c>、<c>Select</c>、<c>Distinct</c>、<c>Take</c>。
     /// </summary>
     private bool TryTranslateCollection(MethodCallExpression call, out SqlExpr result)
     {
@@ -64,6 +64,10 @@ internal sealed partial class ExpressionTranslator
                     break;
                 case nameof(Enumerable.Distinct):
                     distinct = true;
+                    break;
+                case nameof(Enumerable.Take):
+                    // 只取前几行：EXISTS(… LIMIT 1) 等（Java 条件对象的写法）
+                    sub.Limit = Convert.ToInt64(ClientEvaluator.Evaluate(op.Arguments[1]), System.Globalization.CultureInfo.InvariantCulture);
                     break;
                 default:
                     throw Unsupported(op, "集合导航上不支持这个方法");

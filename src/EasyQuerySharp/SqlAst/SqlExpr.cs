@@ -100,7 +100,13 @@ public sealed class LogicalExpr(bool isAnd, IReadOnlyList<SqlExpr> operands) : S
     /// <summary>操作数，至少一个。</summary>
     public IReadOnlyList<SqlExpr> Operands { get; } = operands;
 
-    /// <summary>合并成 AND：嵌套的 AND 平铺；只有一个操作数时返回它本身。</summary>
+    /// <summary>显式分组的 AND：不被外层平铺，渲染时整体加括号（<see cref="Sql.Group"/>）。</summary>
+    public bool IsGrouped { get; private init; }
+
+    /// <summary>显式分组的 AND 组。</summary>
+    public static LogicalExpr Grouped(IReadOnlyList<SqlExpr> operands) => new(true, operands) { IsGrouped = true };
+
+    /// <summary>合并成 AND：嵌套的 AND 平铺（显式分组的除外）；只有一个操作数时返回它本身。</summary>
     public static SqlExpr And(IEnumerable<SqlExpr> operands) => Combine(true, operands);
 
     /// <summary>合并成 OR：嵌套的 OR 平铺；只有一个操作数时返回它本身。</summary>
@@ -111,7 +117,7 @@ public sealed class LogicalExpr(bool isAnd, IReadOnlyList<SqlExpr> operands) : S
         var flat = new List<SqlExpr>();
         foreach (var o in operands)
         {
-            if (o is LogicalExpr l && l.IsAnd == isAnd) flat.AddRange(l.Operands);
+            if (o is LogicalExpr { IsGrouped: false } l && l.IsAnd == isAnd) flat.AddRange(l.Operands);
             else flat.Add(o);
         }
         return flat.Count == 1 ? flat[0] : new LogicalExpr(isAnd, flat);

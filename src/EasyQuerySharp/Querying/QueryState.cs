@@ -89,12 +89,15 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     public bool HasSelector => Selector is not null;
 
     /// <summary>查询结果的元素类型：投影的返回类型，没有投影时是第一个来源的类型。</summary>
-    public Type ElementType => Selector?.ReturnType ?? Sources[0] switch
+    public Type ElementType => Selector?.ReturnType ?? TypeOf(Sources[0]);
+
+    /// <summary>一个表来源的元素类型（lambda 里对应参数的类型）。</summary>
+    public static Type TypeOf(QuerySource source) => source switch
     {
         EntitySource e => e.EntityType,
         SubQuerySource s => s.Inner.ElementType,
         UnionSource u => u.Parts[0].ElementType,
         RawSqlSource r => r.EntityType,
-        _ => throw new NotSupportedException(Sources[0].GetType().Name),
+        _ => throw new NotSupportedException(source.GetType().Name),
     };
 }

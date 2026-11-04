@@ -30,6 +30,16 @@ public static class Sql
     /// </summary>
     public static T Cast<T>(object? value) => throw OnlyInQuery();
 
+    /// <summary>
+    /// 条件组：原样输出并加括号 <c>(a AND b)</c>，不与外层的 AND 合并（对应 Java 的 and(x -> …) 分组）。
+    /// 结果与不加括号等价，只在需要与既有 SQL 逐字一致时使用。
+    /// </summary>
+    public static bool Group(bool predicate) => throw OnlyInQuery();
+
+    // 拼表达式树时包一层 Sql.Group(...)
+    internal static System.Linq.Expressions.Expression GroupExpression(System.Linq.Expressions.Expression predicate) =>
+        System.Linq.Expressions.Expression.Call(typeof(Sql).GetMethod(nameof(Group))!, predicate);
+
     /// <summary>值在给定集合里（<c>IN (…)</c>）；与 <c>ids.Contains(x)</c> 等价，写法更接近 SQL。</summary>
     public static bool In<T>(this T value, params T[] values) => throw OnlyInQuery();
 

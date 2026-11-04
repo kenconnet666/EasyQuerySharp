@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2338 个用例。
 
-合计：已移植 326、偏离 42、不适用 3、骨架 15、待做 1952。
+合计：已移植 340、偏离 42、不适用 3、骨架 15、待做 1938。
 
 ## 按能力
 
@@ -60,7 +60,7 @@
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | M6 | 13 | 0 | 0 | 0 | 0 | 13 |
 | UPDATE / DELETE … RETURNING | `write.returning` | M6 | 3 | 0 | 0 | 0 | 0 | 3 |
 | 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 0 | 0 | 0 | 0 | 17 |
-| 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 0 | 1 | 0 | 0 | 100 |
+| 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 14 | 1 | 0 | 0 | 86 |
 | search 扩展 | `search` | M7 | 45 | 0 | 0 | 0 | 0 | 45 |
 | 分库分表 | `sharding` | M7 | 48 | 0 | 0 | 0 | 0 | 48 |
 | 跨库链接（asTableLink） | `table.link` | M7 | 13 | 0 | 0 | 0 | 0 | 13 |
@@ -2388,8 +2388,8 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| QueryTest.java#query15 | 待做 |  | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'create_time' > ?` |
-| QueryTest.java#query18 | 待做 |  | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'create_time' > ? ORDER BY 'create_ti…` |
+| QueryTest.java#query15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.ObjectFilter.cs:9 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'create_time' > ?` |
+| QueryTest.java#query18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.ObjectFilter.cs:15 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'create_time' > ? ORDER BY 'create_ti…` |
 | QueryTest14.java#testClose | 待做 |  | `select * from t_topic` |
 | QueryTest18.java#rangeTest1_1 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest18.java#rangeTest1_2 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
@@ -2402,16 +2402,16 @@
 | QueryTest18.java#test13 | 待做 |  | `SELECT t.'id',t.'create_time',t.'username',t.'phone',t.'id_card',t.'address' FROM 'easy-query-test'.…` |
 | QueryTest19.java#test1 | 待做 |  | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t WHERE t.'name' = ?` |
 | QueryTest19.java#testMyFilter | 待做 |  | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'title' LIKE ?` |
-| QueryTest2.java#dynamicSort | 待做 |  | `SELECT t.'id',t.'title',t.'content' FROM 't_blog' t WHERE t.'deleted' = ? ORDER BY t.'title' ASC` |
-| QueryTest2.java#dynamicSort2 | 待做 |  | `SELECT t.'id',t.'title',t.'content' FROM 't_blog' t WHERE t.'deleted' = ? ORDER BY t.'title' ASC,t.'…` |
-| QueryTest2.java#dynamicSort3 | 待做 |  | `SELECT t.'id',t.'title',t.'content' FROM 't_blog' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' WHER…` |
-| QueryTest2.java#dynamicSort4 | 待做 |  | `SELECT t.'id',t.'title',t.'content' FROM 't_blog' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' WHER…` |
-| QueryTest2.java#queryTest17 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest2.java#queryTest18 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest2.java#queryTest18_1 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest2.java#queryTest18_2 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest2.java#queryTest19 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest2.java#queryTest20 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest2.java#dynamicSort | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest2.cs:370 | `SELECT t.'id',t.'title',t.'content' FROM 't_blog' t WHERE t.'deleted' = ? ORDER BY t.'title' ASC` |
+| QueryTest2.java#dynamicSort2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest2.cs:380 | `SELECT t.'id',t.'title',t.'content' FROM 't_blog' t WHERE t.'deleted' = ? ORDER BY t.'title' ASC,t.'…` |
+| QueryTest2.java#dynamicSort3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest2.cs:388 | `SELECT t.'id',t.'title',t.'content' FROM 't_blog' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' WHER…` |
+| QueryTest2.java#dynamicSort4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest2.cs:388 | `SELECT t.'id',t.'title',t.'content' FROM 't_blog' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' WHER…` |
+| QueryTest2.java#queryTest17 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest2.cs:305 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest2.java#queryTest18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest2.cs:322 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest2.java#queryTest18_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest2.cs:331 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest2.java#queryTest18_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest2.cs:340 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest2.java#queryTest19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest2.cs:350 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest2.java#queryTest20 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest2.cs:357 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest21.java#testOrderBy2 | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id' FROM 'doc_bank_card' t LEFT JOIN 'doc_user' t1 O…` |
 | QueryTest24.java#test14 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest24.java#test15 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
@@ -2459,9 +2459,9 @@
 | mysql8/M8BankTest.java#test10 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:111：Java 的 filterConfigure(NotNullOrEmptyValueFilter) 在 C# 里用 WhereIf 表达，这里条件都有值，SQL 相同 | `SELECT t.'code' AS 'value1',t2.'name' AS 'value2',t1.'name' AS 'value3' FROM 't_bank_card' t LEFT JO…` |
 | mysql8/M8BankTest.java#test4 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (SELECT COUNT(*) …` |
 | mysql8/M8BankTest.java#test9 | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t` |
-| mysql8/M8QueryTest.java#whereObject1 | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
+| mysql8/M8QueryTest.java#whereObject1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8QueryTest.cs:29 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
 | mysql8/M8QueryTest.java#whereObject2 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
-| mysql8/M8QueryTest.java#whereObject3 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE EXISTS(SELECT 1 F…` |
+| mysql8/M8QueryTest.java#whereObject3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8QueryTest.cs:38 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE EXISTS(SELECT 1 F…` |
 | mysql8/M8QueryTest.java#whereObject4 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
 | mysql8/M8QueryTest.java#whereObject6 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
 | mysql8/MySQL8Test2.java#testFilterConfigure1 | 待做 |  | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t WHERE EXISTS(SELECT 1 FROM 't_bank_card' t1 W…` |

@@ -246,11 +246,13 @@ public sealed class SqlRenderer
     {
         if (l.IsAnd)
         {
+            if (l.IsGrouped) Append("(");
             for (var i = 0; i < l.Operands.Count; i++)
             {
                 if (i > 0) Append(" AND ");
                 Write(l.Operands[i]);
             }
+            if (l.IsGrouped) Append(")");
             return;
         }
         Append("(");
@@ -258,7 +260,7 @@ public sealed class SqlRenderer
         {
             if (i > 0) Append(" OR ");
             // OR 里的 AND 组要加括号，保持原有的结合关系
-            if (l.Operands[i] is LogicalExpr { IsAnd: true }) Append("(").Write(l.Operands[i]).Append(")");
+            if (l.Operands[i] is LogicalExpr { IsAnd: true, IsGrouped: false }) Append("(").Write(l.Operands[i]).Append(")");
             else Write(l.Operands[i]);
         }
         Append(")");

@@ -195,7 +195,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [ ] 7.2 查询级表名映射 `MapTable`：导航、隐式 join、include 都跟着变；`InSchema`、`WithTableLink`。
 - [ ] 7.3 分表：按取模、按时间路由；按条件裁剪；库内 UNION ALL；写入路由。
 - [ ] 7.4 分库：路由；在内存里归并排序和分页，`count` / `sum` / `min` / `max` 跨库合并。
-- [ ] 7.5 `FilterBy` / `SortBy` / `Table(request)`，对应 Java 的 `whereObject` / `orderByObject`。
+- [~] 7.5 `FilterBy` / `SortBy`（已完成：条件类型、多属性 OR、区间、导航路径、集合 EXISTS、允许排序的属性）/ `Table(request)`，对应 Java 的 `whereObject` / `orderByObject`。
 - [ ] 7.6 `EasyQuerySharp.Search`：Java search 扩展的参数约定。
 - [ ] 7.7 二级缓存接口，提供本机和分布式两级。
 - [ ] 7.8 `EasyQuerySharp.DependencyInjection`：`AddEasyQuery`，读写分离（replica）。

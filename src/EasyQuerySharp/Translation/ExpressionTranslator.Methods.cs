@@ -76,6 +76,11 @@ internal sealed partial class ExpressionTranslator
             case nameof(Sql.Exists):
             case nameof(Sql.NotExists):
                 return TranslateExists(call.Arguments[0], call.Method.Name == nameof(Sql.NotExists));
+            case nameof(Sql.Group):
+            {
+                var inner = TranslatePredicate(call.Arguments[0]);
+                return inner is LogicalExpr { IsAnd: true } and ? LogicalExpr.Grouped(and.Operands) : inner;
+            }
             case nameof(Sql.Cast):
                 return new CastExpr(Translate(StripConvert(call.Arguments[0])), call.Method.GetGenericArguments()[0]);
             case nameof(Sql.SubQuery):

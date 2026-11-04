@@ -40,6 +40,40 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     /// <summary>这条查询不加逻辑删除条件。</summary>
     public TSelf DisableLogicDelete() => With(State with { DisableLogicDelete = true });
 
+    /// <summary>
+    /// 按条件对象追加条件（对应 Java 的 whereObject）：<paramref name="request"/> 上标了 <see cref="Filtering.FilterAttribute"/> 的属性
+    /// 有值时变成条件；为 null 时不变。投影之后调用时作用于投影结果（先包成派生表）。
+    /// </summary>
+    /// <example><code>db.Query&lt;Blog&gt;().FilterBy(new BlogQuery { Title = "abc", Statuses = [1, 2] })</code></example>
+    public TSelf FilterBy(object? request)
+    {
+        if (request is null) return (TSelf)this;
+        var state = Opened();
+        return Filtering.ObjectFilter.Where(request, SourceTypes(state)) is { } predicate
+            ? With(state with { Wheres = state.Wheres.Add(predicate) })
+            : (TSelf)this;
+    }
+
+    /// <summary><paramref name="condition"/> 为 true 时才 <see cref="FilterBy"/>（对应 Java 的 whereObject(bool, obj)）。</summary>
+    public TSelf FilterByIf(bool condition, object? request) => condition ? FilterBy(request) : (TSelf)this;
+
+    /// <summary>按排序请求追加排序（对应 Java 的 orderByObject）；为 null 时不变。</summary>
+    public TSelf SortBy(Filtering.ISortRequest? request)
+    {
+        if (request is null) return (TSelf)this;
+        var state = Opened();
+        var orders = Filtering.ObjectFilter.Sort(request, SourceTypes(state)).Select(o => new OrderSpec(o.Key, o.Descending));
+        return With(state with { OrderBys = state.OrderBys.AddRange(orders) });
+    }
+
+    /// <summary><paramref name="condition"/> 为 true 时才 <see cref="SortBy"/>。</summary>
+    public TSelf SortByIf(bool condition, Filtering.ISortRequest? request) => condition ? SortBy(request) : (TSelf)this;
+
+    // 投影之后再加条件 / 排序要先包一层
+    private QueryState Opened() => State.HasSelector ? State.Wrap() : State;
+
+    private static Type[] SourceTypes(QueryState state) => state.Sources.Select(QueryState.TypeOf).ToArray();
+
     /// <summary>追踪作用域里追踪结果实体（作用域里默认就追踪，对应 Java 的 asTracking）。</summary>
     public TSelf AsTracking() => With(State with { NoTracking = false });
 

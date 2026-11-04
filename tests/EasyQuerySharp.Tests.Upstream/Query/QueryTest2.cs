@@ -291,4 +291,107 @@ public sealed class QueryTest2(MySqlFixture fixture) : MySqlTest(fixture)
     public void QueryMultiFrom1() =>
         Assert.Equal("SELECT t.`id`,t.`stars`,t.`title`,t.`create_time` FROM `t_topic` t , `t_topic` t1 WHERE t.`id` = ? AND t.`id` = ?",
             Db.Query<Topic>().From<Topic>().Where((a, b) => a.Id == "1").Where((a, b) => a.Id == "id").ToSql());
+
+    // ---------- whereObject / orderByObject：C# 的 FilterBy / SortBy ----------
+
+    private static BlogQueryRequest BaseRequest() => new()
+    {
+        Title = "123", Content = "123", Star = 123, PublishTimeBegin = DateTime.Now, PublishTimeEnd = DateTime.Now,
+        Score = 123m, Status = 1, Order = 12m, IsTop = false, Orders = ["status", "score"],
+    };
+
+    private const string BlogTail = " AND `score` >= ? AND `status` <= ? AND `order` > ? AND `is_top` <> ? ORDER BY `status` ASC,`score` ASC";
+
+    [Fact, Upstream("QueryTest2.java#queryTest17")]
+    public async Task QueryTest17()
+    {
+        var request = BaseRequest();
+        request.PublishTimeBegin = new DateTime(2000, 2, 1);
+        request.PublishTimeEnd = new DateTime(2000, 3, 1);
+        request.PublishTime = [new DateTime(2000, 1, 1), new DateTime(2001, 1, 1)];
+        request.PublishTimes = [new DateTime(2003, 1, 1), new DateTime(2004, 1, 1)];
+        request.PublishTimeOpen = [new DateTime(2005, 1, 1), new DateTime(2006, 1, 1)];
+        request.PublishTimeOpenClosed = [new DateTime(2007, 1, 1), new DateTime(2008, 1, 1)];
+        request.PublishTimeClosedOpen = [new DateTime(2009, 1, 1), new DateTime(2010, 1, 1)];
+        using var listen = SqlCapture.Listen();
+        await Db.Query<BlogEntity>().FilterBy(request).SortBy(request).ToListAsync(Ct);
+        listen.AssertSql("SELECT " + BlogColumns + " FROM `t_blog` WHERE `deleted` = ? AND `title` LIKE ? AND `url` LIKE ? AND `star` = ? AND `publish_time` >= ? AND `publish_time` <= ? AND (`publish_time` >= ? AND `publish_time` <= ?) AND (`publish_time` >= ? AND `publish_time` <= ?) AND (`publish_time` > ? AND `publish_time` < ?) AND (`publish_time` > ? AND `publish_time` <= ?) AND (`publish_time` >= ? AND `publish_time` < ?)" + BlogTail);
+        listen.AssertParams("false(Boolean),%123%(String),%123%(String),123(Integer),2000-02-01T00:00(LocalDateTime),2000-03-01T00:00(LocalDateTime),2000-01-01T00:00(LocalDateTime),2001-01-01T00:00(LocalDateTime),2003-01-01T00:00(LocalDateTime),2004-01-01T00:00(LocalDateTime),2005-01-01T00:00(LocalDateTime),2006-01-01T00:00(LocalDateTime),2007-01-01T00:00(LocalDateTime),2008-01-01T00:00(LocalDateTime),2009-01-01T00:00(LocalDateTime),2010-01-01T00:00(LocalDateTime),123(BigDecimal),1(Integer),12(BigDecimal),false(Boolean)");
+    }
+
+    [Fact, Upstream("QueryTest2.java#queryTest18")]
+    public void QueryTest18()
+    {
+        var request = BaseRequest();
+        Assert.Equal("SELECT " + BlogColumns + " FROM `t_blog` WHERE `deleted` = ? AND `title` LIKE ? AND `url` LIKE ? AND `star` = ? AND `publish_time` >= ? AND `publish_time` <= ?" + BlogTail,
+            Db.Query<BlogEntity>().FilterByIf(true, request).SortByIf(true, request).ToSql());
+    }
+
+    // 多属性 OR 的条件挂在第一个属性的节点上，所以紧跟在 title 的条件之后
+    [Fact, Upstream("QueryTest2.java#queryTest18_1")]
+    public void QueryTest18_1()
+    {
+        var request = BaseRequest();
+        request.Title2 = "123";
+        Assert.Equal("SELECT " + BlogColumns + " FROM `t_blog` WHERE `deleted` = ? AND `title` LIKE ? AND (`title` LIKE ? OR `content` LIKE ?) AND `url` LIKE ? AND `star` = ? AND `publish_time` >= ? AND `publish_time` <= ?" + BlogTail,
+            Db.Query<BlogEntity>().FilterBy(request).SortBy(request).ToSql());
+    }
+
+    [Fact, Upstream("QueryTest2.java#queryTest18_2")]
+    public void QueryTest18_2()
+    {
+        var request = BaseRequest();
+        request.Title2 = "123";
+        request.Title3 = "123";
+        Assert.Equal("SELECT " + BlogColumns + " FROM `t_blog` WHERE `deleted` = ? AND `title` LIKE ? AND (`title` LIKE ? OR `content` LIKE ?) AND (`id` = ? OR `content` = ?) AND `url` LIKE ? AND `star` = ? AND `publish_time` >= ? AND `publish_time` <= ?" + BlogTail,
+            Db.Query<BlogEntity>().FilterBy(request).SortBy(request).ToSql());
+    }
+
+    [Fact, Upstream("QueryTest2.java#queryTest19")]
+    public void QueryTest19()
+    {
+        var request = BaseRequest();
+        Assert.Equal("SELECT " + BlogColumns + " FROM `t_blog` WHERE `deleted` = ?", Db.Query<BlogEntity>().FilterByIf(false, request).SortByIf(false, request).ToSql());
+    }
+
+    [Fact, Upstream("QueryTest2.java#queryTest20")]
+    public void QueryTest20()
+    {
+        var request = BaseRequest();
+        request.StatusList.Add(1);
+        request.StatusNotList.AddRange([2, 3]);
+        Assert.Equal("SELECT " + BlogColumns + " FROM `t_blog` WHERE `deleted` = ? AND `title` LIKE ? AND `url` LIKE ? AND `star` = ? AND `publish_time` >= ? AND `publish_time` <= ? AND `score` >= ? AND `status` <= ? AND `status` IN (?) AND `status` NOT IN (?,?) AND `order` > ? AND `is_top` <> ? ORDER BY `status` ASC,`score` ASC",
+            Db.Query<BlogEntity>().FilterBy(request).SortBy(request).ToSql());
+    }
+
+    private Query<BlogEntity> SortedBlogs(Filtering.ISortRequest request) =>
+        Db.Query<BlogEntity>().SortBy(request).Select(o => new BlogEntity { Id = o.Id, Title = o.Title, Content = o.Content });
+
+    [Fact, Upstream("QueryTest2.java#dynamicSort")]
+    public void DynamicSort()
+    {
+        const string head = "SELECT t.`id`,t.`title`,t.`content` FROM `t_blog` t WHERE t.`deleted` = ?";
+        Assert.Equal(head + " ORDER BY t.`title` ASC", SortedBlogs(new BlogSortRequest { Sort = "title", Asc = true }).ToSql());
+        Assert.Equal(head + " ORDER BY t.`title` DESC", SortedBlogs(new BlogSortRequest { Sort = "title", Asc = false }).ToSql());
+        Assert.Equal(head, SortedBlogs(new BlogSortRequest { Sort = "title" }).ToSql());
+        Assert.Equal(head, SortedBlogs(new BlogSortRequest { Asc = true }).ToSql());
+    }
+
+    [Fact, Upstream("QueryTest2.java#dynamicSort2")]
+    public void DynamicSort2()
+    {
+        var request = new BlogSortMultiRequest();
+        request.Orders.AddRange([("title", true), ("star", false)]);
+        Assert.Equal("SELECT t.`id`,t.`title`,t.`content` FROM `t_blog` t WHERE t.`deleted` = ? ORDER BY t.`title` ASC,t.`star` DESC", SortedBlogs(request).ToSql());
+    }
+
+    [Fact, Upstream("QueryTest2.java#dynamicSort3"), Upstream("QueryTest2.java#dynamicSort4")]
+    public void DynamicSort3()
+    {
+        var request = new BlogSortMultiRequest(joinTable: true);
+        request.Orders.AddRange([("title", true), ("createTime", false)]);
+        Assert.Equal("SELECT t.`id`,t.`title`,t.`content` FROM `t_blog` t INNER JOIN `t_topic` t1 ON t.`id` = t1.`id` WHERE t.`deleted` = ? ORDER BY t.`title` ASC,t1.`create_time` DESC",
+            Db.Query<BlogEntity>().InnerJoin<Topic>((t, t1) => t.Id == t1.Id).SortBy(request)
+                .Select((t, t1) => new BlogEntity { Id = t.Id, Title = t.Title, Content = t.Content }).ToSql());
+    }
 }
