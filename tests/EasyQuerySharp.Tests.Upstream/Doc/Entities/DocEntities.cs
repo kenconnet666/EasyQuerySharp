@@ -88,3 +88,34 @@ public class DocUserBook
 
     public decimal? Price { get; set; }
 }
+
+/// <summary>对应 Java：entity/m2m/UserAccount（Java 写成 ManyToMany 但没有中间表，实际是按 uid 的一对多）。</summary>
+[Table("t_user_account")]
+public class UserAccount
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Uid { get; set; }
+
+    public string? Name { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Uid)], TargetProperties = [nameof(UserBook.Uid)])]
+    public List<UserBook>? Books { get; set; }
+}
+
+/// <summary>对应 Java：entity/m2m/UserBook。</summary>
+[Table("t_user_book")]
+public class UserBook
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Uid { get; set; }
+
+    public string? Name { get; set; }
+
+    public decimal? Price { get; set; }
+}

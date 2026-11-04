@@ -15,7 +15,7 @@ public sealed class MySqlFixture : IAsyncLifetime
     /// <summary>Java 用例使用的库名（部分实体的 schema 写死为它）。</summary>
     public const string Database = "easy-query-test";
 
-    private static readonly string[] Scripts = ["mysql-init-sqk-easy.sql", "relation.sql"];
+    private static readonly string[] Scripts = ["mysql-init-sqk-easy.sql", "relation.sql", "doc.sql"];
 
     private EasyDb? _db;
     private string? _skipReason;

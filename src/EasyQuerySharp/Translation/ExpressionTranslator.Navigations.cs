@@ -17,12 +17,14 @@ internal sealed partial class ExpressionTranslator
     /// <summary>对一导航 <c>x.User</c>：返回隐式 JOIN 的目标表绑定；不是对一导航时返回 null。</summary>
     private EntityBinding? ToOneNavigation(MemberExpression m)
     {
-        if (m.Expression is null || BindingOf(m.Expression) is not EntityBinding owner) return null;
-        if (Navigation(owner, m.Member.Name) is not { IsCollection: false } nav) return null;
+        // 起点可以是实体表，也可以是整行实体的派生表（如集合导航的 First() 行）
+        if (m.Expression is null || BindingOf(m.Expression) is not { OwnerEntity: { } entity } owner) return null;
+        if (Context?.Metadata.FindNavigation(entity, m.Member.Name) is not { IsCollection: false } nav) return null;
         if (nav.DirectPath.Count == 0) return Context!.JoinFor(owner, nav);
         // 直达导航：沿路径逐级 JOIN（与手写 x.A.B 共用同一组 JOIN）
-        var current = owner;
-        foreach (var step in nav.DirectPath)
+        var current = Context!.JoinFor(owner, Context.Metadata.FindNavigation(entity, nav.DirectPath[0]) is { IsCollection: false } first
+            ? first : throw Unsupported(m, $"直达路径 {nav} 上的 {nav.DirectPath[0]} 必须是对一导航"));
+        foreach (var step in nav.DirectPath.Skip(1))
         {
             var hop = Navigation(current, step) is { IsCollection: false } n ? n : throw Unsupported(m, $"直达路径 {nav} 上的 {step} 必须是对一导航");
             current = Context!.JoinFor(current, hop);
@@ -33,24 +35,9 @@ internal sealed partial class ExpressionTranslator
     /// <summary>集合导航 <c>x.Cards</c>：返回所属表绑定与导航；不是集合导航时返回 null。</summary>
     private (SourceBinding Owner, NavigationMetadata Navigation)? CollectionNavigation(Expression e)
     {
-        if (StripConvert(e) is not MemberExpression { Expression: { } inner } m || BindingOf(inner) is not { } owner || EntityOf(owner) is not { } entity) return null;
+        if (StripConvert(e) is not MemberExpression { Expression: { } inner } m || BindingOf(inner) is not { } owner || owner.OwnerEntity is not { } entity) return null;
         return Context?.Metadata.FindNavigation(entity, m.Member.Name) is { IsCollection: true } nav ? (owner, nav) : null;
     }
-
-    // 能做导航起点的绑定：实体表，或者投影整个实体的派生表（如 LimitSelect 包出的那层）
-    private static EntityMetadata? EntityOf(SourceBinding binding) => binding switch
-    {
-        EntityBinding e => e.Entity,
-        DerivedBinding { Entity: { } entity } => entity,
-        _ => null,
-    };
-
-    // 所属行上的关联列：实体表直接取列，派生表按列名取外层列
-    private static SqlExpr OwnerColumn(SourceBinding owner, ColumnMetadata column) => owner switch
-    {
-        EntityBinding e => e.EntityTable.Column(column),
-        _ => owner.Member(column.Property) ?? throw new InvalidOperationException($"派生表里没有导航需要的列 {column.Name}"),
-    };
 
     /// <summary>
     /// 集合导航上的 LINQ 方法 → 隐式子查询：
@@ -316,6 +303,73 @@ internal sealed partial class ExpressionTranslator
         return true;
     }
 
+    /// <summary>
+    /// 集合导航里的某一行：<c>u.Cards.Where(…).OrderBy(…).First()</c> / <c>ElementAt(n)</c> → 派生表
+    /// <c>(SELECT 目标列…, (ROW_NUMBER() OVER (PARTITION BY 外键 ORDER BY …)) AS __row__ FROM 目标 WHERE …) tN</c>，
+    /// <c>ON (tN.外键 = 所属.键 AND tN.__row__ = n+1)</c>（对应 Java 的 first() / element(n)）。之后可以继续取列、走对一导航。
+    /// 没有写排序时按目标表主键升序。
+    /// </summary>
+    private DerivedBinding? ElementBinding(MethodCallExpression call)
+    {
+        if (call.Method.DeclaringType != typeof(Enumerable) || Context is null
+            || call.Method.Name is not (nameof(Enumerable.First) or nameof(Enumerable.FirstOrDefault) or nameof(Enumerable.ElementAt) or nameof(Enumerable.ElementAtOrDefault)))
+            return null;
+        var chain = new List<MethodCallExpression>();
+        var current = call.Arguments[0];
+        while (current is MethodCallExpression mc && mc.Method.DeclaringType == typeof(Enumerable) && mc.Arguments.Count > 0)
+        {
+            chain.Add(mc);
+            current = mc.Arguments[0];
+        }
+        if (CollectionNavigation(current) is not var (owner, nav)) return null;
+        if (nav.Mapping is not null) throw Unsupported(call, "多对多导航不支持取第几行");
+        chain.Reverse();
+        var elementAt = call.Method.Name.StartsWith(nameof(Enumerable.ElementAt), System.StringComparison.Ordinal);
+        var index = elementAt ? Convert.ToInt32(ClientEvaluator.Evaluate(call.Arguments[1]), System.Globalization.CultureInfo.InvariantCulture) : 0;
+        var predicate = !elementAt && call.Arguments.Count > 1 ? Lambda(call.Arguments[1]) : null;
+        var key = string.Join("|", chain.Select(op => op.Method.Name + ":" + (op.Arguments.Count > 1 ? GroupJoinKey(Lambda(op.Arguments[1])) : "")))
+                  + "|" + (predicate is null ? "" : GroupJoinKey(predicate)) + "|" + nav.Property.Name + "#" + index;
+        return Context.ElementJoinFor(owner, key, nav.Required, context =>
+        {
+            var element = new EntityTableSource(nav.Target);
+            var inner = new SelectQuery(element);
+            var t = new ExpressionTranslator(new Dictionary<ParameterExpression, SourceBinding>(_scope)) { Context = context.ForSubQuery(inner) };
+            var binding = new EntityBinding(element);
+            inner.Where.AddRange(context.TableFilters(element));
+            var orders = new List<OrderByItem>();
+            foreach (var op in chain)
+            {
+                switch (op.Method.Name)
+                {
+                    case nameof(Enumerable.Where):
+                        inner.Where.Add(t.ElementPredicate(Lambda(op.Arguments[1]), binding));
+                        break;
+                    case nameof(Enumerable.OrderBy) or nameof(Enumerable.ThenBy) or nameof(Enumerable.OrderByDescending) or nameof(Enumerable.ThenByDescending):
+                        var keyLambda = Lambda(op.Arguments[1]);
+                        t.Bind(keyLambda, [binding]);
+                        orders.Add(new OrderByItem(t.Translate(StripConvert(keyLambda.Body)), op.Method.Name.EndsWith("Descending", System.StringComparison.Ordinal)));
+                        break;
+                    default:
+                        throw Unsupported(op, "取第几行之前只支持 Where / OrderBy / ThenBy");
+                }
+            }
+            if (predicate is not null) inner.Where.Add(t.ElementPredicate(predicate, binding));
+            if (orders.Count == 0) orders.AddRange(nav.Target.KeyColumns.Select(k => new OrderByItem(element.Column(k), false)));
+
+            var columns = nav.Target.Columns.Where(c => c.AutoSelect).ToList();
+            foreach (var c in columns) inner.Columns.Add(new SelectColumn(element.Column(c), null));
+            var row = new WindowExpr(new FragmentExpr("ROW_NUMBER()", []), nav.TargetColumns.Select(c => (SqlExpr)element.Column(c)).ToList(), orders, null, compact: false);
+            inner.Columns.Add(new SelectColumn(row, "__row__"));
+            // Java 在这里多一层匿名表，派生表的别名跳过一个编号
+            var table = new DerivedTableSource(inner) { ReserveExtraAlias = true };
+            var on = nav.TargetColumns
+                .Select((target, i) => (SqlExpr)new BinaryExpr(new ColumnExpr(table, target.Name, target), SqlBinaryOperator.Equal, owner.OwnerColumn(nav.SelfColumns[i])))
+                .Append(new BinaryExpr(new ColumnExpr(table, "__row__"), SqlBinaryOperator.Equal, new ParameterExpr(index + 1, typeof(int))))
+                .ToList();
+            return (table, LogicalExpr.Grouped(on), new DerivedBinding(table, columns.ToDictionary(c => c.PropertyName, c => c.Name), nav.Target));
+        });
+    }
+
     /// <summary><c>x.Cards.Count</c>（List 的 Count 属性）→ 计数子查询。</summary>
     private SqlExpr? TryTranslateCollectionCount(MemberExpression m)
     {
@@ -347,7 +401,7 @@ internal sealed partial class ExpressionTranslator
             for (var i = 0; i < nav.TargetMappingColumns.Count; i++)
                 link.Where.Add(new BinaryExpr(mappingTable.Column(nav.TargetMappingColumns[i]), SqlBinaryOperator.Equal, table.Column(nav.TargetColumns[i])));
             for (var i = 0; i < nav.SelfMappingColumns.Count; i++)
-                link.Where.Add(new BinaryExpr(mappingTable.Column(nav.SelfMappingColumns[i]), SqlBinaryOperator.Equal, OwnerColumn(owner, nav.SelfColumns[i])));
+                link.Where.Add(new BinaryExpr(mappingTable.Column(nav.SelfMappingColumns[i]), SqlBinaryOperator.Equal, owner.OwnerColumn(nav.SelfColumns[i])));
             link.Columns.Add(new SelectColumn(LiteralExpr.One, null));
             // 中间表的 EXISTS 也带 LIMIT 1（与 Java 一致）
             link.Limit = 1;
@@ -356,7 +410,7 @@ internal sealed partial class ExpressionTranslator
         else
         {
             var keys = nav.TargetColumns
-                .Select((target, i) => (SqlExpr)new BinaryExpr(table.Column(target), SqlBinaryOperator.Equal, OwnerColumn(owner, nav.SelfColumns[i])))
+                .Select((target, i) => (SqlExpr)new BinaryExpr(table.Column(target), SqlBinaryOperator.Equal, owner.OwnerColumn(nav.SelfColumns[i])))
                 .ToList();
             // 复合键整体加括号（与 Java 一致）
             sub.Where.Add(keys.Count == 1 ? keys[0] : LogicalExpr.Grouped(keys));

@@ -82,6 +82,8 @@ internal sealed partial class ExpressionTranslator
         MemberExpression { Expression: { } inner } m when BindingOf(inner) is DerivedBinding derived && derived.Nested(m.Member.Name) is { } nested => nested,
         // 对一导航 x.User → 隐式 JOIN 的目标表
         MemberExpression m => ToOneNavigation(m),
+        // 集合导航里的某一行 x.Cards.First() → 派生表
+        MethodCallExpression call => ElementBinding(call),
         _ => null,
     };
 

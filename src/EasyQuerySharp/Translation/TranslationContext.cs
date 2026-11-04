@@ -44,10 +44,21 @@ internal sealed class TranslationContext(
         if (spec is { Enabled: false } || (spec is null && !navigation.GroupJoin)) return null;
         var key = (owner.Table, navigation.Property.Name);
         if (_groupJoins.TryGetValue(key, out var existing)) return existing;
-        if (navigation.Mapping is not null) throw new NotSupportedException($"多对多导航 {navigation} 的分组合并还不支持");
-
         var element = new EntityTableSource(navigation.Target);
-        var plan = new GroupJoinPlan(new SelectQuery(element), element, navigation);
+        var inner = new SelectQuery(element);
+        IReadOnlyList<ColumnExpr> groupKeys;
+        if (navigation.Mapping is { } mapping)
+        {
+            // 多对多：目标表 INNER JOIN 中间表，按中间表里对应所属表的列分组（与 Java 一致，ON 里目标列在前）
+            var link = new EntityTableSource(mapping);
+            var on = navigation.TargetColumns
+                .Select((c, i) => (SqlExpr)new BinaryExpr(element.Column(c), SqlBinaryOperator.Equal, link.Column(navigation.TargetMappingColumns[i])))
+                .ToList();
+            inner.Joins.Add(new JoinClause(JoinKind.Inner, link, on.Count == 1 ? on[0] : LogicalExpr.Grouped(on)) { Implicit = true });
+            groupKeys = navigation.SelfMappingColumns.Select(link.Column).ToList();
+        }
+        else groupKeys = navigation.TargetColumns.Select(element.Column).ToList();
+        var plan = new GroupJoinPlan(inner, element, groupKeys);
         plan.InnerContext = ForSubQuery(plan.Inner);
         foreach (var filter in TableFilters(element)) plan.AddBaseWhere(filter);
         if (spec?.Configure is { } configure && Db is not null)
@@ -62,12 +73,31 @@ internal sealed class TranslationContext(
         }
         // 派生表在 Java 里此时创建，别名排在已有的 JOIN（Configure 条件里的导航）之后、之后才加的表之前
         plan.Table.AliasAfterJoins = plan.Inner.Joins.Count;
+        // 多对多时 Java 多建了一张中间表的副本，派生表的别名再跳过一个
+        plan.Table.ReserveExtraAlias = navigation.Mapping is not null;
         var keys = plan.KeyColumns
-            .Select((k, i) => (SqlExpr)new BinaryExpr(k, SqlBinaryOperator.Equal, entityOwner.EntityTable.Column(navigation.SelfColumns[i])))
+            .Select((k, i) => (SqlExpr)new BinaryExpr(k, SqlBinaryOperator.Equal, entityOwner.OwnerColumn(navigation.SelfColumns[i])))
             .ToList();
         query.Joins.Add(new JoinClause(navigation.Required ? JoinKind.Inner : JoinKind.Left, plan.Table, keys.Count == 1 ? keys[0] : LogicalExpr.Grouped(keys)) { Implicit = true });
         _groupJoins[key] = plan;
         return plan;
+    }
+
+    private readonly Dictionary<(TableSource, string), DerivedBinding> _elementJoins = [];
+
+    /// <summary>
+    /// 集合导航里的某一行（First / ElementAt）JOIN 成的派生表：同一所属行上、同样的链（条件、排序、序号）只 JOIN 一次。
+    /// 所属表在外层时 JOIN 加到外层。<paramref name="build"/> 在本查询的上下文里构造派生表、ON 条件与绑定。
+    /// </summary>
+    public DerivedBinding ElementJoinFor(SourceBinding owner, string key, bool required,
+        Func<TranslationContext, (DerivedTableSource Table, SqlExpr On, DerivedBinding Binding)> build)
+    {
+        if (parent is not null && !Owns(owner.Table)) return parent.ElementJoinFor(owner, key, required, build);
+        if (_elementJoins.TryGetValue((owner.Table, key), out var existing)) return existing;
+        var (table, on, binding) = build(this);
+        query.Joins.Add(new JoinClause(required ? JoinKind.Inner : JoinKind.Left, table, on) { Implicit = true });
+        _elementJoins[(owner.Table, key)] = binding;
+        return binding;
     }
 
     /// <summary>整条查询翻译完后调用：按登记的聚合生成各分组派生表的列。</summary>
@@ -80,7 +110,7 @@ internal sealed class TranslationContext(
     /// 对一导航的隐式 JOIN：同一个来源上的同一个导航只连一次。ON 里先写目标表自带的过滤条件，再写 <c>目标键 = 本表键</c>（与 Java 版一致）；
     /// <see cref="NavigationMetadata.Required"/> 时用 INNER JOIN，否则 LEFT JOIN。
     /// </summary>
-    public EntityBinding JoinFor(EntityBinding owner, NavigationMetadata navigation)
+    public EntityBinding JoinFor(SourceBinding owner, NavigationMetadata navigation)
     {
         // 所属表在外层查询里（子查询引用外层的导航）：JOIN 加到外层（与 Java 一致）
         if (parent is not null && !Owns(owner.Table)) return parent.JoinFor(owner, navigation);
@@ -90,7 +120,7 @@ internal sealed class TranslationContext(
         var target = new EntityTableSource(navigation.Target);
         var conditions = new List<SqlExpr>(TableFilters(target));
         var keys = navigation.SelfColumns
-            .Select((self, i) => (SqlExpr)new BinaryExpr(target.Column(navigation.TargetColumns[i]), SqlBinaryOperator.Equal, owner.EntityTable.Column(self)))
+            .Select((self, i) => (SqlExpr)new BinaryExpr(target.Column(navigation.TargetColumns[i]), SqlBinaryOperator.Equal, owner.OwnerColumn(self)))
             .ToList();
         // 复合键整体加括号：ON (a = a AND b = b)
         conditions.Add(keys.Count == 1 ? keys[0] : LogicalExpr.Grouped(keys));

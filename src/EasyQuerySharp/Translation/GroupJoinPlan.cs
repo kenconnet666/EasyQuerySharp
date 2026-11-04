@@ -35,13 +35,16 @@ internal sealed class GroupJoinPlan
     private readonly List<Entry> _entries = [];
     private readonly Dictionary<string, Entry> _byKey = new(StringComparer.Ordinal);
 
-    public GroupJoinPlan(SelectQuery inner, EntityTableSource element, NavigationMetadata navigation)
+    /// <param name="inner">分组子查询（FROM 目标表）。</param>
+    /// <param name="element">子查询里的目标表。</param>
+    /// <param name="keys">子查询里的关联键列：一对多是目标表的外键，多对多是中间表里对应所属表的列。</param>
+    public GroupJoinPlan(SelectQuery inner, EntityTableSource element, IReadOnlyList<ColumnExpr> keys)
     {
         Inner = inner;
         Element = element;
         Table = new DerivedTableSource(inner);
-        for (var i = 0; i < navigation.TargetColumns.Count; i++)
-            _keyColumns.Add((element.Column(navigation.TargetColumns[i]), "__group_key" + (i + 1) + "__"));
+        for (var i = 0; i < keys.Count; i++)
+            _keyColumns.Add((keys[i], "__group_key" + (i + 1) + "__"));
         Inner.GroupBy.AddRange(_keyColumns.Select(k => (SqlExpr)k.Column));
     }
 

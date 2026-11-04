@@ -97,7 +97,12 @@ internal static class MethodTranslators
         }
 
         // ---------- Math ----------
-        foreach (var name in new[] { nameof(Math.Abs), nameof(Math.Floor), nameof(Math.Ceiling), nameof(Math.Sign), nameof(Math.Sqrt), nameof(Math.Exp), nameof(Math.Log10), nameof(Math.Round), nameof(Math.Truncate), nameof(Math.Pow), nameof(Math.Log) })
+        foreach (var name in new[]
+                 {
+                     nameof(Math.Abs), nameof(Math.Floor), nameof(Math.Ceiling), nameof(Math.Sign), nameof(Math.Sqrt), nameof(Math.Exp), nameof(Math.Log10), nameof(Math.Round),
+                     nameof(Math.Truncate), nameof(Math.Pow), nameof(Math.Log), nameof(Math.Sin), nameof(Math.Cos), nameof(Math.Tan), nameof(Math.Asin), nameof(Math.Acos), nameof(Math.Atan),
+                     nameof(Math.Atan2),
+                 })
         {
             foreach (var m in typeof(Math).GetMethods(BindingFlags.Public | BindingFlags.Static).Where(m => m.Name == name))
             {

@@ -12,6 +12,13 @@ internal abstract class SourceBinding
 
     /// <summary>成员对应的 SQL 表达式；不是列时返回 null。</summary>
     public abstract SqlExpr? Member(MemberInfo member);
+
+    /// <summary>能做导航起点时的实体元数据（实体表，或投影整个实体的派生表）；否则为 null。</summary>
+    public virtual EntityMetadata? OwnerEntity => null;
+
+    /// <summary>作为导航起点时，本行上某一列的表达式。</summary>
+    public virtual SqlExpr OwnerColumn(ColumnMetadata column) =>
+        Member(column.Property) ?? throw new InvalidOperationException($"{GetType().Name} 上没有导航需要的列 {column.Name}");
 }
 
 /// <summary>绑定到实体表：成员按元数据映射成列。</summary>
@@ -25,6 +32,12 @@ internal sealed class EntityBinding(EntityTableSource table) : SourceBinding
 
     /// <summary>实体元数据。</summary>
     public EntityMetadata Entity => table.Entity;
+
+    /// <inheritdoc />
+    public override EntityMetadata? OwnerEntity => table.Entity;
+
+    /// <inheritdoc />
+    public override SqlExpr OwnerColumn(ColumnMetadata column) => table.Column(column);
 
     /// <inheritdoc />
     public override SqlExpr? Member(MemberInfo member) =>
@@ -113,6 +126,9 @@ internal sealed class DerivedBinding(
 
     /// <summary>内层投影的实体；不是整体实体时为 null。</summary>
     public EntityMetadata? Entity => entity;
+
+    /// <inheritdoc />
+    public override EntityMetadata? OwnerEntity => entity;
 
     /// <inheritdoc />
     public override SqlExpr? Member(MemberInfo member) =>

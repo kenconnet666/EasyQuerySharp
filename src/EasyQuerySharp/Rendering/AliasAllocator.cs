@@ -53,11 +53,11 @@ internal static class AliasAllocator
         for (var i = 0; i < automatic.Count; i++)
         {
             // 按创建顺序编号的派生表：在它创建时已有的 JOIN 之后占位
-            if (owner?.AliasAfterJoins == i) tables.Add(owner);
+            if (owner?.AliasAfterJoins == i) AddOwner(owner, tables);
             CollectTable(automatic[i].Table, tables);
             if (automatic[i].On is not null) CollectExpr(automatic[i].On!, tables);
         }
-        if (owner is not null && !tables.Contains(owner)) tables.Add(owner);
+        if (owner is not null && !tables.Contains(owner)) AddOwner(owner, tables);
         foreach (var e in query.Where) CollectExpr(e, tables);
         foreach (var c in query.Columns) CollectExpr(c.Expr, tables);
         foreach (var e in query.GroupBy) CollectExpr(e, tables);
@@ -70,7 +70,7 @@ internal static class AliasAllocator
         if (table is DerivedTableSource derived)
         {
             Collect(derived.Query, tables, derived.AliasAfterJoins is null ? null : derived);
-            if (derived.ReserveExtraAlias) tables.Add(Placeholder.Instance);
+            if (derived.ReserveExtraAlias && derived.AliasAfterJoins is null) tables.Add(Placeholder.Instance);
         }
         if (table is UnionTableSource { IndependentAliases: true } independent)
         {
@@ -86,6 +86,13 @@ internal static class AliasAllocator
         else if (table is UnionTableSource union)
             foreach (var part in union.Parts) Collect(part, tables);
         if (!tables.Contains(table)) tables.Add(table);
+    }
+
+    // 按创建顺序编号的派生表：需要跳号时先占一个空位
+    private static void AddOwner(DerivedTableSource owner, List<TableSource> tables)
+    {
+        if (owner.ReserveExtraAlias) tables.Add(Placeholder.Instance);
+        tables.Add(owner);
     }
 
     // 只占编号、不渲染的表来源
