@@ -20,6 +20,20 @@ public class MySqlDialect : SqlDialect
     /// <inheritdoc />
     public override string? LastInsertIdQuery => "SELECT LAST_INSERT_ID()";
 
+    /// <summary>忽略冲突用 <c>INSERT IGNORE</c>。</summary>
+    public override string InsertKeyword(InsertStatement insert) => insert.Conflict is { Ignore: true } ? "INSERT IGNORE INTO " : "INSERT INTO ";
+
+    /// <summary><c>ON DUPLICATE KEY UPDATE `c` = VALUES(`c`), …</c>（与 Java 的 MySQL 方言逐字一致）；没有要更新的列时不写。</summary>
+    public override void WriteInsertConflict(Rendering.SqlRenderer renderer, InsertConflict conflict)
+    {
+        if (conflict.Ignore || conflict.UpdateColumns!.Count == 0) return;
+        renderer.Append(" ON DUPLICATE KEY UPDATE ").Append(string.Join(", ", conflict.UpdateColumns.Select(c =>
+        {
+            var name = QuoteIdentifier(c.Name);
+            return $"{name} = VALUES({name})";
+        })));
+    }
+
     /// <summary>与 Java 版逐字一致的建表格式：每列 <c>`列` 类型 NULL [ COMMENT '…'],</c> 一行，主键单独一行，<c>Engine=InnoDB</c>。</summary>
     public override string CreateTableSql(Metadata.EntityMetadata entity)
     {

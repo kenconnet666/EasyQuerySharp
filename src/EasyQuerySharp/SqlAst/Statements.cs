@@ -105,6 +105,20 @@ public sealed class InsertStatement(EntityTableSource table, IReadOnlyList<Colum
 
     /// <summary>插入后返回的列（<c>RETURNING …</c>），用于回填自增键；不需要时为空。</summary>
     public IReadOnlyList<ColumnExpr> Returning { get; init; } = [];
+
+    /// <summary>主键 / 唯一约束冲突时的处理（upsert）；普通插入为 null。写法由方言决定。</summary>
+    public InsertConflict? Conflict { get; init; }
+}
+
+/// <summary>
+/// 插入冲突的处理：<see cref="UpdateColumns"/> 为 null 表示忽略这一行，否则更新这些列（为空时等同普通插入）。
+/// </summary>
+/// <param name="ConflictColumns">约束列（PostgreSQL / SQLite 的 <c>ON CONFLICT (…)</c>）；可以为空。</param>
+/// <param name="UpdateColumns">冲突时要更新的列。</param>
+public sealed record InsertConflict(IReadOnlyList<ColumnExpr> ConflictColumns, IReadOnlyList<ColumnExpr>? UpdateColumns)
+{
+    /// <summary>是否忽略冲突的行。</summary>
+    public bool Ignore => UpdateColumns is null;
 }
 
 /// <summary>UPDATE 语句。</summary>

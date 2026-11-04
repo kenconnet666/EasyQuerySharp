@@ -193,7 +193,7 @@ internal static class QueryCompiler
         var result = new List<SqlExpr>();
         if (binding is not EntityBinding { EntityTable: var table }) return result;
         if (!state.DisableLogicDelete && LogicDeleteFilter(table) is { } logicDelete) result.Add(logicDelete);
-        result.AddRange(db.Interceptors.QueryFilters(table, state.DisabledInterceptors));
+        result.AddRange(db.Interceptors.QueryFilters(table, state.Interceptors));
         return result;
     }
 

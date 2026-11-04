@@ -16,6 +16,12 @@ public sealed class ColumnAttribute(string? name = null) : Attribute
     /// <summary>值由数据库生成（自增等）：插入时不写这一列，插入后可回填。</summary>
     public bool Generated { get; init; }
 
+    /// <summary>
+    /// 插入时这一列写成这段 SQL（对应 Java 的 generatedSQLColumnGenerator），如 <c>"mysqlNextId()"</c>、<c>"nextval('seq')"</c>；
+    /// 通常与 <see cref="Generated"/> 一起用：值由数据库算出，实体上的值忽略。
+    /// </summary>
+    public string? GeneratedSql { get; init; }
+
     /// <summary>默认查询是否选出这一列；为 false 时只有显式选择才会出现在 SELECT 里（对应 Java 的 autoSelect）。</summary>
     public bool AutoSelect { get; init; } = true;
 

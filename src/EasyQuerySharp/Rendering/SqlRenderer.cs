@@ -35,7 +35,7 @@ public sealed class SqlRenderer
     {
         insert.Table.Alias = null;
         var r = new SqlRenderer(dialect);
-        r.Append("INSERT INTO ").WriteTableName(insert.Table).Append(" (");
+        r.Append(dialect.InsertKeyword(insert)).WriteTableName(insert.Table).Append(" (");
         for (var i = 0; i < insert.Columns.Count; i++)
         {
             if (i > 0) r.Append(",");
@@ -47,6 +47,7 @@ public sealed class SqlRenderer
             if (row > 0) r.Append(",");
             r.Append("(").WriteList(insert.Rows[row], ",").Append(")");
         }
+        if (insert.Conflict is { } conflict) dialect.WriteInsertConflict(r, conflict);
         if (insert.Returning.Count > 0) r.Append(" RETURNING ").WriteList(insert.Returning, ",");
         return r.Build();
     }

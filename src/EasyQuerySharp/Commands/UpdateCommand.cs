@@ -129,10 +129,10 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         ?? throw new InvalidOperationException($"{typeof(T).Name} 的更新没有要写的列")).Statement.Text;
 
     /// <summary>执行，返回受影响的总行数。追踪的实体没有变化时不发语句。</summary>
-    public async Task<long> ExecuteAsync(CancellationToken cancellationToken = default)
+    public override async Task<long> ExecuteAsync(CancellationToken cancellationToken = default)
     {
         if (Entities is not null)
-            foreach (var e in Entities) Db.Interceptors.BeforeWrite(e, insert: false, DisabledInterceptors);
+            foreach (var e in Entities) Db.Interceptors.BeforeWrite(e, insert: false, Interceptors);
         var statements = Statements().ToList();
         var rows = await Db.Executor.SessionAsync(async session =>
         {
@@ -143,18 +143,6 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         // 写入成功后，追踪的实体以当前值为新的原始值
         foreach (var s in statements) s.Tracked?.Refresh();
         return rows;
-    }
-
-    /// <summary>
-    /// 执行，影响的行数不等于 <paramref name="expectedRows"/> 时抛出 <see cref="ConcurrencyException"/>（对应 Java 的 executeRows(expectRows, msg)）。
-    /// 在事务里使用时，抛出异常会让事务回滚。
-    /// </summary>
-    public async Task<long> ExecuteAsync(long expectedRows, string? message = null, CancellationToken cancellationToken = default)
-    {
-        var rows = await ExecuteAsync(cancellationToken).ConfigureAwait(false);
-        return rows == expectedRows
-            ? rows
-            : throw new ConcurrencyException(message ?? $"{typeof(T).Name} 的更新期望影响 {expectedRows} 行，实际 {rows} 行", expectedRows, rows);
     }
 
     private IEnumerable<RenderedUpdate> Statements()

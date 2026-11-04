@@ -14,6 +14,9 @@ public interface IInterceptor
 
     /// <summary>作用的实体类型（或其基类 / 接口）。</summary>
     Type TargetType { get; }
+
+    /// <summary>默认是否生效（对应 Java 的 enable()）；为 false 时只在 <c>EnableInterceptor(name)</c> 的那条语句上生效。</summary>
+    bool EnabledByDefault => true;
 }
 
 /// <summary>非泛型的查询过滤入口，供注册表调用。</summary>
@@ -48,6 +51,9 @@ public abstract class QueryFilter<TEntity> : IQueryFilterInterceptor
     /// <inheritdoc />
     public Type TargetType => typeof(TEntity);
 
+    /// <inheritdoc />
+    public virtual bool EnabledByDefault => true;
+
     /// <summary>这次执行要追加的条件；返回 null 表示这次不加。</summary>
     public abstract Expression<Func<TEntity, bool>>? Filter();
 
@@ -62,6 +68,9 @@ public abstract class EntityInterceptor<TEntity> : IEntityWriteInterceptor
 
     /// <inheritdoc />
     public Type TargetType => typeof(TEntity);
+
+    /// <inheritdoc />
+    public virtual bool EnabledByDefault => true;
 
     /// <summary>插入前调用。</summary>
     public virtual void BeforeInsert(TEntity entity)

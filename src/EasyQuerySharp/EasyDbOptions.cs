@@ -21,6 +21,12 @@ public sealed class EasyDbOptions
     /// <summary>由类名、属性名推出表名、列名的约定，默认驼峰转下划线。</summary>
     public NameConversion NameConversion { get; set; } = NameConversion.Underlined;
 
+    /// <summary>
+    /// 是否允许生成物理 DELETE（对应 Java 的 deleteThrowError 取反）。默认 true；设为 false 后，
+    /// 没有逻辑删除的实体只有在命令上调用 <c>AllowDeleteStatement(true)</c> 才能删除，防止误删。
+    /// </summary>
+    public bool AllowDeleteStatement { get; set; } = true;
+
     /// <summary>执行监听器。</summary>
     public List<IExecutionListener> Listeners { get; } = [];
 

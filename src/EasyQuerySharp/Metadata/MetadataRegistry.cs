@@ -87,6 +87,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
             {
                 IsPrimaryKey = attr?.PrimaryKey ?? false,
                 IsGenerated = attr?.Generated ?? false,
+                GeneratedSql = attr?.GeneratedSql,
                 AutoSelect = attr?.AutoSelect ?? true,
                 InsertIgnore = property.IsDefined(typeof(InsertIgnoreAttribute)),
                 UpdateIgnore = property.IsDefined(typeof(UpdateIgnoreAttribute)),

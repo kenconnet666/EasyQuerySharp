@@ -55,6 +55,39 @@ public abstract class SqlDialect
     public virtual void WriteLike(SqlRenderer renderer, LikeExpr predicate) =>
         renderer.Write(predicate.Operand).Append(predicate.Negated ? " NOT LIKE " : " LIKE ").Write(predicate.Pattern);
 
+    // ---------- 插入冲突（upsert）----------
+
+    /// <summary>INSERT 的开头关键字；MySQL 忽略冲突时是 <c>INSERT IGNORE INTO </c>。</summary>
+    public virtual string InsertKeyword(InsertStatement insert) => "INSERT INTO ";
+
+    /// <summary>
+    /// 写 VALUES 之后的冲突处理。默认是 PostgreSQL / SQLite 的写法（与 Java 的 PostgresSQLInsertSQLExpression 一致）：
+    /// <c>ON CONFLICT (k) DO NOTHING</c>、<c>ON CONFLICT (k) DO UPDATE SET `c` = EXCLUDED.`c`</c>；没有要更新的列时不写。
+    /// </summary>
+    public virtual void WriteInsertConflict(SqlRenderer renderer, InsertConflict conflict)
+    {
+        if (conflict.Ignore)
+        {
+            renderer.Append(" ON CONFLICT");
+            if (conflict.ConflictColumns.Count > 0) WriteConflictTarget(renderer, conflict);
+            renderer.Append(" DO NOTHING");
+            return;
+        }
+        if (conflict.UpdateColumns!.Count == 0) return;
+        if (conflict.ConflictColumns.Count == 0) throw new InvalidOperationException("冲突更新需要约束列：实体没有非自增主键时请指定 conflictColumns");
+        renderer.Append(" ON CONFLICT");
+        WriteConflictTarget(renderer, conflict);
+        renderer.Append(" DO UPDATE SET ");
+        for (var i = 0; i < conflict.UpdateColumns.Count; i++)
+        {
+            var name = QuoteIdentifier(conflict.UpdateColumns[i].Name);
+            renderer.Append(i == 0 ? "" : ", ").Append(name).Append(" = EXCLUDED.").Append(name);
+        }
+    }
+
+    private void WriteConflictTarget(SqlRenderer renderer, InsertConflict conflict) =>
+        renderer.Append(" (").Append(string.Join(",", conflict.ConflictColumns.Select(c => QuoteIdentifier(c.Name)))).Append(")");
+
     /// <summary>
     /// 类型转换的模板，<c>{0}</c> 是被转换的表达式（逐字对应 Java 各方言的 CastSQLFunction）。
     /// 默认是 MySQL 的写法；不支持的目标类型抛出 <see cref="NotSupportedException"/>。

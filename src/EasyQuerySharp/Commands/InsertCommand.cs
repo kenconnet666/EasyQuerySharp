@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+using System.Linq.Expressions;
 using EasyQuerySharp.Materialization;
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.Rendering;
@@ -10,24 +10,17 @@ namespace EasyQuerySharp.Commands;
 /// <summary>
 /// INSERT。每个实体一条语句（与 Java 版一致），在同一连接上依次执行。默认只写值不为 null 的列；
 /// 数据库生成的列（自增）不写，调用 <see cref="FillGeneratedKeys"/> 后插入完回填到实体。
+/// 冲突处理（upsert）见 <see cref="OnConflictIgnore"/> 与 <see cref="OnConflictUpdate"/>。
 /// </summary>
-public sealed class InsertCommand<T> where T : class
+public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> where T : class
 {
-    private readonly EasyDb _db;
     private readonly IReadOnlyList<T> _entities;
-    private readonly EntityMetadata _entity;
+    private readonly Dictionary<string, string> _columnSql = new(StringComparer.Ordinal);
     private bool _fillKeys;
     private ColumnStrategy _strategy = ColumnStrategy.OnlyNotNull;
-    private ImmutableHashSet<string> _disabled = [];
-    private string? _tableName;
-    private readonly Dictionary<string, string> _columnSql = new(StringComparer.Ordinal);
+    private ConflictSpec? _conflict;
 
-    internal InsertCommand(EasyDb db, IReadOnlyList<T> entities)
-    {
-        _db = db;
-        _entities = entities;
-        _entity = db.Metadata.Get<T>();
-    }
+    internal InsertCommand(EasyDb db, IReadOnlyList<T> entities) : base(db) => _entities = entities;
 
     /// <summary>插入后把数据库生成的主键（自增）写回实体（对应 Java 的 executeRows(true)）。</summary>
     public InsertCommand<T> FillGeneratedKeys()
@@ -43,44 +36,49 @@ public sealed class InsertCommand<T> where T : class
         return this;
     }
 
-    /// <summary>不应用名为 <paramref name="name"/> 的拦截器。</summary>
-    public InsertCommand<T> DisableInterceptor(string name)
-    {
-        _disabled = _disabled.Add(name);
-        return this;
-    }
-
-    /// <summary>不应用任何拦截器。</summary>
-    public InsertCommand<T> DisableInterceptors() => DisableInterceptor("*");
-
-    /// <summary>插入到另一张同结构的表。</summary>
-    public InsertCommand<T> AsTable(string tableName)
-    {
-        _tableName = tableName;
-        return this;
-    }
-
     /// <summary>
     /// 这一列的值用 SQL 模板包一层（对应 Java 的 columnConfigure）：<c>{0}</c> 是列，<c>{1}</c> 是实体上的值，
     /// 如 <c>.ColumnSql(t => t.Id, "sde.next_rowid('sde',{1})")</c>。
     /// </summary>
-    public InsertCommand<T> ColumnSql<TValue>(System.Linq.Expressions.Expression<Func<T, TValue>> column, string template)
+    public InsertCommand<T> ColumnSql<TValue>(Expression<Func<T, TValue>> column, string template)
     {
         ArgumentException.ThrowIfNullOrEmpty(template);
-        var member = ExpressionTranslator.StripConvert(column.Body) as System.Linq.Expressions.MemberExpression
+        var member = ExpressionTranslator.StripConvert(column.Body) as MemberExpression
                      ?? throw new ArgumentException($"需要直接的属性访问，如 t => t.Title：{column}", nameof(column));
         _columnSql[member.Member.Name] = template;
         return this;
     }
 
-    /// <summary>渲染第一个实体的语句，不执行（不调用拦截器）。</summary>
-    public string ToSql() => Render(_entities[0]).Statement.Text;
+    /// <summary>
+    /// 主键或唯一约束冲突时忽略这一行（对应 Java 的 onConflictThen(null)）：MySQL 的 <c>INSERT IGNORE</c>，
+    /// PostgreSQL / SQLite 的 <c>ON CONFLICT [(列)] DO NOTHING</c>。<paramref name="conflictColumns"/> 指定约束列（MySQL 不需要）。
+    /// </summary>
+    public InsertCommand<T> OnConflictIgnore(Expression<Func<T, object?>>? conflictColumns = null)
+    {
+        _conflict = new ConflictSpec(Ignore: true, Names(conflictColumns), null);
+        return this;
+    }
 
-    /// <summary>执行，返回插入的行数。</summary>
+    /// <summary>
+    /// 冲突时改为更新这些列（对应 Java 的 onConflictThen(cols, keys)）：MySQL 的 <c>ON DUPLICATE KEY UPDATE c = VALUES(c)</c>，
+    /// PostgreSQL / SQLite 的 <c>ON CONFLICT (约束列) DO UPDATE SET c = EXCLUDED.c</c>。
+    /// <paramref name="updateColumns"/> 为 null 时更新全部写入的列；主键与约束列不会被更新。约束列默认是非自增的主键。
+    /// </summary>
+    /// <example><code>db.Insert(blog).OnConflictUpdate(b => new { b.Star, b.Content })</code></example>
+    public InsertCommand<T> OnConflictUpdate(Expression<Func<T, object?>>? updateColumns = null, Expression<Func<T, object?>>? conflictColumns = null)
+    {
+        _conflict = new ConflictSpec(Ignore: false, Names(conflictColumns), updateColumns is null ? null : Querying.AutoProjection.MemberNames(updateColumns));
+        return this;
+    }
+
+    /// <summary>渲染第一个实体的语句，不执行（不调用拦截器）。</summary>
+    public string ToSql() => Render(_entities.Count > 0 ? _entities[0] : throw new InvalidOperationException("没有要插入的实体")).Statement.Text;
+
+    /// <summary>执行，返回受影响的行数（冲突更新时 MySQL 对更新的行计 2，与驱动的返回值一致）。</summary>
     public async Task<long> ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        foreach (var e in _entities) _db.Interceptors.BeforeWrite(e, insert: true, _disabled);
-        return await _db.Executor.SessionAsync(async session =>
+        foreach (var e in _entities) Db.Interceptors.BeforeWrite(e, insert: true, Interceptors);
+        return await Db.Executor.SessionAsync(async session =>
         {
             long rows = 0;
             foreach (var entity in _entities)
@@ -92,7 +90,7 @@ public sealed class InsertCommand<T> where T : class
                     continue;
                 }
                 object? key;
-                if (_db.Options.Dialect.LastInsertIdQuery is { } query)
+                if (Db.Options.Dialect.LastInsertIdQuery is { } query)
                 {
                     rows += await session.ExecuteAsync(statement, cancellationToken).ConfigureAwait(false);
                     key = await session.ScalarAsync(new SqlStatement(query, query, []), cancellationToken).ConfigureAwait(false);
@@ -111,27 +109,56 @@ public sealed class InsertCommand<T> where T : class
     // 返回语句，以及需要回填的生成键列（不需要时为 null）
     private (SqlStatement Statement, ColumnMetadata? KeyColumn) Render(T entity)
     {
-        var table = new EntityTableSource(_entity) { TableNameOverride = _tableName };
+        var table = NewTable();
+        var written = new List<ColumnMetadata>();
         var columns = new List<ColumnExpr>();
         var values = new List<SqlExpr>();
-        foreach (var column in _entity.Columns)
+        foreach (var column in Entity.Columns)
         {
-            if (column.InsertIgnore || column.IsGenerated) continue;
+            if (column.InsertIgnore) continue;
+            // 由 SQL 生成值的列（如序列函数）总是写，值忽略
+            if (column.GeneratedSql is { } generated)
+            {
+                written.Add(column);
+                columns.Add(table.Column(column));
+                values.Add(new FragmentExpr(generated, []));
+                continue;
+            }
+            if (column.IsGenerated) continue;
             var value = column.GetProviderValue(entity);
             if (_strategy == ColumnStrategy.OnlyNotNull && value is null) continue;
             if (_strategy == ColumnStrategy.OnlyNull && value is not null) continue;
             var target = table.Column(column);
             SqlExpr parameter = ExpressionTranslator.Parameter(value, column.Converter?.ProviderType ?? column.ClrType);
             if (_columnSql.TryGetValue(column.PropertyName, out var template)) parameter = new FragmentExpr(template, [target, parameter]);
+            written.Add(column);
             columns.Add(target);
             values.Add(parameter);
         }
 
-        var keyColumn = _fillKeys ? _entity.KeyColumns.FirstOrDefault(k => k.IsGenerated) : null;
+        var keyColumn = _fillKeys ? Entity.KeyColumns.FirstOrDefault(k => k.IsGenerated) : null;
         var insert = new InsertStatement(table, columns, [values])
         {
-            Returning = keyColumn is not null && _db.Options.Dialect.LastInsertIdQuery is null ? [table.Column(keyColumn)] : [],
+            Returning = keyColumn is not null && Db.Options.Dialect.LastInsertIdQuery is null ? [table.Column(keyColumn)] : [],
+            Conflict = _conflict is null ? null : BuildConflict(table, written),
         };
-        return (SqlRenderer.Render(_db.Options.Dialect, insert), keyColumn);
+        return (SqlRenderer.Render(Db.Options.Dialect, insert), keyColumn);
     }
+
+    // 约束列：显式指定的，否则是非自增主键（忽略时不指定就不写约束列）；更新列：写入的列去掉主键和约束列（与 Java 一致）
+    private InsertConflict BuildConflict(EntityTableSource table, List<ColumnMetadata> written)
+    {
+        var spec = _conflict!;
+        var conflictOn = spec.ConflictColumns is { } names
+            ? Entity.Columns.Where(c => names.Contains(c.PropertyName)).ToList()
+            : spec.Ignore ? [] : Entity.KeyColumns.Where(k => !k.IsGenerated).ToList();
+        if (spec.Ignore) return new InsertConflict(conflictOn.Select(table.Column).ToList(), null);
+        var update = written.Where(c => !c.IsPrimaryKey && !conflictOn.Contains(c) && (spec.UpdateColumns is null || spec.UpdateColumns.Contains(c.PropertyName)));
+        return new InsertConflict(conflictOn.Select(table.Column).ToList(), update.Select(table.Column).ToList());
+    }
+
+    private static HashSet<string>? Names(Expression<Func<T, object?>>? columns) =>
+        columns is null ? null : Querying.AutoProjection.MemberNames(columns);
+
+    private sealed record ConflictSpec(bool Ignore, HashSet<string>? ConflictColumns, HashSet<string>? UpdateColumns);
 }

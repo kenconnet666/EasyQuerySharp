@@ -33,6 +33,9 @@ public sealed class ColumnMetadata
     /// <summary>值是否由数据库生成（自增）。</summary>
     public bool IsGenerated { get; internal init; }
 
+    /// <summary>插入时写的 SQL 片段（<see cref="ColumnAttribute.GeneratedSql"/>）；为 null 时按普通列处理。</summary>
+    public string? GeneratedSql { get; internal init; }
+
     /// <summary>默认查询是否选出。</summary>
     public bool AutoSelect { get; internal init; } = true;
 

@@ -46,11 +46,17 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     /// <summary>追踪作用域里也不追踪这条查询的结果（对应 Java 的 asNoTracking）。</summary>
     public TSelf AsNoTracking() => With(State with { NoTracking = true });
 
-    /// <summary>这条查询不应用名为 <paramref name="name"/> 的拦截器。</summary>
-    public TSelf DisableInterceptor(string name) => With(State with { DisabledInterceptors = State.DisabledInterceptors.Add(name) });
+    /// <summary>这条查询不应用名为 <paramref name="name"/> 的拦截器（对应 Java 的 noInterceptor(name)）。</summary>
+    public TSelf DisableInterceptor(string name) => With(State with { Interceptors = State.Interceptors.Disable(name) });
 
-    /// <summary>这条查询不应用任何拦截器。</summary>
-    public TSelf DisableInterceptors() => DisableInterceptor("*");
+    /// <summary>这条查询不应用任何拦截器（对应 Java 的 noInterceptor()）；之后再 EnableInterceptor 的除外。</summary>
+    public TSelf DisableInterceptors() => With(State with { Interceptors = State.Interceptors.DisableAll() });
+
+    /// <summary>这条查询应用名为 <paramref name="name"/> 的拦截器，包括默认关闭的（对应 Java 的 useInterceptor(name)）。</summary>
+    public TSelf EnableInterceptor(string name) => With(State with { Interceptors = State.Interceptors.Enable(name) });
+
+    /// <summary>恢复默认生效的全部拦截器（对应 Java 的 useInterceptor()）。</summary>
+    public TSelf EnableInterceptors() => With(State with { Interceptors = State.Interceptors.EnableAll() });
 
     // ---------- SQL ----------
 

@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Linq.Expressions;
+using EasyQuerySharp.Interceptors;
 using EasyQuerySharp.SqlAst;
 
 namespace EasyQuerySharp.Querying;
@@ -78,8 +79,8 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>追踪作用域里也不追踪这条查询的结果（AsNoTracking）。</summary>
     public bool NoTracking { get; init; }
 
-    /// <summary>关闭的拦截器名字；包含 <c>*</c> 表示全部关闭。</summary>
-    public ImmutableHashSet<string> DisabledInterceptors { get; init; } = [];
+    /// <summary>这条查询上生效的拦截器。</summary>
+    public InterceptorSelection Interceptors { get; init; } = InterceptorSelection.Default;
 
     /// <summary>投影之后再加条件、排序、连接时，把当前查询包成派生表，在外层继续（与 Java 版的 select 之后再 where 一致）。</summary>
     public QueryState Wrap() => new(Db, [new SubQuerySource(this)]);

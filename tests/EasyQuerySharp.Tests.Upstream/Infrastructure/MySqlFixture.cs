@@ -56,7 +56,8 @@ public sealed class MySqlFixture : IAsyncLifetime
                     skip: s => s.StartsWith("CREATE DATABASE", StringComparison.OrdinalIgnoreCase));
         }
 
-        _db = new EasyDb(o => o.UseMySql(new MySqlDataSource(cs)).AddListener(SqlCapture.Instance));
+        _db = new EasyDb(o => o.UseMySql(new MySqlDataSource(cs)).AddListener(SqlCapture.Instance)
+            .AddInterceptor(new Interceptors.Topic1Interceptor()));
         await SeedAsync(_db);
     }
 

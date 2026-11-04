@@ -91,7 +91,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
   - 执行事件，对接 `ILogger` 和 `ActivitySource`；
   - 全链路传递 `CancellationToken`。
 - [ ] 1.7 表达式形状缓存：常量算作参数，命中后只提取参数值；附带基准测试。
-- [~] 1.8 写入：
+- [x] 1.8 写入：
   - `Insert` 支持返回自增键或整个实体；
   - `Update` 支持 `Set` 表达式和按主键整行更新；
   - `Delete` 没有条件时必须写 `.All()`；
@@ -127,8 +127,8 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [x] 3.1 显式 join：`IQuery<T1..T8>` 由仓库内的生成器产出；right join 之后，前面表的列按可空处理。
 - [~] 3.2 `GroupBy` / `Having` / 投影里的 `g.Key`，以及 `Rollup` / `Cube` / `Grouping`。
 - [x] 3.3 子查询：`In(subQuery)`、`Exists`、派生表 `AsSubQuery()`。
-- [ ] 3.4 `Union` / `UnionAll`，CTE 的 `With` / `WithRecursive`。
-- [ ] 3.5 流式读取 `AsAsyncEnumerable()`，无实体查询 `db.Sql<Dictionary<..>>`。
+- [~] 3.4 `Union` / `UnionAll`（已完成），CTE 的 `With` / `WithRecursive`。
+- [~] 3.5 流式读取 `AsAsyncEnumerable()`，无实体查询 `db.SqlQueryAsync<Dictionary<..>>` 与 `ToDictionariesAsync`（已完成）。
 - [ ] 3.6 LINQ 查询语法（`from … join … group … select`）的支持测试。
 
 ## M4 导航与对象树（[0002](docs/decisions/0002-object-tree-and-dto.md)）
@@ -153,16 +153,16 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 
 覆盖能力：`write.upsert` 13、`write.strategy` 19、`write.join` 10、`tracking` 62、`save.aggregate` 39、`interceptor` 3、`logicDelete` 10、`version` 13、`column.encryption` 8、`column.converter`，加上 fork 的 insert-select 和 JSON 列。
 
-- [ ] 5.1 拦截器：`IQueryFilter<T>` / `IBeforeInsert<T>` / `IBeforeUpdate<T>` / `IAfterWrite`；单条查询上可以关掉某一个；内置多租户、自动填充。
+- [~] 5.1 拦截器（默认关闭、按名启用 / 关闭已完成）：`IQueryFilter<T>` / `IBeforeInsert<T>` / `IBeforeUpdate<T>` / `IAfterWrite`；单条查询上可以关掉某一个；内置多租户、自动填充。
 - [ ] 5.2 逻辑删除：可以按导航单独关闭；`.Hard()`。
 - [ ] 5.3 乐观锁 `[Version]`，以及 `ConcurrencyException`。
-- [ ] 5.4 值转换器、枚举存储方式、值对象 `[ValueObject]`、JSON 列（`System.Text.Json`）。
+- [~] 5.4 值转换器、枚举存储方式、值对象 `[ValueObject]`、JSON 列（`JsonValueConverter<T>` 已完成）。
 - [ ] 5.5 列加密：与 Java 的 AES / SM4 密文兼容，支持分段 LIKE。
-- [ ] 5.6 upsert：`OnConflict().Merge()` / `Ignore()`。
+- [~] 5.6 upsert：`OnConflictIgnore()` / `OnConflictUpdate()`（MySQL、PG、SQLite 已完成；SQL Server / Oracle 的 MERGE 待做）。
 - [ ] 5.7 写入策略：按列策略只写非空列；批量写入用 `DbBatch`。
 - [ ] 5.8 UPDATE / DELETE 里用导航：MySQL 用原生多表语法，其余方言按主键自连接。
 - [ ] 5.9 INSERT … SELECT。
-- [ ] 5.10 追踪：`AsTracking()` 加差异更新；不追踪时用 `Changes(before, after)`。
+- [~] 5.10 追踪：`BeginTracking()` / `AsTracking()` 加差异更新、`WhereColumns` 用原始值（已完成）；不追踪时用 `Changes(before, after)`。
 - [ ] 5.11 聚合根保存：显式声明级联路径、按差异增删改、`OrphanPolicy`、生成键回填、必须在事务里。
 
 ## M6 方言铺开
