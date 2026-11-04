@@ -100,7 +100,7 @@ internal sealed partial class ExpressionTranslator
 
     // 原生片段的参数：列 / 表达式照常翻译；客户端集合展开成 ?,?,?（对应 Java 的 collection(…)）
     private SqlExpr RawArgument(Expression argument) =>
-        ClientEvaluator.DependsOnParameters(StripConvert(argument)) ? Translate(StripConvert(argument)) : ValueArgument(ClientEvaluator.Evaluate(argument));
+        ClientEvaluator.MustTranslate(StripConvert(argument)) ? Translate(StripConvert(argument)) : ValueArgument(ClientEvaluator.Evaluate(argument));
 
     private static SqlExpr ValueArgument(object? value)
     {
@@ -146,7 +146,7 @@ internal sealed partial class ExpressionTranslator
             LikeMode.StartsWith => ("", "%"),
             _ => ("%", ""),
         };
-        if (ClientEvaluator.DependsOnParameters(valueExpr))
+        if (ClientEvaluator.MustTranslate(valueExpr))
         {
             // 模式本身是列：CONCAT('%',col,'%')
             var value = Translate(valueExpr);
@@ -180,7 +180,7 @@ internal sealed partial class ExpressionTranslator
         }
         else return false;
 
-        if (ClientEvaluator.DependsOnParameters(source)) return false;
+        if (ClientEvaluator.MustTranslate(source)) return false;
         var operand = Translate(item);
         result = new InExpr(operand, ValuesOf(source, operand), negated: false);
         return true;
@@ -195,7 +195,7 @@ internal sealed partial class ExpressionTranslator
     {
         result = null!;
         if (call.Method.DeclaringType != typeof(Enumerable) || call.Method.Name is not ("Any" or "All") || call.Arguments.Count != 2) return false;
-        if (ClientEvaluator.DependsOnParameters(call.Arguments[0])) return false;
+        if (ClientEvaluator.MustTranslate(call.Arguments[0])) return false;
 
         var lambda = (LambdaExpression)StripConvert(call.Arguments[1]);
         var isAny = call.Method.Name == "Any";

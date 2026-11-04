@@ -154,6 +154,9 @@ public sealed class Query<T> : QueryBase<Query<T>, T>
 
     private Query<T> Order(LambdaExpression key, bool descending) => new(Open with { OrderBys = Open.OrderBys.Add(new OrderSpec(key, descending)) });
 
+    /// <summary>再加一个表来源，逗号连接 <c>FROM a t , b t1</c>（对应 Java 的 from(T.class)），关联条件写在 Where 里。</summary>
+    public Query<T, T2> From<T2>() => new(QueryStates.AddJoin(Open, new EntitySource(typeof(T2)) { Join = JoinKind.Comma }));
+
     private Query<T, T2> Join<T2>(JoinKind kind, QuerySource source, LambdaExpression on) =>
         new(QueryStates.AddJoin(Open, source with { Join = kind, On = on }));
 }

@@ -13,6 +13,8 @@ public enum JoinKind
     Full,
     /// <summary>CROSS JOIN（没有 ON）</summary>
     Cross,
+    /// <summary>逗号连接 <c>FROM a t , b t1</c>（对应 Java 的 from(T.class)），条件写在 WHERE 里</summary>
+    Comma,
 }
 
 /// <summary>一个 JOIN 子句。</summary>

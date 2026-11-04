@@ -117,3 +117,16 @@ public class TopicSubQueryBlog
 
     public long? BlogCount { get; set; }
 }
+
+/// <summary>对应 Java：entity/Topicx（映射 t_topic、没有主键的普通类）。</summary>
+[Table("t_topic")]
+public class Topicx
+{
+    public string? Id { get; set; }
+
+    public int? Stars { get; set; }
+
+    public string? Title { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+}

@@ -41,6 +41,12 @@ public interface IGroup<out TKey, TElement>
     /// <summary><c>AVG(x)</c>。</summary>
     TValue Average<TValue>(Func<TElement, TValue> selector);
 
+    /// <summary>
+    /// 组内的列本身，不聚合（对应 Java 的 groupTable()）：常用于按组内某列排序，<c>.OrderBy(g => g.Column(e => e.Item2.Order))</c>。
+    /// 只有数据库允许非聚合列时可用（如 MySQL 关闭 ONLY_FULL_GROUP_BY，或该列函数依赖于分组键）。
+    /// </summary>
+    TValue Column<TValue>(Func<TElement, TValue> selector);
+
     /// <summary>字符串聚合：MySQL 的 GROUP_CONCAT、PG / SQL Server 的 STRING_AGG、Oracle 的 LISTAGG（对应 Java 的 joining）。</summary>
     string StringJoin<TValue>(Func<TElement, TValue> selector, string separator);
 }

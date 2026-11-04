@@ -152,6 +152,7 @@ public sealed class SqlRenderer
                 JoinKind.Left => " LEFT JOIN ",
                 JoinKind.Right => " RIGHT JOIN ",
                 JoinKind.Full => " FULL JOIN ",
+                JoinKind.Comma => " , ",
                 _ => " CROSS JOIN ",
             }).WriteTable(j.Table);
             if (j.On is not null) Append(" ON ").WritePredicate(j.On);

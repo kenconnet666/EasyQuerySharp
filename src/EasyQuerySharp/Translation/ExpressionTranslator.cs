@@ -41,7 +41,7 @@ internal sealed partial class ExpressionTranslator
     /// <summary>翻译成值表达式。</summary>
     public SqlExpr Translate(Expression expression)
     {
-        if (!ClientEvaluator.DependsOnParameters(expression)) return Parameter(ClientEvaluator.Evaluate(expression), expression.Type);
+        if (!ClientEvaluator.MustTranslate(expression)) return Parameter(ClientEvaluator.Evaluate(expression), expression.Type);
 
         return expression switch
         {
@@ -196,7 +196,7 @@ internal sealed partial class ExpressionTranslator
 
     private static bool IsNullValue(Expression e) =>
         (!e.Type.IsValueType || Nullable.GetUnderlyingType(e.Type) is not null)
-        && !ClientEvaluator.DependsOnParameters(e)
+        && !ClientEvaluator.MustTranslate(e)
         && ClientEvaluator.Evaluate(e) is null;
 
     private static bool IsBool(Type t) => t == typeof(bool) || t == typeof(bool?);

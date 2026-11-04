@@ -69,6 +69,9 @@ internal sealed partial class ExpressionTranslator
                 return new FunctionExpr(SqlFunctionNames.Min, [Value(0, LiteralExpr.Null)]);
             case nameof(IGroup<object, object>.Average):
                 return new FunctionExpr(distinct ? SqlFunctionNames.AvgDistinct : SqlFunctionNames.Avg, [Value(0, LiteralExpr.Null)]);
+            case nameof(IGroup<object, object>.Column):
+                // 组内的列本身，不聚合（Java 的 groupTable()）
+                return Value(0, LiteralExpr.Null);
             case nameof(IGroup<object, object>.StringJoin):
                 return new FunctionExpr(distinct ? SqlFunctionNames.StringJoinDistinct : SqlFunctionNames.StringJoin,
                     [Value(0, LiteralExpr.Null), Translate(call.Arguments[1])]);

@@ -10,10 +10,13 @@ namespace EasyQuerySharp.Translation;
 /// </summary>
 internal static class ClientEvaluator
 {
-    /// <summary>表达式是否引用了任何 <see cref="ParameterExpression"/>（引用了就必须翻译成 SQL）。</summary>
-    public static bool DependsOnParameters(Expression expression) => ParameterFinder.Contains(expression);
+    /// <summary>
+    /// 表达式是否必须翻译成 SQL：引用了查询参数（<see cref="ParameterExpression"/>），或调用了 <see cref="Sql"/> 的标记方法
+    /// （如不带参数的 <c>Sql.Raw("RAND()")</c>、<c>Sql.SubQuery(…)</c>，它们只能在 SQL 里有意义，不能在客户端求值）。
+    /// </summary>
+    public static bool MustTranslate(Expression expression) => ParameterFinder.Contains(expression);
 
-    /// <summary>求值；调用方保证 <see cref="DependsOnParameters"/> 为 false。</summary>
+    /// <summary>求值；调用方保证 <see cref="MustTranslate"/> 为 false。</summary>
     public static object? Evaluate(Expression expression)
     {
         switch (expression)
@@ -64,7 +67,7 @@ internal static class ClientEvaluator
         return fn();
     }
 
-    /// <summary>查找表达式里是否有参数引用（lambda 自己声明的参数除外）。</summary>
+    /// <summary>查找表达式里是否有参数引用（lambda 自己声明的参数除外）或 <see cref="Sql"/> 标记方法调用。</summary>
     private sealed class ParameterFinder : ExpressionVisitor
     {
         private readonly HashSet<ParameterExpression> _declared = [];
@@ -89,6 +92,12 @@ internal static class ClientEvaluator
         {
             if (!_declared.Contains(node)) _found = true;
             return node;
+        }
+
+        protected override Expression VisitMethodCall(MethodCallExpression node)
+        {
+            if (node.Method.DeclaringType == typeof(Sql)) _found = true;
+            return base.VisitMethodCall(node);
         }
     }
 }

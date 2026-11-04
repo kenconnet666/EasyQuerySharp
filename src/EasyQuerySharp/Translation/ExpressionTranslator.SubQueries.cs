@@ -14,7 +14,7 @@ internal sealed partial class ExpressionTranslator
     /// </summary>
     internal static QueryState ReplayQuery(Expression expression)
     {
-        if (!ClientEvaluator.DependsOnParameters(expression)) return StateOf(ClientEvaluator.Evaluate(expression), expression);
+        if (!ClientEvaluator.MustTranslate(expression)) return StateOf(ClientEvaluator.Evaluate(expression), expression);
         if (StripConvert(expression) is not MethodCallExpression call || call.Object is null)
             throw Unsupported(expression, "子查询只能由查询对象的方法链构成");
 

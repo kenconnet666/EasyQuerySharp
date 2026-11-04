@@ -54,6 +54,13 @@ internal static class QueryCompiler
                 translator.Bind(source.On, bindings);
                 on = translator.TranslatePredicate(source.On.Body);
             }
+            // 逗号连接没有 ON，表自己的过滤条件并入 WHERE
+            if (source.Join == JoinKind.Comma)
+            {
+                query.Where.AddRange(filters);
+                query.Joins.Add(new JoinClause(JoinKind.Comma, binding.Table, null));
+                continue;
+            }
             var conditions = filters.Concat(on is null ? [] : [on]).ToList();
             query.Joins.Add(new JoinClause(source.Join!.Value, binding.Table, conditions.Count == 0 ? null : LogicalExpr.And(conditions)));
         }

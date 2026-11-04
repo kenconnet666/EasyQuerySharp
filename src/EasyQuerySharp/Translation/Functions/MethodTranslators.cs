@@ -162,7 +162,7 @@ internal static class MethodTranslators
     /// </summary>
     private static SqlExpr Literal(ExpressionTranslator t, Expression e, int add)
     {
-        if (!ClientEvaluator.DependsOnParameters(e))
+        if (!ClientEvaluator.MustTranslate(e))
             return new LiteralExpr((Convert.ToInt64(ClientEvaluator.Evaluate(e), CultureInfo.InvariantCulture) + add).ToString(CultureInfo.InvariantCulture));
         var sql = t.Translate(e);
         return add == 0 ? sql : new BinaryExpr(sql, SqlBinaryOperator.Add, new LiteralExpr(add.ToString(CultureInfo.InvariantCulture)));
@@ -170,7 +170,7 @@ internal static class MethodTranslators
 
     // char 参数按字符串参数传（SQL 没有 char 类型）
     private static SqlExpr Text(ExpressionTranslator t, Expression e) =>
-        ClientEvaluator.DependsOnParameters(e) ? t.Translate(e) : new ParameterExpr(ClientEvaluator.Evaluate(e)?.ToString(), typeof(string));
+        ClientEvaluator.MustTranslate(e) ? t.Translate(e) : new ParameterExpr(ClientEvaluator.Evaluate(e)?.ToString(), typeof(string));
 
     private static bool IsNumeric(Type type) => Type.GetTypeCode(type) is >= TypeCode.SByte and <= TypeCode.Decimal;
 }
