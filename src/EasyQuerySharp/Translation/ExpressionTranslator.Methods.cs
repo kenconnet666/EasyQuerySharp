@@ -14,6 +14,9 @@ internal sealed partial class ExpressionTranslator
         if (method.DeclaringType == typeof(Sql)) return TranslateSqlMarker(call);
         if (method.DeclaringType == typeof(Sql.Over)) return TranslateWindow(call);
         if (method.DeclaringType is { } declaring && IsGroupType(declaring)) return TranslateGroupAggregate(call);
+        // 用户声明的模板函数：[SqlFunction("…{0}…")]
+        if (System.Reflection.CustomAttributeExtensions.GetCustomAttribute<SqlFunctionAttribute>(method) is { } userFunction)
+            return new FragmentExpr(userFunction.Template, call.Arguments.Select(RawArgument).ToList(), isPredicate: call.Type == typeof(bool));
         // Map 投影之后再过滤：d["aa"] 是派生表里别名为 aa 的列（Java 的 o.get("aa")）
         if (method.Name == "get_Item" && call is { Object: { } map, Arguments: [var keyArg] } && BindingOf(map) is DerivedBinding derived
             && ClientEvaluator.Evaluate(keyArg) is string key)
@@ -96,6 +99,8 @@ internal sealed partial class ExpressionTranslator
                 return new FunctionExpr(SqlFunctionNames.Now, []);
             case nameof(Sql.UtcNow):
                 return new FunctionExpr(SqlFunctionNames.UtcNow, []);
+            case nameof(Sql.Random):
+                return new FunctionExpr(SqlFunctionNames.Random, []);
             case nameof(Sql.IsoDayOfWeek):
                 return new FunctionExpr(SqlFunctionNames.DatePartOf(DatePart.IsoDayOfWeek), [Translate(call.Arguments[0])]);
             case nameof(Sql.Cast):

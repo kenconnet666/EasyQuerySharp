@@ -108,6 +108,7 @@ public class OracleDialect : SqlDialect
         // 相差：两个日期相减得到天数，再拆成 DAY / HOUR / MINUTE / SECOND 累加（与 Java 一致）
         const string interval = "NUMTODSINTERVAL(({1}+0)-({0}+0),'DAY')";
         f[SqlFunctionNames.Now] = Template("SYSTIMESTAMP");
+        f[SqlFunctionNames.Random] = Template("DBMS_RANDOM.VALUE()");
         f[SqlFunctionNames.UtcNow] = Template("SYS_EXTRACT_UTC(SYSTIMESTAMP)");
         DateFunctions(f,
             unit => unit switch

@@ -92,6 +92,9 @@ public static partial class Sql
     /// <summary>数据库的当前 UTC 时间（MySQL 的 <c>UTC_TIMESTAMP()</c>）。</summary>
     public static DateTime UtcNow() => throw OnlyInQuery();
 
+    /// <summary>数据库的随机数（对应 Java 的 random()），多用于随机排序：<c>.OrderBy(t =&gt; Sql.Random())</c>。</summary>
+    public static double Random() => throw OnlyInQuery();
+
     /// <summary>ISO 星期几：周一 1 … 周日 7（C# 的 <c>x.DayOfWeek</c> 是周日 0 … 周六 6）。</summary>
     public static int IsoDayOfWeek(this DateTime value) => throw OnlyInQuery();
 

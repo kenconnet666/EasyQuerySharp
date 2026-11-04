@@ -131,15 +131,19 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>是否已经有投影（之后的条件要包一层）。</summary>
     public bool HasSelector => Selector is not null;
 
-    /// <summary>只是引用一个 CTE（AsCte 之后没有再加条件、投影、排序等）：作为 JOIN 来源时直接引用 CTE 名，不再包一层派生表。</summary>
-    public CteSource? BareCte =>
-        Sources is [CteSource cte] && Wheres.IsEmpty && OrderBys.IsEmpty && Selector is null && RawSelect is null && GroupKey is null
-        && !Distinct && Offset is null && Limit is null && Includes.IsEmpty && Fills.IsEmpty
-            ? cte
+    /// <summary>
+    /// 只有一个表来源、没有加任何条件、投影、排序等的查询（<c>db.Query&lt;T&gt;()</c>、AsCte 之后直接引用）：
+    /// 作为 JOIN 来源时直接用这个表来源，不再包一层派生表（与 Java 一致）。
+    /// </summary>
+    private QuerySource? BareSource =>
+        Sources is [EntitySource or CteSource] && Wheres.IsEmpty && OrderBys.IsEmpty && Selector is null && RawSelect is null && GroupKey is null
+        && !Distinct && Offset is null && Limit is null && Includes.IsEmpty && Fills.IsEmpty && !DisableLogicDelete
+        && Interceptors == InterceptorSelection.Default
+            ? Sources[0]
             : null;
 
-    /// <summary>作为 JOIN 来源：裸的 CTE 引用直接用，其余包成派生表。</summary>
-    public QuerySource AsJoinSource() => BareCte is { } cte ? cte with { } : new SubQuerySource(this);
+    /// <summary>作为 JOIN 来源：裸的实体表 / CTE 引用直接用，其余包成派生表。</summary>
+    public QuerySource AsJoinSource() => BareSource is { } source ? source with { } : new SubQuerySource(this);
 
     /// <summary>查询结果的元素类型：投影的返回类型，没有投影时是第一个来源的类型。</summary>
     public Type ElementType => Selector?.ReturnType ?? TypeOf(Sources[0]);

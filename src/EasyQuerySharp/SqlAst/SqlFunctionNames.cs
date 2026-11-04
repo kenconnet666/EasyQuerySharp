@@ -70,6 +70,9 @@ public static class SqlFunctionNames
     /// <summary>()：数据库当前 UTC 时间。</summary>
     public const string UtcNow = "UtcNow";
 
+    /// <summary>随机数：<c>RAND()</c>（PG / SQLite 为 <c>RANDOM()</c>，Oracle 为 <c>DBMS_RANDOM.VALUE()</c>），多用于随机排序。</summary>
+    public const string Random = "Random";
+
     /// <summary>(x, n)：日期加上 n 个 <paramref name="unit"/>。</summary>
     public static string DateAdd(DateUnit unit) => "DateAdd." + unit;
 

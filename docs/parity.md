@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | 基本查询：条件、排序、选列、分页 | `query.basic` | 402 | `db.Query<T>().Where(..).OrderBy(..).Select(..).Skip(n).Take(n).ToListAsync()`；`FirstAsync` / `SingleAsync` / `FindAsync(id)` / `AnyAsync` / `CountAsync`；`WhereIf` ；投影里读出后在客户端换算 `Sql.ClientSide(x, v => ..)`（对应 valueConvert）；IN 列表按 `EasyDbOptions.MaxInClauseSize` 拆成 OR 组 | M1 |
 | 分页结果 | `query.page` | 22 | `ToPageAsync(page, size)` 返回 `Page<T> { Rows, Total, PageIndex, PageSize }`；最后一页只取剩余条数；`EasyDbOptions.ReverseOffsetThreshold` 开启深分页反向排序（偏移过半时反转 ORDER BY 取数再倒序），单条查询 `DisableReversePaging()` 关闭 | M1 |
-| 原生 SQL | `sql.native` | 50 | `db.Sql<T>($"...{param}")`，插值的值自动参数化；行内片段用 `Sql.Raw<T>($"... {u.Col} ...")` | M1 |
+| 原生 SQL | `sql.native` | 50 | `db.Sql<T>($"...{param}")`，插值的值自动参数化；行内片段用 `Sql.Raw<T>("... {0} ...", u.Col)`；自定义模板函数：静态方法标 `[SqlFunction("FIND_IN_SET({0},{1})")]`，在表达式里直接调用 | M1 |
 | 显式 join | `query.join` | 88 | `.LeftJoin<Post>((u, p) => p.UserId == u.Id)`，后续 lambda 依次收到各表 `(u, p)`；right join 之后，前面表的列按可空处理 | M3 |
 | 分组与 having | `query.group` | 78 | `.GroupBy(p => new { p.UserId }).Having(g => g.Count() > 3).Select(g => new { g.Key.UserId, Total = g.Sum(p => p.Amount) })`；`Rollup` / `Cube` / `Grouping()` | M3 |
 | union / union all | `query.union` | 18 | `q1.Union(q2)` / `UnionAll` | M3 |
@@ -27,7 +27,7 @@
 |---|---|---|---|---|
 | 字符串函数 | `func.string` | 128 | 优先映射 BCL：`Contains` / `StartsWith` / `Trim` / `ToUpper` / `Substring` / `IndexOf` / `Length` / `Replace` / `PadLeft`；没有 BCL 对应的用扩展方法：`Like` / `NotLike` / `Concat` | M2 |
 | 日期函数 | `func.date` | 96 | `AddDays` / `AddMonths` / `.Year` / `.DayOfWeek` / `ToString("yyyy-MM")`（格式串按方言翻译）/ `Sql.Now()` / `Sql.DateDiff`；`DateTime` / `DateOnly` / `DateTimeOffset` | M2 |
-| 通用函数 | `func.general` | 53 | `??`（nullOrDefault）/ `Sql.Greatest` / `Sql.Least` / `Sql.NullIf` / `Sql.EqualsNullSafe` | M2 |
+| 通用函数 | `func.general` | 53 | `??`（nullOrDefault）/ `Sql.Greatest` / `Sql.Least` / `Sql.NullIf` / `Sql.EqualsNullSafe` / `Sql.Random()`（RAND()、PG / SQLite 的 RANDOM()、Oracle 的 DBMS_RANDOM.VALUE()） | M2 |
 | 字符串聚合 | `func.joining` | 29 | `g.StringJoin(p => p.Name, ",")`，集合导航上同样可用：`u.Posts.StringJoin(...)` | M2 |
 | JSON 函数 | `func.json` | 12 | `Sql.Json(u.Attrs).Value<string>("$.a")`；方言专属的放在 `MySql.Json*` / `Pg.Jsonb*` 下 | M2 |
 | 数学函数 | `func.math` | 4 | 映射 `Math.Abs` / `Round` / `Floor` / `Ceiling` / `Pow` / `Sqrt` / `Sign` / `Log` / `Exp` / `Truncate` | M2 |

@@ -66,6 +66,7 @@ public class SqlServerDialect : SqlDialect
         f[SqlFunctionNames.Ln] = Call("LOG");
         f[SqlFunctionNames.DateFormat] = DateFormat("FORMAT({0},{1})");
         f[SqlFunctionNames.Now] = Template("GETDATE()");
+        f[SqlFunctionNames.Random] = Template("RAND()");
         f[SqlFunctionNames.UtcNow] = Template("GETUTCDATE()");
         DateFunctions(f,
             unit => unit == DateUnit.Millisecond ? "dateadd(second, ({1})/1000, {0})" : "dateadd(" + Lower(unit) + ", {1}, {0})",

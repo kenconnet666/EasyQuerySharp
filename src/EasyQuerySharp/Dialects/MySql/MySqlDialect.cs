@@ -104,6 +104,7 @@ public class MySqlDialect : SqlDialect
         f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("GROUP_CONCAT(").Write(a[0]).Append(" SEPARATOR ").Write(a[1]).Append(")");
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("GROUP_CONCAT(DISTINCT ").Write(a[0]).Append(" SEPARATOR ").Write(a[1]).Append(")");
         f[SqlFunctionNames.Now] = Template("NOW()");
+        f[SqlFunctionNames.Random] = Template("RAND()");
         f[SqlFunctionNames.UtcNow] = Template("UTC_TIMESTAMP()");
         DateFunctions(f,
             unit => unit == DateUnit.Millisecond ? "date_add({0}, interval ({1})*1000 microsecond)" : "date_add({0}, interval ({1}) " + Lower(unit) + ")",

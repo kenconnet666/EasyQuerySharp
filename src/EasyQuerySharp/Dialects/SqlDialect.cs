@@ -210,6 +210,7 @@ public abstract class SqlDialect
         f[SqlFunctionNames.DateFormat] = DateFormat("TO_CHAR({0},{1})", ("yyyy", "YYYY"), ("MM", "MM"), ("dd", "DD"), ("HH", "HH24"), ("mm", "MI"), ("ss", "SS"));
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("STRING_AGG(DISTINCT ").Write(a[0]).Append(", ").Write(a[1]).Append(")");
         f[SqlFunctionNames.Now] = Template("CURRENT_TIMESTAMP");
+        f[SqlFunctionNames.Random] = Template("RANDOM()");
         f[SqlFunctionNames.UtcNow] = Template("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')");
         // 日期：标准写法取 PostgreSQL（与 Java 的 PgSQL 函数一致）
         DateFunctions(f,
