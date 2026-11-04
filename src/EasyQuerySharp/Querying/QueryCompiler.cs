@@ -26,7 +26,7 @@ internal static class QueryCompiler
     /// 翻译 FROM / JOIN / WHERE / ORDER BY / 分页，不含 SELECT 列表。
     /// <paramref name="outer"/> 是外层查询的作用域：关联子查询里引用的外层参数由它解析。
     /// </summary>
-    public static QueryFrame Build(QueryState state, IReadOnlyDictionary<ParameterExpression, SourceBinding>? outer = null)
+    public static QueryFrame Build(QueryState state, IReadOnlyDictionary<ParameterExpression, SourceBinding>? outer = null, TranslationContext? outerContext = null)
     {
         var db = state.Db;
         var translator = new ExpressionTranslator(outer is null ? [] : new Dictionary<ParameterExpression, SourceBinding>(outer));
@@ -43,7 +43,7 @@ internal static class QueryCompiler
             {
                 query = new SelectQuery(binding.Table);
                 query.Where.AddRange(filters);
-                translator.Context = new TranslationContext(db.Metadata, table => Filters(db, state, new EntityBinding(table)), query);
+                translator.Context = new TranslationContext(db.Metadata, table => Filters(db, state, new EntityBinding(table)), query, outerContext);
                 continue;
             }
 
@@ -140,16 +140,17 @@ internal static class QueryCompiler
 
     /// <summary>翻译成带 SELECT 列表的 AST，不生成读取函数（用于子查询、派生表）。</summary>
     public static (SelectQuery Query, ProjectionCompiler Projection) CompileSelect(
-        QueryState state, IReadOnlyDictionary<ParameterExpression, SourceBinding>? outer = null)
+        QueryState state, IReadOnlyDictionary<ParameterExpression, SourceBinding>? outer = null, TranslationContext? outerContext = null)
     {
-        var (frame, projection) = Project(state, outer);
+        var (frame, projection) = Project(state, outer, outerContext: outerContext);
         return (frame.Query, projection);
     }
 
     private static (QueryFrame Frame, ProjectionCompiler Projection) Project(
-        QueryState state, IReadOnlyDictionary<ParameterExpression, SourceBinding>? outer = null, IReadOnlyList<ColumnMetadata>? relationKeys = null)
+        QueryState state, IReadOnlyDictionary<ParameterExpression, SourceBinding>? outer = null, IReadOnlyList<ColumnMetadata>? relationKeys = null,
+        TranslationContext? outerContext = null)
     {
-        var frame = Build(state, outer);
+        var frame = Build(state, outer, outerContext);
         // 分组查询的投影总是写列别名（Java 版的 set / as 写法）
         var projection = new ProjectionCompiler(frame.Translator, state.Db.Options.NameConversion, alwaysAlias: state.GroupKey is not null);
         LambdaExpression selector;

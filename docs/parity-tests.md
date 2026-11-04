@@ -3,14 +3,14 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2338 个用例。
 
-合计：已移植 553、偏离 95、不适用 8、骨架 15、待做 1667。
+合计：已移植 566、偏离 97、不适用 8、骨架 15、待做 1652。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 127 | 20 | 3 | 0 | 252 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 132 | 20 | 3 | 0 | 247 |
 | 分页结果 | `query.page` | M1 | 22 | 9 | 2 | 0 | 0 | 11 |
 | 原生 SQL | `sql.native` | M1 | 50 | 14 | 5 | 0 | 0 | 31 |
 | 删除 | `write.delete` | M1 | 21 | 7 | 1 | 2 | 0 | 11 |
@@ -34,7 +34,7 @@
 | union / union all | `query.union` | M3 | 18 | 12 | 3 | 0 | 1 | 2 |
 | 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 35 | 0 | 0 | 0 | 1 | 34 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
-| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 0 | 0 | 1 | 0 | 55 |
+| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 1 | 0 | 1 | 0 | 54 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 0 | 0 | 0 | 2 | 65 |
 | include 带出导航 | `nav.include` | M4 | 37 | 7 | 0 | 0 | 0 | 30 |
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 52 | 1 | 0 | 0 | 89 |
@@ -60,7 +60,7 @@
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | M6 | 13 | 0 | 0 | 0 | 0 | 13 |
 | UPDATE / DELETE … RETURNING | `write.returning` | M6 | 3 | 0 | 0 | 0 | 0 | 3 |
 | 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 0 | 0 | 0 | 0 | 17 |
-| 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 28 | 8 | 0 | 0 | 65 |
+| 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 35 | 10 | 0 | 0 | 56 |
 | search 扩展 | `search` | M7 | 45 | 0 | 0 | 0 | 0 | 45 |
 | 分库分表 | `sharding` | M7 | 48 | 0 | 0 | 0 | 0 | 48 |
 | 跨库链接（asTableLink） | `table.link` | M7 | 13 | 0 | 0 | 0 | 0 | 13 |
@@ -387,11 +387,11 @@
 | QueryTest9.java#testDsl4 | 待做 |  | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NULL OR 'id' = '')` |
 | QueryTest9.java#testQuery7 | 待做 |  | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'content',t.…` |
 | QueryTestRelationTest.java#relation11 | 待做 |  | `SELECT (SELECT COUNT(t1.'id') AS 'id' FROM 'school_student' t1 WHERE t1.'class_id' = t.'id') AS 'val…` |
-| QueryTestRelationTest.java#relationTest0_1 | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
-| QueryTestRelationTest.java#relationTest0_x | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
-| QueryTestRelationTest.java#relationTest1 | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
-| QueryTestRelationTest.java#relationTest2 | 待做 |  | `SELECT t.'id' AS 'value1',t1.'gw' AS 'value2' FROM 'my_sign_up' t LEFT JOIN 'my_com_user' t1 ON (t1.…` |
-| QueryTestRelationTest.java#test3 | 待做 |  | `SELECT 'id','com_id','user_id','gw' FROM 'my_com_user'` |
+| QueryTestRelationTest.java#relationTest0_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:61 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
+| QueryTestRelationTest.java#relationTest0_x | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:80 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
+| QueryTestRelationTest.java#relationTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:61 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
+| QueryTestRelationTest.java#relationTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:138 | `SELECT t.'id' AS 'value1',t1.'gw' AS 'value2' FROM 'my_sign_up' t LEFT JOIN 'my_com_user' t1 ON (t1.…` |
+| QueryTestRelationTest.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:52 | `SELECT 'id','com_id','user_id','gw' FROM 'my_com_user'` |
 | QueryTestRelationTest.java#testDirectWhere1 | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
 | QueryTestRelationTest.java#testDirectWhere2 | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
 | QueryTestRelationTest.java#testDirectWhere3 | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
@@ -1501,7 +1501,7 @@
 | QueryTest25.java#testToListFlat1 | 待做 |  |  |
 | QueryTest25.java#xxx22 | 待做 |  |  |
 | QueryTest26.java#includeFlat | 待做 |  |  |
-| QueryTestRelationTest.java#test1 | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'gw' FROM 'my_com_user' t LEFT JOIN 'my_company_info' t1 ON t…` |
+| QueryTestRelationTest.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:15 | `SELECT t.'id',t.'com_id',t.'user_id',t.'gw' FROM 'my_com_user' t LEFT JOIN 'my_company_info' t1 ON t…` |
 | SubJoinTest.java#testSubJoinCaseWhen1 | 待做 |  | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
 | mysql8/CTETest.java#cteTest4 | 待做 |  | `WITH 'm8_user_temp' AS (SELECT t.'id',t.'name' FROM 'm8_user' t WHERE t.'age' IS NULL) SELECT t2.'id…` |
 | mysql8/CTETest.java#cteTest6 | 待做 |  | `WITH 'm8_user_temp2' AS (SELECT t.'id',t.'name',t.'age',(ROW_NUMBER() OVER (PARTITION BY t.'age' ORD…` |
@@ -2444,15 +2444,15 @@
 | QueryTest4.java#joinTest6 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest4.cs:239：同 joinTest1 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
 | QueryTest4.java#joinTest7 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest4.cs:253：同 joinTest1 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
 | QueryTestRelationTest.java#relationTest0 | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'gw' FROM 'my_com_user' t WHERE EXISTS(SELECT 1 FROM 'my_sign…` |
-| QueryTestRelationTest.java#relationTest0_2 | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t WHERE t.'com_id' = ?` |
-| QueryTestRelationTest.java#relationTest0_3 | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
-| QueryTestRelationTest.java#relationTest0_4 | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
-| QueryTestRelationTest.java#relationTest0_5 | 待做 |  | `SELECT (SELECT COUNT(*) FROM 'my_sign_up' t2 WHERE t2.'com_id' = t1.'com_id') AS 'id' FROM 'my_sign_…` |
-| QueryTestRelationTest.java#relationTest0_6 | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
-| QueryTestRelationTest.java#relationTest0_7 | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
-| QueryTestRelationTest.java#relationTest0_8 | 待做 |  | `SELECT t1.'com_id' AS 'value1' FROM 'my_sign_up' t LEFT JOIN 'my_com_user' t1 ON (t1.'com_id' = t.'c…` |
-| QueryTestRelationTest.java#test1_1 | 待做 |  | `SELECT (CASE WHEN t1.'name' LIKE ? THEN ? ELSE ? END) AS 'value1' FROM 'my_com_user' t LEFT JOIN 'my…` |
-| QueryTestRelationTest.java#test2 | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'gw' FROM 'my_com_user' t` |
+| QueryTestRelationTest.java#relationTest0_2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:72：同 test2：条件被过滤后 Java 仍给主表写别名 t | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t WHERE t.'com_id' = ?` |
+| QueryTestRelationTest.java#relationTest0_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:90 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
+| QueryTestRelationTest.java#relationTest0_4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:100 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
+| QueryTestRelationTest.java#relationTest0_5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:109 | `SELECT (SELECT COUNT(*) FROM 'my_sign_up' t2 WHERE t2.'com_id' = t1.'com_id') AS 'id' FROM 'my_sign_…` |
+| QueryTestRelationTest.java#relationTest0_6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:119 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
+| QueryTestRelationTest.java#relationTest0_7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:119 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
+| QueryTestRelationTest.java#relationTest0_8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:129 | `SELECT t1.'com_id' AS 'value1' FROM 'my_sign_up' t LEFT JOIN 'my_com_user' t1 ON (t1.'com_id' = t.'c…` |
+| QueryTestRelationTest.java#test1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:28 | `SELECT (CASE WHEN t1.'name' LIKE ? THEN ? ELSE ? END) AS 'value1' FROM 'my_com_user' t LEFT JOIN 'my…` |
+| QueryTestRelationTest.java#test2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:40：条件被过滤后 Java 不再 JOIN 但仍给主表写别名 t，C# 单表不写别名 | `SELECT t.'id',t.'com_id',t.'user_id',t.'gw' FROM 'my_com_user' t` |
 | QueryTestRelationTest.java#testDirectWhere | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t` |
 | doc/DocTest.java#test1 | 待做 |  | `SELECT COUNT(*) FROM 't_sys_user' WHERE 'name' LIKE ? AND 'phone' LIKE ? AND 'create_time' >= ? AND …` |
 | mysql8/ExampleTest.java#sampleTest1 | 待做 |  |  |

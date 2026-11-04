@@ -216,6 +216,12 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
 
     private Query<T> Order(LambdaExpression key, bool descending) => new(Open with { OrderBys = Open.OrderBys.Add(new OrderSpec(key, descending)) });
 
+    /// <summary>
+    /// 追加一个自带方向的原生排序项，片段里可以引用列（对应 Java 的 orderBy(x -&gt; x.expression().sql("{0} ASC", …))）：
+    /// <c>.OrderByRaw(t =&gt; Sql.Raw&lt;object&gt;("{0} DESC", t.CreateTime))</c>。
+    /// </summary>
+    public Query<T> OrderByRaw(Expression<Func<T, object?>> raw) => new(Open with { OrderBys = Open.OrderBys.Add(new OrderSpec(raw, false, Raw: true)) });
+
     /// <summary>再加一个表来源，逗号连接 <c>FROM a t , b t1</c>（对应 Java 的 from(T.class)），关联条件写在 Where 里。</summary>
     public Query<T, T2> From<T2>() => new(QueryStates.AddJoin(Open, new EntitySource(typeof(T2)) { Join = JoinKind.Comma }));
 

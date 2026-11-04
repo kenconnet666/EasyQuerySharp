@@ -7,7 +7,8 @@ namespace EasyQuerySharp.Translation;
 /// 翻译一条 SELECT 时的共享状态：元数据、隐式 JOIN 的去处与缓存、每张表自带的过滤条件（逻辑删除、拦截器）。
 /// 子查询用 <see cref="ForSubQuery"/> 派生自己的上下文（隐式 JOIN 加到子查询上），其余共享。
 /// </summary>
-internal sealed class TranslationContext(MetadataRegistry metadata, Func<EntityTableSource, IEnumerable<SqlExpr>> tableFilters, SelectQuery query)
+internal sealed class TranslationContext(
+    MetadataRegistry metadata, Func<EntityTableSource, IEnumerable<SqlExpr>> tableFilters, SelectQuery query, TranslationContext? parent = null)
 {
     private readonly Dictionary<(TableSource, string), EntityBinding> _joins = [];
 
@@ -21,7 +22,7 @@ internal sealed class TranslationContext(MetadataRegistry metadata, Func<EntityT
     public IEnumerable<SqlExpr> TableFilters(EntityTableSource table) => tableFilters(table);
 
     /// <summary>为子查询派生上下文：共享元数据与过滤规则，隐式 JOIN 加到 <paramref name="subQuery"/>。</summary>
-    public TranslationContext ForSubQuery(SelectQuery subQuery) => new(metadata, tableFilters, subQuery);
+    public TranslationContext ForSubQuery(SelectQuery subQuery) => new(metadata, tableFilters, subQuery, this);
 
     /// <summary>
     /// 对一导航的隐式 JOIN：同一个来源上的同一个导航只连一次。ON 里先写目标表自带的过滤条件，再写 <c>目标键 = 本表键</c>（与 Java 版一致）；
@@ -29,13 +30,18 @@ internal sealed class TranslationContext(MetadataRegistry metadata, Func<EntityT
     /// </summary>
     public EntityBinding JoinFor(EntityBinding owner, NavigationMetadata navigation)
     {
+        // 所属表在外层查询里（子查询引用外层的导航）：JOIN 加到外层（与 Java 一致）
+        if (parent is not null && !Owns(owner.Table)) return parent.JoinFor(owner, navigation);
         var key = (owner.Table, navigation.Property.Name);
         if (_joins.TryGetValue(key, out var existing)) return existing;
 
         var target = new EntityTableSource(navigation.Target);
         var conditions = new List<SqlExpr>(TableFilters(target));
-        for (var i = 0; i < navigation.SelfColumns.Count; i++)
-            conditions.Add(new BinaryExpr(target.Column(navigation.TargetColumns[i]), SqlBinaryOperator.Equal, owner.EntityTable.Column(navigation.SelfColumns[i])));
+        var keys = navigation.SelfColumns
+            .Select((self, i) => (SqlExpr)new BinaryExpr(target.Column(navigation.TargetColumns[i]), SqlBinaryOperator.Equal, owner.EntityTable.Column(self)))
+            .ToList();
+        // 复合键整体加括号：ON (a = a AND b = b)
+        conditions.Add(keys.Count == 1 ? keys[0] : LogicalExpr.Grouped(keys));
         if (navigation.ExtraFilter is { } extra)
         {
             var translator = new ExpressionTranslator([]) { Context = this };
@@ -47,4 +53,7 @@ internal sealed class TranslationContext(MetadataRegistry metadata, Func<EntityT
         _joins[key] = binding;
         return binding;
     }
+
+    // 表来源是不是本查询的 FROM / JOIN（含已加上的隐式 JOIN）
+    private bool Owns(TableSource table) => query.From == table || query.Joins.Any(j => j.Table == table);
 }

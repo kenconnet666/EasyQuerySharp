@@ -34,11 +34,11 @@ internal sealed partial class ExpressionTranslator
 
     /// <summary>翻译一个子查询：外层的参数绑定对子查询可见。</summary>
     internal (SelectQuery Query, ProjectionCompiler Projection) TranslateSubQuery(Expression expression)
-        => QueryCompiler.CompileSelect(ReplayQuery(expression), _scope);
+        => QueryCompiler.CompileSelect(ReplayQuery(expression), _scope, Context);
 
     private SqlExpr TranslateExists(Expression queryExpression, bool negated)
     {
-        var frame = QueryCompiler.Build(ReplayQuery(queryExpression) with { Selector = null }, _scope);
+        var frame = QueryCompiler.Build(ReplayQuery(queryExpression) with { Selector = null }, _scope, Context);
         frame.Query.Columns.Add(new SelectColumn(LiteralExpr.One, null));
         return new ExistsExpr(frame.Query, negated);
     }

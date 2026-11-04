@@ -177,8 +177,11 @@ internal sealed partial class ExpressionTranslator
         }
         else
         {
-            for (var i = 0; i < nav.TargetColumns.Count; i++)
-                sub.Where.Add(new BinaryExpr(table.Column(nav.TargetColumns[i]), SqlBinaryOperator.Equal, OwnerColumn(owner, nav.SelfColumns[i])));
+            var keys = nav.TargetColumns
+                .Select((target, i) => (SqlExpr)new BinaryExpr(table.Column(target), SqlBinaryOperator.Equal, OwnerColumn(owner, nav.SelfColumns[i])))
+                .ToList();
+            // 复合键整体加括号（与 Java 一致）
+            sub.Where.Add(keys.Count == 1 ? keys[0] : LogicalExpr.Grouped(keys));
         }
         if (nav.ExtraFilter is { } extra) sub.Where.Add(translator.ElementPredicate(extra, element));
         return sub;
