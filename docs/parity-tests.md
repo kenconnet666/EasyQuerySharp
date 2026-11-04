@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 920、偏离 121、不适用 20、骨架 15、待做 1328。
+合计：已移植 933、偏离 121、不适用 20、骨架 15、待做 1315。
 
 ## 按能力
 
@@ -45,7 +45,7 @@
 | 逻辑删除 | `logicDelete` | M5 | 10 | 0 | 0 | 0 | 0 | 10 |
 | 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 0 | 0 | 0 | 0 | 39 |
 | 追踪与差异更新 | `tracking` | M5 | 62 | 24 | 15 | 0 | 0 | 23 |
-| 乐观锁版本 | `version` | M5 | 13 | 0 | 0 | 0 | 0 | 13 |
+| 乐观锁版本 | `version` | M5 | 13 | 13 | 0 | 0 | 0 | 0 |
 | UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 0 | 0 | 0 | 0 | 10 |
 | 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 11 | 6 | 0 | 0 | 9 |
 | upsert | `write.upsert` | M5 | 13 | 3 | 0 | 0 | 2 | 8 |
@@ -2050,19 +2050,19 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| VersionTest.java#test1 | 待做 |  |  |
-| VersionTest.java#test10 | 待做 |  | `UPDATE 'AXX' SET 'username' = ?,'version' = ? WHERE 'deleted' = ? AND 'version' = ? AND 'id' = ?` |
-| VersionTest.java#test2 | 待做 |  |  |
-| VersionTest.java#test3 | 待做 |  | `UPDATE 't_sys_user_version' SET 'phone' = ? WHERE 'id' = ?` |
-| VersionTest.java#test3_1 | 待做 |  | `UPDATE 't_sys_user_version' SET 'phone' = ?,'version' = ? WHERE 'version' = ? AND 'id' = ?` |
-| VersionTest.java#test3_2 | 待做 |  | `UPDATE 't_sys_user_version' SET 'phone' = ? WHERE 'id' = ?` |
-| VersionTest.java#test3_3 | 待做 |  |  |
-| VersionTest.java#test4 | 待做 |  |  |
-| VersionTest.java#test5 | 待做 |  |  |
-| VersionTest.java#test6 | 待做 |  | `UPDATE 't_sys_user_version_del' SET 'deleted' = ?,'version' = ? WHERE 'deleted' = ? AND 'version' = …` |
-| VersionTest.java#test7 | 待做 |  | `UPDATE 'aaa' SET 'username' = ?,'phone' = ?,'id_card' = ?,'address' = ?,'create_time' = ? WHERE 'del…` |
-| VersionTest.java#test8 | 待做 |  |  |
-| VersionTest.java#test9 | 待做 |  | `UPDATE 'AXX' SET 'username' = ?,'version' = ? WHERE 'deleted' = ? AND 'version' = ? AND 'id' = ?` |
+| VersionTest.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/VersionTest.cs:35 |  |
+| VersionTest.java#test10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/VersionTest.cs:146 | `UPDATE 'AXX' SET 'username' = ?,'version' = ? WHERE 'deleted' = ? AND 'version' = ? AND 'id' = ?` |
+| VersionTest.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/VersionTest.cs:49 |  |
+| VersionTest.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/VersionTest.cs:65 | `UPDATE 't_sys_user_version' SET 'phone' = ? WHERE 'id' = ?` |
+| VersionTest.java#test3_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/VersionTest.cs:77 | `UPDATE 't_sys_user_version' SET 'phone' = ?,'version' = ? WHERE 'version' = ? AND 'id' = ?` |
+| VersionTest.java#test3_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/VersionTest.cs:82 | `UPDATE 't_sys_user_version' SET 'phone' = ? WHERE 'id' = ?` |
+| VersionTest.java#test3_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/VersionTest.cs:87 |  |
+| VersionTest.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/VersionTest.cs:95 |  |
+| VersionTest.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/VersionTest.cs:105 |  |
+| VersionTest.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/VersionTest.cs:114 | `UPDATE 't_sys_user_version_del' SET 'deleted' = ?,'version' = ? WHERE 'deleted' = ? AND 'version' = …` |
+| VersionTest.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/VersionTest.cs:120 | `UPDATE 'aaa' SET 'username' = ?,'phone' = ?,'id_card' = ?,'address' = ?,'create_time' = ? WHERE 'del…` |
+| VersionTest.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/VersionTest.cs:129 |  |
+| VersionTest.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/VersionTest.cs:136 | `UPDATE 'AXX' SET 'username' = ?,'version' = ? WHERE 'deleted' = ? AND 'version' = ? AND 'id' = ?` |
 
 ### UPDATE / DELETE 里用导航（`write.join`，M5）
 

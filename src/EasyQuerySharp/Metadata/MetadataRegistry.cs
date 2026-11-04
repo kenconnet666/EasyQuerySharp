@@ -77,6 +77,8 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
         var columns = new List<ColumnMetadata>();
         LogicDeleteAttribute? logicDelete = null;
         ColumnMetadata? logicDeleteColumn = null;
+        ColumnMetadata? versionColumn = null;
+        VersionAttribute? version = null;
 
         var ignored = table?.IgnoreProperties ?? [];
         var navigations = new Dictionary<string, (PropertyInfo, NavigateAttribute)>(StringComparer.Ordinal);
@@ -113,12 +115,20 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
                 logicDelete = ld;
                 logicDeleteColumn = column;
             }
+            if (property.GetCustomAttribute<VersionAttribute>() is { } v)
+            {
+                if (versionColumn is not null) throw new InvalidOperationException($"{type.Name} 声明了多个版本列");
+                version = v;
+                versionColumn = column;
+            }
         }
 
         return new EntityMetadata(type, table?.Name ?? NameConversion.Convert(type.Name), table?.Schema, table?.Comment, columns)
         {
             LogicDelete = logicDelete,
             LogicDeleteColumn = logicDeleteColumn,
+            VersionColumn = versionColumn,
+            VersionStrategy = version?.Strategy ?? VersionStrategy.Increment,
             NavigationProperties = navigations,
         };
     }

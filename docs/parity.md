@@ -66,7 +66,7 @@
 |---|---|---|---|---|
 | 拦截器 | `interceptor` | 3 | `IQueryFilter<T>` / `IBeforeInsert<T>` / `IBeforeUpdate<T>` / `IAfterWrite`；单条查询上用 `.DisableInterceptor<T>()` 关掉 | M5 |
 | 逻辑删除 | `logicDelete` | 10 | `[LogicDelete(LogicDeleteStrategy.Boolean)]`；查询自动加条件，删除自动改成更新 | M5 |
-| 乐观锁 | `version` | 13 | `[Version]`（long / Guid / 时间戳）；更新时加 `WHERE version = ?`，行数为 0 时抛 `ConcurrencyException` | M5 |
+| 乐观锁 | `version` | 13 | `[Version]`（整数列 +1；`[Version(VersionStrategy.NewGuid)]` 写新 Guid）。条件里加 `version = 当前版本`、SET 末尾写下一个版本；按实体写入取实体上的值并在成功后写回，按条件写入必须 `.WithVersion(v)` 或 `.IgnoreVersion()`。冲突时影响 0 行，用 `ExecuteAsync(1, "msg")` 抛 `ConcurrencyException`（与 Java 一样不自动抛） | M5 |
 | 列加密 | `column.encryption` | 8 | `[Encryption(typeof(AesEncryption), SupportLike = true)]`，与 Java 版的密文兼容 | M5 |
 | 值转换、枚举 | `column.converter` | 0 | `[Column(Converter = typeof(JsonConverter<Attrs>))]`；枚举默认按数字存，可以改成按名字 | M5 |
 | 自增、生成列 | `column.generated` | 0 | `[Column(Generated = true)]` / 主键生成器 / 数据库计算列 | M1 |

@@ -155,7 +155,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 
 - [~] 5.1 拦截器（默认关闭、按名启用 / 关闭已完成）：`IQueryFilter<T>` / `IBeforeInsert<T>` / `IBeforeUpdate<T>` / `IAfterWrite`；单条查询上可以关掉某一个；内置多租户、自动填充。
 - [x] 5.2 逻辑删除：可以按导航单独关闭（`u.Posts.DisableLogicDelete().Any(..)`）；`.Hard()`。
-- [ ] 5.3 乐观锁 `[Version]`，以及 `ConcurrencyException`。
+- [x] 5.3 乐观锁 `[Version]`：`WithVersion` / `IgnoreVersion`，按实体写入成功后写回新版本；冲突检测用 `ExecuteAsync(expectedRows)` 抛 `ConcurrencyException`。
 - [~] 5.4 值转换器、枚举存储方式、值对象 `[ValueObject]`、JSON 列（`JsonValueConverter<T>` 已完成）。
 - [~] 5.5 列加密：与 Java 的 AES / SM4 密文兼容，支持分段 LIKE（`[Encryption]` 与 AES 策略已完成；SM4 待做）。
 - [~] 5.6 upsert：`OnConflictIgnore()` / `OnConflictUpdate()`（MySQL、PG、SQLite 已完成；SQL Server / Oracle 的 MERGE 待做）。

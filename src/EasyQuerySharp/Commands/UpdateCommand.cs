@@ -145,7 +145,13 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         var rows = await Db.Executor.SessionAsync(async session =>
         {
             long total = 0;
-            foreach (var s in statements) total += await session.ExecuteAsync(s.Statement, cancellationToken).ConfigureAwait(false);
+            foreach (var s in statements)
+            {
+                var affected = await session.ExecuteAsync(s.Statement, cancellationToken).ConfigureAwait(false);
+                // 乐观锁：写成功才把新版本写回实体，冲突（0 行）时实体保持原版本
+                if (affected > 0 && s is { Entity: { } written, NewVersion: { } version }) Entity.VersionColumn!.Setter?.Invoke(written, version);
+                total += affected;
+            }
             return total;
         }, cancellationToken).ConfigureAwait(false);
         // 写入成功后，追踪的实体以当前值为新的原始值
@@ -177,8 +183,9 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
             if (tracked is not null) return null;
             throw new InvalidOperationException($"{typeof(T).Name} 的更新没有要写的列");
         }
+        var newVersion = AddVersionSet(update, table, entity);
         update.Where.AddRange(BuildWhere(table, entity, applyLogicDelete: true));
-        return new RenderedUpdate(SqlRenderer.Render(Db.Options.Dialect, update), tracked);
+        return new RenderedUpdate(SqlRenderer.Render(Db.Options.Dialect, update), tracked, entity, newVersion);
     }
 
     private void AddEntitySets(UpdateStatement update, EntityTableSource table, T entity, Tracking.TrackedEntry? tracked)
@@ -191,6 +198,8 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         foreach (var column in Entity.Columns)
         {
             if (column.IsPrimaryKey || column.IsGenerated || skipped.Contains(column.PropertyName)) continue;
+            // 版本列由乐观锁单独写；生效的逻辑删除列已在条件里（Java 不写条件里出现的列）
+            if (column == Entity.VersionColumn || (column == Entity.LogicDeleteColumn && !LogicDeleteDisabled)) continue;
             if (_onlyColumns is not null && !_onlyColumns.Contains(column.PropertyName)) continue;
             if (_ignoredColumns is not null && _ignoredColumns.Contains(column.PropertyName)) continue;
             if (changed is not null && !changed.Contains(column)) continue;
@@ -220,7 +229,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         }).ToList();
     }
 
-    private sealed record RenderedUpdate(SqlStatement Statement, Tracking.TrackedEntry? Tracked);
+    private sealed record RenderedUpdate(SqlStatement Statement, Tracking.TrackedEntry? Tracked, T? Entity, object? NewVersion);
 
     private void AddExpressionSets(UpdateStatement update, EntityTableSource table)
     {

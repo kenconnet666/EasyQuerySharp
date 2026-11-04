@@ -41,6 +41,28 @@ public sealed class EntityMetadata
     /// <summary>逻辑删除的取值方式。</summary>
     public LogicDeleteAttribute? LogicDelete { get; internal set; }
 
+    /// <summary>乐观锁版本列；没有时为 null。</summary>
+    public ColumnMetadata? VersionColumn { get; internal set; }
+
+    /// <summary>版本号的取值方式（有版本列时有效）。</summary>
+    public VersionStrategy VersionStrategy { get; internal set; }
+
+    /// <summary>
+    /// 版本 <paramref name="current"/> 的下一个版本。当前版本为 null 时抛出异常：没有当前版本就无法做乐观锁检查。
+    /// </summary>
+    internal object NextVersion(object? current)
+    {
+        var column = VersionColumn!;
+        if (current is null) throw new InvalidOperationException($"{Type.Name}.{column.PropertyName} 是版本列，当前版本不能为 null");
+        var type = Nullable.GetUnderlyingType(column.ClrType) ?? column.ClrType;
+        return VersionStrategy switch
+        {
+            VersionStrategy.NewGuid when type == typeof(System.Guid) => System.Guid.NewGuid(),
+            VersionStrategy.NewGuid => System.Guid.NewGuid().ToString("N"),
+            _ => Convert.ChangeType(Convert.ToInt64(current, System.Globalization.CultureInfo.InvariantCulture) + 1, type, System.Globalization.CultureInfo.InvariantCulture),
+        };
+    }
+
     /// <summary>声明了 <see cref="NavigateAttribute"/> 的属性（未解析；解析后的信息由 <see cref="MetadataRegistry.FindNavigation"/> 给出）。</summary>
     internal IReadOnlyDictionary<string, (System.Reflection.PropertyInfo Property, NavigateAttribute Attribute)> NavigationProperties { get; init; } =
         new Dictionary<string, (System.Reflection.PropertyInfo, NavigateAttribute)>();

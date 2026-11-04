@@ -73,6 +73,7 @@ public sealed class DeleteCommand<T> : WriteCommandBase<DeleteCommand<T>, T> whe
             _ => throw new NotSupportedException($"逻辑删除策略 {Entity.LogicDelete.Strategy} 需要注册自定义策略"),
         };
         update.Sets.Add((table.Column(column), deleted));
+        AddVersionSet(update, table, entity);
         update.Where.AddRange(BuildWhere(table, entity, applyLogicDelete: true));
         return SqlRenderer.Render(Db.Options.Dialect, update);
     }
