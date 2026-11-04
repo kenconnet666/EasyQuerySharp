@@ -19,7 +19,15 @@ internal sealed partial class ExpressionTranslator
     {
         if (m.Expression is null || BindingOf(m.Expression) is not EntityBinding owner) return null;
         if (Navigation(owner, m.Member.Name) is not { IsCollection: false } nav) return null;
-        return Context!.JoinFor(owner, nav);
+        if (nav.DirectPath.Count == 0) return Context!.JoinFor(owner, nav);
+        // 直达导航：沿路径逐级 JOIN（与手写 x.A.B 共用同一组 JOIN）
+        var current = owner;
+        foreach (var step in nav.DirectPath)
+        {
+            var hop = Navigation(current, step) is { IsCollection: false } n ? n : throw Unsupported(m, $"直达路径 {nav} 上的 {step} 必须是对一导航");
+            current = Context!.JoinFor(current, hop);
+        }
+        return current;
     }
 
     /// <summary>集合导航 <c>x.Cards</c>：返回所属表绑定与导航；不是集合导航时返回 null。</summary>

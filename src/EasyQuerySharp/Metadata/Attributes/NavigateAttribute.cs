@@ -53,6 +53,12 @@ public sealed class NavigateAttribute(RelationType relation) : Attribute
     /// <summary>中间表里对应目标表的属性。</summary>
     public string[] TargetMappingProperties { get; init; } = [];
 
+    /// <summary>
+    /// 直达路径（对应 Java 的 directMapping）：这个对一导航等于沿着本实体上的一串对一导航走到底，
+    /// 如 <c>DirectMapping = [nameof(ComUser), nameof(MyComUser.MyCompany)]</c>；隐式 JOIN 与直接写 <c>x.ComUser.MyCompany</c> 共用。
+    /// </summary>
+    public string[] DirectMapping { get; init; } = [];
+
     /// <summary>对一导航是否必然存在：为 true 时隐式 JOIN 用 INNER JOIN，否则 LEFT JOIN（对应 Java 的 required）。</summary>
     public bool Required { get; init; }
 

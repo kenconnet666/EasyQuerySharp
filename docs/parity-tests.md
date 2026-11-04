@@ -3,14 +3,14 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2338 个用例。
 
-合计：已移植 566、偏离 97、不适用 8、骨架 15、待做 1652。
+合计：已移植 569、偏离 98、不适用 8、骨架 15、待做 1648。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 132 | 20 | 3 | 0 | 247 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 135 | 20 | 3 | 0 | 244 |
 | 分页结果 | `query.page` | M1 | 22 | 9 | 2 | 0 | 0 | 11 |
 | 原生 SQL | `sql.native` | M1 | 50 | 14 | 5 | 0 | 0 | 31 |
 | 删除 | `write.delete` | M1 | 21 | 7 | 1 | 2 | 0 | 11 |
@@ -60,7 +60,7 @@
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | M6 | 13 | 0 | 0 | 0 | 0 | 13 |
 | UPDATE / DELETE … RETURNING | `write.returning` | M6 | 3 | 0 | 0 | 0 | 0 | 3 |
 | 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 0 | 0 | 0 | 0 | 17 |
-| 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 35 | 10 | 0 | 0 | 56 |
+| 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 35 | 11 | 0 | 0 | 55 |
 | search 扩展 | `search` | M7 | 45 | 0 | 0 | 0 | 0 | 45 |
 | 分库分表 | `sharding` | M7 | 48 | 0 | 0 | 0 | 0 | 48 |
 | 跨库链接（asTableLink） | `table.link` | M7 | 13 | 0 | 0 | 0 | 0 | 13 |
@@ -390,11 +390,11 @@
 | QueryTestRelationTest.java#relationTest0_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:61 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
 | QueryTestRelationTest.java#relationTest0_x | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:80 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
 | QueryTestRelationTest.java#relationTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:61 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
-| QueryTestRelationTest.java#relationTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:138 | `SELECT t.'id' AS 'value1',t1.'gw' AS 'value2' FROM 'my_sign_up' t LEFT JOIN 'my_com_user' t1 ON (t1.…` |
+| QueryTestRelationTest.java#relationTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:170 | `SELECT t.'id' AS 'value1',t1.'gw' AS 'value2' FROM 'my_sign_up' t LEFT JOIN 'my_com_user' t1 ON (t1.…` |
 | QueryTestRelationTest.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:52 | `SELECT 'id','com_id','user_id','gw' FROM 'my_com_user'` |
-| QueryTestRelationTest.java#testDirectWhere1 | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
-| QueryTestRelationTest.java#testDirectWhere2 | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
-| QueryTestRelationTest.java#testDirectWhere3 | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
+| QueryTestRelationTest.java#testDirectWhere1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:150 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
+| QueryTestRelationTest.java#testDirectWhere2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:150 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
+| QueryTestRelationTest.java#testDirectWhere3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:161 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
 | Relation2Test.java#test | 待做 |  | `SELECT t.'id',t.'class_id',t.'name' FROM 'my_school_student' t LEFT JOIN 'school_student_address' t1…` |
 | Relation2Test.java#test1 | 待做 |  | `SELECT t.'id',t.'class_id',t.'name' FROM 'my_school_student' t LEFT JOIN 'school_student_address' t1…` |
 | Relation2Test.java#test2 | 待做 |  | `SELECT t.'id',t.'class_id',t.'name' FROM 'my_school_student' t LEFT JOIN 'school_student_address' t1…` |
@@ -2453,7 +2453,7 @@
 | QueryTestRelationTest.java#relationTest0_8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:129 | `SELECT t1.'com_id' AS 'value1' FROM 'my_sign_up' t LEFT JOIN 'my_com_user' t1 ON (t1.'com_id' = t.'c…` |
 | QueryTestRelationTest.java#test1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:28 | `SELECT (CASE WHEN t1.'name' LIKE ? THEN ? ELSE ? END) AS 'value1' FROM 'my_com_user' t LEFT JOIN 'my…` |
 | QueryTestRelationTest.java#test2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:40：条件被过滤后 Java 不再 JOIN 但仍给主表写别名 t，C# 单表不写别名 | `SELECT t.'id',t.'com_id',t.'user_id',t.'gw' FROM 'my_com_user' t` |
-| QueryTestRelationTest.java#testDirectWhere | 待做 |  | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t` |
+| QueryTestRelationTest.java#testDirectWhere | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTestRelationTest.cs:140：同 test2：条件被过滤后 Java 仍给主表写别名 t | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t` |
 | doc/DocTest.java#test1 | 待做 |  | `SELECT COUNT(*) FROM 't_sys_user' WHERE 'name' LIKE ? AND 'phone' LIKE ? AND 'create_time' >= ? AND …` |
 | mysql8/ExampleTest.java#sampleTest1 | 待做 |  |  |
 | mysql8/M8BankTest.java#test10 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:111：Java 的 filterConfigure(NotNullOrEmptyValueFilter) 在 C# 里用 WhereIf 表达，这里条件都有值，SQL 相同 | `SELECT t.'code' AS 'value1',t2.'name' AS 'value2',t1.'name' AS 'value3' FROM 't_bank_card' t LEFT JO…` |

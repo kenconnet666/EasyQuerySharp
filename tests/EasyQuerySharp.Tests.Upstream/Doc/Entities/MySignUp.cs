@@ -19,6 +19,10 @@ public class MySignUp
 
     [Navigate(RelationType.ManyToOne, SelfProperties = [nameof(ComId), nameof(UserId)], TargetProperties = [nameof(MyComUser.ComId), nameof(MyComUser.UserId)])]
     public MyComUser? ComUser { get; set; }
+
+    /// <summary>直达：经 ComUser 到它的企业。</summary>
+    [Navigate(RelationType.ManyToOne, DirectMapping = [nameof(ComUser), nameof(MyComUser.MyCompany)])]
+    public MyCompany? ComUserCompany { get; set; }
 }
 
 /// <summary>对应 Java：doc/MyComUser（我在企业的信息）。</summary>

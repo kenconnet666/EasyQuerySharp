@@ -22,7 +22,11 @@ public sealed class NavigationMetadata
         SelfMappingColumns = selfMappingColumns;
         TargetMappingColumns = targetMappingColumns;
         ExtraFilter = extraFilter;
+        DirectPath = attribute.DirectMapping;
     }
+
+    /// <summary>直达路径上依次经过的导航属性名；不是直达导航时为空。</summary>
+    public IReadOnlyList<string> DirectPath { get; }
 
     /// <summary>导航属性。</summary>
     public PropertyInfo Property { get; }

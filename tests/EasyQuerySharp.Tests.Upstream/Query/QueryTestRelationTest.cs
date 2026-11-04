@@ -135,6 +135,38 @@ public sealed class QueryTestRelationTest(MySqlFixture fixture) : MySqlTest(fixt
         listen.AssertSql("SELECT t1.`com_id` AS `value1` FROM `my_sign_up` t LEFT JOIN `my_com_user` t1 ON (t1.`com_id` = t.`com_id` AND t1.`user_id` = t.`user_id`) WHERE t.`com_id` = ?");
     }
 
+    private const string DirectJoin = SignUpJoin + " LEFT JOIN `my_company_info` t2 ON t2.`id` = t1.`com_id`";
+
+    [Fact, Upstream("QueryTestRelationTest.java#testDirectWhere", Deviation = "同 test2：条件被过滤后 Java 仍给主表写别名 t")]
+    public async Task TestDirectWhere()
+    {
+        using var listen = SqlCapture.Listen();
+        const string val = "";
+        await Db.Query<MySignUp>().UseValueFilter(ValueFilter.NotNullOrBlank).Where(m => m.ComUserCompany!.Name!.Contains(val)).ToListAsync(Ct);
+        listen.AssertSql("SELECT `id`,`com_id`,`user_id`,`time`,`content` FROM `my_sign_up`");
+    }
+
+    // 直达导航 ComUserCompany 与手写 ComUser.MyCompany 生成同一组 JOIN，两者同时出现时也只 JOIN 一次
+    [Fact, Upstream("QueryTestRelationTest.java#testDirectWhere1"), Upstream("QueryTestRelationTest.java#testDirectWhere2")]
+    public async Task TestDirectWhere1()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<MySignUp>().Where(m => m.ComUser!.MyCompany!.Name!.Contains("123")).ToListAsync(Ct);
+        listen.AssertSql(DirectJoin + " WHERE t2.`name` LIKE ?");
+        await Db.Query<MySignUp>().Where(m => m.ComUserCompany!.Name!.Contains("123")).ToListAsync(Ct);
+        listen.AssertSql(DirectJoin + " WHERE t2.`name` LIKE ?");
+        listen.AssertParams("%123%(String)");
+    }
+
+    [Fact, Upstream("QueryTestRelationTest.java#testDirectWhere3")]
+    public async Task TestDirectWhere3()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<MySignUp>().Where(m => m.ComUserCompany!.Name!.Contains("123") && m.ComUser!.MyCompany!.Name!.Contains("123")).ToListAsync(Ct);
+        listen.AssertSql(DirectJoin + " WHERE t2.`name` LIKE ? AND t2.`name` LIKE ?");
+        listen.AssertParams("%123%(String),%123%(String)");
+    }
+
     [Fact, Upstream("QueryTestRelationTest.java#relationTest2")]
     public async Task RelationTest2()
     {
