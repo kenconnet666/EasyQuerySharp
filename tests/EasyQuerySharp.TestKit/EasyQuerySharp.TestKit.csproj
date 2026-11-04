@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- 各测试项目共用：[Upstream] 标注、SQL 捕获与 Java 风格的断言、实库连接 -->
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\EasyQuerySharp\EasyQuerySharp.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="xunit.v3.extensibility.core" />
+        <PackageReference Include="xunit.v3.assert" />
+        <PackageReference Include="Microsoft.Data.Sqlite" />
+        <PackageReference Include="MySqlConnector" />
+        <PackageReference Include="Npgsql" />
+        <PackageReference Include="Microsoft.Data.SqlClient" />
+        <PackageReference Include="Oracle.ManagedDataAccess.Core" />
+    </ItemGroup>
+
+</Project>

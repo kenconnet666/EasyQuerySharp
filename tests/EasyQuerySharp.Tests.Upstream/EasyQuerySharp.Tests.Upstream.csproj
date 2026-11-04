@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+      L2：逐条移植 easy-query（Java）的用例。目录与类名照搬 Java 的 sql-test / sql-fork-test，每个测试用 [Upstream] 标出对应的 Java 用例。
+      Resources/ 下的建表脚本复制自 Java 仓库 sql-test/src/main/resources（只补了 mysql-init 里 INSERT t_user 缺的分号）。见 docs/decisions/0003-testing-and-parity.md。
+    -->
+
+    <ItemGroup>
+        <ProjectReference Include="..\EasyQuerySharp.TestKit\EasyQuerySharp.TestKit.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="xunit.v3" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="EasyQuerySharp.TestKit" />
+        <None Update="Resources\**\*" CopyToOutputDirectory="PreserveNewest" />
+        <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+</Project>

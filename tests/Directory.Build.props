@@ -3,12 +3,15 @@
     <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 
     <PropertyGroup>
-        <!-- xUnit v3 测试项目本身就是可执行程序，由 Microsoft Testing Platform 运行（见 global.json） -->
+        <IsPackable>false</IsPackable>
+        <!-- 测试代码不要求写文档注释 -->
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+    </PropertyGroup>
+
+    <!-- TestKit 是普通类库，其余都是 xUnit v3 测试项目（本身是可执行程序，由 Microsoft Testing Platform 运行，见 global.json） -->
+    <PropertyGroup Condition="'$(MSBuildProjectName)' != 'EasyQuerySharp.TestKit'">
         <OutputType>Exe</OutputType>
         <IsTestProject>true</IsTestProject>
-        <IsPackable>false</IsPackable>
-        <!-- 测试方法不要求写文档注释 -->
-        <NoWarn>$(NoWarn);CS1591</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

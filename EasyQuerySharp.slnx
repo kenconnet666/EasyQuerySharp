@@ -3,7 +3,9 @@
     <Project Path="src/EasyQuerySharp/EasyQuerySharp.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/EasyQuerySharp.TestKit/EasyQuerySharp.TestKit.csproj" />
     <Project Path="tests/EasyQuerySharp.Tests.Live/EasyQuerySharp.Tests.Live.csproj" />
+    <Project Path="tests/EasyQuerySharp.Tests.Upstream/EasyQuerySharp.Tests.Upstream.csproj" />
   </Folder>
   <Folder Name="/solution items/">
     <File Path="Directory.Build.props" />
@@ -11,5 +13,8 @@
     <File Path="global.json" />
     <File Path=".github/workflows/ci.yml" />
     <File Path="infra/dev/compose.yaml" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/ParityTests/ParityTests.csproj" />
   </Folder>
 </Solution>

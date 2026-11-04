@@ -5,7 +5,7 @@ using MySqlConnector;
 using Npgsql;
 using Oracle.ManagedDataAccess.Client;
 
-namespace EasyQuerySharp.Tests.Live.Infrastructure;
+namespace EasyQuerySharp.TestKit.Databases;
 
 /// <summary>
 /// 一个可供实库测试连接的数据库。
@@ -36,19 +36,47 @@ public sealed record TestDatabase(
     /// </summary>
     public async Task<DbConnection> OpenAsync(CancellationToken cancellationToken)
     {
+        var connection = Factory.CreateConnection()
+                         ?? throw new InvalidOperationException($"{Factory.GetType().Name} 没有创建出连接");
+        connection.ConnectionString = ConnectionString();
+        await connection.OpenAsync(cancellationToken);
+        return connection;
+    }
+
+    /// <summary>
+    /// 连接串；没有配置时：必须可用的数据库判失败，其余跳过当前测试。
+    /// <paramref name="database"/> 不为 null 时替换连接串里的库名（Java 用例要求特定库名，如 <c>easy-query-test</c>）。
+    /// </summary>
+    public string ConnectionString(string? database = null)
+    {
+        if (TryConnectionString(database) is { } cs) return cs;
+        Assert.Skip(SkipReason);
+        return null!;
+    }
+
+    /// <summary>
+    /// 连接串；没有配置时返回 null（必须可用的数据库直接判失败）。供固件在初始化阶段判断，测试里用 <see cref="ConnectionString"/>。
+    /// </summary>
+    public string? TryConnectionString(string? database = null)
+    {
         var connectionString = InProcessConnectionString ?? LocalEnvironment.Get(EnvironmentVariable);
         if (connectionString is null)
         {
             if (IsRequired) Assert.Fail($"EQS_REQUIRE_DBS 要求 {Key}，但没有配置 {EnvironmentVariable}");
-            Assert.Skip($"没有配置 {EnvironmentVariable}，跳过 {DisplayName}（本地运行 infra/dev/db.sh 生成 .local/db.env）");
+            return null;
         }
-
-        var connection = Factory.CreateConnection()
-                         ?? throw new InvalidOperationException($"{Factory.GetType().Name} 没有创建出连接");
-        connection.ConnectionString = connectionString;
-        await connection.OpenAsync(cancellationToken);
-        return connection;
+        if (database is null) return connectionString;
+        var builder = Factory.CreateConnectionStringBuilder()!;
+        builder.ConnectionString = connectionString;
+        builder["Database"] = database;
+        return builder.ConnectionString;
     }
+
+    /// <summary>没有配置时跳过测试的说明。</summary>
+    public string SkipReason => $"没有配置 {EnvironmentVariable}，跳过 {DisplayName}（本地运行 infra/dev/db.sh 生成 .local/db.env）";
+
+    /// <summary>创建数据源（交给 EasyDb）。</summary>
+    public DbDataSource CreateDataSource(string? database = null) => Factory.CreateDataSource(ConnectionString(database));
 
     /// <inheritdoc />
     public override string ToString() => Key;

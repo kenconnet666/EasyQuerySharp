@@ -61,6 +61,9 @@ jobs:
         with:
           require-dbs: sqlite,mysql,pg
           report-name: test-results-core
+      # 对照表必须是最新的，[Upstream] 不能引用不存在或重复的 Java 用例（CI 上没有 Java 仓库，读提交的用例快照）
+      - name: Parity check
+        run: dotnet run --project tools/ParityTests -c Release --no-build -- --check
 
   # 生产 PolarDB MySQL 版的内核版本基线：MySQL 方言不能用到 8.0.19+ 的写法
   mysql8018:

@@ -1,4 +1,4 @@
-namespace EasyQuerySharp.Tests.Live.Infrastructure;
+namespace EasyQuerySharp.TestKit.Databases;
 
 /// <summary>
 /// 读取实库测试的配置：优先取进程环境变量（CI 用），缺失时回退到仓库根的 <c>.local/db.env</c>（本地用，由 <c>infra/dev/db.sh</c> 生成）。
