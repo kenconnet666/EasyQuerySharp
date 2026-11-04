@@ -50,6 +50,11 @@ for ($n = 2; $n -le $max; $n++) {
         [void]$sb.AppendLine("    /// <summary>追加$($o[2])排序。</summary>")
         [void]$sb.AppendLine("    public $self $($o[0])<TKey>(Expression<Func<$ts, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, $($o[1]))) });")
     }
+    foreach ($o in @(@('OrderBy', 'false', '升序'), @('OrderByDescending', 'true', '降序'))) {
+        [void]$sb.AppendLine('')
+        [void]$sb.AppendLine("    /// <summary>按第一张表的列追加$($o[2])排序。</summary>")
+        [void]$sb.AppendLine("    public $self $($o[0])<TKey>(Expression<Func<T1, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, $($o[1]))) });")
+    }
     foreach ($o in @(@('OrderByIf', 'OrderBy', '升序'), @('OrderByDescendingIf', 'OrderByDescending', '降序'))) {
         [void]$sb.AppendLine('')
         [void]$sb.AppendLine("    /// <summary><paramref name=`"condition`"/> 为 true 时才追加$($o[2])排序。</summary>")

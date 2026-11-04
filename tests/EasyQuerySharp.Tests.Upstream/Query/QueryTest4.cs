@@ -1,7 +1,7 @@
-using System.Linq.Expressions;
 using EasyQuerySharp.Tests.Upstream.Dto;
 using EasyQuerySharp.Tests.Upstream.Entities;
 using EasyQuerySharp.Tests.Upstream.Infrastructure;
+using static EasyQuerySharp.Tests.Upstream.TopicJoinChain;
 
 namespace EasyQuerySharp.Tests.Upstream;
 
@@ -154,25 +154,9 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
 
     // ---------- joinTest：多表上的全套条件、排序、分组 ----------
 
-    // Java 的 whereMerge 里对第一张表的全部比较 / LIKE 变体（带 false 的那一半不生效）
-    private static readonly Expression<Func<Topic, bool>> AllComparisons = o =>
-        o.Id == "1" && o.Id != "1" && string.Compare(o.Id, "1") >= 0 && string.Compare(o.Id, "1") > 0
-        && string.Compare(o.Id, "1") <= 0 && string.Compare(o.Id, "1") < 0
-        && o.Id!.Contains("1") && !o.Id.Contains("1") && o.Id.StartsWith("1") && o.Id.EndsWith("1")
-        && !o.Id.StartsWith("1") && !o.Id.EndsWith("1");
-
-    private static string JoinSql(int tables) =>
-        "SELECT t.`id`,COUNT(t.`id`) AS `stars` FROM `t_topic` t"
-        + string.Concat(Enumerable.Range(1, tables - 1).Select(i => $" LEFT JOIN `t_topic` t{i} ON t.`id` = t{i}.`id`"))
-        + " WHERE t.`id` = ? AND t.`id` = ? AND t.`id` = ? AND t.`create_time` > ? AND t.`id` = ? AND t.`id` <> ? AND t.`id` >= ? AND t.`id` > ? AND t.`id` <= ? AND t.`id` < ?"
-        + " AND t.`id` LIKE ? AND t.`id` NOT LIKE ? AND t.`id` LIKE ? AND t.`id` LIKE ? AND t.`id` NOT LIKE ? AND t.`id` NOT LIKE ?"
-        + " GROUP BY t.`id` HAVING COUNT(t.`id`) >= ? ORDER BY t.`create_time` ASC,t.`create_time` DESC,t.`create_time` ASC,t.`create_time` DESC LIMIT 2 OFFSET 1";
-
-    private static TopicRequest Request() => new() { CreateTimeBegin = DateTime.Now };
-
     [Fact, Upstream("QueryTest4.java#joinTest1", Deviation = "Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0")]
     public void JoinTest1() =>
-        Assert.Equal(JoinSql(10), Db.Query<Topic>()
+        Assert.Equal(Sql(10), Db.Query<Topic>()
             .LeftJoin<Topic>((t, t1) => t.Id == t1.Id).LeftJoin<Topic>((t, t1, t2) => t.Id == t2.Id)
             .LeftJoin<Topic>((t, _, _, t3) => t.Id == t3.Id).LeftJoin<Topic>((t, _, _, _, t4) => t.Id == t4.Id)
             .LeftJoin<Topic>((t, _, _, _, _, t5) => t.Id == t5.Id).LeftJoin<Topic>((t, _, _, _, _, _, t6) => t.Id == t6.Id)
@@ -191,7 +175,7 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
 
     [Fact, Upstream("QueryTest4.java#joinTest2", Deviation = "同 joinTest1")]
     public void JoinTest2() =>
-        Assert.Equal(JoinSql(9), Db.Query<Topic>()
+        Assert.Equal(Sql(9), Db.Query<Topic>()
             .LeftJoin<Topic>((t, t1) => t.Id == t1.Id).LeftJoin<Topic>((t, t1, t2) => t.Id == t2.Id)
             .LeftJoin<Topic>((t, _, _, t3) => t.Id == t3.Id).LeftJoin<Topic>((t, _, _, _, t4) => t.Id == t4.Id)
             .LeftJoin<Topic>((t, _, _, _, _, t5) => t.Id == t5.Id).LeftJoin<Topic>((t, _, _, _, _, _, t6) => t.Id == t6.Id)
@@ -208,7 +192,7 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
 
     [Fact, Upstream("QueryTest4.java#joinTest3", Deviation = "同 joinTest1")]
     public void JoinTest3() =>
-        Assert.Equal(JoinSql(8), Db.Query<Topic>()
+        Assert.Equal(Sql(8), Db.Query<Topic>()
             .LeftJoin<Topic>((t, t1) => t.Id == t1.Id).LeftJoin<Topic>((t, t1, t2) => t.Id == t2.Id)
             .LeftJoin<Topic>((t, _, _, t3) => t.Id == t3.Id).LeftJoin<Topic>((t, _, _, _, t4) => t.Id == t4.Id)
             .LeftJoin<Topic>((t, _, _, _, _, t5) => t.Id == t5.Id).LeftJoin<Topic>((t, _, _, _, _, _, t6) => t.Id == t6.Id)
@@ -224,7 +208,7 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
 
     [Fact, Upstream("QueryTest4.java#joinTest4", Deviation = "同 joinTest1")]
     public void JoinTest4() =>
-        Assert.Equal(JoinSql(7), Db.Query<Topic>()
+        Assert.Equal(Sql(7), Db.Query<Topic>()
             .LeftJoin<Topic>((t, t1) => t.Id == t1.Id).LeftJoin<Topic>((t, t1, t2) => t.Id == t2.Id)
             .LeftJoin<Topic>((t, _, _, t3) => t.Id == t3.Id).LeftJoin<Topic>((t, _, _, _, t4) => t.Id == t4.Id)
             .LeftJoin<Topic>((t, _, _, _, _, t5) => t.Id == t5.Id).LeftJoin<Topic>((t, _, _, _, _, _, t6) => t.Id == t6.Id)
@@ -239,7 +223,7 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
 
     [Fact, Upstream("QueryTest4.java#joinTest5", Deviation = "同 joinTest1")]
     public void JoinTest5() =>
-        Assert.Equal(JoinSql(6), Db.Query<Topic>()
+        Assert.Equal(Sql(6), Db.Query<Topic>()
             .LeftJoin<Topic>((t, t1) => t.Id == t1.Id).LeftJoin<Topic>((t, t1, t2) => t.Id == t2.Id)
             .LeftJoin<Topic>((t, _, _, t3) => t.Id == t3.Id).LeftJoin<Topic>((t, _, _, _, t4) => t.Id == t4.Id)
             .LeftJoin<Topic>((t, _, _, _, _, t5) => t.Id == t5.Id)
@@ -254,7 +238,7 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
 
     [Fact, Upstream("QueryTest4.java#joinTest6", Deviation = "同 joinTest1")]
     public void JoinTest6() =>
-        Assert.Equal(JoinSql(5), Db.Query<Topic>()
+        Assert.Equal(Sql(5), Db.Query<Topic>()
             .LeftJoin<Topic>((t, t1) => t.Id == t1.Id).LeftJoin<Topic>((t, t1, t2) => t.Id == t2.Id)
             .LeftJoin<Topic>((t, _, _, t3) => t.Id == t3.Id).LeftJoin<Topic>((t, _, _, _, t4) => t.Id == t4.Id)
             .Where(o => o.Id == "1").WhereById("1").WhereByIds(new[] { "1" }).FilterBy(Request()).Where(AllComparisons)
@@ -268,7 +252,7 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
 
     [Fact, Upstream("QueryTest4.java#joinTest7", Deviation = "同 joinTest1")]
     public void JoinTest7() =>
-        Assert.Equal(JoinSql(4), Db.Query<Topic>()
+        Assert.Equal(Sql(4), Db.Query<Topic>()
             .LeftJoin<Topic>((t, t1) => t.Id == t1.Id).LeftJoin<Topic>((t, t1, t2) => t.Id == t2.Id)
             .LeftJoin<Topic>((t, _, _, t3) => t.Id == t3.Id)
             .Where(o => o.Id == "1").WhereById("1").WhereByIds(new[] { "1" }).FilterBy(Request()).Where(AllComparisons)

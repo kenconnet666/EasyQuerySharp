@@ -117,6 +117,9 @@ internal static class QueryCompiler
         {
             var rawFrame = Build(state);
             rawFrame.Query.Columns.Add(new SelectColumn(new LiteralExpr(rawColumns), null));
+            // 标量（如 QuerySql<int>("select 1")）取第一列，其余按列名映射
+            if (ScalarTypes.IsScalar(typeof(T)))
+                return new CompiledQuery<T>(rawFrame.Query, r => Materialization.ValueReader.Read<T>(r, 0, null));
             var entity = state.Db.Metadata.Get<T>();
             return new CompiledQuery<T>(rawFrame.Query, r => Materialization.EntityMaterializer.ReadByName<T>(r, entity));
         }
