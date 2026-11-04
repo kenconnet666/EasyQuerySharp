@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using EasyQuerySharp.Metadata;
 using EasyQuerySharp.SqlAst;
 
 namespace EasyQuerySharp.Translation;
@@ -96,6 +97,32 @@ internal sealed partial class ExpressionTranslator
             if (value is not null) value = Convert.ChangeType(value, t, System.Globalization.CultureInfo.InvariantCulture);
         }
         return new ParameterExpr(value, value?.GetType() ?? t);
+    }
+
+    /// <summary>列的数据库值（已经过值转换器）作为参数，类型取列的数据库类型。</summary>
+    internal static ParameterExpr Parameter(ColumnMetadata column, object? providerValue) =>
+        Parameter(providerValue, column.Converter?.ProviderType ?? column.ClrType);
+
+    /// <summary>属性类型的值（还没经过值转换器）作为这一列的参数。</summary>
+    internal static ParameterExpr ParameterFromModel(ColumnMetadata column, object? value) =>
+        Parameter(column, column.Converter is null ? value : column.Converter.ToProvider(value));
+
+    /// <summary>直接的属性访问 <c>t =&gt; t.Title</c>（可以有类型转换）指向的成员；不是属性访问时抛出带上下文的异常。</summary>
+    internal static System.Reflection.MemberInfo MemberOf(LambdaExpression selector) =>
+        StripConvert(selector.Body) is MemberExpression m
+            ? m.Member
+            : throw new ArgumentException($"需要直接的属性访问，如 t => t.Title：{selector}", nameof(selector));
+
+    /// <summary>列清单 <c>t =&gt; t.A</c> 或 <c>t =&gt; new { t.A, t.B }</c> 里的属性名，按书写顺序、去重。</summary>
+    internal static List<string> MemberNames(LambdaExpression selector)
+    {
+        var body = StripConvert(selector.Body);
+        IEnumerable<Expression> parts = body is NewExpression n ? n.Arguments : [body];
+        return parts.Select(p => StripConvert(p) is MemberExpression m
+                ? m.Member.Name
+                : throw new ArgumentException($"列清单只能写属性访问，如 t => new {{ t.Id, t.Title }}：{selector}", nameof(selector)))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
     }
 
     internal static Expression StripConvert(Expression e)

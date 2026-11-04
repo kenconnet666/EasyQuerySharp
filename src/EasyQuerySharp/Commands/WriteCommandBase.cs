@@ -97,7 +97,7 @@ public abstract class WriteCommandBase<TSelf, T> : EntityCommandBase<TSelf, T>
     {
         if (VersionOf(entity) is not var (column, current)) return null;
         var next = Entity.NextVersion(current);
-        update.Sets.Add((table.Column(column), ExpressionTranslator.Parameter(next, column.ClrType)));
+        update.Sets.Add((table.Column(column), ExpressionTranslator.ParameterFromModel(column, next)));
         return next;
     }
 
@@ -129,7 +129,7 @@ public abstract class WriteCommandBase<TSelf, T> : EntityCommandBase<TSelf, T>
         var result = new List<SqlExpr>();
         if (applyLogicDelete && !LogicDeleteDisabled && QueryCompiler.LogicDeleteFilter(Db, table) is { } ld) result.Add(ld);
         if (VersionOf(entity) is var (versionColumn, current))
-            result.Add(new BinaryExpr(table.Column(versionColumn), SqlBinaryOperator.Equal, ExpressionTranslator.Parameter(current, versionColumn.ClrType)));
+            result.Add(new BinaryExpr(table.Column(versionColumn), SqlBinaryOperator.Equal, ExpressionTranslator.ParameterFromModel(versionColumn, current)));
         result.AddRange(Db.Interceptors.QueryFilters(table, Interceptors));
         if (entity is not null) result.AddRange(EntityPredicates(table, entity));
         foreach (var where in _wheres) result.Add(scope.Translate(where, predicate: true));

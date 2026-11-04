@@ -140,7 +140,7 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     /// </summary>
     /// <example><code>.SelectExcept&lt;Blog&gt;(b => new { b.Id, b.Content })</code></example>
     public Query<TResult> SelectExcept<TResult>(Expression<Func<T, object?>> excluded) where TResult : new() =>
-        new(Open with { Selector = AutoProjection.Build(Db.Metadata.Get<T>(), typeof(TResult), AutoProjection.MemberNames(excluded)) });
+        new(Open with { Selector = AutoProjection.Build(Db.Metadata.Get<T>(), typeof(TResult), Translation.ExpressionTranslator.MemberNames(excluded).ToHashSet()) });
 
     /// <summary>
     /// 用原生 SQL 作为 SELECT 列表（对应 Java 的 select(String)），结果按列名映射回 <typeparamref name="T"/>。

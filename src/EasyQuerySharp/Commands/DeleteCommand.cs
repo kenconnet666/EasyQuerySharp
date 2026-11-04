@@ -70,7 +70,7 @@ public sealed class DeleteCommand<T> : WriteCommandBase<DeleteCommand<T>, T> whe
         var update = new UpdateStatement(table);
         var strategy = LogicDeleteStrategies.Resolve(Db.Options, Entity);
         foreach (var (column, value) in strategy.DeletedValues(Entity, Entity.LogicDeleteColumn!))
-            update.Sets.Add((table.Column(column), ExpressionTranslator.Parameter(value, column.ClrType)));
+            update.Sets.Add((table.Column(column), ExpressionTranslator.ParameterFromModel(column, value)));
         AddVersionSet(update, table, entity);
         update.Where.AddRange(BuildWhere(scope, entity, applyLogicDelete: true));
         update.Joins.AddRange(scope.Joins);

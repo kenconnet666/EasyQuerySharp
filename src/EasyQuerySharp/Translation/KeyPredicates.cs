@@ -36,6 +36,6 @@ internal static class KeyPredicates
         var keys = table.Entity.KeyColumns;
         if (keys.Count == 0) throw new InvalidOperationException($"{table.Entity.Type.Name} 没有主键，不能按实体更新或删除");
         return keys.Select(k => (SqlExpr)new BinaryExpr(table.Column(k), SqlBinaryOperator.Equal,
-            ExpressionTranslator.Parameter(k.GetProviderValue(entity), k.Converter?.ProviderType ?? k.ClrType))).ToList();
+            ExpressionTranslator.Parameter(k, k.GetProviderValue(entity)))).ToList();
     }
 }

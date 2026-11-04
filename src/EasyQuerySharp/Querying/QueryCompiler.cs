@@ -220,12 +220,17 @@ internal static class QueryCompiler
     }
 
     /// <summary>某个表来源自带的过滤条件：逻辑删除，以及拦截器给出的条件。</summary>
-    private static List<SqlExpr> Filters(EasyDb db, QueryState state, SourceBinding binding, bool noLogicDelete = false)
+    private static List<SqlExpr> Filters(EasyDb db, QueryState state, SourceBinding binding, bool noLogicDelete = false) =>
+        binding is EntityBinding { EntityTable: var table }
+            ? TableFilters(db, table, logicDelete: !state.DisableLogicDelete && !noLogicDelete, state.Interceptors)
+            : [];
+
+    /// <summary>一张实体表自带的条件：逻辑删除（<paramref name="logicDelete"/> 为 true 时），再是拦截器的过滤条件。查询与写入共用。</summary>
+    internal static List<SqlExpr> TableFilters(EasyDb db, EntityTableSource table, bool logicDelete, Interceptors.InterceptorSelection interceptors)
     {
         var result = new List<SqlExpr>();
-        if (binding is not EntityBinding { EntityTable: var table }) return result;
-        if (!state.DisableLogicDelete && !noLogicDelete && LogicDeleteFilter(db, table) is { } logicDelete) result.Add(logicDelete);
-        result.AddRange(db.Interceptors.QueryFilters(table, state.Interceptors));
+        if (logicDelete && LogicDeleteFilter(db, table) is { } filter) result.Add(filter);
+        result.AddRange(db.Interceptors.QueryFilters(table, interceptors));
         return result;
     }
 

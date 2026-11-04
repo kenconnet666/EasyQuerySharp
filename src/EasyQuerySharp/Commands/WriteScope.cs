@@ -20,7 +20,7 @@ internal sealed class WriteScope
         Table = table;
         _scratch = new SelectQuery(table);
         _context = new TranslationContext(db.Metadata,
-            (t, logicDelete) => [.. (logicDelete && QueryCompiler.LogicDeleteFilter(db, t) is { } filter ? [filter] : Array.Empty<SqlExpr>()), .. db.Interceptors.QueryFilters(t, interceptors)],
+            (t, logicDelete) => QueryCompiler.TableFilters(db, t, logicDelete, interceptors),
             _scratch) { Db = db };
     }
 

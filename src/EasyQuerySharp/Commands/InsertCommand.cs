@@ -67,7 +67,7 @@ public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> wh
     /// <example><code>db.Insert(blog).OnConflictUpdate(b => new { b.Star, b.Content })</code></example>
     public InsertCommand<T> OnConflictUpdate(Expression<Func<T, object?>>? updateColumns = null, Expression<Func<T, object?>>? conflictColumns = null)
     {
-        _conflict = new ConflictSpec(Ignore: false, Names(conflictColumns), updateColumns is null ? null : Querying.AutoProjection.MemberNames(updateColumns));
+        _conflict = new ConflictSpec(Ignore: false, Names(conflictColumns), updateColumns is null ? null : ExpressionTranslator.MemberNames(updateColumns));
         return this;
     }
 
@@ -140,7 +140,7 @@ public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> wh
             if (_strategy == ColumnStrategy.OnlyNotNull && value is null) continue;
             if (_strategy == ColumnStrategy.OnlyNull && value is not null) continue;
             var target = table.Column(column);
-            SqlExpr parameter = ExpressionTranslator.Parameter(value, column.Converter?.ProviderType ?? column.ClrType);
+            SqlExpr parameter = ExpressionTranslator.Parameter(column, value);
             if (_columnSql.TryGetValue(column.PropertyName, out var template)) parameter = new FragmentExpr(template, [target, parameter]);
             written.Add(column);
             columns.Add(target);
@@ -168,8 +168,8 @@ public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> wh
         return new InsertConflict(conflictOn.Select(table.Column).ToList(), update.Select(table.Column).ToList());
     }
 
-    private static HashSet<string>? Names(Expression<Func<T, object?>>? columns) =>
-        columns is null ? null : Querying.AutoProjection.MemberNames(columns);
+    private static List<string>? Names(Expression<Func<T, object?>>? columns) =>
+        columns is null ? null : ExpressionTranslator.MemberNames(columns);
 
-    private sealed record ConflictSpec(bool Ignore, HashSet<string>? ConflictColumns, HashSet<string>? UpdateColumns);
+    private sealed record ConflictSpec(bool Ignore, List<string>? ConflictColumns, List<string>? UpdateColumns);
 }

@@ -36,7 +36,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     private ColumnStrategy? _strategy;
     private List<ColumnMetadata>? _whereColumns;
     private List<string>? _onlyColumns;
-    private HashSet<string>? _ignoredColumns;
+    private List<string>? _ignoredColumns;
 
     internal UpdateCommand(EasyDb db, IReadOnlyList<T>? entities) : base(db, entities)
     {
@@ -55,14 +55,14 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     /// <summary>把一列设为常量值。</summary>
     public UpdateCommand<T> Set<TValue>(Expression<Func<T, TValue>> column, TValue value)
     {
-        _sets.Add(new SetSpec(MemberOf(column), Expression.Lambda(Expression.Constant(value, typeof(TValue)), column.Parameters), SetKind.Expression));
+        _sets.Add(new SetSpec(ExpressionTranslator.MemberOf(column), Expression.Lambda(Expression.Constant(value, typeof(TValue)), column.Parameters), SetKind.Expression));
         return this;
     }
 
     /// <summary>把一列设为表达式的值（可以引用原列）。</summary>
     public UpdateCommand<T> Set<TValue>(Expression<Func<T, TValue>> column, Expression<Func<T, TValue>> value)
     {
-        _sets.Add(new SetSpec(MemberOf(column), value, SetKind.Expression));
+        _sets.Add(new SetSpec(ExpressionTranslator.MemberOf(column), value, SetKind.Expression));
         return this;
     }
 
@@ -75,14 +75,14 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     /// <summary>自增：<c>col = col + ?</c>（对应 Java 的 increment）。</summary>
     public UpdateCommand<T> Increment<TValue>(Expression<Func<T, TValue>> column, TValue by)
     {
-        _sets.Add(new SetSpec(MemberOf(column), Expression.Lambda(Expression.Constant(by, typeof(TValue)), column.Parameters), SetKind.Increment));
+        _sets.Add(new SetSpec(ExpressionTranslator.MemberOf(column), Expression.Lambda(Expression.Constant(by, typeof(TValue)), column.Parameters), SetKind.Increment));
         return this;
     }
 
     /// <summary>自减：<c>col = col - ?</c>（对应 Java 的 decrement）。</summary>
     public UpdateCommand<T> Decrement<TValue>(Expression<Func<T, TValue>> column, TValue by)
     {
-        _sets.Add(new SetSpec(MemberOf(column), Expression.Lambda(Expression.Constant(by, typeof(TValue)), column.Parameters), SetKind.Decrement));
+        _sets.Add(new SetSpec(ExpressionTranslator.MemberOf(column), Expression.Lambda(Expression.Constant(by, typeof(TValue)), column.Parameters), SetKind.Decrement));
         return this;
     }
 
@@ -99,14 +99,14 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     /// </summary>
     public UpdateCommand<T> SetColumns(Expression<Func<T, object?>> columns)
     {
-        _onlyColumns = Querying.AutoProjection.OrderedMemberNames(columns);
+        _onlyColumns = ExpressionTranslator.MemberNames(columns);
         return this;
     }
 
     /// <summary>按实体更新时不写这些列（对应 Java 的 setIgnoreColumns）：<c>db.Update(blog).IgnoreColumns(b =&gt; new { b.CreateTime, b.CreateBy })</c>。</summary>
     public UpdateCommand<T> IgnoreColumns(Expression<Func<T, object?>> columns)
     {
-        _ignoredColumns = Querying.AutoProjection.MemberNames(columns);
+        _ignoredColumns = ExpressionTranslator.MemberNames(columns);
         return this;
     }
 
@@ -117,7 +117,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     /// </summary>
     public UpdateCommand<T> WhereColumns(Expression<Func<T, object?>> columns)
     {
-        var names = Querying.AutoProjection.MemberNames(columns);
+        var names = ExpressionTranslator.MemberNames(columns);
         _whereColumns = Entity.Columns.Where(c => names.Contains(c.PropertyName)).ToList();
         return this;
     }
@@ -129,7 +129,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     public UpdateCommand<T> ColumnSql<TValue>(Expression<Func<T, TValue>> column, string template)
     {
         ArgumentException.ThrowIfNullOrEmpty(template);
-        _columnSql[MemberOf(column).Name] = template;
+        _columnSql[ExpressionTranslator.MemberOf(column).Name] = template;
         return this;
     }
 
@@ -212,7 +212,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
             if (_strategy == ColumnStrategy.OnlyNotNull && value is null) continue;
             if (_strategy == ColumnStrategy.OnlyNull && value is not null) continue;
             var target = table.Column(column);
-            SqlExpr parameter = ExpressionTranslator.Parameter(value, column.Converter?.ProviderType ?? column.ClrType);
+            SqlExpr parameter = ExpressionTranslator.Parameter(column, value);
             if (_columnSql.TryGetValue(column.PropertyName, out var template)) parameter = new FragmentExpr(template, [target, parameter]);
             update.Sets.Add((target, parameter));
         }
@@ -234,7 +234,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
             var value = tracked is not null ? tracked.Original[c] : c.GetProviderValue(entity);
             return value is null
                 ? (SqlExpr)new IsNullExpr(table.Column(c), false)
-                : new BinaryExpr(table.Column(c), SqlBinaryOperator.Equal, ExpressionTranslator.Parameter(value, c.Converter?.ProviderType ?? c.ClrType));
+                : new BinaryExpr(table.Column(c), SqlBinaryOperator.Equal, ExpressionTranslator.Parameter(c, value));
         }).ToList();
     }
 
@@ -246,7 +246,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         foreach (var (property, value) in Db.Interceptors.ConditionUpdateSets(typeof(T), _sets.Select(s => s.Member.Name), Interceptors))
         {
             var column = Entity.GetColumn(property);
-            update.Sets.Add((table.Column(column), ExpressionTranslator.Parameter(column.Converter is null ? value : column.Converter.ToProvider(value), column.Converter?.ProviderType ?? column.ClrType)));
+            update.Sets.Add((table.Column(column), ExpressionTranslator.ParameterFromModel(column, value)));
         }
     }
 
@@ -266,11 +266,6 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
             }));
         }
     }
-
-    private static MemberInfo MemberOf(LambdaExpression column) =>
-        ExpressionTranslator.StripConvert(column.Body) is MemberExpression m
-            ? m.Member
-            : throw new ArgumentException($"需要直接的属性访问，如 t => t.Title：{column}", nameof(column));
 
     private enum SetKind
     {

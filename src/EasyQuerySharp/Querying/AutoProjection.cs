@@ -32,21 +32,4 @@ internal static class AutoProjection
         if (bindings.Count == 0) throw new InvalidOperationException($"{target.Name} 没有与 {source.Type.Name} 同名的属性，无法自动映射");
         return Expression.Lambda(Expression.MemberInit(Expression.New(target), bindings), parameter);
     }
-
-    /// <summary>
-    /// 从 <c>o => o.A</c> 或 <c>o => new { o.A, o.B }</c> 取出被排除的属性名。
-    /// </summary>
-    public static HashSet<string> MemberNames(LambdaExpression selector) => OrderedMemberNames(selector).ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>与 <see cref="MemberNames"/> 相同，但保留书写顺序（按实体更新的 SET 顺序跟随 SetColumns，与 Java 一致）。</summary>
-    public static List<string> OrderedMemberNames(LambdaExpression selector)
-    {
-        var body = Translation.ExpressionTranslator.StripConvert(selector.Body);
-        IEnumerable<Expression> parts = body is NewExpression n ? n.Arguments : [body];
-        return parts.Select(p => Translation.ExpressionTranslator.StripConvert(p) is MemberExpression m
-                ? m.Member.Name
-                : throw new ArgumentException($"列清单只能写属性访问，如 t => new {{ t.Id, t.Title }}：{selector}", nameof(selector)))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-    }
 }
