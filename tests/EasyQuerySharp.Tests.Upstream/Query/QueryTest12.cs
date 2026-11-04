@@ -275,4 +275,89 @@ public sealed partial class QueryTest12(MySqlFixture fixture) : MySqlTest(fixtur
         listen.AssertSql("SELECT SUM((CASE WHEN t.`id` = ? THEN t.`score` ELSE (t.`status` * ?) END)) AS `star` FROM `t_blog` t WHERE t.`deleted` = ? AND IFNULL(t.`title`,?) = IFNULL((CASE WHEN (t.`title` = t.`id` OR t.`title` LIKE ?) THEN IFNULL(t.`score`,?) ELSE IFNULL(t.`score`,?) END),?)");
         listen.AssertParams("123(String),1(Integer),false(Boolean),yy(String),%123%(String),12(BigDecimal),13(BigDecimal),xx(String)");
     }
+
+    // ---------- testDoc：文档里的导航示例 ----------
+
+    private const string SchoolClassSelect = "SELECT t.`id`,t.`name` FROM `school_class` t WHERE ";
+
+    [Fact, Upstream("QueryTest12.java#testDoc1")]
+    public async Task TestDoc1()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SchoolClass>().Where(s => s.SchoolStudents!.Any(stu => stu.Name!.StartsWith("金"))).ToListAsync(Ct);
+        listen.AssertSql(SchoolClassSelect + "EXISTS(SELECT 1 FROM `school_student` t1 WHERE t1.`class_id` = t.`id` AND t1.`name` LIKE ? LIMIT 1)");
+        listen.AssertParams("金%(String)");
+    }
+
+    [Fact, Upstream("QueryTest12.java#testDoc2")]
+    public async Task TestDoc2()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SchoolClass>().Where(s => !s.SchoolStudents!.Any(stu => stu.Name!.StartsWith("金"))).ToListAsync(Ct);
+        listen.AssertSql(SchoolClassSelect + "NOT (EXISTS(SELECT 1 FROM `school_student` t1 WHERE t1.`class_id` = t.`id` AND t1.`name` LIKE ? LIMIT 1))");
+    }
+
+    [Fact, Upstream("QueryTest12.java#testDoc3")]
+    public async Task TestDoc3()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SchoolClass>().Where(s => s.SchoolStudents!.Any(stu => stu.SchoolStudentAddress!.Address!.Contains("绍兴市"))).ToListAsync(Ct);
+        listen.AssertSql(SchoolClassSelect + "EXISTS(SELECT 1 FROM `school_student` t1 LEFT JOIN `school_student_address` t2 ON t2.`student_id` = t1.`id` WHERE t1.`class_id` = t.`id` AND t2.`address` LIKE ? LIMIT 1)");
+        listen.AssertParams("%绍兴市%(String)");
+    }
+
+    [Fact, Upstream("QueryTest12.java#testDoc4")]
+    public async Task TestDoc4()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SchoolClass>().Where(s => s.SchoolStudents!.Where(stu => stu.Name!.StartsWith("金")).LongCount() == 5L).ToListAsync(Ct);
+        listen.AssertSql(SchoolClassSelect + "(SELECT COUNT(*) FROM `school_student` t1 WHERE t1.`class_id` = t.`id` AND t1.`name` LIKE ?) = ?");
+        listen.AssertParams("金%(String),5(Long)");
+    }
+
+    [Fact, Upstream("QueryTest12.java#testDoc5"), Upstream("QueryTest12.java#testDoc6")]
+    public async Task TestDoc5()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SchoolClass>().Where(s => s.SchoolTeachers!.Any(teacher => teacher.Name!.Contains("123") || teacher.Name!.Contains("456"))).ToListAsync(Ct);
+        listen.AssertSql(SchoolClassSelect + "EXISTS(SELECT 1 FROM `school_teacher` t1 WHERE EXISTS(SELECT 1 FROM `school_class_teacher` t2 WHERE t2.`teacher_id` = t1.`id` AND t2.`class_id` = t.`id` LIMIT 1) AND (t1.`name` LIKE ? OR t1.`name` LIKE ?) LIMIT 1)");
+        listen.AssertParams("%123%(String),%456%(String)");
+    }
+
+    // 子查询自己关闭逻辑删除 / 外层关闭逻辑删除，各自只影响自己
+    [Fact, Upstream("QueryTest12.java#testDoc12")]
+    public async Task TestDoc12()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<BlogEntity>().Where(b => b.Id.In(Db.Query<BlogEntity>().DisableLogicDelete().Select(b1 => b1.Id))).ToListAsync(Ct);
+        listen.AssertSql("SELECT " + Prefixed("t", BlogColumns) + " FROM `t_blog` t WHERE t.`deleted` = ? AND t.`id` IN (SELECT t1.`id` FROM `t_blog` t1)");
+    }
+
+    [Fact, Upstream("QueryTest12.java#testDoc13")]
+    public async Task TestDoc13()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<BlogEntity>().DisableLogicDelete().Where(b => b.Id.In(Db.Query<BlogEntity>().Select(b1 => b1.Id))).ToListAsync(Ct);
+        listen.AssertSql("SELECT " + Prefixed("t", BlogColumns) + " FROM `t_blog` t WHERE t.`id` IN (SELECT t1.`id` FROM `t_blog` t1 WHERE t1.`deleted` = ?)");
+    }
+
+    // 客户端分好组的 id，每组一个 IN，组之间 OR：C# 的客户端集合 Any 展开
+    [Fact, Upstream("QueryTest12.java#testDoc14")]
+    public async Task TestDoc14()
+    {
+        var partition = Enumerable.Range(1, 22).Select(i => i.ToString()).Chunk(10).ToList();
+        using var listen = SqlCapture.Listen();
+        await Db.Query<BlogEntity>().Where(b => partition.Any(ids => ids.Contains(b.Id!))).ToListAsync(Ct);
+        listen.AssertSql($"SELECT {BlogColumns} FROM `t_blog` WHERE `deleted` = ? AND (`id` IN (?,?,?,?,?,?,?,?,?,?) OR `id` IN (?,?,?,?,?,?,?,?,?,?) OR `id` IN (?,?))");
+        listen.AssertParams("false(Boolean)," + string.Join(",", Enumerable.Range(1, 22).Select(i => $"{i}(String)")));
+    }
+
+    [Fact, Upstream("QueryTest12.java#testDoc18")]
+    public async Task TestDoc18()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysUser>().Where(s => ("," + s.IdCard + ",").Contains(",2,")).ToListAsync(Ct);
+        listen.AssertSql("SELECT `id`,`create_time`,`username`,`phone`,`id_card`,`address` FROM `easy-query-test`.`t_sys_user` WHERE CONCAT(?,`id_card`,?) LIKE ?");
+        listen.AssertParams(",(String),,(String),%,2,%(String)");
+    }
 }

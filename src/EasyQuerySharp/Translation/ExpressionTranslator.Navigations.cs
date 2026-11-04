@@ -156,6 +156,8 @@ internal sealed partial class ExpressionTranslator
             for (var i = 0; i < nav.SelfMappingColumns.Count; i++)
                 link.Where.Add(new BinaryExpr(mappingTable.Column(nav.SelfMappingColumns[i]), SqlBinaryOperator.Equal, owner.EntityTable.Column(nav.SelfColumns[i])));
             link.Columns.Add(new SelectColumn(LiteralExpr.One, null));
+            // 中间表的 EXISTS 也带 LIMIT 1（与 Java 一致）
+            link.Limit = 1;
             sub.Where.Add(new ExistsExpr(link, negated: false));
         }
         else
