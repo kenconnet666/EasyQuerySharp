@@ -13,7 +13,7 @@ public sealed class BlogGroupIdAndName
 }
 
 /// <summary>
-/// 对应 Java：MyTest1.java（日期加减、取部分、相差，投影后再分组、分组后再排序等多层派生表）。
+/// 对应 Java：MyTest1.java 与 MyTest2.java（两者只差 Draft / Tuple，C# 都是 Draft；日期加减、取部分、相差，投影后再分组、分组后再排序等多层派生表）。
 /// Java 的 a.duration(b).toDays() 是 b - a 的天数，C# 写 (b - a).TotalDays。
 /// </summary>
 public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
@@ -41,7 +41,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
     }
 
     // 分组后组内非聚合的列：g.Column(x => …)
-    [Fact, Upstream("MyTest1.java#testDraft1"), Upstream("MyTest1.java#testDraft1_1")]
+    [Fact, Upstream("MyTest1.java#testDraft1"), Upstream("MyTest2.java#testTuple1"), Upstream("MyTest1.java#testDraft1_1"), Upstream("MyTest2.java#testTuple1_1")]
     public async Task TestDraft1()
     {
         using var listen = SqlCapture.Listen();
@@ -51,7 +51,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("false(Boolean),123(Integer)");
     }
 
-    [Fact, Upstream("MyTest1.java#testDraft2")]
+    [Fact, Upstream("MyTest1.java#testDraft2"), Upstream("MyTest2.java#testTuple2")]
     public async Task TestDraft2()
     {
         using var listen = SqlCapture.Listen();
@@ -60,7 +60,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertSql("SELECT t.`content` AS `value1`,CHAR_LENGTH(t.`content`) AS `value2` FROM `t_blog` t WHERE t.`deleted` = ? AND CAST(t.`title` AS SIGNED) = ? GROUP BY t.`content`");
     }
 
-    [Fact, Upstream("MyTest1.java#testDraft3"), Upstream("MyTest1.java#testDraft4"), Upstream("MyTest1.java#testDraft5")]
+    [Fact, Upstream("MyTest1.java#testDraft3"), Upstream("MyTest2.java#testTuple3"), Upstream("MyTest1.java#testDraft4"), Upstream("MyTest2.java#testTuple4"), Upstream("MyTest1.java#testDraft5"), Upstream("MyTest2.java#testTuple5")]
     public async Task TestDraft3()
     {
         var first = await Db.Query<BlogEntity>().Select(o => new Draft<DateTime?>(o.CreateTime)).FirstOrDefaultAsync(Ct);
@@ -79,7 +79,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("12(Long),1(Long),false(Boolean)");
     }
 
-    [Fact, Upstream("MyTest1.java#testDraft6")]
+    [Fact, Upstream("MyTest1.java#testDraft6"), Upstream("MyTest2.java#testTuple6")]
     public Task TestDraft6() => WithBlogAsync("123456zz", new DateTime(2022, 1, 1), new DateTime(2022, 1, 1), async () =>
     {
         using var listen = SqlCapture.Listen();
@@ -92,7 +92,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
     });
 
     // 取部分：星期几周日为 0（C# 的 DayOfWeek 同样如此）
-    [Theory, Upstream("MyTest1.java#testDraft7"), Upstream("MyTest1.java#testDraft8")]
+    [Theory, Upstream("MyTest1.java#testDraft7"), Upstream("MyTest2.java#testTuple7"), Upstream("MyTest1.java#testDraft8"), Upstream("MyTest2.java#testTuple8")]
     [InlineData("123456zz7", 3)]
     [InlineData("123456zz8", 13)]
     public Task TestDraft7(string id, int hour) => WithBlogAsync(id, new DateTime(2022, 1, 2, hour, 4, 5), new DateTime(2022, 1, 1), async () =>
@@ -108,7 +108,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
     });
 
     // Java 的 update.duration(create)：C# 的 (create - update)
-    [Fact, Upstream("MyTest1.java#testDraft9")]
+    [Fact, Upstream("MyTest1.java#testDraft9"), Upstream("MyTest2.java#testTuple9")]
     public Task TestDraft9() => WithBlogAsync("123456zz9", new DateTime(2022, 1, 2, 3, 4, 5), new DateTime(2022, 2, 3, 4, 5, 6), async () =>
     {
         using var listen = SqlCapture.Listen();
@@ -124,7 +124,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("1(Long),2(Long),3(Long),false(Boolean),123456zz9(String)");
     });
 
-    [Fact, Upstream("MyTest1.java#testDraft11")]
+    [Fact, Upstream("MyTest1.java#testDraft11"), Upstream("MyTest2.java#testTuple11")]
     public Task TestDraft11() => WithBlogAsync("123456zz9xx1", new DateTime(2022, 1, 2, 3, 4, 5), new DateTime(2022, 2, 3, 4, 5, 6), async () =>
     {
         using var listen = SqlCapture.Listen();
@@ -139,7 +139,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertSql("SELECT timestampdiff(DAY, t.`create_time`, t.`update_time`) AS `value1`,timestampdiff(HOUR, t.`create_time`, t.`update_time`) AS `value2`,timestampdiff(MINUTE, t.`create_time`, t.`update_time`) AS `value3`,timestampdiff(SECOND, t.`create_time`, t.`update_time`) AS `value4`,timestampdiff(DAY, t.`create_time`, date_add(t.`create_time`, interval (?) day)) AS `value5`,timestampdiff(SECOND, t.`create_time`, date_add(t.`create_time`, interval (?) second)) AS `value6`,timestampdiff(MINUTE, t.`create_time`, date_add(t.`create_time`, interval (?) minute)) AS `value7` FROM `t_blog` t WHERE t.`deleted` = ? AND t.`id` = ? LIMIT 1");
     });
 
-    [Fact, Upstream("MyTest1.java#testExists")]
+    [Fact, Upstream("MyTest1.java#testExists"), Upstream("MyTest2.java#testExists")]
     public async Task TestExists()
     {
         using var listen = SqlCapture.Listen();
@@ -153,7 +153,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("false(Boolean),%123%(String),false(Boolean),2021-01-01T01:01(LocalDateTime),0(Long)");
     }
 
-    [Fact, Upstream("MyTest1.java#testSelect1")]
+    [Fact, Upstream("MyTest1.java#testSelect1"), Upstream("MyTest2.java#testSelect1")]
     public async Task TestSelect1()
     {
         using var listen = SqlCapture.Listen();
@@ -162,7 +162,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("1(String)");
     }
 
-    [Fact, Upstream("MyTest1.java#testSelect2")]
+    [Fact, Upstream("MyTest1.java#testSelect2"), Upstream("MyTest2.java#testSelect2")]
     public async Task TestSelect2()
     {
         using var listen = SqlCapture.Listen();
@@ -170,11 +170,11 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertSql("SELECT t.`title` AS `id`,1+1+t.`stars` AS `title` FROM `t_topic` t WHERE t.`title` IS NOT NULL");
     }
 
-    [Fact, Upstream("MyTest1.java#testSelect3", NotApplicable = "Java 对同一个属性 id 赋值两次，生成两个 AS `id`；C# 的对象初始化器不允许重复成员"),
-     Upstream("MyTest1.java#testSelect4", NotApplicable = "Java 的 selectExpression 产出两个 `title` 列；C# 的投影成员不能重名")]
+    [Fact, Upstream("MyTest1.java#testSelect3", NotApplicable = "Java 对同一个属性 id 赋值两次，生成两个 AS `id`；C# 的对象初始化器不允许重复成员"), Upstream("MyTest2.java#testSelect3", NotApplicable = "Java 对同一个属性 id 赋值两次，生成两个 AS `id`；C# 的对象初始化器不允许重复成员"),
+     Upstream("MyTest1.java#testSelect4", NotApplicable = "Java 的 selectExpression 产出两个 `title` 列；C# 的投影成员不能重名"), Upstream("MyTest2.java#testSelect4", NotApplicable = "Java 的 selectExpression 产出两个 `title` 列；C# 的投影成员不能重名")]
     public void TestSelect3() { }
 
-    [Fact, Upstream("MyTest1.java#testSelect5")]
+    [Fact, Upstream("MyTest1.java#testSelect5"), Upstream("MyTest2.java#testSelect5")]
     public async Task TestSelect5()
     {
         using var listen = SqlCapture.Listen();
@@ -188,7 +188,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
     private const string TitleSubstrSql = "SELECT t.`title` AS `id`,SUBSTR(t.`title`,2,2) AS `title`" + TopicWhere;
 
     // 投影 → 分组 → 投影 → 排序：每一步都包一层派生表
-    [Fact, Upstream("MyTest1.java#testSelect6")]
+    [Fact, Upstream("MyTest1.java#testSelect6"), Upstream("MyTest2.java#testSelect6")]
     public async Task TestSelect6()
     {
         using var listen = SqlCapture.Listen();
@@ -197,7 +197,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("2021-03-04T05:06(LocalDateTime)");
     }
 
-    [Fact, Upstream("MyTest1.java#testSelect6_1")]
+    [Fact, Upstream("MyTest1.java#testSelect6_1"), Upstream("MyTest2.java#testSelect6_1")]
     public async Task TestSelect6_1()
     {
         using var listen = SqlCapture.Listen();
@@ -205,7 +205,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertSql("SELECT t1.`id` AS `id`,COUNT(*) AS `id_count` FROM (" + TitleSubstrSql + ") t1 GROUP BY t1.`id`");
     }
 
-    [Fact, Upstream("MyTest1.java#testSelect6_2")]
+    [Fact, Upstream("MyTest1.java#testSelect6_2"), Upstream("MyTest2.java#testSelect6_2")]
     public async Task TestSelect6_2()
     {
         using var listen = SqlCapture.Listen();
@@ -213,7 +213,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertSql("SELECT t1.`id` AS `id`,MIN(t1.`id`) AS `id_count` FROM (" + TitleSubstrSql + ") t1 GROUP BY t1.`id`");
     }
 
-    [Fact, Upstream("MyTest1.java#testSelect6_3")]
+    [Fact, Upstream("MyTest1.java#testSelect6_3"), Upstream("MyTest2.java#testSelect6_3")]
     public async Task TestSelect6_3()
     {
         using var listen = SqlCapture.Listen();
@@ -229,7 +229,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
 
     private const string TitleDraftSql = "SELECT t.`title` AS `value1`,SUBSTR(t.`title`,2,2) AS `value2`" + TopicWhere;
 
-    [Fact, Upstream("MyTest1.java#testSelect7")]
+    [Fact, Upstream("MyTest1.java#testSelect7"), Upstream("MyTest2.java#testSelect7")]
     public async Task TestSelect7()
     {
         using var listen = SqlCapture.Listen();
@@ -237,7 +237,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertSql("SELECT t2.`value1` AS `value1`,t2.`value2` AS `value2` FROM (SELECT t1.`value1` AS `value1`,COUNT(*) AS `value2` FROM (" + TitleDraftSql + ") t1 GROUP BY t1.`value1`) t2 ORDER BY t2.`value1` DESC");
     }
 
-    [Fact, Upstream("MyTest1.java#testSelect8")]
+    [Fact, Upstream("MyTest1.java#testSelect8"), Upstream("MyTest2.java#testSelect8")]
     public async Task TestSelect8()
     {
         using var listen = SqlCapture.Listen();
@@ -247,7 +247,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         await Db.Query<Topic>().Where(o => o.Title != null && o.CreateTime <= Le).Select(o => decimal.Parse(o.Title!)).ToListAsync(Ct);
     }
 
-    [Fact, Upstream("MyTest1.java#testSelect9")]
+    [Fact, Upstream("MyTest1.java#testSelect9"), Upstream("MyTest2.java#testSelect9")]
     public async Task TestSelect9()
     {
         using var listen = SqlCapture.Listen();
@@ -255,7 +255,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertSql("SELECT t1.`value1` AS `value1`,COUNT(*) AS `value2` FROM (" + TitleDraftSql + ") t1 GROUP BY t1.`value1` ORDER BY t1.`value1` DESC");
     }
 
-    [Fact, Upstream("MyTest1.java#testSelect10")]
+    [Fact, Upstream("MyTest1.java#testSelect10"), Upstream("MyTest2.java#testSelect10")]
     public async Task TestSelect10()
     {
         using var listen = SqlCapture.Listen();
@@ -267,7 +267,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("false(Boolean)");
     }
 
-    [Fact, Upstream("MyTest1.java#testGroup11")]
+    [Fact, Upstream("MyTest1.java#testGroup11"), Upstream("MyTest2.java#testGroup11")]
     public async Task TestGroup11()
     {
         using var listen = SqlCapture.Listen();
@@ -276,7 +276,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertSql("SELECT SUBSTR(t.`title`,2,2) AS `id`,COUNT(SUBSTR(t.`title`,2,2)) AS `star`" + TopicWhere + " GROUP BY SUBSTR(t.`title`,2,2)");
     }
 
-    [Fact, Upstream("MyTest1.java#testGroup12"), Upstream("MyTest1.java#testGroup13")]
+    [Fact, Upstream("MyTest1.java#testGroup12"), Upstream("MyTest2.java#testGroup12"), Upstream("MyTest1.java#testGroup13"), Upstream("MyTest2.java#testGroup13")]
     public async Task TestGroup12()
     {
         const string sql = "SELECT t1.`value1` AS `id`,COUNT(t1.`value2`) AS `star` FROM (" + TitleDraftSql + ") t1 GROUP BY t1.`value1`";
@@ -287,7 +287,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertSql(sql + " ORDER BY t1.`value1` ASC");
     }
 
-    [Fact, Upstream("MyTest1.java#testGroup14")]
+    [Fact, Upstream("MyTest1.java#testGroup14"), Upstream("MyTest2.java#testGroup14")]
     public async Task TestGroup14()
     {
         using var listen = SqlCapture.Listen();
@@ -296,7 +296,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
     }
 
     // Java 的 toNumber(BigDecimal)：C# 的 Convert.ToDecimal；joining：g.StringJoin
-    [Fact, Upstream("MyTest1.java#testGroup15")]
+    [Fact, Upstream("MyTest1.java#testGroup15"), Upstream("MyTest2.java#testGroup15")]
     public async Task TestGroup15()
     {
         using var listen = SqlCapture.Listen();
@@ -308,7 +308,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
     }
 
     // 分组后直接取键（Java 的 groupBy(…).toList()）：C# 的 Keys()
-    [Fact, Upstream("MyTest1.java#testGroup16"), Upstream("MyTest1.java#testGroup17")]
+    [Fact, Upstream("MyTest1.java#testGroup16"), Upstream("MyTest2.java#testGroup16"), Upstream("MyTest1.java#testGroup17"), Upstream("MyTest2.java#testGroup17")]
     public async Task TestGroup16()
     {
         using var listen = SqlCapture.Listen();
@@ -319,7 +319,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("1(Long)");
     }
 
-    [Fact, Upstream("MyTest1.java#testGroup18")]
+    [Fact, Upstream("MyTest1.java#testGroup18"), Upstream("MyTest2.java#testGroup18")]
     public async Task TestGroup18()
     {
         using var listen = SqlCapture.Listen();
@@ -330,7 +330,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
 
     private const string TopicBlogJoin = " FROM `t_topic` t LEFT JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` WHERE t.`id` IS NOT NULL AND t1.`score` IS NOT NULL";
 
-    [Fact, Upstream("MyTest1.java#testGroup19")]
+    [Fact, Upstream("MyTest1.java#testGroup19"), Upstream("MyTest2.java#testGroup19")]
     public async Task TestGroup19()
     {
         using var listen = SqlCapture.Listen();
@@ -341,7 +341,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("0(BigDecimal),false(Boolean),0(BigDecimal),1(Long)");
     }
 
-    [Fact, Upstream("MyTest1.java#testGroup20")]
+    [Fact, Upstream("MyTest1.java#testGroup20"), Upstream("MyTest2.java#testGroup20")]
     public async Task TestGroup20()
     {
         using var listen = SqlCapture.Listen();
@@ -351,7 +351,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("0(BigDecimal),false(Boolean),0(BigDecimal)");
     }
 
-    [Fact, Upstream("MyTest1.java#testGroup21")]
+    [Fact, Upstream("MyTest1.java#testGroup21"), Upstream("MyTest2.java#testGroup21")]
     public async Task TestGroup21()
     {
         using var listen = SqlCapture.Listen();
@@ -362,7 +362,7 @@ public sealed class MyTest1(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("false(Boolean),0(BigDecimal)");
     }
 
-    [Fact, Upstream("MyTest1.java#testGroup22")]
+    [Fact, Upstream("MyTest1.java#testGroup22"), Upstream("MyTest2.java#testGroup22")]
     public async Task TestGroup22()
     {
         using var listen = SqlCapture.Listen();
