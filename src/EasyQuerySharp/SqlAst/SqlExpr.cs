@@ -266,6 +266,9 @@ public sealed class ExistsExpr(SelectQuery query, bool negated) : SqlExpr
 
     /// <summary>true 为 NOT EXISTS。</summary>
     public bool Negated { get; } = negated;
+
+    /// <summary>集合导航上的 Any 生成的 EXISTS：取反时写成 <c>NOT (EXISTS(…))</c> 而不是 NOT EXISTS（与 Java 的 none 一致）。</summary>
+    public bool FromNavigation { get; init; }
 }
 
 /// <summary>标量子查询 <c>(SELECT …)</c>。</summary>

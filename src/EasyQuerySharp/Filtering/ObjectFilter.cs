@@ -148,22 +148,17 @@ internal static class ObjectFilter
             }
             var inner = new List<Expression>();
             Compose(child, inner);
-            // coll.Where(p).Take(1).Any()：与 Java 一致，EXISTS 子查询带 LIMIT 1
+            // coll.Any(p)：集合导航的 EXISTS 子查询自带 LIMIT 1（与 Java 一致）
             var type = child.Element.Type;
-            Expression source = child.Collection!;
-            if (inner.Count > 0)
-                source = Expression.Call(EnumerableMethod(nameof(Enumerable.Where), 2, type), source, Expression.Lambda(inner.Aggregate(Expression.AndAlso), child.Element));
-            source = Expression.Call(EnumerableMethod(nameof(Enumerable.Take), 2, type), source, Expression.Constant(1));
-            output.Add(Expression.Call(EnumerableMethod(nameof(Enumerable.Any), 1, type), source));
+            output.Add(inner.Count == 0
+                ? Expression.Call(EnumerableMethod(nameof(Enumerable.Any), 1, type), child.Collection!)
+                : Expression.Call(EnumerableMethod(nameof(Enumerable.Any), 2, type), child.Collection!, Expression.Lambda(inner.Aggregate(Expression.AndAlso), child.Element)));
         }
     }
 
-    // Enumerable 上参数个数为 parameterCount 的同名泛型方法（Where 取 Func<T,bool> 的重载，Take 取 int 的重载）
+    // Enumerable 上参数个数为 parameterCount 的同名泛型方法（Any 的两个重载）
     private static MethodInfo EnumerableMethod(string name, int parameterCount, Type element) =>
-        typeof(Enumerable).GetMethods()
-            .First(m => m.Name == name && m.GetParameters().Length == parameterCount
-                        && (parameterCount == 1 || m.GetParameters()[1].ParameterType is { IsGenericType: false } or { Name: "Func`2" }))
-            .MakeGenericMethod(element);
+        typeof(Enumerable).GetMethods().First(m => m.Name == name && m.GetParameters().Length == parameterCount).MakeGenericMethod(element);
 
     private static Expression? Compare(Expression member, FilterOp op, object value)
     {

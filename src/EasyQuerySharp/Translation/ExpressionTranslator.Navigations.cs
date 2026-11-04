@@ -92,7 +92,9 @@ internal sealed partial class ExpressionTranslator
             case nameof(Enumerable.Any):
                 if (predicate is not null) sub.Where.Add(predicate);
                 sub.Columns.Add(new SelectColumn(LiteralExpr.One, null));
-                result = new ExistsExpr(sub, negated: false);
+                // 与 Java 一致：集合导航的 any 带 LIMIT 1
+                sub.Limit ??= 1;
+                result = new ExistsExpr(sub, negated: false) { FromNavigation = true };
                 return true;
             case nameof(Enumerable.All):
                 sub.Where.Add(Negate(predicate ?? throw Unsupported(terminal)));

@@ -129,6 +129,7 @@ internal sealed partial class ExpressionTranslator
         LikeExpr l => l.Negate(),
         BlankCheckExpr b => b.Negate(),
         IsNullExpr n => new IsNullExpr(n.Operand, !n.Negated),
+        ExistsExpr { FromNavigation: true } e => new NotExpr(e),
         ExistsExpr e => new ExistsExpr(e.Query, !e.Negated),
         NotExpr n => n.Operand,
         _ => new NotExpr(predicate),
