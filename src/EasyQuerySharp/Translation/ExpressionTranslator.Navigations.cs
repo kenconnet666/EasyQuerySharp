@@ -23,11 +23,26 @@ internal sealed partial class ExpressionTranslator
     }
 
     /// <summary>集合导航 <c>x.Cards</c>：返回所属表绑定与导航；不是集合导航时返回 null。</summary>
-    private (EntityBinding Owner, NavigationMetadata Navigation)? CollectionNavigation(Expression e)
+    private (SourceBinding Owner, NavigationMetadata Navigation)? CollectionNavigation(Expression e)
     {
-        if (StripConvert(e) is not MemberExpression { Expression: { } inner } m || BindingOf(inner) is not EntityBinding owner) return null;
-        return Navigation(owner, m.Member.Name) is { IsCollection: true } nav ? (owner, nav) : null;
+        if (StripConvert(e) is not MemberExpression { Expression: { } inner } m || BindingOf(inner) is not { } owner || EntityOf(owner) is not { } entity) return null;
+        return Context?.Metadata.FindNavigation(entity, m.Member.Name) is { IsCollection: true } nav ? (owner, nav) : null;
     }
+
+    // 能做导航起点的绑定：实体表，或者投影整个实体的派生表（如 LimitSelect 包出的那层）
+    private static EntityMetadata? EntityOf(SourceBinding binding) => binding switch
+    {
+        EntityBinding e => e.Entity,
+        DerivedBinding { Entity: { } entity } => entity,
+        _ => null,
+    };
+
+    // 所属行上的关联列：实体表直接取列，派生表按列名取外层列
+    private static SqlExpr OwnerColumn(SourceBinding owner, ColumnMetadata column) => owner switch
+    {
+        EntityBinding e => e.EntityTable.Column(column),
+        _ => owner.Member(column.Property) ?? throw new InvalidOperationException($"派生表里没有导航需要的列 {column.Name}"),
+    };
 
     /// <summary>
     /// 集合导航上的 LINQ 方法 → 隐式子查询：
@@ -137,7 +152,7 @@ internal sealed partial class ExpressionTranslator
     /// 集合导航的子查询骨架：目标表自带的过滤条件、与所属行的关联条件、导航的固定条件。
     /// 一对多关联写成 <c>目标.外键 = 所属.键</c>；多对多经中间表写成 EXISTS。
     /// </summary>
-    private SelectQuery NewCollectionSubQuery(EntityBinding owner, NavigationMetadata nav, out ExpressionTranslator translator, out EntityBinding element)
+    private SelectQuery NewCollectionSubQuery(SourceBinding owner, NavigationMetadata nav, out ExpressionTranslator translator, out EntityBinding element)
     {
         var table = new EntityTableSource(nav.Target);
         var sub = new SelectQuery(table);
@@ -154,7 +169,7 @@ internal sealed partial class ExpressionTranslator
             for (var i = 0; i < nav.TargetMappingColumns.Count; i++)
                 link.Where.Add(new BinaryExpr(mappingTable.Column(nav.TargetMappingColumns[i]), SqlBinaryOperator.Equal, table.Column(nav.TargetColumns[i])));
             for (var i = 0; i < nav.SelfMappingColumns.Count; i++)
-                link.Where.Add(new BinaryExpr(mappingTable.Column(nav.SelfMappingColumns[i]), SqlBinaryOperator.Equal, owner.EntityTable.Column(nav.SelfColumns[i])));
+                link.Where.Add(new BinaryExpr(mappingTable.Column(nav.SelfMappingColumns[i]), SqlBinaryOperator.Equal, OwnerColumn(owner, nav.SelfColumns[i])));
             link.Columns.Add(new SelectColumn(LiteralExpr.One, null));
             // 中间表的 EXISTS 也带 LIMIT 1（与 Java 一致）
             link.Limit = 1;
@@ -163,7 +178,7 @@ internal sealed partial class ExpressionTranslator
         else
         {
             for (var i = 0; i < nav.TargetColumns.Count; i++)
-                sub.Where.Add(new BinaryExpr(table.Column(nav.TargetColumns[i]), SqlBinaryOperator.Equal, owner.EntityTable.Column(nav.SelfColumns[i])));
+                sub.Where.Add(new BinaryExpr(table.Column(nav.TargetColumns[i]), SqlBinaryOperator.Equal, OwnerColumn(owner, nav.SelfColumns[i])));
         }
         if (nav.ExtraFilter is { } extra) sub.Where.Add(translator.ElementPredicate(extra, element));
         return sub;

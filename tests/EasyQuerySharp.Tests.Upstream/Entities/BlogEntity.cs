@@ -1,4 +1,6 @@
+using EasyQuerySharp.Encryption;
 using EasyQuerySharp.Metadata;
+using EasyQuerySharp.Tests.Upstream.Encryption;
 
 namespace EasyQuerySharp.Tests.Upstream.Entities;
 
@@ -31,16 +33,19 @@ public class BlogEntity : BaseEntity
     public List<SysUser>? Users { get; set; }
 }
 
-/// <summary>对应 Java：entity/SysUser（phone、idCard、address 在 Java 里是加密列，加密见 M5）。</summary>
+/// <summary>对应 Java：entity/SysUser（phone、idCard、address 是支持 LIKE 的加密列）。</summary>
 [Table("t_sys_user", Schema = "easy-query-test", IgnoreProperties = ["updateTime", "createBy", "updateBy", "deleted"])]
 public class SysUser : BaseEntity
 {
     public string? Username { get; set; }
 
+    [Encryption(typeof(DefaultAesEasyEncryptionStrategy), SupportQueryLike = true)]
     public string? Phone { get; set; }
 
+    [Encryption(typeof(DefaultAesEasyEncryptionStrategy), SupportQueryLike = true)]
     public string? IdCard { get; set; }
 
+    [Encryption(typeof(DefaultAesEasyEncryptionStrategy), SupportQueryLike = true)]
     public string? Address { get; set; }
 
     /// <summary>一对多：博客的 title 等于用户 id（Java 用例里的人为关系）。</summary>

@@ -64,6 +64,31 @@ public sealed class Query<T> : QueryBase<Query<T>, T>
     public Query<TResult> Select<TResult>(Expression<Func<T, TResult>> selector) => new(Open with { Selector = selector });
 
     /// <summary>
+    /// 先分页、再投影（对应 Java 的 limitSelect）：分页后的查询作为派生表，投影里的子查询（如导航计数）只对这一页的行执行。
+    /// <c>q.LimitSelect(20, 10, u =&gt; new { u.Id, Blogs = u.Blogs!.Count() })</c>。
+    /// </summary>
+    public Query<TResult> LimitSelect<TResult>(long offset, long rows, Expression<Func<T, TResult>> selector)
+    {
+        var paged = Open with { Offset = offset, Limit = rows };
+        return new(paged.Wrap() with { Selector = selector });
+    }
+
+    /// <summary>
+    /// 分页后再投影（对应 Java 的 toPageSelectResult）：总数按投影前的查询计，当前页用 <see cref="LimitSelect{TResult}"/>，
+    /// 投影里的子查询只对这一页执行。
+    /// </summary>
+    public async Task<Page<TResult>> ToPageAsync<TResult>(long page, long size, Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
+        var total = await CountAsync(cancellationToken).ConfigureAwait(false);
+        var rows = total == 0 || (page - 1) * size >= total
+            ? []
+            : await LimitSelect((page - 1) * size, size, selector).ToListAsync(cancellationToken).ConfigureAwait(false);
+        return new Page<TResult>(rows, total, page, size);
+    }
+
+    /// <summary>
     /// 与其它查询做 UNION（去重），结果作为派生表继续 Where / Select / 分页：
     /// <c>q1.Union(q2, q3).Where(t => t.Id == "1")</c>。各查询的投影列须一一对应。
     /// </summary>

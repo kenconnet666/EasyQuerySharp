@@ -95,7 +95,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
                 UpdateIgnore = property.IsDefined(typeof(UpdateIgnoreAttribute)) || computed is not null,
                 Computed = computed,
                 UpdateWhenTrackedChanged = property.GetCustomAttribute<UpdateIgnoreAttribute>()?.WhenTrackedChanged ?? false,
-                Converter = attr?.Converter is { } converterType ? CreateConverter(converterType, property) : null,
+                Converter = CreateConverter(type, property, attr?.Converter),
                 DbType = attr?.DbType,
                 Comment = attr?.Comment,
             };
@@ -146,6 +146,23 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
         typeof(IKeyGenerator).IsAssignableFrom(generatorType)
             ? (IKeyGenerator)(Activator.CreateInstance(generatorType) ?? throw new InvalidOperationException($"无法创建主键生成器 {generatorType.Name}"))
             : throw new InvalidOperationException($"{property.DeclaringType?.Name}.{property.Name} 的主键生成器 {generatorType.Name} 没有实现 IKeyGenerator");
+
+    // 列的值转换：[Column(Converter = …)] 或 [Encryption(…)]（加密也是一种转换），两者不能同时用
+    private static IValueConverter? CreateConverter(Type entityType, PropertyInfo property, Type? converterType)
+    {
+        var encryption = property.GetCustomAttribute<Encryption.EncryptionAttribute>();
+        if (encryption is null) return converterType is null ? null : CreateConverter(converterType, property);
+        if (converterType is not null)
+            throw new InvalidOperationException($"{entityType.Name}.{property.Name} 不能同时声明转换器和加密");
+        if (property.PropertyType != typeof(string))
+            throw new InvalidOperationException($"{entityType.Name}.{property.Name} 加密列必须是 string");
+        var strategy = EncryptionStrategies.GetOrAdd(encryption.Strategy, t =>
+            Activator.CreateInstance(t) as Encryption.IEncryptionStrategy
+            ?? throw new InvalidOperationException($"{t.Name} 没有实现 IEncryptionStrategy"));
+        return new Encryption.EncryptionConverter(strategy, entityType, property.Name, encryption.SupportQueryLike);
+    }
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, Encryption.IEncryptionStrategy> EncryptionStrategies = new();
 
     private static IValueConverter CreateConverter(Type converterType, PropertyInfo property)
     {

@@ -157,7 +157,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [ ] 5.2 逻辑删除：可以按导航单独关闭；`.Hard()`。
 - [ ] 5.3 乐观锁 `[Version]`，以及 `ConcurrencyException`。
 - [~] 5.4 值转换器、枚举存储方式、值对象 `[ValueObject]`、JSON 列（`JsonValueConverter<T>` 已完成）。
-- [ ] 5.5 列加密：与 Java 的 AES / SM4 密文兼容，支持分段 LIKE。
+- [~] 5.5 列加密：与 Java 的 AES / SM4 密文兼容，支持分段 LIKE（`[Encryption]` 与 AES 策略已完成；SM4 待做）。
 - [~] 5.6 upsert：`OnConflictIgnore()` / `OnConflictUpdate()`（MySQL、PG、SQLite 已完成；SQL Server / Oracle 的 MERGE 待做）。
 - [ ] 5.7 写入策略：按列策略只写非空列；批量写入用 `DbBatch`。
 - [ ] 5.8 UPDATE / DELETE 里用导航：MySQL 用原生多表语法，其余方言按主键自连接。

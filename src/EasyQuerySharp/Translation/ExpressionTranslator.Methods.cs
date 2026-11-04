@@ -188,6 +188,9 @@ internal sealed partial class ExpressionTranslator
             return new LikeExpr(column, new FunctionExpr(SqlFunctionNames.Concat, parts), false, mode, value);
         }
         var text = ClientEvaluator.Evaluate(valueExpr)?.ToString();
+        // 支持 LIKE 的加密列：值先按同样的分段规则加密，再加 %（与 Java 的 LikeFunctionTemplateGenerator 一致）
+        if (column is ColumnExpr { Column.Converter: Encryption.EncryptionConverter { SupportQueryLike: true } encryption } && text is not null)
+            text = (string?)encryption.ToProvider(text);
         return new LikeExpr(column, new ParameterExpr(prefix + text + suffix, typeof(string)), false, mode, new ParameterExpr(text, typeof(string)));
     }
 

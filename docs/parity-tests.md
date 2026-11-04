@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2338 个用例。
 
-合计：已移植 519、偏离 94、不适用 8、骨架 15、待做 1702。
+合计：已移植 522、偏离 94、不适用 8、骨架 15、待做 1699。
 
 ## 按能力
 
@@ -29,7 +29,7 @@
 | 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 29 | 2 | 0 | 2 | 50 |
 | 显式 join | `query.join` | M3 | 88 | 30 | 2 | 1 | 0 | 55 |
 | 无实体的 Map 查询、toMap | `query.map` | M3 | 11 | 2 | 0 | 0 | 0 | 9 |
-| 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 0 | 0 | 0 | 0 | 2 |
+| 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 1 | 0 | 0 | 0 | 1 |
 | 流式读取 | `query.stream` | M3 | 9 | 5 | 0 | 0 | 0 | 4 |
 | union / union all | `query.union` | M3 | 18 | 12 | 3 | 0 | 1 | 2 |
 | 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 35 | 0 | 0 | 0 | 1 | 34 |
@@ -37,7 +37,7 @@
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 0 | 0 | 1 | 0 | 55 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 0 | 0 | 0 | 2 | 65 |
 | include 带出导航 | `nav.include` | M4 | 37 | 0 | 0 | 0 | 0 | 37 |
-| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 42 | 1 | 0 | 0 | 99 |
+| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 44 | 1 | 0 | 0 | 97 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 0 | 0 | 0 | 0 | 25 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
 | 列加密 | `column.encryption` | M5 | 8 | 0 | 0 | 0 | 0 | 8 |
@@ -1392,7 +1392,7 @@
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
 | QueryTest16.java#testSubSumOracle2 | 待做 |  | `SELECT COUNT(*) FROM "t_company" WHERE "name" LIKE ?` |
-| QueryTest18.java#testSubCountPage | 待做 |  | `SELECT COUNT(*) FROM 'easy-query-test'.'t_sys_user' WHERE 'phone' LIKE ?` |
+| QueryTest18.java#testSubCountPage | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Encryption.cs:12 | `SELECT COUNT(*) FROM 'easy-query-test'.'t_sys_user' WHERE 'phone' LIKE ?` |
 
 ### 流式读取（`query.stream`，M3）
 
@@ -1705,8 +1705,8 @@
 | QueryTest16.java#testSubSumOracle | 待做 |  | `SELECT t1."id" AS "value1",NVL((SELECT SUM(t2."age") FROM "t_user" t2 WHERE t2."company_id" = t1."id…` |
 | QueryTest17.java#testFlatElement5 | 待做 |  | `SELECT t.'id',t.'f1',t.'f2',t.'parent_id' FROM 'MyObject' t LEFT JOIN 'MyObjectParent' t1 ON t1.'id'…` |
 | QueryTest18.java#testCount | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.More.cs:72 |  |
-| QueryTest18.java#testSubCountLimitSelect1 | 待做 |  | `SELECT t1.'id' AS 'value1',t1.'phone' AS 'value2',(SELECT COUNT(*) FROM 't_blog' t2 WHERE t2.'delete…` |
-| QueryTest18.java#testSubCountPage1 | 待做 |  | `SELECT COUNT(*) FROM 'easy-query-test'.'t_sys_user' WHERE 'phone' <> ?` |
+| QueryTest18.java#testSubCountLimitSelect1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Encryption.cs:44 | `SELECT t1.'id' AS 'value1',t1.'phone' AS 'value2',(SELECT COUNT(*) FROM 't_blog' t2 WHERE t2.'delete…` |
+| QueryTest18.java#testSubCountPage1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Encryption.cs:31 | `SELECT COUNT(*) FROM 'easy-query-test'.'t_sys_user' WHERE 'phone' <> ?` |
 | QueryTest18.java#textDistinct1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:92：Java 写 SELECT DISTINCT COUNT(*)，等于不去重计数；C# 包一层子查询保证去重后再计数 | `SELECT DISTINCT COUNT(*) FROM 't_topic'` |
 | QueryTest19.java#test122 | 待做 |  |  |
 | QueryTest19.java#test1_1 | 待做 |  | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t WHERE t.'name' = ? AND…` |
