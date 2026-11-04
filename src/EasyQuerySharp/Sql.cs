@@ -115,6 +115,23 @@ public static partial class Sql
     /// </summary>
     public static T SubQuery<T>(Querying.Query<T> subQuery) => throw OnlyInQuery();
 
+    /// <summary>
+    /// 这个集合导航的隐式子查询不带逻辑删除条件（对应 Java 的 nav().disableLogicDelete()）：
+    /// <c>.Where(u => u.Blogs!.DisableLogicDelete().Any(b => …))</c>。
+    /// </summary>
+    public static IEnumerable<T> DisableLogicDelete<T>(this IEnumerable<T> navigation) => throw OnlyInQuery();
+
+    // ---------- Map 投影 ----------
+
+    /// <summary>
+    /// 实体的全部列，作为 Map 投影（键是列名，对应 Java 的 MapProxy.selectAll）。可再追加别的键：
+    /// <c>.Select((b, t) => new Dictionary&lt;string, object?&gt;(Sql.Columns(b)) { { "xx", t.CreateTime } })</c>。
+    /// </summary>
+    public static Dictionary<string, object?> Columns<T>(T entity) => throw OnlyInQuery();
+
+    /// <summary>实体除去 <paramref name="excluded"/>（写成 <c>b.CreateTime, b.Title</c>）以外的全部列（对应 Java 的 selectAll + selectIgnores）。</summary>
+    public static Dictionary<string, object?> ColumnsExcept<T>(T entity, params object?[] excluded) => throw OnlyInQuery();
+
     // ---------- 聚合（不分组时作用于整个结果，分组时作用于每组）----------
 
     /// <summary><c>COUNT(*)</c>。</summary>

@@ -37,7 +37,7 @@ internal static class IncludeRunner
             var state = plan.Configure?.Invoke(baseState) ?? baseState;
             state = state with
             {
-                Wheres = state.Wheres.Add(KeyIn(nav.Target.Type, nav.TargetColumns[0], links.Select(l => l.Target.First))),
+                Wheres = state.Wheres.Add(WithExtraFilter(KeyIn(nav.Target.Type, nav.TargetColumns[0], links.Select(l => l.Target.First)), nav.ExtraFilter)),
                 ForceAlias = true,
             };
             var compiled = QueryCompiler.Compile<object?>(state, relationKeys: nav.TargetColumns);
@@ -78,9 +78,24 @@ internal static class IncludeRunner
         var values = parentKeys.Select(k => k.First).Distinct()
             .Select(v => (SqlExpr)ExpressionTranslator.Parameter(ValueReader.ConvertTo(v, nav.SelfMappingColumns[0].ClrType), nav.SelfMappingColumns[0].ClrType)).ToList();
         query.Where.Add(new InExpr(self, values, negated: false));
+        if (nav.ExtraMappingFilter is { } mappingFilter)
+        {
+            var translator = new ExpressionTranslator([]);
+            translator.Bind(mappingFilter, [new EntityBinding(table)]);
+            query.Where.Add(translator.TranslatePredicate(mappingFilter.Body));
+        }
         var statement = SqlRenderer.Render(db.Options.Dialect, query);
         var rows = await db.Executor.QueryAsync(statement, r => (Parent: CompositeKey.Read(r, [0]), Target: CompositeKey.Read(r, [1])), ct).ConfigureAwait(false);
         return rows.Where(r => r.Parent is not null && r.Target is not null).Select(r => (r.Parent!.Value, r.Target!.Value)).ToList();
+    }
+
+    // 导航的固定条件与键条件合成一组：x => Sql.Group(keys.Contains(x.Key) && extra(x))，写成 (… IN (…) AND …)（与 Java 一致）
+    private static LambdaExpression WithExtraFilter(LambdaExpression keyIn, LambdaExpression? extra)
+    {
+        if (extra is null) return keyIn;
+        var p = keyIn.Parameters[0];
+        var extraBody = new ExpressionTranslator.ParameterReplacer(extra.Parameters[0], p).Visit(extra.Body);
+        return Expression.Lambda(Expression.Call(typeof(Sql).GetMethod(nameof(Sql.Group))!, Expression.AndAlso(keyIn.Body, extraBody)), p);
     }
 
     // x => keys.Contains(x.Key)，键值先转成列的 CLR 类型

@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.SqlAst;
 
@@ -8,7 +9,7 @@ namespace EasyQuerySharp.Translation;
 /// 子查询用 <see cref="ForSubQuery"/> 派生自己的上下文（隐式 JOIN 加到子查询上），其余共享。
 /// </summary>
 internal sealed class TranslationContext(
-    MetadataRegistry metadata, Func<EntityTableSource, IEnumerable<SqlExpr>> tableFilters, SelectQuery query, TranslationContext? parent = null)
+    MetadataRegistry metadata, Func<EntityTableSource, bool, IEnumerable<SqlExpr>> tableFilters, SelectQuery query, TranslationContext? parent = null)
 {
     private readonly Dictionary<(TableSource, string), EntityBinding> _joins = [];
 
@@ -18,8 +19,8 @@ internal sealed class TranslationContext(
     /// <summary>隐式 JOIN 加到的查询。</summary>
     public SelectQuery Query => query;
 
-    /// <summary>某张实体表自带的过滤条件（逻辑删除、查询过滤拦截器）。</summary>
-    public IEnumerable<SqlExpr> TableFilters(EntityTableSource table) => tableFilters(table);
+    /// <summary>某张实体表自带的过滤条件（逻辑删除、查询过滤拦截器）；<paramref name="logicDelete"/> 为 false 时不带逻辑删除（导航上的 DisableLogicDelete()）。</summary>
+    public IEnumerable<SqlExpr> TableFilters(EntityTableSource table, bool logicDelete = true) => tableFilters(table, logicDelete);
 
     /// <summary>为子查询派生上下文：共享元数据与过滤规则，隐式 JOIN 加到 <paramref name="subQuery"/>。</summary>
     public TranslationContext ForSubQuery(SelectQuery subQuery) => new(metadata, tableFilters, subQuery, this) { Db = Db };
@@ -54,6 +55,7 @@ internal sealed class TranslationContext(
             var on = navigation.TargetColumns
                 .Select((c, i) => (SqlExpr)new BinaryExpr(element.Column(c), SqlBinaryOperator.Equal, link.Column(navigation.TargetMappingColumns[i])))
                 .ToList();
+            if (navigation.ExtraMappingFilter is { } mappingFilter) on.Add(PredicateOn(mappingFilter, link));
             inner.Joins.Add(new JoinClause(JoinKind.Inner, link, on.Count == 1 ? on[0] : LogicalExpr.Grouped(on)) { Implicit = true });
             groupKeys = navigation.SelfMappingColumns.Select(link.Column).ToList();
         }
@@ -61,6 +63,7 @@ internal sealed class TranslationContext(
         var plan = new GroupJoinPlan(inner, element, groupKeys);
         plan.InnerContext = ForSubQuery(plan.Inner);
         foreach (var filter in TableFilters(element)) plan.AddBaseWhere(filter);
+        if (navigation.ExtraFilter is { } extraFilter) plan.AddBaseWhere(plan.InnerContext.PredicateOn(extraFilter, element));
         if (spec?.Configure is { } configure && Db is not null)
         {
             var configured = configure(new Querying.QueryState(Db, [new Querying.EntitySource(navigation.Target.Type)]));
@@ -124,16 +127,19 @@ internal sealed class TranslationContext(
             .ToList();
         // 复合键整体加括号：ON (a = a AND b = b)
         conditions.Add(keys.Count == 1 ? keys[0] : LogicalExpr.Grouped(keys));
-        if (navigation.ExtraFilter is { } extra)
-        {
-            var translator = new ExpressionTranslator([]) { Context = this };
-            translator.Bind(extra, [new EntityBinding(target)]);
-            conditions.Add(translator.TranslatePredicate(extra.Body));
-        }
+        if (navigation.ExtraFilter is { } extra) conditions.Add(PredicateOn(extra, target));
         query.Joins.Add(new JoinClause(navigation.Required ? JoinKind.Inner : JoinKind.Left, target, LogicalExpr.And(conditions)) { Implicit = true });
         var binding = new EntityBinding(target);
         _joins[key] = binding;
         return binding;
+    }
+
+    // 单参数条件（导航的固定条件等）绑定到指定的表后翻译
+    private SqlExpr PredicateOn(LambdaExpression predicate, EntityTableSource table)
+    {
+        var translator = new ExpressionTranslator([]) { Context = this };
+        translator.Bind(predicate, [new EntityBinding(table)]);
+        return translator.TranslatePredicate(predicate.Body);
     }
 
     // 表来源是不是本查询的 FROM / JOIN（含已加上的隐式 JOIN）

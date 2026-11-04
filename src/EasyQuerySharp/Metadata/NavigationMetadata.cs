@@ -9,7 +9,7 @@ public sealed class NavigationMetadata
     internal NavigationMetadata(PropertyInfo property, NavigateAttribute attribute, EntityMetadata self, EntityMetadata target,
         IReadOnlyList<ColumnMetadata> selfColumns, IReadOnlyList<ColumnMetadata> targetColumns,
         EntityMetadata? mapping, IReadOnlyList<ColumnMetadata> selfMappingColumns, IReadOnlyList<ColumnMetadata> targetMappingColumns,
-        LambdaExpression? extraFilter)
+        Func<LambdaExpression?>? extraFilter, Func<LambdaExpression?>? extraMappingFilter)
     {
         Property = property;
         Relation = attribute.Relation;
@@ -21,7 +21,8 @@ public sealed class NavigationMetadata
         Mapping = mapping;
         SelfMappingColumns = selfMappingColumns;
         TargetMappingColumns = targetMappingColumns;
-        ExtraFilter = extraFilter;
+        _extraFilter = extraFilter;
+        _extraMappingFilter = extraMappingFilter;
         DirectPath = attribute.DirectMapping;
         GroupJoin = attribute.GroupJoin;
     }
@@ -62,8 +63,14 @@ public sealed class NavigationMetadata
     /// <summary>中间表里对应目标表的列。</summary>
     public IReadOnlyList<ColumnMetadata> TargetMappingColumns { get; }
 
-    /// <summary>导航上的固定条件（参数为目标实体）；没有时为 null。</summary>
-    public LambdaExpression? ExtraFilter { get; }
+    private readonly Func<LambdaExpression?>? _extraFilter;
+    private readonly Func<LambdaExpression?>? _extraMappingFilter;
+
+    /// <summary>导航上的固定条件（参数为目标实体），每次取值时重新计算；没有时为 null。</summary>
+    public LambdaExpression? ExtraFilter => _extraFilter?.Invoke();
+
+    /// <summary>多对多中间表上的固定条件（参数为中间表实体），每次取值时重新计算；没有时为 null。</summary>
+    public LambdaExpression? ExtraMappingFilter => _extraMappingFilter?.Invoke();
 
     /// <summary>是否集合导航（一对多、多对多）。</summary>
     public bool IsCollection => Relation is RelationType.OneToMany or RelationType.ManyToMany;

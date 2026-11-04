@@ -70,4 +70,10 @@ public sealed class NavigateAttribute(RelationType relation) : Attribute
     /// （对应 Java 的 extraFilter）。用 <c>nameof</c> 引用。
     /// </summary>
     public string? ExtraFilter { get; init; }
+
+    /// <summary>
+    /// 多对多中间表上的固定条件：本实体上一个返回 <c>Expression&lt;Func&lt;中间表, bool&gt;&gt;</c> 的静态属性或字段的名字
+    /// （对应 Java 的 extraFilter 里的 getPredicateMappingClassFilterExpression）。两种条件的属性都可以按需返回 null，表示这次不加。
+    /// </summary>
+    public string? ExtraMappingFilter { get; init; }
 }

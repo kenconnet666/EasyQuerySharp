@@ -17,7 +17,7 @@
 | 分组与 having | `query.group` | 78 | `.GroupBy(p => new { p.UserId }).Having(g => g.Count() > 3).Select(g => new { g.Key.UserId, Total = g.Sum(p => p.Amount) })`；`Rollup` / `Cube` / `Grouping()` | M3 |
 | union / union all | `query.union` | 18 | `q1.Union(q2)` / `UnionAll` | M3 |
 | CTE | `query.cte` | 11 | `db.With("x", q)` / `WithRecursive`；派生表 `q.AsSubQuery()` | M3 |
-| 无实体的查询、toMap | `query.map` | 11 | `db.Sql<Dictionary<string, object?>>(...)`；投影成 Map：`Select(o => new Dictionary<string, object?> { { "id", o.Id } })`（逐键，总写 AS）、`Select<Dictionary<string, object?>>()`（全部列）、`new Dictionary<string, object?>()`（`SELECT *`）；`ToDictionaryAsync` | M3 |
+| 无实体的查询、toMap | `query.map` | 11 | `db.Sql<Dictionary<string, object?>>(...)`；投影成 Map：`Select(o => new Dictionary<string, object?> { { "id", o.Id } })`（逐键，总写 AS）、`Select<Dictionary<string, object?>>()`（全部列）、`new Dictionary<string, object?>()`（`SELECT *`）、`new Dictionary<string, object?>(Sql.Columns(b)) { { "xx", .. } }` / `Sql.ColumnsExcept(b, b.CreateTime)`（全部列再追加键）；`ToDictionaryAsync` | M3 |
 | 流式读取 | `query.stream` | 9 | `await foreach (var x in q.AsAsyncEnumerable())` | M3 |
 | 复用查询 | `query.reuse` | 2 | 查询对象不可变，可以直接复用 | M3 |
 
@@ -39,7 +39,7 @@
 
 | 能力 | key | 用例数 | C# 写法 | M |
 |---|---|---|---|---|
-| 隐式子查询 any / none / count / sum … | `nav.subquery` | 142 | `u.Posts.Any(p => ..)` / `!u.Posts.Any(..)` / `u.Posts.Count(..)` / `u.Posts.Sum(p => p.Amount)` / `u.Posts.Where(..).Max(..)` | M4 |
+| 隐式子查询 any / none / count / sum … | `nav.subquery` | 142 | `u.Posts.Any(p => ..)` / `!u.Posts.Any(..)` / `u.Posts.Count(..)` / `u.Posts.Sum(p => p.Amount)` / `u.Posts.Where(..).Max(..)`；导航上的固定条件 `[Navigate(.., ExtraFilter = nameof(静态属性), ExtraMappingFilter = ..)]`（属性每次查询重新取值，返回 null 即不加），子查询里写成 `(关联 AND 固定条件)`；`u.Posts.DisableLogicDelete().Any(..)` 关闭这个子查询的逻辑删除 | M4 |
 | 子查询改成分组 join | `nav.groupJoin` | 67 | `u.Posts.GroupJoin().Count()`，同一导航上的多个聚合共用一次分组 join | M4 |
 | 一对多展开 flatElement / elements | `nav.flat` | 56 | 条件里用 `Any(..)`；投影里用 `u.Posts.Select(p => p.Title).ToList()`；取第 i 个元素用 `ElementAt(i)` / `First()` | M4 |
 | include | `nav.include` | 37 | `.Include(o => o.Lines, q => q.Where(..).Include(l => l.Product))` | M4 |
@@ -53,7 +53,7 @@
 |---|---|---|---|---|
 | 插入 | `write.insert` | 44 | `db.Insert(entity).ExecuteAsync()` / `.ReturnIdAsync()` / `.ReturnEntityAsync()`；`db.Insert<T>().FromQuery(q)`（insert-select） | M1 |
 | 更新 | `write.update` | 50 | `db.Update<T>().Set(u => new T { Age = u.Age + 1 }).Where(..).ExecuteAsync()`；`db.Update(entity)` 按主键整行更新 | M1 |
-| 删除 | `write.delete` | 21 | `db.Delete<T>().Where(..).ExecuteAsync()`；没有条件时必须写 `.All()`；逻辑删除的实体要真删时用 `.Hard()` | M1 |
+| 删除 | `write.delete` | 21 | `db.Delete<T>().Where(..).ExecuteAsync()`；没有条件时必须写 `.All()`；逻辑删除的实体要真删时用 `.Hard()`；条件里可以用集合导航（翻译成关联子查询，表带别名），对一导航还不支持 | M1 |
 | upsert | `write.upsert` | 13 | `.OnConflict(u => u.Id).Merge(u => new { u.Name })` / `.Ignore()`，按方言渲染成 `ON DUPLICATE KEY` / `ON CONFLICT` / `MERGE` | M5 |
 | 写哪些列、批量执行 | `write.strategy` | 19 | `.Columns(ColumnStrategy.NotNull)`；`.Batch()` 用驱动的批处理（`DbBatch`） | M5 |
 | UPDATE / DELETE 里用导航 | `write.join` | 10 | 条件或 set 里用多对一导航时生成 JOIN；MySQL 用原生多表语法，其余方言按主键自连接 | M5 |

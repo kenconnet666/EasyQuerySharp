@@ -56,6 +56,12 @@ internal sealed partial class ExpressionTranslator
             chain.Add(mc);
             current = mc.Arguments[0];
         }
+        var logicDelete = true;
+        if (current is MethodCallExpression { Method.Name: nameof(Sql.DisableLogicDelete) } disable && disable.Method.DeclaringType == typeof(Sql))
+        {
+            logicDelete = false;
+            current = disable.Arguments[0];
+        }
         if (CollectionNavigation(current) is not var (owner, nav)) return false;
         chain.Reverse();
 
@@ -68,7 +74,7 @@ internal sealed partial class ExpressionTranslator
         // 取反只在分组合并时特殊处理（!Any → None 列），其余照常翻译后取反
         if (negated) return false;
 
-        var sub = NewCollectionSubQuery(owner, nav, out var t, out var element);
+        var sub = NewCollectionSubQuery(owner, nav, out var t, out var element, logicDelete);
         LambdaExpression? selector = null;
         var distinct = false;
         foreach (var op in chain.Take(chain.Count - 1))
@@ -384,7 +390,7 @@ internal sealed partial class ExpressionTranslator
     /// 集合导航的子查询骨架：目标表自带的过滤条件、与所属行的关联条件、导航的固定条件。
     /// 一对多关联写成 <c>目标.外键 = 所属.键</c>；多对多经中间表写成 EXISTS。
     /// </summary>
-    private SelectQuery NewCollectionSubQuery(SourceBinding owner, NavigationMetadata nav, out ExpressionTranslator translator, out EntityBinding element)
+    private SelectQuery NewCollectionSubQuery(SourceBinding owner, NavigationMetadata nav, out ExpressionTranslator translator, out EntityBinding element, bool logicDelete = true)
     {
         var table = new EntityTableSource(nav.Target);
         var sub = new SelectQuery(table);
@@ -392,7 +398,9 @@ internal sealed partial class ExpressionTranslator
         translator = new ExpressionTranslator(new Dictionary<ParameterExpression, SourceBinding>(_scope)) { Context = context };
         element = new EntityBinding(table);
 
-        sub.Where.AddRange(context.TableFilters(table));
+        sub.Where.AddRange(context.TableFilters(table, logicDelete));
+        // 关联条件与导航的固定条件合成一组 (关联 AND 固定条件)（与 Java 一致）；没有固定条件时不加括号
+        var relation = new List<SqlExpr>();
         if (nav.Mapping is { } mapping)
         {
             var mappingTable = new EntityTableSource(mapping);
@@ -402,10 +410,11 @@ internal sealed partial class ExpressionTranslator
                 link.Where.Add(new BinaryExpr(mappingTable.Column(nav.TargetMappingColumns[i]), SqlBinaryOperator.Equal, table.Column(nav.TargetColumns[i])));
             for (var i = 0; i < nav.SelfMappingColumns.Count; i++)
                 link.Where.Add(new BinaryExpr(mappingTable.Column(nav.SelfMappingColumns[i]), SqlBinaryOperator.Equal, owner.OwnerColumn(nav.SelfColumns[i])));
+            if (nav.ExtraMappingFilter is { } mappingFilter) link.Where.Add(translator.ElementPredicate(mappingFilter, new EntityBinding(mappingTable)));
             link.Columns.Add(new SelectColumn(LiteralExpr.One, null));
             // 中间表的 EXISTS 也带 LIMIT 1（与 Java 一致）
             link.Limit = 1;
-            sub.Where.Add(new ExistsExpr(link, negated: false));
+            relation.Add(new ExistsExpr(link, negated: false));
         }
         else
         {
@@ -413,9 +422,14 @@ internal sealed partial class ExpressionTranslator
                 .Select((target, i) => (SqlExpr)new BinaryExpr(table.Column(target), SqlBinaryOperator.Equal, owner.OwnerColumn(nav.SelfColumns[i])))
                 .ToList();
             // 复合键整体加括号（与 Java 一致）
-            sub.Where.Add(keys.Count == 1 ? keys[0] : LogicalExpr.Grouped(keys));
+            relation.Add(keys.Count == 1 ? keys[0] : LogicalExpr.Grouped(keys));
         }
-        if (nav.ExtraFilter is { } extra) sub.Where.Add(translator.ElementPredicate(extra, element));
+        if (nav.ExtraFilter is { } extra)
+        {
+            relation.Add(translator.ElementPredicate(extra, element));
+            sub.Where.Add(LogicalExpr.Grouped(relation));
+        }
+        else sub.Where.AddRange(relation);
         return sub;
     }
 

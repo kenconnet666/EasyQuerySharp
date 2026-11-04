@@ -94,10 +94,8 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
             case NewExpression { Arguments.Count: 0 } n when topLevel && IsMap(n.Type):
                 _columns.Add(new SelectColumn(new FragmentExpr("*", []), null));
                 return Expression.Call(ReadMapMethod, _reader);
-            // AutoProjection.EntityMap(o)：实体的全部列，不写 AS，键是列名（Java 的 new MapProxy().selectAll(o)）
-            case MethodCallExpression { Method.Name: nameof(AutoProjection.EntityMap) } call when call.Method.DeclaringType == typeof(AutoProjection):
-                ShapeEntity(translator.BindingOf(call.Arguments[0]) ?? throw new NotSupportedException($"不能把 {call.Arguments[0]} 投影成 Map"), call.Arguments[0].Type, topLevel: false);
-                return Expression.Call(ReadMapMethod, _reader);
+            case MethodCallExpression call when IsColumnsCall(call):
+                return ShapeColumnsMap(call);
             case NewExpression n when n.Constructor is not null:
             {
                 var members = TargetMembers(n);
@@ -283,16 +281,42 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         return Expression.New(parameterized, parameterized.GetParameters().Select(p => Read(p.Name!, p.ParameterType)));
     }
 
-    private static readonly MethodInfo ReadMapMethod = typeof(EntityMaterializer).GetMethod(nameof(EntityMaterializer.ReadDictionary))!;
+    private static readonly MethodInfo ReadMapMethod = typeof(EntityMaterializer).GetMethod(nameof(EntityMaterializer.ReadDictionary), [typeof(DbDataReader)])!;
+    private static readonly MethodInfo ReadMapRangeMethod = typeof(EntityMaterializer).GetMethod(nameof(EntityMaterializer.ReadDictionary), [typeof(DbDataReader), typeof(int), typeof(int)])!;
 
     private static bool IsMap(Type type) => typeof(IDictionary<string, object?>).IsAssignableFrom(type);
+
+    private static bool IsColumnsCall(MethodCallExpression call) =>
+        call.Method.DeclaringType == typeof(Sql) && call.Method.Name is nameof(Sql.Columns) or nameof(Sql.ColumnsExcept);
+
+    /// <summary>
+    /// <c>Sql.Columns(b)</c> / <c>Sql.ColumnsExcept(b, b.X, …)</c>：实体的（其余）全部列，不写 AS，读成以列名为键的字典
+    /// （Java 的 MapProxy.selectAll / selectIgnores）。
+    /// </summary>
+    private Expression ShapeColumnsMap(MethodCallExpression call)
+    {
+        if (translator.BindingOf(call.Arguments[0]) is not EntityBinding owner)
+            throw new NotSupportedException($"Sql.Columns 只能用在实体上：{call.Arguments[0]}");
+        var excluded = call.Arguments.Count > 1 && call.Arguments[1] is NewArrayExpression array
+            ? array.Expressions.Select(e => ExpressionTranslator.StripConvert(e) is MemberExpression m ? m.Member.Name
+                : throw new NotSupportedException($"Sql.ColumnsExcept 只能排除属性访问，如 b.CreateTime：{e}")).ToHashSet(StringComparer.Ordinal)
+            : [];
+        var start = _columns.Count;
+        foreach (var c in owner.Entity.Columns.Where(c => c.AutoSelect && !excluded.Contains(c.PropertyName)))
+            AddColumn(owner.EntityTable.Column(c), alias: null, memberName: null);
+        return Expression.Call(ReadMapRangeMethod, _reader, Expression.Constant(start), Expression.Constant(_columns.Count - start));
+    }
 
     /// <summary>
     /// Map 投影 <c>new Dictionary&lt;string, object?&gt; { { "id", o.Id }, … }</c>（Java 的 MapProxy.put）：每个键一列，
     /// 别名就是键且总写 AS（与 Java 一致），读出后按原样的 Add 调用放回字典。
+    /// 构造参数可以是 <c>Sql.Columns(b)</c>，先放实体的全部列再追加这些键。
     /// </summary>
     private Expression ShapeMap(ListInitExpression map)
     {
+        var created = map.NewExpression;
+        if (created.Arguments is [MethodCallExpression columns] && IsColumnsCall(columns))
+            created = Expression.New(created.Constructor!, Coerce(ShapeColumnsMap(columns), created.Arguments[0].Type));
         var initializers = map.Initializers.Select(init =>
         {
             if (init.Arguments.Count != 2 || ClientEvaluator.Evaluate(init.Arguments[0]) is not string key)
@@ -304,7 +328,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
                 Expression.Constant((sql as ColumnExpr)?.Column?.Converter, typeof(IValueConverter)));
             return Expression.ElementInit(init.AddMethod, Expression.Constant(key), Coerce(read, init.Arguments[1].Type));
         });
-        return Expression.ListInit(map.NewExpression, initializers);
+        return Expression.ListInit(created, initializers);
     }
 
     private Expression ShapeScalar(Expression body, MemberInfo? member)

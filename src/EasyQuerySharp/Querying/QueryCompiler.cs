@@ -43,7 +43,7 @@ internal static class QueryCompiler
             {
                 query = new SelectQuery(binding.Table);
                 query.Where.AddRange(filters);
-                translator.Context = new TranslationContext(db.Metadata, table => Filters(db, state, new EntityBinding(table)), query, outerContext)
+                translator.Context = new TranslationContext(db.Metadata, (table, logicDelete) => Filters(db, state, new EntityBinding(table), noLogicDelete: !logicDelete), query, outerContext)
                 {
                     Db = db,
                     GroupJoinSpecs = state.GroupJoins,

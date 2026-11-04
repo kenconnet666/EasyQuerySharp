@@ -181,12 +181,21 @@ public abstract class WriteCommandBase<TSelf, T> : EntityCommandBase<TSelf, T>
         if (applyLogicDelete && !LogicDeleteDisabled && QueryCompiler.LogicDeleteFilter(table) is { } ld) result.Add(ld);
         result.AddRange(Db.Interceptors.QueryFilters(table, Interceptors));
         if (entity is not null) result.AddRange(EntityPredicates(table, entity));
+        if (_wheres.Count == 0) return result;
+
+        // 条件里的集合导航翻译成关联子查询，需要翻译上下文；对一导航要 JOIN 到目标表，UPDATE / DELETE 还不支持
+        var scratch = new SelectQuery(table);
+        var context = new TranslationContext(Db.Metadata,
+            (t, logicDelete) => [.. (logicDelete && QueryCompiler.LogicDeleteFilter(t) is { } filter ? [filter] : Array.Empty<SqlExpr>()), .. Db.Interceptors.QueryFilters(t, Interceptors)],
+            scratch) { Db = Db };
         foreach (var where in _wheres)
         {
-            var translator = new ExpressionTranslator([]);
+            var translator = new ExpressionTranslator([]) { Context = context };
             translator.Bind(where, [new EntityBinding(table)]);
             result.Add(translator.TranslatePredicate(where.Body));
         }
+        if (scratch.Joins.Count > 0)
+            throw new NotSupportedException($"{typeof(T).Name} 的更新 / 删除条件里用到了对一导航（需要 JOIN），还不支持；请改写成子查询");
         return result;
     }
 }

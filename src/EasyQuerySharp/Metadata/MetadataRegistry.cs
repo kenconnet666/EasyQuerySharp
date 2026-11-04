@@ -41,17 +41,23 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
             mapping,
             mapping is null ? [] : attribute.SelfMappingProperties.Select(mapping.GetColumn).ToList(),
             mapping is null ? [] : attribute.TargetMappingProperties.Select(mapping.GetColumn).ToList(),
-            ExtraFilterOf(self.Type, property, attribute.ExtraFilter));
+            ExtraFilterOf(self.Type, property, nameof(NavigateAttribute.ExtraFilter), attribute.ExtraFilter),
+            ExtraFilterOf(self.Type, property, nameof(NavigateAttribute.ExtraMappingFilter), attribute.ExtraMappingFilter));
     }
 
-    // 导航上的固定条件：本实体上的静态属性 / 字段，类型是 Expression<Func<目标, bool>>
-    private static System.Linq.Expressions.LambdaExpression? ExtraFilterOf(Type owner, PropertyInfo navigation, string? memberName)
+    /// <summary>
+    /// 导航上的固定条件：本实体上的静态属性 / 字段，类型是 <c>Expression&lt;Func&lt;目标或中间表, bool&gt;&gt;</c>。
+    /// 每次翻译时重新取值（对应 Java 的 NavigateExtraFilterStrategy 每次构建都调用），属性返回 null 表示这次不加条件。
+    /// </summary>
+    private static Func<System.Linq.Expressions.LambdaExpression?>? ExtraFilterOf(Type owner, PropertyInfo navigation, string option, string? memberName)
     {
         if (memberName is null) return null;
         const BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-        var value = owner.GetProperty(memberName, flags)?.GetValue(null) ?? owner.GetField(memberName, flags)?.GetValue(null);
-        return value as System.Linq.Expressions.LambdaExpression
-               ?? throw new InvalidOperationException($"{owner.Name}.{navigation.Name} 的 ExtraFilter '{memberName}' 必须是返回 Expression<Func<目标, bool>> 的静态成员");
+        if (owner.GetProperty(memberName, flags) is { } property && typeof(System.Linq.Expressions.LambdaExpression).IsAssignableFrom(property.PropertyType))
+            return () => (System.Linq.Expressions.LambdaExpression?)property.GetValue(null);
+        if (owner.GetField(memberName, flags) is { } field && typeof(System.Linq.Expressions.LambdaExpression).IsAssignableFrom(field.FieldType))
+            return () => (System.Linq.Expressions.LambdaExpression?)field.GetValue(null);
+        throw new InvalidOperationException($"{owner.Name}.{navigation.Name} 的 {option} '{memberName}' 必须是类型为 Expression<Func<…, bool>> 的静态属性或字段");
     }
 
     /// <summary>集合类型的元素类型；不是集合时返回类型本身。</summary>

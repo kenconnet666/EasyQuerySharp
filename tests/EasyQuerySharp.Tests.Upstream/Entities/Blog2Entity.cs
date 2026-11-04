@@ -16,3 +16,16 @@ public class Blog2Entity : BaseEntity
 
     private static Expression<Func<Blog2Entity, string?>> StarStrSql => b => b.Star.ToString();
 }
+
+/// <summary>对应 Java：entity/BlogEntity2（star 读成 decimal）。</summary>
+[Table("t_blog")]
+public class BlogEntity2 : BaseEntity
+{
+    public string? Title { get; set; }
+
+    public string? Content { get; set; }
+
+    public string? Url { get; set; }
+
+    public decimal? Star { get; set; }
+}
