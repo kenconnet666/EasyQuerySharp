@@ -96,6 +96,16 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
                 return Expression.Call(ReadMapMethod, _reader);
             case MethodCallExpression call when IsColumnsCall(call):
                 return ShapeColumnsMap(call);
+            // Sql.ClientSide(x, f)：SQL 里只有 x（列别名照常按成员），读出后调用 f
+            case MethodCallExpression { Method.Name: nameof(Sql.ClientSide) } call when call.Method.DeclaringType == typeof(Sql):
+            {
+                // 换算可以是 lambda，也可以是方法组等任何能在客户端求值成委托的表达式
+                Expression convert = ExpressionTranslator.StripConvert(call.Arguments[1]) is LambdaExpression lambda
+                    ? lambda
+                    : Expression.Constant(ClientEvaluator.Evaluate(call.Arguments[1]), call.Arguments[1].Type);
+                var input = call.Method.GetGenericArguments()[0];
+                return Expression.Invoke(convert, Coerce(Shape(call.Arguments[0], member, false), input));
+            }
             case NewExpression n when n.Constructor is not null:
             {
                 var members = TargetMembers(n);

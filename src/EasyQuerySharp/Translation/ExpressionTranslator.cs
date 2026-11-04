@@ -217,7 +217,8 @@ internal sealed partial class ExpressionTranslator
             branches.Add((TranslatePredicate(next.Test), Translate(next.IfTrue)));
             otherwise = next.IfFalse;
         }
-        return new CaseExpr(branches, Translate(otherwise));
+        // ELSE 分支是字面量 null 时写 ELSE NULL（与 Java 的 elseEnd(null) 一致），不做参数
+        return new CaseExpr(branches, StripConvert(otherwise) is ConstantExpression { Value: null } ? LiteralExpr.Null : Translate(otherwise));
     }
 
     // string.Compare(a, b) 或 a.CompareTo(b) 的两个操作数

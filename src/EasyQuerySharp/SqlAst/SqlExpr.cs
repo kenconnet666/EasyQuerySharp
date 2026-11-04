@@ -100,11 +100,14 @@ public sealed class LogicalExpr(bool isAnd, IReadOnlyList<SqlExpr> operands) : S
     /// <summary>操作数，至少一个。</summary>
     public IReadOnlyList<SqlExpr> Operands { get; } = operands;
 
-    /// <summary>显式分组的 AND：不被外层平铺，渲染时整体加括号（<see cref="Sql.Group"/>）。</summary>
+    /// <summary>显式分组：不被外层同类的 AND / OR 平铺；AND 组渲染时整体加括号（<see cref="Sql.Group"/>），OR 本来就加括号。</summary>
     public bool IsGrouped { get; private init; }
 
     /// <summary>显式分组的 AND 组。</summary>
     public static LogicalExpr Grouped(IReadOnlyList<SqlExpr> operands) => new(true, operands) { IsGrouped = true };
+
+    /// <summary>显式分组的 OR 组：作为外层 OR 的一项时仍单独带括号（如按上限拆开的 IN 列表）。</summary>
+    public static LogicalExpr GroupedOr(IReadOnlyList<SqlExpr> operands) => new(false, operands) { IsGrouped = true };
 
     /// <summary>合并成 AND：嵌套的 AND 平铺（显式分组的除外）；只有一个操作数时返回它本身。</summary>
     public static SqlExpr And(IEnumerable<SqlExpr> operands) => Combine(true, operands);

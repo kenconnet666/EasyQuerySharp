@@ -34,6 +34,12 @@ public sealed class EasyDbOptions
     /// </summary>
     public long ReverseOffsetThreshold { get; set; }
 
+    /// <summary>
+    /// IN 值列表的上限（对应 Java 的 maxInClauseSize）：超过时按上限拆成多个 IN 用 OR 连接；0（默认）表示不拆。
+    /// Oracle 单个 IN 最多 1000 个值，需要时设成 1000。
+    /// </summary>
+    public int MaxInClauseSize { get; set; }
+
     /// <summary>执行监听器。</summary>
     public List<IExecutionListener> Listeners { get; } = [];
 

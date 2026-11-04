@@ -10,7 +10,7 @@
 
 | 能力 | key | 用例数 | C# 写法 | M |
 |---|---|---|---|---|
-| 基本查询：条件、排序、选列、分页 | `query.basic` | 402 | `db.Query<T>().Where(..).OrderBy(..).Select(..).Skip(n).Take(n).ToListAsync()`；`FirstAsync` / `SingleAsync` / `FindAsync(id)` / `AnyAsync` / `CountAsync`；`WhereIf` | M1 |
+| 基本查询：条件、排序、选列、分页 | `query.basic` | 402 | `db.Query<T>().Where(..).OrderBy(..).Select(..).Skip(n).Take(n).ToListAsync()`；`FirstAsync` / `SingleAsync` / `FindAsync(id)` / `AnyAsync` / `CountAsync`；`WhereIf` ；投影里读出后在客户端换算 `Sql.ClientSide(x, v => ..)`（对应 valueConvert）；IN 列表按 `EasyDbOptions.MaxInClauseSize` 拆成 OR 组 | M1 |
 | 分页结果 | `query.page` | 22 | `ToPageAsync(page, size)` 返回 `Page<T> { Rows, Total, PageIndex, PageSize }`；最后一页只取剩余条数；`EasyDbOptions.ReverseOffsetThreshold` 开启深分页反向排序（偏移过半时反转 ORDER BY 取数再倒序），单条查询 `DisableReversePaging()` 关闭 | M1 |
 | 原生 SQL | `sql.native` | 50 | `db.Sql<T>($"...{param}")`，插值的值自动参数化；行内片段用 `Sql.Raw<T>($"... {u.Col} ...")` | M1 |
 | 显式 join | `query.join` | 88 | `.LeftJoin<Post>((u, p) => p.UserId == u.Id)`，后续 lambda 依次收到各表 `(u, p)`；right join 之后，前面表的列按可空处理 | M3 |
@@ -18,7 +18,7 @@
 | union / union all | `query.union` | 18 | `q1.Union(q2)` / `UnionAll` | M3 |
 | CTE | `query.cte` | 11 | `q.AsCte("x")`（对应 toCteAs，默认名 `with_类型名`）：之后可以 Where / Select，或作为 JOIN 来源；同名定义只写一次，写在 `WITH .. AS (..) ,.. AS (..)` 里；递归 CTE 随树（4.10）实现 | M3 |
 | 无实体的查询、toMap | `query.map` | 11 | `db.Sql<Dictionary<string, object?>>(...)`；投影成 Map：`Select(o => new Dictionary<string, object?> { { "id", o.Id } })`（逐键，总写 AS）、`Select<Dictionary<string, object?>>()`（全部列）、`new Dictionary<string, object?>()`（`SELECT *`）、`new Dictionary<string, object?>(Sql.Columns(b)) { { "xx", .. } }` / `Sql.ColumnsExcept(b, b.CreateTime)`（全部列再追加键）；`ToDictionaryAsync` | M3 |
-| 流式读取 | `query.stream` | 9 | `await foreach (var x in q.AsAsyncEnumerable())` | M3 |
+| 流式读取 | `query.stream` | 9 | `await foreach (var x in q.AsAsyncEnumerable())`；按偏移分批 `q.OffsetChunkAsync(size, chunk => 前进行数, maxFetchSize)`（对应 offsetChunk） | M3 |
 | 复用查询 | `query.reuse` | 2 | 查询对象不可变，可以直接复用 | M3 |
 
 ## 表达式与函数

@@ -116,7 +116,7 @@ internal sealed partial class ExpressionTranslator
             {
                 var operand = Translate(call.Arguments[0]);
                 var values = ValuesOf(call.Arguments[1], operand);
-                return new InExpr(operand, values, call.Method.Name == nameof(Sql.NotIn));
+                return InList(operand, values, call.Method.Name == nameof(Sql.NotIn));
             }
             default:
                 throw Unsupported(call);
@@ -226,7 +226,7 @@ internal sealed partial class ExpressionTranslator
 
         if (ClientEvaluator.MustTranslate(source)) return false;
         var operand = Translate(item);
-        result = new InExpr(operand, ValuesOf(source, operand), negated: false);
+        result = InList(operand, ValuesOf(source, operand), negated: false);
         return true;
     }
 
@@ -253,6 +253,18 @@ internal sealed partial class ExpressionTranslator
             ? new LiteralExpr(isAny ? "1 = 2" : "1 = 1")
             : isAny ? LogicalExpr.Or(items) : LogicalExpr.And(items);
         return true;
+    }
+
+    /// <summary>
+    /// 值列表的 IN：超过 <see cref="EasyDbOptions.MaxInClauseSize"/> 时按上限分组，写成 <c>(x IN (…) OR x IN (…))</c>，
+    /// NOT IN 写成 <c>(x NOT IN (…) AND x NOT IN (…))</c>（对应 Java 的 maxInClauseSize，Oracle 等有 IN 列表上限的库要用）。
+    /// </summary>
+    private SqlExpr InList(SqlExpr operand, IReadOnlyList<SqlExpr> values, bool negated)
+    {
+        var max = Context?.Db?.Options.MaxInClauseSize ?? 0;
+        if (max <= 0 || values.Count <= max) return new InExpr(operand, values, negated);
+        var parts = values.Chunk(max).Select(chunk => (SqlExpr)new InExpr(operand, chunk, negated)).ToList();
+        return negated ? LogicalExpr.Grouped(parts) : LogicalExpr.GroupedOr(parts);
     }
 
     // Sql.Column(entity, "a.b")：沿属性路径（忽略大小写）构造 entity.A.B，之后与手写的成员访问走同一条翻译

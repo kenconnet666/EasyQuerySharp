@@ -25,6 +25,12 @@ public static partial class Sql
     public static T Raw<T>(string template, params object?[] arguments) => throw OnlyInQuery();
 
     /// <summary>
+    /// 投影里的值读出后在客户端换算（对应 Java 的 valueConvert）：SQL 只选 <paramref name="value"/>，
+    /// 读到的值再交给 <paramref name="convert"/>。<c>.Select(t =&gt; new { Label = Sql.ClientSide(t.Stars, s =&gt; s + "-") })</c>。
+    /// </summary>
+    public static TResult ClientSide<T, TResult>(T value, Func<T, TResult> convert) => throw OnlyInQuery();
+
+    /// <summary>
     /// 按属性路径动态取列（对应 Java 的 anyColumn）：<c>Sql.Column&lt;int?&gt;(c, "User.Age")</c> 等同于 <c>c.User.Age</c>，
     /// 路径里的属性名忽略大小写，可以经过对一导航。路径在翻译时解析，适合按前端传入的字段名排序、过滤。
     /// </summary>

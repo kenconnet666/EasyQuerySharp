@@ -287,6 +287,26 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     }
 
     /// <summary>
+    /// 按偏移分批读取（对应 Java 的 offsetChunk）：每批最多 <paramref name="size"/> 行交给 <paramref name="handle"/>，
+    /// 它返回下一批的偏移要前进多少（处理完就删掉的场景返回 0）；某批不满 <paramref name="size"/> 行、或累计读到
+    /// <paramref name="maxFetchSize"/> 行时结束（防止返回 0 时死循环）。查询需要有确定的排序。
+    /// </summary>
+    public async Task OffsetChunkAsync(int size, Func<IReadOnlyList<TElement>, long> handle, long maxFetchSize = 100_000, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
+        ArgumentNullException.ThrowIfNull(handle);
+        long offset = 0, fetched = 0;
+        while (fetched < maxFetchSize)
+        {
+            var rows = await Limit(offset, Math.Min(size, maxFetchSize - fetched)).ToListAsync(cancellationToken).ConfigureAwait(false);
+            if (rows.Count == 0) break;
+            fetched += rows.Count;
+            offset += handle(rows);
+            if (rows.Count < size) break;
+        }
+    }
+
+    /// <summary>
     /// 取第 <paramref name="page"/> 页要执行的查询：超出总数时为 null；剩余不足一页时只取剩下的；
     /// 偏移量不小于阈值且超过总数一半、排序可以整体反转时，反转排序从另一头取（结果要在内存里倒序）。
     /// </summary>
