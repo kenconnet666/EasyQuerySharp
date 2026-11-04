@@ -15,6 +15,88 @@ public sealed class M8BankTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
         public string? Vo3 { get; set; }
 
         public long? BankCardCount { get; set; }
+
+        public List<CardVO>? Cards { get; set; }
+    }
+
+    /// <summary>MyUserVO.cards 的元素（Java 里是同名属性的 VO）。</summary>
+    public sealed class CardVO
+    {
+        public string? Type { get; set; }
+
+        public string? Code { get; set; }
+    }
+
+    [Fact, Upstream("mysql8/M8BankTest.java#includeSubQuery2")]
+    public async Task IncludeSubQuery2()
+    {
+        using var listen = SqlCapture.Listen();
+        var list = await Db.Query<SysUser>()
+            .Select(u => new MyUserVO
+            {
+                Vo1 = u.Name, Vo2 = u.Id, Vo3 = u.Phone,
+                Cards = u.BankCards!.Select(c => new CardVO { Type = c.Code, Code = c.Type }).ToList(),
+            })
+            .ToListAsync(Ct);
+        listen.AssertSql(0, "SELECT t.`name` AS `vo1`,t.`id` AS `vo2`,t.`phone` AS `vo3`,t.`id` AS `__relation__id` FROM `t_sys_user` t");
+        listen.AssertSql(1, "SELECT t.`code` AS `type`,t.`type` AS `code`,t.`uid` AS `__relation__uid` FROM `t_bank_card` t WHERE t.`uid` IN (?,?)");
+        listen.AssertParams(1, "u1(String),u2(String)");
+        Assert.Equal(3, list.Single(x => x.Vo2 == "u1").Cards!.Count);
+    }
+
+    [Fact, Upstream("mysql8/M8BankTest.java#includeSubQuery3")]
+    public async Task IncludeSubQuery3()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysUser>()
+            .Select(u => new MyUserVO
+            {
+                Vo1 = u.Name, Vo2 = u.Id, Vo3 = u.Phone,
+                Cards = u.BankCards!.Where(c => c.Type == "储蓄卡").Select(c => new CardVO { Type = c.Code, Code = c.Bank!.Name }).ToList(),
+            })
+            .ToListAsync(Ct);
+        listen.AssertSql(0, "SELECT t.`name` AS `vo1`,t.`id` AS `vo2`,t.`phone` AS `vo3`,t.`id` AS `__relation__id` FROM `t_sys_user` t");
+        listen.AssertSql(1, "SELECT t.`code` AS `type`,t1.`name` AS `code`,t.`uid` AS `__relation__uid` FROM `t_bank_card` t INNER JOIN `t_bank` t1 ON t1.`id` = t.`bank_id` WHERE t.`type` = ? AND t.`uid` IN (?,?)");
+        listen.AssertParams(1, "储蓄卡(String),u1(String),u2(String)");
+    }
+
+    [Fact, Upstream("mysql8/M8BankTest.java#includeSubQuery4")]
+    public async Task IncludeSubQuery4()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysUser>()
+            .Select(u => new MyUserVO
+            {
+                Vo1 = u.Name, Vo2 = u.Id, Vo3 = u.Phone,
+                Cards = u.BankCards!.Where(c => c.Type == "储蓄卡")
+                    .Select(c => new CardVO { Type = c.Code, Code = c.Bank!.BankCards!.Max(x => x.OpenTime!.Value.ToString("yyyy-MM-dd")) })
+                    .ToList(),
+            })
+            .ToListAsync(Ct);
+        listen.AssertSql(1, "SELECT t.`code` AS `type`,(SELECT MAX(DATE_FORMAT(t2.`open_time`,'%Y-%m-%d')) FROM `t_bank_card` t2 WHERE t2.`bank_id` = t1.`id`) AS `code`,t.`uid` AS `__relation__uid` FROM `t_bank_card` t INNER JOIN `t_bank` t1 ON t1.`id` = t.`bank_id` WHERE t.`type` = ? AND t.`uid` IN (?,?)");
+        listen.AssertParams(1, "储蓄卡(String),u1(String),u2(String)");
+    }
+
+    [Fact, Upstream("mysql8/M8BankTest.java#includeSubQuery5")]
+    public async Task IncludeSubQuery5()
+    {
+        using var listen = SqlCapture.Listen();
+        var list = await Db.Query<SysUser>()
+            .Select(u => new SysUser
+            {
+                Id = u.Id, Name = u.Name, Phone = u.Phone, Age = u.Age, CreateTime = u.CreateTime,
+                BankCards = u.BankCards!.Select(c => new SysBankCard
+                {
+                    Id = c.Id, Uid = c.Uid, Code = c.Code, Type = c.Type, BankId = c.BankId, OpenTime = c.OpenTime, Bank = c.Bank,
+                }).ToList(),
+            })
+            .ToListAsync(Ct);
+        listen.AssertSql(0, "SELECT t.`id`,t.`name`,t.`phone`,t.`age`,t.`create_time` FROM `t_sys_user` t");
+        listen.AssertSql(1, "SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time` FROM `t_bank_card` t WHERE t.`uid` IN (?,?)");
+        listen.AssertParams(1, "u1(String),u2(String)");
+        listen.AssertSql(2, "SELECT t.`id`,t.`name`,t.`create_time` FROM `t_bank` t WHERE t.`id` IN (?,?)");
+        listen.AssertParams(2, "1(String),2(String)");
+        Assert.All(list.SelectMany(u => u.BankCards!), c => Assert.NotNull(c.Bank));
     }
 
     [Fact, Upstream("mysql8/M8BankTest.java#test1")]

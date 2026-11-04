@@ -11,6 +11,9 @@ internal sealed partial class ExpressionTranslator
 
     private NavigationMetadata? Navigation(EntityBinding owner, string member) => Context?.Metadata.FindNavigation(owner.Entity, member);
 
+    /// <summary>所属表上名为 <paramref name="member"/> 的导航；不是导航时返回 null（投影编译器识别带出时用）。</summary>
+    internal NavigationMetadata? FindNavigation(EntityBinding owner, string member) => Navigation(owner, member);
+
     /// <summary>对一导航 <c>x.User</c>：返回隐式 JOIN 的目标表绑定；不是对一导航时返回 null。</summary>
     private EntityBinding? ToOneNavigation(MemberExpression m)
     {

@@ -46,18 +46,18 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
   - 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 四个任务；
   - 每天定时运行一次；失败时上传 TRX 报告。
 - [x] 0.5 设计文档：0001–0003、架构、文档站、能力对照总表、本路线图、`CLAUDE.md`。
-- [ ] 0.6 推到 GitHub，让 CI 首次跑通。需要建远程仓库，等用户操作。
-- [ ] 0.7 `tools/ParityTests`：
+- [x] 0.6 推到 GitHub，让 CI 首次跑通。需要建远程仓库，等用户操作。
+- [x] 0.7 `tools/ParityTests`：
   - 扫描 Java 的 2338 个用例并归类；
   - 读出 C# 测试上的 `[Upstream]` 标注；
   - 生成 `docs/parity-tests.md`；
   - `--scaffold` 生成测试骨架，期望 SQL 和参数从 Java 原样搬过来；
   - `--check` 加进 CI。
-- [ ] 0.8 L1 项目 `tests/EasyQuerySharp.Tests`：
+- [~] 0.8 L1 项目 `tests/EasyQuerySharp.Tests`：
   - `SqlOnly` 会话，对应 Java 的 `EmptyDataSource`；
   - `Listen()` / `ListenAll()` 捕获 SQL；
   - `AssertSql` 和 `AssertParams`，参数按 Java 风格输出类型名，例如 `123xxx(String)`。
-- [ ] 0.9 L2 项目 `tests/EasyQuerySharp.Tests.Upstream`：
+- [x] 0.9 L2 项目 `tests/EasyQuerySharp.Tests.Upstream`：
   - 移植 Java 的实体模型（先移 `BaseTest` 用到的那些）；
   - `MySqlFixture`：建表并写入种子数据，code-first 做好之前先执行 Java 的 SQL 脚本；
   - 对照表的初始状态是 2338 条全部待做。
@@ -67,37 +67,37 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 
 覆盖能力：`query.basic` 402、`query.page` 22、`sql.native` 50、`write.insert` / `write.update` / `write.delete` 共 115、`column.generated`。方言做 MySQL、SQLite、PostgreSQL，也就是本地必测的三个库。
 
-- [ ] 1.1 元数据：
+- [~] 1.1 元数据：
   - 特性 `[Table]`、`[Column]`、`[Key]`、`[ColumnIgnore]`、`[InsertIgnore]`、`[UpdateIgnore]`；
   - 命名约定，默认驼峰转下划线；
   - Source Generator 产出 `EntityMetadata` 和 `DbDataReader` 物化器，运行时不反射。
-- [ ] 1.2 查询模型：
+- [x] 1.2 查询模型：
   - 不可变的 `IQuery<T>`；
   - `Where` / `WhereIf` / `OrderBy` / `Select` / `Skip` / `Take` / `Distinct`；
   - 终结方法 `ToListAsync` / `FirstAsync` / `FirstOrDefaultAsync` / `SingleAsync` / `AnyAsync` / `CountAsync` / `FindAsync`。
-- [ ] 1.3 表达式翻译：
+- [x] 1.3 表达式翻译：
   - 比较、逻辑、算术、null、三元、`??`；
   - 闭包参数提取，翻译路径上禁止 `Compile()`；
   - `Contains` 要识别三种形状：数组、`List<T>`、first-class span 的 `MemoryExtensions`；
   - `string` 的 `Contains` / `StartsWith` / `EndsWith`，以及 `Like`；
   - 不支持的写法报错时，消息里带上原始表达式。
-- [ ] 1.4 SQL AST、`Dialect` 基类、渲染器：
+- [x] 1.4 SQL AST、`Dialect` 基类、渲染器：
   - 输出与 Java 逐字对齐：单表不加别名，多表依次 `t`、`t1`…，逗号后不留空格，列顺序等于属性声明顺序；
   - `ParameterStyle` 支持 `Question` / `Named` / `Positional`。
-- [ ] 1.5 MySQL 方言（同时兼容 8.0.18）、SQLite 方言、PostgreSQL 方言。
-- [ ] 1.6 执行层：
+- [x] 1.5 MySQL 方言（同时兼容 8.0.18）、SQLite 方言、PostgreSQL 方言。
+- [x] 1.6 执行层：
   - `Session` / `Driver` 基于 `DbDataSource`；
   - 环境事务基于 `AsyncLocal`；
   - 执行事件，对接 `ILogger` 和 `ActivitySource`；
   - 全链路传递 `CancellationToken`。
 - [ ] 1.7 表达式形状缓存：常量算作参数，命中后只提取参数值；附带基准测试。
-- [ ] 1.8 写入：
+- [~] 1.8 写入：
   - `Insert` 支持返回自增键或整个实体；
   - `Update` 支持 `Set` 表达式和按主键整行更新；
   - `Delete` 没有条件时必须写 `.All()`；
   - 写入一律以 `ExecuteAsync` 结束。
-- [ ] 1.9 原生 SQL：`db.Sql<T>($"...")`（插值处理器，值自动参数化）和 `Sql.Raw<T>`。
-- [ ] 1.10 `ToPageAsync`。
+- [x] 1.9 原生 SQL：`db.Sql<T>($"...")`（插值处理器，值自动参数化）和 `Sql.Raw<T>`。
+- [x] 1.10 `ToPageAsync`。
 - [ ] 1.11 `tools/DocsExamples` 首版：在 SQLite 上实跑、回放驱动、SQL 快照、`--check`；首批页面是"查询 / 基础""写入"。
 - [ ] 1.12 L3 `LiveSuite` 基类和 `LiveSuiteOptions`，首批用例组：queries、writes、native SQL。
 
@@ -105,17 +105,17 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 
 覆盖能力：`func.string` 128、`func.date` 96、`func.general` 53、`func.joining` 29、`func.json` 12、`func.math` 4、`expr.case` 27、`window` 38、`lock` 27，加上 fork 的 dateTrunc、NULLIF、null-safe 等值、窗口 frame、NoWait / SkipLocked。
 
-- [ ] 2.1 函数表机制：
+- [x] 2.1 函数表机制：
   - `[SqlFunction]` 扩展方法；
   - BCL 方法映射：`string`、`Math`、`DateTime` / `DateOnly` / `DateTimeOffset`；
   - 用户的自定义函数和内置函数写法一样。
-- [ ] 2.2 字符串、数学、通用函数：`Sql.Greatest` / `Least` / `NullIf` / `EqualsNullSafe`。
-- [ ] 2.3 日期函数：格式串按方言翻译，加减、取部分、`DateDiff`、`DateTrunc`。
-- [ ] 2.4 `Sql.Case`，以及带过滤的聚合，例如 `g.Count(p => p.Paid)`。
+- [x] 2.2 字符串、数学、通用函数：`Sql.Greatest` / `Least` / `NullIf` / `EqualsNullSafe`。
+- [~] 2.3 日期函数：格式串按方言翻译，加减、取部分、`DateDiff`、`DateTrunc`。
+- [~] 2.4 `Sql.Case`，以及带过滤的聚合，例如 `g.Count(p => p.Paid)`。
 - [ ] 2.5 窗口函数：`Sql.Over.*` 系列，包括 frame、`Ntile` / `PercentRank` / `CumeDist`。
-- [ ] 2.6 字符串聚合 `StringJoin`，以及 JSON 取值。
+- [~] 2.6 字符串聚合 `StringJoin`，以及 JSON 取值。
 - [ ] 2.7 行锁：`ForUpdate` / `ForShare` / `NoWait` / `SkipLocked`。
-- [ ] 2.8 SQL Server 和 Oracle 方言的**渲染部分**，只做 SQL 比对：Java 的三组函数测试（约 100 个用例）在 MySQL、MSSQL、PG、Oracle 上各有一份。实库验证放到 M6。
+- [~] 2.8 SQL Server 和 Oracle 方言的**渲染部分**，只做 SQL 比对：Java 的三组函数测试（约 100 个用例）在 MySQL、MSSQL、PG、Oracle 上各有一份。实库验证放到 M6。
 - [ ] 2.9 分析器首版：
   - EQ0001：不支持翻译的方法；
   - EQ0002：表达式树里不能写的语法，给出改写建议。
@@ -124,9 +124,9 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 
 覆盖能力：`query.join` 88、`query.group` 78、`query.union` 18、`query.cte` 11、`query.map` 11、`query.stream` 9、`query.reuse` 2，加上 fork 的 rollup / cube / grouping。
 
-- [ ] 3.1 显式 join：`IQuery<T1..T8>` 由仓库内的生成器产出；right join 之后，前面表的列按可空处理。
-- [ ] 3.2 `GroupBy` / `Having` / 投影里的 `g.Key`，以及 `Rollup` / `Cube` / `Grouping`。
-- [ ] 3.3 子查询：`In(subQuery)`、`Exists`、派生表 `AsSubQuery()`。
+- [x] 3.1 显式 join：`IQuery<T1..T8>` 由仓库内的生成器产出；right join 之后，前面表的列按可空处理。
+- [~] 3.2 `GroupBy` / `Having` / 投影里的 `g.Key`，以及 `Rollup` / `Cube` / `Grouping`。
+- [x] 3.3 子查询：`In(subQuery)`、`Exists`、派生表 `AsSubQuery()`。
 - [ ] 3.4 `Union` / `UnionAll`，CTE 的 `With` / `WithRecursive`。
 - [ ] 3.5 流式读取 `AsAsyncEnumerable()`，无实体查询 `db.Sql<Dictionary<..>>`。
 - [ ] 3.6 LINQ 查询语法（`from … join … group … select`）的支持测试。
@@ -135,12 +135,12 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 
 覆盖能力：`nav.subquery` 142、`nav.groupJoin` 67、`nav.flat` 56、`nav.include` 37、`dto.autoInclude` 35、`tree` 25、`fill` 4。
 
-- [ ] 4.1 关系元数据：
+- [x] 4.1 关系元数据：
   - `[Navigate]` 支持一对一、多对一、一对多、多对多（中间表）、直达路径、`ExtraFilter`；
   - 可空引用类型决定 JOIN 方式。
-- [ ] 4.2 隐式 join：条件、排序、投影里出现多对一导航时自动 JOIN。
-- [ ] 4.3 隐式子查询：`Any` / `!Any` / `Count` / `Sum` / `Max` / `Min` / `Average` / `Where(..).聚合`，以及 `GroupJoin()` 合并。
-- [ ] 4.4 归一管线：内联器、规划器、按叶子往根构造的物化器。对多集合每层一次批量 IN 查询；IN 列表按方言上限分批，PG 用 `ANY`。
+- [x] 4.2 隐式 join：条件、排序、投影里出现多对一导航时自动 JOIN。
+- [~] 4.3 隐式子查询：`Any` / `!Any` / `Count` / `Sum` / `Max` / `Min` / `Average` / `Where(..).聚合`，以及 `GroupJoin()` 合并。
+- [~] 4.4 归一管线：内联器、规划器、按叶子往根构造的物化器。对多集合每层一次批量 IN 查询；IN 列表按方言上限分批，PG 用 `ANY`。
 - [ ] 4.5 投影里的嵌套集合：`Where` / `OrderBy` / `Take`（ROW_NUMBER）、`First` / `ElementAt`；`oneOfMany`。
 - [ ] 4.6 可复用投影：`Project(map)`，以及 `[Projection]` 方法由生成器产出表达式。
 - [ ] 4.7 `[MapFrom<T>]` 自动映射：平铺约定、`[MapPath]`、partial `Configure`；分析器 EQ0003 和 EQ0005。
@@ -191,7 +191,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 
 覆盖能力：`codeFirst` 17、`table.rename` 45、`table.schema` 19、`table.link` 13、`sharding` 48、`dto.object` 101、`search` 45。
 
-- [ ] 7.1 code-first：建表（注释、索引、外键）、只增不删的同步、`RenamedFrom`、`ToSql()`、读库结构。
+- [~] 7.1 code-first：建表（注释、索引、外键）、只增不删的同步、`RenamedFrom`、`ToSql()`、读库结构。
 - [ ] 7.2 查询级表名映射 `MapTable`：导航、隐式 join、include 都跟着变；`InSchema`、`WithTableLink`。
 - [ ] 7.3 分表：按取模、按时间路由；按条件裁剪；库内 UNION ALL；写入路由。
 - [ ] 7.4 分库：路由；在内存里归并排序和分页，`count` / `sum` / `min` / `max` 跨库合并。

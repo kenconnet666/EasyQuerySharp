@@ -61,7 +61,10 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     {
         var compiled = QueryCompiler.Compile<TElement>(State);
         var statement = SqlRenderer.Render(Db.Options.Dialect, compiled.Sql);
-        return await Db.Executor.QueryAsync(statement, compiled.Shaper, cancellationToken).ConfigureAwait(false);
+        var rows = await Db.Executor.QueryAsync(statement, compiled.Shaper, cancellationToken).ConfigureAwait(false);
+        // 投影里的导航带出：每个导航一次 IN 查询，挂回刚读出的行
+        await Includes.IncludeRunner.RunAsync(Db, compiled.Includes, cancellationToken).ConfigureAwait(false);
+        return rows;
     }
 
     /// <summary>第一行（追加 LIMIT 1）；没有时返回 null（对应 Java 的 firstOrNull）。</summary>

@@ -66,6 +66,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>最多返回的行数。</summary>
     public long? Limit { get; init; }
 
+    /// <summary>单表时也写别名 t（带出的子查询在 Java 版里总带别名）。</summary>
+    public bool ForceAlias { get; init; }
+
     /// <summary>关闭逻辑删除过滤。</summary>
     public bool DisableLogicDelete { get; init; }
 

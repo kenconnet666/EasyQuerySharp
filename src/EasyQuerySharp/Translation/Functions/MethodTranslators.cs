@@ -69,6 +69,12 @@ internal static class MethodTranslators
                      .Where(m => m.Name == nameof(string.Format) && m.GetParameters()[0].ParameterType == s))
             Add(format, TranslateFormat);
 
+        // ---------- 日期 ----------
+        // 格式串在 SQL 里是字面量（Java 版的写法），由方言转换格式符
+        foreach (var dateType in new[] { typeof(DateTime), typeof(DateTimeOffset), typeof(DateOnly) })
+            Add(dateType.GetMethod(nameof(DateTime.ToString), [s]), (t, c) =>
+                Fn(SqlFunctionNames.DateFormat, t.Translate(c.Object!), new LiteralExpr((string)ClientEvaluator.Evaluate(c.Arguments[0])!)));
+
         // ---------- Math ----------
         foreach (var name in new[] { nameof(Math.Abs), nameof(Math.Floor), nameof(Math.Ceiling), nameof(Math.Sign), nameof(Math.Sqrt), nameof(Math.Exp), nameof(Math.Log10), nameof(Math.Round), nameof(Math.Truncate), nameof(Math.Pow), nameof(Math.Log) })
         {

@@ -64,6 +64,7 @@ public class MySqlDialect : SqlDialect
         f[SqlFunctionNames.IndexOf] = Reordered("LOCATE", 1, 0);
         f[SqlFunctionNames.Ceiling] = Call("CEILING");
         f[SqlFunctionNames.Truncate] = Call("TRUNCATE");
+        f[SqlFunctionNames.DateFormat] = DateFormat("DATE_FORMAT({0},{1})", ("yyyy", "%Y"), ("MM", "%m"), ("dd", "%d"), ("HH", "%H"), ("mm", "%i"), ("ss", "%s"));
         f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("GROUP_CONCAT(").Write(a[0]).Append(" SEPARATOR ").Write(a[1]).Append(")");
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("GROUP_CONCAT(DISTINCT ").Write(a[0]).Append(" SEPARATOR ").Write(a[1]).Append(")");
     }

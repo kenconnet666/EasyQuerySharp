@@ -2,6 +2,7 @@ using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
 using EasyQuerySharp.Materialization;
+using EasyQuerySharp.Querying.Includes;
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.SqlAst;
 using EasyQuerySharp.Translation;
@@ -32,9 +33,38 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     public EntityMetadata? Entity { get; private set; }
 
     private Expression? _shaped;
+    private readonly List<(IncludePlan Plan, EntityBinding Owner)> _includes = [];
 
-    /// <summary>拆解投影：登记 SELECT 列，并构造（尚未编译的）读取表达式。</summary>
-    public void Prepare(Expression body) => _shaped = Shape(body, member: null, topLevel: true);
+    /// <summary>投影里的导航带出（主查询执行后由 <see cref="IncludeRunner"/> 依次执行）。</summary>
+    public IReadOnlyList<IncludePlan> Includes => _includes.Select(i => i.Plan).ToList();
+
+    /// <summary>调用方要求的关联键（作为别人的子查询时，用来把行挂回父对象）在结果里的列序号。</summary>
+    public int[] RelationOrdinals { get; private set; } = [];
+
+    /// <summary>
+    /// 拆解投影：登记 SELECT 列，并构造（尚未编译的）读取表达式。
+    /// 带出需要的父键列、调用方要求的关联键列追加在最后：已经原样选出的列直接复用，否则写成 <c>列 AS __relation__列名</c>（与 Java 版一致）。
+    /// </summary>
+    public void Prepare(Expression body, SourceBinding? root = null, IReadOnlyList<ColumnMetadata>? relationKeys = null)
+    {
+        _shaped = Shape(body, member: null, topLevel: true);
+        foreach (var (plan, owner) in _includes)
+            plan.ParentKeyOrdinals = plan.Navigation.SelfColumns.Select(c => RelationColumn(owner.Table, c)).ToArray();
+        if (relationKeys is not null && root is not null)
+            RelationOrdinals = relationKeys.Select(c => RelationColumn(root.Table, c)).ToArray();
+    }
+
+    private int RelationColumn(TableSource table, ColumnMetadata column)
+    {
+        var alias = "__relation__" + column.Name;
+        for (var i = 0; i < _columns.Count; i++)
+        {
+            var existing = _columns[i];
+            if (existing.Expr is ColumnExpr ce && ce.Table == table && ce.Name == column.Name && (existing.Alias is null || existing.Alias == alias)) return i;
+        }
+        _columns.Add(new SelectColumn(new ColumnExpr(table, column.Name, column), alias));
+        return _columns.Count - 1;
+    }
 
     /// <summary>编译读取函数；须先调用 <see cref="Prepare"/>。</summary>
     public Func<DbDataReader, T> Compile<T>()
@@ -53,19 +83,90 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
             case NewExpression n when n.Constructor is not null:
             {
                 var members = TargetMembers(n);
-                var args = n.Arguments.Select((a, i) => Coerce(Shape(a, members[i], false), a.Type)).ToList();
-                return n.Members is null ? Expression.New(n.Constructor, args) : Expression.New(n.Constructor, args, n.Members);
+                var toOne = new List<(IncludePlan Plan, MemberInfo Member)>();
+                var args = n.Arguments.Select((a, i) => Coerce(ShapeMember(a, members[i], toOne), a.Type)).ToList();
+                Expression created = n.Members is null ? Expression.New(n.Constructor, args) : Expression.New(n.Constructor, args, n.Members);
+                return RegisterToOne(created, toOne);
             }
             case MemberInitExpression mi:
             {
+                var toOne = new List<(IncludePlan Plan, MemberInfo Member)>();
                 var newExpr = (NewExpression)Shape(mi.NewExpression, member, false);
                 var bindings = mi.Bindings.Cast<MemberAssignment>()
-                    .Select(b => Expression.Bind(b.Member, Coerce(Shape(b.Expression, b.Member, false), b.Expression.Type)));
-                return Expression.MemberInit(newExpr, bindings);
+                    .Select(b => Expression.Bind(b.Member, Coerce(ShapeMember(b.Expression, b.Member, toOne), b.Expression.Type))).ToList();
+                return RegisterToOne(Expression.MemberInit(newExpr, bindings), toOne);
             }
             default:
                 return ShapeScalar(body, member);
         }
+    }
+
+    /// <summary>
+    /// 一个成员的值：集合导航（<c>u.Cards</c>、<c>u.Cards.Where(…).Select(…).ToList()</c>）是带出，先放一个空 List，主查询后填充；
+    /// 整个对一导航对象（<c>c.Bank</c>）也是带出（单独的 IN 查询），构造完父对象后回填；其余照常翻译。
+    /// </summary>
+    private Expression ShapeMember(Expression value, MemberInfo? member, List<(IncludePlan Plan, MemberInfo Member)> toOne)
+    {
+        if (member is not null && TryInclude(value) is { } plan)
+        {
+            if (plan.IsCollection)
+                return Expression.Call(Expression.Constant(plan), typeof(IncludePlan).GetMethod(nameof(IncludePlan.Register))!, _reader,
+                    Expression.Constant(null, typeof(Action<object?>)));
+            toOne.Add((plan, member));
+            return Expression.Default(value.Type);
+        }
+        return Shape(value, member, false);
+    }
+
+    private IncludePlan? TryInclude(Expression value)
+    {
+        var inner = value;
+        if (inner is MethodCallExpression { Method.Name: nameof(Enumerable.ToList) or nameof(Enumerable.ToArray) } materialize
+            && materialize.Method.DeclaringType == typeof(Enumerable))
+            inner = materialize.Arguments[0];
+
+        LambdaExpression? selector = null;
+        var filters = new List<LambdaExpression>();
+        while (inner is MethodCallExpression mc && mc.Method.DeclaringType == typeof(Enumerable) && mc.Method.Name is nameof(Enumerable.Select) or nameof(Enumerable.Where))
+        {
+            var lambda = (LambdaExpression)ExpressionTranslator.StripConvert(mc.Arguments[1]);
+            if (mc.Method.Name == nameof(Enumerable.Select))
+            {
+                if (selector is not null || filters.Count > 0) return null;
+                selector = lambda;
+            }
+            else filters.Insert(0, lambda);
+            inner = mc.Arguments[0];
+        }
+
+        if (inner is not MemberExpression { Expression: { } ownerExpr } navMember || translator.BindingOf(ownerExpr) is not EntityBinding owner) return null;
+        if (translator.FindNavigation(owner, navMember.Member.Name) is not { } nav) return null;
+        if (!nav.IsCollection && (selector is not null || filters.Count > 0 || inner != value)) return null;
+
+        var plan = new IncludePlan(nav, selector?.ReturnType ?? nav.Target.Type, selector, filters, nav.IsCollection);
+        _includes.Add((plan, owner));
+        return plan;
+    }
+
+    // 对一带出：父对象构造完后登记回填函数（构造函数参数 / init 属性都能通过反射赋值）
+    private Expression RegisterToOne(Expression created, List<(IncludePlan Plan, MemberInfo Member)> toOne)
+    {
+        if (toOne.Count == 0) return created;
+        var instance = Expression.Variable(created.Type, "parent");
+        var body = new List<Expression> { Expression.Assign(instance, created) };
+        foreach (var (plan, member) in toOne)
+        {
+            var property = member as PropertyInfo ?? created.Type.GetProperty(member.Name)
+                           ?? throw new NotSupportedException($"{created.Type.Name}.{member.Name} 不是可回填的属性");
+            var value = Expression.Parameter(typeof(object), "child");
+            var assign = Expression.Lambda<Action<object?>>(
+                Expression.Call(Expression.Constant(property), typeof(PropertyInfo).GetMethod(nameof(PropertyInfo.SetValue), [typeof(object), typeof(object)])!,
+                    Expression.Convert(instance, typeof(object)), value),
+                value);
+            body.Add(Expression.Call(Expression.Constant(plan), typeof(IncludePlan).GetMethod(nameof(IncludePlan.Register))!, _reader, assign));
+        }
+        body.Add(instance);
+        return Expression.Block([instance], body);
     }
 
     // 整个实体：顶层时（u => u）记下实体元数据与成员列；嵌在 DTO 里时（new { u, … }）LEFT JOIN 没连上的行读成 null

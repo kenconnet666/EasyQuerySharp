@@ -59,6 +59,11 @@ public static class SqlFunctionNames
     /// <summary>(s, sub)：sub 在 s 里的位置（从 1 开始，0 表示没有）。</summary>
     public const string IndexOf = "IndexOf";
 
+    // ---------- 日期 ----------
+
+    /// <summary>(x, 'C# 格式串' 字面量)：按格式转成字符串，方言把 yyyy / MM / dd / HH / mm / ss 转成自己的格式符。</summary>
+    public const string DateFormat = "DateFormat";
+
     // ---------- 数值 ----------
 
     /// <summary>(x)：绝对值。</summary>

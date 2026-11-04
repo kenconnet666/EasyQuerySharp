@@ -6,8 +6,15 @@ using EasyQuerySharp.Translation;
 
 namespace EasyQuerySharp.Querying;
 
-/// <summary>翻译好的查询：SQL AST 与结果读取函数。</summary>
-internal sealed record CompiledQuery<T>(SelectQuery Sql, Func<DbDataReader, T> Shaper);
+/// <summary>翻译好的查询：SQL AST、结果读取函数、投影里的带出，以及调用方要求的关联键列序号。</summary>
+internal sealed record CompiledQuery<T>(SelectQuery Sql, Func<DbDataReader, T> Shaper)
+{
+    /// <summary>投影里的导航带出。</summary>
+    public IReadOnlyList<Includes.IncludePlan> Includes { get; init; } = [];
+
+    /// <summary>关联键在结果里的列序号（作为带出的子查询时用）。</summary>
+    public int[] RelationOrdinals { get; init; } = [];
+}
 
 /// <summary>
 /// 把 <see cref="QueryState"/> 翻译成 SQL AST：建立表来源与作用域、加上逻辑删除与拦截器的条件、翻译条件 / 排序 / 投影。
@@ -95,7 +102,7 @@ internal static class QueryCompiler
     }
 
     /// <summary>完整翻译：按投影（没有时投影到第一个来源的实体）填入 SELECT 列表并生成读取函数。</summary>
-    public static CompiledQuery<T> Compile<T>(QueryState state)
+    public static CompiledQuery<T> Compile<T>(QueryState state, IReadOnlyList<ColumnMetadata>? relationKeys = null)
     {
         // 原生 SELECT 列表、或从原生 SQL 来源整体读取：列序号未知，按列名映射到实体
         var rawColumns = state.RawSelect ?? (state.Selector is null && state.Sources[0] is RawSqlSource ? "*" : null);
@@ -106,8 +113,12 @@ internal static class QueryCompiler
             var entity = state.Db.Metadata.Get<T>();
             return new CompiledQuery<T>(rawFrame.Query, r => Materialization.EntityMaterializer.ReadByName<T>(r, entity));
         }
-        var (frame, projection) = Project(state);
-        return new CompiledQuery<T>(frame.Query, projection.Compile<T>());
+        var (frame, projection) = Project(state, relationKeys: relationKeys);
+        return new CompiledQuery<T>(frame.Query, projection.Compile<T>())
+        {
+            Includes = projection.Includes,
+            RelationOrdinals = projection.RelationOrdinals,
+        };
     }
 
     /// <summary>翻译成带 SELECT 列表的 AST，不生成读取函数（用于子查询、派生表）。</summary>
@@ -119,7 +130,7 @@ internal static class QueryCompiler
     }
 
     private static (QueryFrame Frame, ProjectionCompiler Projection) Project(
-        QueryState state, IReadOnlyDictionary<ParameterExpression, SourceBinding>? outer = null)
+        QueryState state, IReadOnlyDictionary<ParameterExpression, SourceBinding>? outer = null, IReadOnlyList<ColumnMetadata>? relationKeys = null)
     {
         var frame = Build(state, outer);
         // 分组查询的投影总是写列别名（Java 版的 set / as 写法）
@@ -133,9 +144,9 @@ internal static class QueryCompiler
         }
         frame.Translator.Bind(selector, frame.Bindings);
         // 先登记列，再把列表交给 AST；读取函数由调用方按需编译
-        projection.Prepare(selector.Body);
+        projection.Prepare(selector.Body, frame.Bindings[0], relationKeys);
         frame.Query.Columns.AddRange(projection.Columns);
-        frame.Query.ExplicitProjection = state.Selector is not null;
+        frame.Query.ExplicitProjection = state.Selector is not null || state.ForceAlias;
         return (frame, projection);
     }
 

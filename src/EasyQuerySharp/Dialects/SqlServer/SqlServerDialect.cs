@@ -41,6 +41,7 @@ public class SqlServerDialect : SqlDialect
         f[SqlFunctionNames.IndexOf] = Reordered("CHARINDEX", 1, 0);
         f[SqlFunctionNames.Ceiling] = Call("CEILING");
         f[SqlFunctionNames.Ln] = Call("LOG");
+        f[SqlFunctionNames.DateFormat] = DateFormat("FORMAT({0},{1})");
         // ROUND 的第三个参数非 0 表示截断
         f[SqlFunctionNames.Truncate] = (r, a) =>
         {

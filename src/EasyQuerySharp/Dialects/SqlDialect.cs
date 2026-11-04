@@ -135,8 +135,33 @@ public abstract class SqlDialect
         f[SqlFunctionNames.SumDistinct] = Distinct("SUM");
         f[SqlFunctionNames.AvgDistinct] = Distinct("AVG");
         f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("STRING_AGG(").Write(a[0]).Append(", ").Write(a[1]).Append(")");
+        f[SqlFunctionNames.DateFormat] = DateFormat("TO_CHAR({0},{1})", ("yyyy", "YYYY"), ("MM", "MM"), ("dd", "DD"), ("HH", "HH24"), ("mm", "MI"), ("ss", "SS"));
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("STRING_AGG(DISTINCT ").Write(a[0]).Append(", ").Write(a[1]).Append(")");
     }
+
+    /// <summary>
+    /// 日期格式化：<paramref name="pattern"/> 写出带格式串的调用，格式串按 <paramref name="tokens"/>（C# 格式符 → 方言格式符，长的在前）转换后加引号。
+    /// </summary>
+    protected static FunctionWriter DateFormat(string pattern, params (string CSharp, string Sql)[] tokens) => (r, a) =>
+    {
+        var format = ((LiteralExpr)a[1]).Sql;
+        var sb = new System.Text.StringBuilder();
+        for (var i = 0; i < format.Length;)
+        {
+            var (cs, sql) = tokens.FirstOrDefault(t => string.CompareOrdinal(format, i, t.CSharp, 0, t.CSharp.Length) == 0);
+            if (cs is not null)
+            {
+                sb.Append(sql);
+                i += cs.Length;
+            }
+            else sb.Append(format[i++]);
+        }
+        var parts = pattern.Split("{0}");
+        var literal = "'" + sb.ToString().Replace("'", "''") + "'";
+        r.Append(parts[0].Replace("{1}", literal));
+        r.Write(a[0]);
+        r.Append(parts[1].Replace("{1}", literal));
+    };
 
     /// <summary><c>NAME(a,b)</c>。</summary>
     protected static FunctionWriter Call(string name) => (r, a) => r.Append(name).Append("(").WriteList(a, ",").Append(")");
