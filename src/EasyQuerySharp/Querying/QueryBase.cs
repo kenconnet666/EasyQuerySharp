@@ -137,6 +137,7 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         var rows = await Db.Executor.QueryAsync(statement, shaper, cancellationToken).ConfigureAwait(false);
         // 投影里的导航带出：每个导航一次 IN 查询，挂回刚读出的行
         await Includes.IncludeRunner.RunAsync(Db, compiled.Includes, cancellationToken).ConfigureAwait(false);
+        foreach (var fill in State.Fills) await fill(rows, cancellationToken).ConfigureAwait(false);
         Track(rows);
         return rows;
     }

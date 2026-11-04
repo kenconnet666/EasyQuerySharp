@@ -189,7 +189,7 @@ internal static class QueryCompiler
             case UnionSource u:
             {
                 var parts = u.Parts.Select(p => CompileSelect(p)).ToList();
-                var table = new UnionTableSource(parts.Select(p => p.Query).ToList(), u.All) { ExplicitAlias = u.Alias };
+                var table = new UnionTableSource(parts.Select(p => p.Query).ToList(), u.All) { ExplicitAlias = u.Alias, IndependentAliases = u.IndependentAliases };
                 // 外层按第一条查询的投影访问列（与 SQL 的 UNION 语义一致：列名取第一个分支）
                 return new DerivedBinding(table, parts[0].Projection.MemberColumns, parts[0].Projection.Entity, parts[0].Projection.AliasedMembers, parts[0].Projection.NestedEntities);
             }

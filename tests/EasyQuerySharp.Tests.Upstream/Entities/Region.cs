@@ -28,6 +28,10 @@ public class City
 
     [Navigate(RelationType.OneToMany, TargetProperties = [nameof(Area.CityCode)])]
     public List<Area>? Areas { get; set; }
+
+    /// <summary>不映射，由 FillOne 填充。</summary>
+    [ColumnIgnore]
+    public Province? Province { get; set; }
 }
 
 /// <summary>对应 Java：entity/base/Area。</summary>
@@ -42,4 +46,15 @@ public class Area
     public string? CityCode { get; set; }
 
     public string? Name { get; set; }
+}
+
+/// <summary>对应 Java：MyProvinceVO（分组结果，Cities 由 FillMany 填充）。</summary>
+public class MyProvinceVO
+{
+    public string? MyCode { get; set; }
+
+    public long? Count { get; set; }
+
+    [ColumnIgnore]
+    public List<City>? Cities { get; set; }
 }

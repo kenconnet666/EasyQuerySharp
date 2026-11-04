@@ -35,7 +35,11 @@ internal sealed record EntitySource(Type EntityType) : QuerySource
 internal sealed record SubQuerySource(QueryState Inner) : QuerySource;
 
 /// <summary>多条查询做 UNION / UNION ALL 后作为派生表，列按第一条查询的投影访问。</summary>
-internal sealed record UnionSource(ImmutableArray<QueryState> Parts, bool All) : QuerySource;
+internal sealed record UnionSource(ImmutableArray<QueryState> Parts, bool All) : QuerySource
+{
+    /// <summary>各分支各自编号别名（每支都从 t 开始，外层是 t1）：填充按键拆出的分支是各自独立的查询（与 Java 一致）。</summary>
+    public bool IndependentAliases { get; init; }
+}
 
 /// <summary>原生 SQL 作为派生表，列按实体的列名访问（对应 Java 的 queryable(sql, Class)）。</summary>
 internal sealed record RawSqlSource(string Sql, Type EntityType, IReadOnlyList<object?> Parameters) : QuerySource;
@@ -79,6 +83,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>单表时也写别名 t（带出的子查询在 Java 版里总带别名）。</summary>
     public bool ForceAlias { get; init; }
 
+    /// <summary>结果读出后依次执行的填充（FillMany / FillOne），参数是本次的结果行。</summary>
+    public ImmutableArray<Func<System.Collections.IList, CancellationToken, Task>> Fills { get; init; } = [];
+
     /// <summary>实体查询上的导航带出（Include）；有投影时不生效。</summary>
     public ImmutableArray<Includes.IncludeSpec> Includes { get; init; } = [];
 
@@ -102,7 +109,7 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
         Filtering.ValueFilterRewriter.Apply(predicate, ValueFilter) is { } filtered ? this with { Wheres = Wheres.Add(filtered) } : this;
 
     /// <summary>投影之后再加条件、排序、连接时，把当前查询包成派生表，在外层继续（与 Java 版的 select 之后再 where 一致）。</summary>
-    public QueryState Wrap() => new(Db, [new SubQuerySource(this)]) { ValueFilter = ValueFilter };
+    public QueryState Wrap() => new(Db, [new SubQuerySource(this with { Fills = [] })]) { ValueFilter = ValueFilter, Fills = Fills };
 
     /// <summary>是否已经有投影（之后的条件要包一层）。</summary>
     public bool HasSelector => Selector is not null;

@@ -61,6 +61,51 @@ public sealed class RelationTest(MySqlFixture fixture) : MySqlTest(fixture)
     public async Task ProvinceTest5() =>
         Assert.Single(await Db.Query<Province>().WhereById("33").Include(o => o.Cities).ToListAsync(Ct));
 
+    // Java 的 fillMany / fillOne(consumeNull = false)：C# 的 FillMany / FillOne(assignEmpty / assignNull = false)
+    [Fact, Upstream("RelationTest.java#provinceTest2"), Upstream("RelationTest.java#provinceTest3")]
+    public async Task ProvinceTest2()
+    {
+        var list = await Db.Query<Province>()
+            .FillMany(() => Db.Query<City>().Where(c => c.Code == "3306"), c => c.ProvinceCode, p => p.Code, (p, cities) => p.Cities = cities, assignEmpty: false)
+            .ToListAsync(Ct);
+        var cities = await Db.Query<City>().FillOne(() => Db.Query<Province>(), p => p.Code, c => c.ProvinceCode, (c, p) => c.Province = p, assignNull: false).ToListAsync(Ct);
+        Assert.Equal(2, list.Count);
+        var zhejiang = Assert.Single(list, p => p.Name == "浙江省");
+        var shaoxing = Assert.Single(zhejiang.Cities!);
+        Assert.Equal(("绍兴市", zhejiang.Code), (shaoxing.Name, shaoxing.ProvinceCode));
+        Assert.Null(shaoxing.Areas);
+        Assert.Null(Assert.Single(list, p => p.Name == "江苏省").Cities);
+        Assert.All(cities, c => Assert.Equal(c.ProvinceCode, c.Province!.Code));
+    }
+
+    // 来源带 Take 时每个键各取前 n 条：每个键一段、UNION ALL 合并
+    [Fact, Upstream("RelationTest.java#provinceTest4", Deviation = "Java 第一段漏了 province_code 条件（只有 t.`code` = ?），C# 每段都按键过滤")]
+    public async Task ProvinceTest4()
+    {
+        using var listen = SqlCapture.Listen();
+        var list = await Db.Query<Province>()
+            .FillMany(() => Db.Query<City>().Where(c => c.Code == "3306").Take(2), c => c.ProvinceCode, p => p.Code, (p, cities) => p.Cities = cities, assignEmpty: false)
+            .ToListAsync(Ct);
+        Assert.Equal(2, listen.Events.Count);
+        listen.AssertSql(0, "SELECT `code`,`name` FROM `t_province`");
+        listen.AssertSql(1, "SELECT t1.`code`,t1.`province_code`,t1.`name` FROM ( (SELECT t.`code`,t.`province_code`,t.`name` FROM `t_city` t WHERE t.`code` = ? AND t.`province_code` = ? LIMIT 2)  UNION ALL  (SELECT t.`code`,t.`province_code`,t.`name` FROM `t_city` t WHERE t.`code` = ? AND t.`province_code` = ? LIMIT 2) ) t1");
+        listen.AssertParams(1, "3306(String),32(String),3306(String),33(String)");
+        Assert.Equal("绍兴市", Assert.Single(Assert.Single(list, p => p.Name == "浙江省").Cities!).Name);
+    }
+
+    // 分组后的 DTO 也能填充，分页时只填充当前页
+    [Fact, Upstream("RelationTest.java#provinceVoTest")]
+    public async Task ProvinceVoTest()
+    {
+        var page = await Db.Query<Province>().LeftJoin<Topic>((p, t2) => p.Code == t2.Id)
+            .GroupBy((p, t2) => p.Code)
+            .Select(g => new MyProvinceVO { MyCode = g.Key, Count = g.Sum(e => e.Item1.Name == "123" ? 1L : 0L) })
+            .FillMany(() => Db.Query<City>(), c => c.ProvinceCode, p => p.MyCode, (p, cities) => p.Cities = cities)
+            .ToPageAsync(1, 2, Ct);
+        Assert.Equal(2, page.Rows.Count);
+        Assert.All(page.Rows, p => Assert.All(p.Cities!, c => Assert.Equal(p.MyCode, c.ProvinceCode)));
+    }
+
     [Fact, Upstream("RelationTest.java#schoolTest1")]
     public async Task SchoolTest1()
     {

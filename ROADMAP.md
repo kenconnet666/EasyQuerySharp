@@ -145,7 +145,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [ ] 4.6 可复用投影：`Project(map)`，以及 `[Projection]` 方法由生成器产出表达式。
 - [ ] 4.7 `[MapFrom<T>]` 自动映射：平铺约定、`[MapPath]`、partial `Configure`；分析器 EQ0003 和 EQ0005。
 - [~] 4.8 `Include(nav, q => …)` 可以嵌套；ExtraFilter 的分析器 EQ0004（Include、嵌套、多对多经中间表已完成；分析器待做）。
-- [ ] 4.9 填充：投影里写非导航的关联查询，规划器按键批量执行。
+- [~] 4.9 填充：投影里写非导航的关联查询，规划器按键批量执行（`FillMany` / `FillOne` 已完成，带 Take 时按键 UNION ALL）。
 - [ ] 4.10 树：`ToTreeAsync`、`DescendantsOf` / `AncestorsOf`（递归 CTE）；递归 DTO 由生成器诊断。
 - [ ] 4.11 `ToAsyncEnumerable(batchSize)` 按批流式读取对象树；`.AsSnapshot()` 保证多次查询的一致性。
 

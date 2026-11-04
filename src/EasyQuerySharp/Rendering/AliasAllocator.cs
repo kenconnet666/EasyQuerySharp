@@ -61,7 +61,18 @@ internal static class AliasAllocator
             Collect(derived.Query, tables);
             if (derived.ReserveExtraAlias) tables.Add(Placeholder.Instance);
         }
-        if (table is UnionTableSource union)
+        if (table is UnionTableSource { IndependentAliases: true } independent)
+        {
+            // 各分支单独编号；外层占一个编号之后（分支里的 t 已经用掉 t）
+            foreach (var part in independent.Parts)
+            {
+                var own = new List<TableSource>();
+                Collect(part, own);
+                Assign(own, forceAlias: true);
+            }
+            tables.Add(Placeholder.Instance);
+        }
+        else if (table is UnionTableSource union)
             foreach (var part in union.Parts) Collect(part, tables);
         if (!tables.Contains(table)) tables.Add(table);
     }

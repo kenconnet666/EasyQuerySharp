@@ -16,7 +16,7 @@ namespace EasyQuerySharp.Querying;
 /// </code>
 /// <c>OrderBy</c> 是追加排序（与 Java 版一致），<c>ThenBy</c> 是它的别名；LINQ 查询语法（from / where / orderby / select）同样可用。
 /// </summary>
-public sealed class Query<T> : QueryBase<Query<T>, T>
+public sealed partial class Query<T> : QueryBase<Query<T>, T>
 {
     internal Query(QueryState state) : base(state)
     {

@@ -77,4 +77,7 @@ public sealed class UnionTableSource(IReadOnlyList<SelectQuery> parts, bool all)
 
     /// <summary>true 为 UNION ALL（保留重复行），false 为 UNION。</summary>
     public bool All { get; } = all;
+
+    /// <summary>各分支各自编号别名（见 <c>UnionSource.IndependentAliases</c>）。</summary>
+    public bool IndependentAliases { get; init; }
 }
