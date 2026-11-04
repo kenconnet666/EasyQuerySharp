@@ -24,6 +24,26 @@ public class MySqlDialect : SqlDialect
     public override string InsertKeyword(InsertStatement insert) => insert.Conflict is { Ignore: true } ? "INSERT IGNORE INTO " : "INSERT INTO ";
 
     /// <summary><c>ON DUPLICATE KEY UPDATE `c` = VALUES(`c`), …</c>（与 Java 的 MySQL 方言逐字一致）；没有要更新的列时不写。</summary>
+    /// <summary>
+    /// 值里含 % 或 _ 时转义后写成 <c>x LIKE CONCAT('%',?,'%') ESCAPE '\\'</c>（与 Java 的 MySQLLikeFunctionTemplateGenerator 一致），
+    /// 否则是普通的 <c>x LIKE ?</c>。
+    /// </summary>
+    public override void WriteLike(Rendering.SqlRenderer renderer, LikeExpr predicate)
+    {
+        if (!predicate.HasWildcardValue)
+        {
+            base.WriteLike(renderer, predicate);
+            return;
+        }
+        var value = new ParameterExpr(EscapeLike((string)((ParameterExpr)predicate.Value).Value!), typeof(string));
+        renderer.Write(predicate.Operand).Append(predicate.Negated ? " NOT LIKE CONCAT(" : " LIKE CONCAT(");
+        if (predicate.Mode != LikeMode.StartsWith) renderer.Append("'%',");
+        renderer.Write(value);
+        if (predicate.Mode != LikeMode.EndsWith) renderer.Append(",'%'");
+        renderer.Append(") ESCAPE '\\\\'");
+    }
+
+    /// <inheritdoc />
     public override void WriteInsertConflict(Rendering.SqlRenderer renderer, InsertConflict conflict)
     {
         if (conflict.Ignore || conflict.UpdateColumns!.Count == 0) return;

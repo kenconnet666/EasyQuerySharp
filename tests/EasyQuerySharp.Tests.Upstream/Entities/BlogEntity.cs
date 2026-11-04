@@ -31,6 +31,10 @@ public class BlogEntity : BaseEntity
     /// <summary>一对多：用户 id 等于博客的 title（Java 用例里的人为关系）。</summary>
     [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Title)])]
     public List<SysUser>? Users { get; set; }
+
+    /// <summary>同 Users，但上面的聚合总是合并成分组 JOIN（Java 的 subQueryToGroupJoin = true）。</summary>
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Title)], GroupJoin = true)]
+    public List<SysUser>? Users2 { get; set; }
 }
 
 /// <summary>对应 Java：entity/SysUser（phone、idCard、address 是支持 LIKE 的加密列）。</summary>

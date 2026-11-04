@@ -55,6 +55,9 @@ public abstract class SqlDialect
     public virtual void WriteLike(SqlRenderer renderer, LikeExpr predicate) =>
         renderer.Write(predicate.Operand).Append(predicate.Negated ? " NOT LIKE " : " LIKE ").Write(predicate.Pattern);
 
+    /// <summary>LIKE 值里的转义：反斜杠、%、_ 前加反斜杠（与 Java 各方言的 LikeFunctionTemplateGenerator 一致）。</summary>
+    protected static string EscapeLike(string value) => value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
+
     /// <summary>
     /// 写 ORDER BY 的一项。指定了 NULL 位置时默认用 CASE 模拟（与 Java 的 OrderByNullsModeSQLFunction 一致，各库通用）：
     /// <c>CASE WHEN x IS NULL THEN 1 ELSE 0 END ASC,x ASC</c>；原生片段不追加方向。

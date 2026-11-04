@@ -238,8 +238,11 @@ internal sealed partial class ExpressionTranslator
         if (IsNullValue(b.Left)) return new IsNullExpr(Translate(b.Right), negated);
 
         var (left, right) = TranslatePair(b.Left, b.Right);
-        return new BinaryExpr(left, negated ? SqlBinaryOperator.NotEqual : SqlBinaryOperator.Equal, right);
+        return new BinaryExpr(AsValue(left), negated ? SqlBinaryOperator.NotEqual : SqlBinaryOperator.Equal, AsValue(right));
     }
+
+    /// <summary>条件作为值使用（比较的一侧、投影的一列）时整体加括号：<c>(a &lt; ? AND b = ?)</c>（与 Java 的 valueOf 一致）。</summary>
+    internal static SqlExpr AsValue(SqlExpr sql) => IsPredicate(sql) ? new FragmentExpr("({0})", [sql]) : sql;
 
     /// <summary>翻译一对操作数：一侧是带转换器的列时，另一侧的参数值先经过转换器。</summary>
     internal (SqlExpr Left, SqlExpr Right) TranslatePair(Expression leftExpr, Expression rightExpr)

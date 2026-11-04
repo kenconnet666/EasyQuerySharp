@@ -275,7 +275,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
 
     private Expression ShapeScalar(Expression body, MemberInfo? member)
     {
-        var sql = translator.Translate(body);
+        var sql = ExpressionTranslator.AsValue(translator.Translate(body));
         var converter = (sql as ColumnExpr)?.Column?.Converter;
         // 分组投影里的组内列（g.Column(..)）按普通列处理：同名不写 AS（Java 的 groupTable() 列）
         var groupColumn = ExpressionTranslator.StripConvert(body) is MethodCallExpression { Method.Name: nameof(IGroup<object, object>.Column) } call

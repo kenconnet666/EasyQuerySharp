@@ -25,7 +25,7 @@ public class PostgreSqlDialect : SqlDialect
             base.WriteLike(renderer, predicate);
             return;
         }
-        var value = predicate.Value is ParameterExpr { Value: string text } ? new ParameterExpr(Escape(text), typeof(string)) : predicate.Value;
+        var value = predicate.Value is ParameterExpr { Value: string text } ? new ParameterExpr(EscapeLike(text), typeof(string)) : predicate.Value;
         renderer.Write(predicate.Operand).Append(predicate.Negated ? " NOT LIKE CONCAT(" : " LIKE CONCAT(");
         if (predicate.Mode != LikeMode.StartsWith) renderer.Append("'%',");
         renderer.Append("(").Write(value).Append(")::TEXT");
@@ -59,5 +59,4 @@ public class PostgreSqlDialect : SqlDialect
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("STRING_AGG(DISTINCT (").Write(a[0]).Append(")::TEXT, ").Write(a[1]).Append(")");
     }
 
-    private static string Escape(string value) => value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
 }
