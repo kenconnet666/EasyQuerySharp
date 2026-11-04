@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2338 个用例。
 
-合计：已移植 522、偏离 94、不适用 8、骨架 15、待做 1699。
+合计：已移植 529、偏离 94、不适用 8、骨架 15、待做 1692。
 
 ## 按能力
 
@@ -40,7 +40,7 @@
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 44 | 1 | 0 | 0 | 97 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 0 | 0 | 0 | 0 | 25 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
-| 列加密 | `column.encryption` | M5 | 8 | 0 | 0 | 0 | 0 | 8 |
+| 列加密 | `column.encryption` | M5 | 8 | 7 | 0 | 0 | 0 | 1 |
 | 拦截器 | `interceptor` | M5 | 3 | 0 | 0 | 0 | 0 | 3 |
 | 逻辑删除 | `logicDelete` | M5 | 10 | 0 | 0 | 0 | 0 | 10 |
 | 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 0 | 0 | 0 | 0 | 39 |
@@ -1850,13 +1850,13 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| EncryptionTest.java#phoneTest | 待做 |  |  |
-| EncryptionTest.java#phoneTest1 | 待做 |  |  |
-| EncryptionTest.java#phoneTest2 | 待做 |  |  |
-| EncryptionTest.java#phoneTest3 | 待做 |  |  |
-| EncryptionTest.java#phoneTest4 | 待做 |  |  |
-| EncryptionTest.java#test5 | 待做 |  |  |
-| EncryptionTest.java#test6 | 待做 |  |  |
+| EncryptionTest.java#phoneTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Encryption/EncryptionTest.cs:16 |  |
+| EncryptionTest.java#phoneTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Encryption/EncryptionTest.cs:19 |  |
+| EncryptionTest.java#phoneTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Encryption/EncryptionTest.cs:28 |  |
+| EncryptionTest.java#phoneTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Encryption/EncryptionTest.cs:28 |  |
+| EncryptionTest.java#phoneTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Encryption/EncryptionTest.cs:28 |  |
+| EncryptionTest.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Encryption/EncryptionTest.cs:46 |  |
+| EncryptionTest.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Encryption/EncryptionTest.cs:60 |  |
 | Sm4EncryptionTest.java#sm4Test | 待做 |  |  |
 
 ### 拦截器（`interceptor`，M5）

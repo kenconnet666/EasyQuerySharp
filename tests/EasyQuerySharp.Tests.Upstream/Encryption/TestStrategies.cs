@@ -1,0 +1,23 @@
+using System.Globalization;
+using System.Text;
+using EasyQuerySharp.Encryption;
+
+namespace EasyQuerySharp.Tests.Upstream.Encryption;
+
+/// <summary>对应 Java：encryption/Base64EncryptionStrategy（整体 Base64，不支持 LIKE）。</summary>
+public sealed class Base64EncryptionStrategy : IEncryptionStrategy
+{
+    public object? Encrypt(Type entityType, string propertyName, object? plaintext) =>
+        plaintext is null ? null : Convert.ToBase64String(Encoding.UTF8.GetBytes(Convert.ToString(plaintext, CultureInfo.InvariantCulture)!));
+
+    public object? Decrypt(Type entityType, string propertyName, object? ciphertext) =>
+        ciphertext is null ? null : Encoding.UTF8.GetString(Convert.FromBase64String(Convert.ToString(ciphertext, CultureInfo.InvariantCulture)!));
+}
+
+/// <summary>对应 Java：encryption/MyEncryptionStrategy。</summary>
+public sealed class MyEncryptionStrategy : AesBase64EncryptionStrategy
+{
+    protected override string Iv => "A-16-Byte-String";
+
+    protected override string Key => "1234567890abcdef";
+}
