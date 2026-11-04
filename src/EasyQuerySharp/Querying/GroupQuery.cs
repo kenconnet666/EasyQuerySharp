@@ -28,6 +28,17 @@ public sealed class GroupQuery<TKey, TElement>
     public GroupQuery<TKey, TElement> OrderByDescending<TOrder>(Expression<Func<IGroup<TKey, TElement>, TOrder>> key) =>
         new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, true)) });
 
+    /// <summary>只取每组的键（对应 Java 的 groupBy(…) 之后直接 toList）：<c>SELECT 键 FROM … GROUP BY 键</c>。</summary>
+    public Query<TKey> Keys()
+    {
+        var group = Expression.Parameter(typeof(IGroup<TKey, TElement>), "g");
+        Expression key = Expression.Property(group, nameof(IGroup<TKey, TElement>.Key));
+        // 多列键（匿名类型）：逐个成员取 g.Key.X 再构造回去
+        if (State.GroupKey?.Body is NewExpression { Members: { } members } composite)
+            key = Expression.New(composite.Constructor!, members.Select(m => Expression.MakeMemberAccess(key, m)), members);
+        return new(State with { Selector = Expression.Lambda(key, group), ImplicitSelector = true });
+    }
+
     /// <summary>每组投影成一行。分组查询的投影总是写列别名（与 Java 版一致）。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<IGroup<TKey, TElement>, TResult>> selector) =>
         new(State with { Selector = selector });

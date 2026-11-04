@@ -152,7 +152,7 @@ internal static class QueryCompiler
     {
         var frame = Build(state, outer, outerContext);
         // 分组查询的投影总是写列别名（Java 版的 set / as 写法）
-        var projection = new ProjectionCompiler(frame.Translator, state.Db.Options.NameConversion, alwaysAlias: state.GroupKey is not null);
+        var projection = new ProjectionCompiler(frame.Translator, state.Db.Options.NameConversion, alwaysAlias: state.GroupKey is not null, neverAlias: state.ImplicitSelector);
         LambdaExpression selector;
         if (state.Selector is not null) selector = state.Selector;
         else
@@ -164,7 +164,7 @@ internal static class QueryCompiler
         // 先登记列，再把列表交给 AST；读取函数由调用方按需编译
         projection.Prepare(selector.Body, frame.Bindings[0], relationKeys, state.Selector is null ? (IReadOnlyList<Includes.IncludeSpec>)state.Includes : null);
         frame.Query.Columns.AddRange(projection.Columns);
-        frame.Query.ExplicitProjection = state.Selector is not null || state.ForceAlias;
+        frame.Query.ExplicitProjection = (state.Selector is not null && !state.ImplicitSelector) || state.ForceAlias;
         return (frame, projection);
     }
 

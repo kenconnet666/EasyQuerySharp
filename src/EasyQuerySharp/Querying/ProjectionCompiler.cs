@@ -18,7 +18,7 @@ namespace EasyQuerySharp.Querying;
 /// </list>
 /// 列别名规则与 Java 版的 DTO 映射一致：别名是成员名按命名约定转换后的列名，与源列同名时省略 AS。
 /// </summary>
-internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameConversion naming, bool alwaysAlias = false)
+internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameConversion naming, bool alwaysAlias = false, bool neverAlias = false)
 {
     private readonly ParameterExpression _reader = Expression.Parameter(typeof(DbDataReader), "reader");
     private readonly List<SelectColumn> _columns = [];
@@ -289,7 +289,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     private int AddColumn(SqlExpr sql, string? alias, string? memberName, bool forceAlias = false, bool plainColumn = false)
     {
         var columnName = (sql as ColumnExpr)?.Name;
-        if (alias == columnName && !forceAlias && (!alwaysAlias || plainColumn)) alias = null;
+        if (neverAlias || (alias == columnName && !forceAlias && (!alwaysAlias || plainColumn))) alias = null;
         _columns.Add(new SelectColumn(sql, alias));
         if (memberName is not null && (alias ?? columnName) is { } output) MemberColumns.TryAdd(memberName, output);
         if (memberName is not null && alias is not null) AliasedMembers.Add(memberName);

@@ -3,26 +3,26 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2338 个用例。
 
-合计：已移植 569、偏离 98、不适用 8、骨架 15、待做 1648。
+合计：已移植 606、偏离 98、不适用 10、骨架 15、待做 1609。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 135 | 20 | 3 | 0 | 244 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 142 | 20 | 3 | 0 | 237 |
 | 分页结果 | `query.page` | M1 | 22 | 9 | 2 | 0 | 0 | 11 |
-| 原生 SQL | `sql.native` | M1 | 50 | 14 | 5 | 0 | 0 | 31 |
+| 原生 SQL | `sql.native` | M1 | 50 | 17 | 5 | 0 | 0 | 28 |
 | 删除 | `write.delete` | M1 | 21 | 7 | 1 | 2 | 0 | 11 |
-| 插入 | `write.insert` | M1 | 48 | 18 | 0 | 0 | 1 | 29 |
+| 插入 | `write.insert` | M1 | 48 | 23 | 0 | 0 | 1 | 24 |
 | 更新 | `write.update` | M1 | 50 | 20 | 3 | 0 | 0 | 27 |
 | CASE WHEN | `expr.case` | M2 | 27 | 6 | 7 | 0 | 0 | 14 |
-| 日期函数 | `func.date` | M2 | 100 | 27 | 2 | 0 | 0 | 71 |
+| 日期函数 | `func.date` | M2 | 100 | 30 | 2 | 2 | 0 | 66 |
 | 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 22 | 3 | 0 | 0 | 34 |
-| 字符串聚合（joining） | `func.joining` | M2 | 29 | 3 | 0 | 0 | 5 | 21 |
+| 字符串聚合（joining） | `func.joining` | M2 | 29 | 4 | 0 | 0 | 5 | 20 |
 | JSON 函数 | `func.json` | M2 | 12 | 0 | 0 | 0 | 0 | 12 |
 | 数学函数 | `func.math` | M2 | 4 | 0 | 2 | 1 | 0 | 1 |
-| 字符串函数 | `func.string` | M2 | 128 | 67 | 1 | 0 | 1 | 59 |
+| 字符串函数 | `func.string` | M2 | 128 | 84 | 1 | 0 | 1 | 42 |
 | 行锁 | `lock` | M2 | 28 | 0 | 0 | 0 | 0 | 28 |
 | 窗口函数 | `window` | M2 | 44 | 5 | 0 | 0 | 0 | 39 |
 | CTE | `query.cte` | M3 | 11 | 0 | 0 | 0 | 0 | 11 |
@@ -44,7 +44,7 @@
 | 拦截器 | `interceptor` | M5 | 3 | 0 | 0 | 0 | 0 | 3 |
 | 逻辑删除 | `logicDelete` | M5 | 10 | 0 | 0 | 0 | 0 | 10 |
 | 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 0 | 0 | 0 | 0 | 39 |
-| 追踪与差异更新 | `tracking` | M5 | 62 | 22 | 15 | 0 | 0 | 25 |
+| 追踪与差异更新 | `tracking` | M5 | 62 | 23 | 15 | 0 | 0 | 24 |
 | 乐观锁版本 | `version` | M5 | 13 | 0 | 0 | 0 | 0 | 13 |
 | UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 0 | 0 | 0 | 0 | 10 |
 | 写哪些列、批量执行 | `write.strategy` | M5 | 19 | 11 | 6 | 0 | 0 | 2 |
@@ -82,8 +82,8 @@
 | DateTimeFunctionsTest.java#booleanMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:93 | `SELECT t.'deleted' AS 'value1',(NOT (t.'deleted')) AS 'value2' FROM 't_blog' t WHERE t.'deleted' = ?` |
 | DateTimeFunctionsTest.java#dateTimeProp2MySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:55 | `SELECT t.'create_time' AS 'value1',YEAR(t.'create_time') AS 'value2',MONTH(t.'create_time') AS 'valu…` |
 | DateTimeFunctionsTest.java#dateTimePropMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:55 | `SELECT t.'create_time' AS 'value1',YEAR(t.'create_time') AS 'value2',MONTH(t.'create_time') AS 'valu…` |
-| DirectRelationTest.java#test3 | 待做 |  | `SELECT t.'c1',t.'c2',t.'c3',t.'c4',t.'c5' FROM 'direct1' t LEFT JOIN 'direct2' t1 ON t1.'c7' = t.'c1…` |
-| DirectRelationTest.java#testJoin1 | 待做 |  | `SELECT t3.'c18' AS 'value1' FROM 'direct1' t LEFT JOIN 'direct2' t1 ON t1.'c7' = t.'c1' LEFT JOIN 'd…` |
+| DirectRelationTest.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/DirectRelationTest.cs:13 | `SELECT t.'c1',t.'c2',t.'c3',t.'c4',t.'c5' FROM 'direct1' t LEFT JOIN 'direct2' t1 ON t1.'c7' = t.'c1…` |
+| DirectRelationTest.java#testJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/DirectRelationTest.cs:19 | `SELECT t3.'c18' AS 'value1' FROM 'direct1' t LEFT JOIN 'direct2' t1 ON t1.'c7' = t.'c1' LEFT JOIN 'd…` |
 | EntityQueryAggregateTest1.java#test1 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
 | EntityQueryAggregateTest1.java#test2 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
 | EntityQueryAggregateTest1.java#test3 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
@@ -136,11 +136,11 @@
 | InjectTest.java#injectTest2 | 待做 |  |  |
 | InjectTest.java#injectTest3 | 待做 |  |  |
 | InsertTest1.java#testColumnConfigure | 待做 |  |  |
-| MyTest1.java#testDraft3 | 待做 |  | `SELECT date_add(t.'create_time', interval (?) day) AS 'value1' FROM 't_blog' t WHERE t.'deleted' = ?…` |
-| MyTest1.java#testSelect1 | 待做 |  | `SELECT ? AS 'title',t.'title' AS 'id' FROM 't_topic' t WHERE t.'title' IS NOT NULL` |
-| MyTest1.java#testSelect10 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time',(SELECT COUNT(*) FROM 't_blog' t1 WHERE t1.'delete…` |
-| MyTest1.java#testSelect2 | 待做 |  | `SELECT t.'title' AS 'id',1+1+t.'stars' AS 'title' FROM 't_topic' t WHERE t.'title' IS NOT NULL` |
-| MyTest1.java#testSelect8 | 待做 |  | `SELECT t.'title' FROM 't_topic' t WHERE t.'title' IS NOT NULL AND t.'create_time' <= ?` |
+| MyTest1.java#testDraft3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:63 | `SELECT date_add(t.'create_time', interval (?) day) AS 'value1' FROM 't_blog' t WHERE t.'deleted' = ?…` |
+| MyTest1.java#testSelect1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:156 | `SELECT ? AS 'title',t.'title' AS 'id' FROM 't_topic' t WHERE t.'title' IS NOT NULL` |
+| MyTest1.java#testSelect10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:258 | `SELECT t.'id',t.'stars',t.'title',t.'create_time',(SELECT COUNT(*) FROM 't_blog' t1 WHERE t1.'delete…` |
+| MyTest1.java#testSelect2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:165 | `SELECT t.'title' AS 'id',1+1+t.'stars' AS 'title' FROM 't_topic' t WHERE t.'title' IS NOT NULL` |
+| MyTest1.java#testSelect8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:240 | `SELECT t.'title' FROM 't_topic' t WHERE t.'title' IS NOT NULL AND t.'create_time' <= ?` |
 | MyTest2.java#testSelect1 | 待做 |  | `SELECT ? AS 'title',t.'title' AS 'id' FROM 't_topic' t WHERE t.'title' IS NOT NULL` |
 | MyTest2.java#testSelect10 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time',(SELECT COUNT(*) FROM 't_blog' t1 WHERE t1.'delete…` |
 | MyTest2.java#testSelect2 | 待做 |  | `SELECT t.'title' AS 'id',1+1+t.'stars' AS 'title' FROM 't_topic' t WHERE t.'title' IS NOT NULL` |
@@ -513,9 +513,9 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| MyTest1.java#testGroup20 | 待做 |  | `SELECT SUBSTR(t.'title',2,2),IFNULL(t1.'score',?) FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'dele…` |
-| MyTest1.java#testGroup21 | 待做 |  | `SELECT SUBSTR(t.'title',2,2) AS 'value1',COUNT(t.'title') AS 'value2' FROM 't_topic' t LEFT JOIN 't_…` |
-| MyTest1.java#testGroup22 | 待做 |  | `SELECT IFNULL(t.'create_time',?) AS 'value1',COUNT(t.'title') AS 'value2' FROM 't_topic' t LEFT JOIN…` |
+| MyTest1.java#testGroup20 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:344 | `SELECT SUBSTR(t.'title',2,2),IFNULL(t1.'score',?) FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'dele…` |
+| MyTest1.java#testGroup21 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:354 | `SELECT SUBSTR(t.'title',2,2) AS 'value1',COUNT(t.'title') AS 'value2' FROM 't_topic' t LEFT JOIN 't_…` |
+| MyTest1.java#testGroup22 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:365 | `SELECT IFNULL(t.'create_time',?) AS 'value1',COUNT(t.'title') AS 'value2' FROM 't_topic' t LEFT JOIN…` |
 | MyTest2.java#testGroup20 | 待做 |  | `SELECT SUBSTR(t.'title',2,2),IFNULL(t1.'score',?) FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'dele…` |
 | MyTest2.java#testGroup21 | 待做 |  | `SELECT SUBSTR(t.'title',2,2) AS 'value1',COUNT(t.'title') AS 'value2' FROM 't_topic' t LEFT JOIN 't_…` |
 | MyTest2.java#testGroup22 | 待做 |  | `SELECT IFNULL(t.'create_time',?) AS 'value1',COUNT(t.'title') AS 'value2' FROM 't_topic' t LEFT JOIN…` |
@@ -610,11 +610,11 @@
 | InsertTest.java#insertSQLConvert3 | 待做 |  |  |
 | InsertTest.java#insertTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:23 |  |
 | InsertTest1.java#inertTest1 | 待做 |  | `INSERT INTO 't_topic_abc' ('id','stars','title','create_time') VALUES (?,?,?,?)` |
-| MyTest1.java#testDraft11 | 待做 |  | `SELECT timestampdiff(DAY, t.'create_time', t.'update_time') AS 'value1',timestampdiff(HOUR, t.'creat…` |
-| MyTest1.java#testDraft6 | 待做 |  | `SELECT date_add(date_add(t.'create_time', interval (?) month), interval (?) day) AS 'value1',date_ad…` |
-| MyTest1.java#testDraft7 | 待做 |  | `SELECT YEAR(t.'create_time') AS 'value1',MONTH(t.'create_time') AS 'value2',DAYOFMONTH(t.'create_tim…` |
-| MyTest1.java#testDraft8 | 待做 |  | `SELECT YEAR(t.'create_time') AS 'value1',MONTH(t.'create_time') AS 'value2',DAYOFMONTH(t.'create_tim…` |
-| MyTest1.java#testDraft9 | 待做 |  | `SELECT timestampdiff(DAY, t.'update_time', t.'create_time') AS 'value1',timestampdiff(HOUR, t.'updat…` |
+| MyTest1.java#testDraft11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:127 | `SELECT timestampdiff(DAY, t.'create_time', t.'update_time') AS 'value1',timestampdiff(HOUR, t.'creat…` |
+| MyTest1.java#testDraft6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:82 | `SELECT date_add(date_add(t.'create_time', interval (?) month), interval (?) day) AS 'value1',date_ad…` |
+| MyTest1.java#testDraft7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:95 | `SELECT YEAR(t.'create_time') AS 'value1',MONTH(t.'create_time') AS 'value2',DAYOFMONTH(t.'create_tim…` |
+| MyTest1.java#testDraft8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:95 | `SELECT YEAR(t.'create_time') AS 'value1',MONTH(t.'create_time') AS 'value2',DAYOFMONTH(t.'create_tim…` |
+| MyTest1.java#testDraft9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:111 | `SELECT timestampdiff(DAY, t.'update_time', t.'create_time') AS 'value1',timestampdiff(HOUR, t.'updat…` |
 | MyTest2.java#testTuple11 | 待做 |  | `SELECT timestampdiff(DAY, t.'create_time', t.'update_time') AS 'value1',timestampdiff(HOUR, t.'creat…` |
 | MyTest2.java#testTuple6 | 待做 |  | `SELECT date_add(date_add(t.'create_time', interval (?) month), interval (?) day) AS 'value1',date_ad…` |
 | MyTest2.java#testTuple7 | 待做 |  | `SELECT YEAR(t.'create_time') AS 'value1',MONTH(t.'create_time') AS 'value2',DAYOFMONTH(t.'create_tim…` |
@@ -739,11 +739,11 @@
 | DateTimeFunctionsTest.java#durationMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:73 | `SELECT t.'create_time' AS 'value1',timestampdiff(DAY, t.'create_time', ?) AS 'value2',timestampdiff(…` |
 | DateTimeFunctionsTest.java#formatMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:13 | `SELECT t.'create_time' AS 'value1',DATE_FORMAT(t.'create_time','%Y年%m-01 %H:%i分%s秒') AS 'value2',DAT…` |
 | DateTimeFunctionsTest.java#testConstant | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:104 | `SELECT NOW() AS 'value1',UTC_TIMESTAMP() AS 'value2' FROM 't_blog' t WHERE t.'deleted' = ?` |
-| MyTest1.java#testDraft4 | 待做 |  | `SELECT date_add(t.'create_time', interval (?) month) AS 'value1' FROM 't_blog' t WHERE t.'deleted' =…` |
-| MyTest1.java#testDraft5 | 待做 |  | `SELECT date_add(date_add(t.'create_time', interval (?) month), interval (?) day) AS 'value1' FROM 't…` |
-| MyTest1.java#testExists | 待做 |  | `SELECT t.'id' AS 'value1',t.'title' AS 'value2',t.'create_time' AS 'value3',(SELECT t2.'title' FROM …` |
-| MyTest1.java#testSelect3 | 待做 |  | `SELECT t.'title' AS 'id',DATE_FORMAT(t.'create_time','%Y-%m-%d') AS 'id',SUBSTR(t.'title',2,2) AS 't…` |
-| MyTest1.java#testSelect4 | 待做 |  | `SELECT t.'id',t.'title',DATE_FORMAT(t.'create_time','%Y-%m-%d') AS 'title' FROM 't_topic' t WHERE t.…` |
+| MyTest1.java#testDraft4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:63 | `SELECT date_add(t.'create_time', interval (?) month) AS 'value1' FROM 't_blog' t WHERE t.'deleted' =…` |
+| MyTest1.java#testDraft5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:63 | `SELECT date_add(date_add(t.'create_time', interval (?) month), interval (?) day) AS 'value1' FROM 't…` |
+| MyTest1.java#testExists | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:142 | `SELECT t.'id' AS 'value1',t.'title' AS 'value2',t.'create_time' AS 'value3',(SELECT t2.'title' FROM …` |
+| MyTest1.java#testSelect3 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:173：Java 对同一个属性 id 赋值两次，生成两个 AS 'id'；C# 的对象初始化器不允许重复成员 | `SELECT t.'title' AS 'id',DATE_FORMAT(t.'create_time','%Y-%m-%d') AS 'id',SUBSTR(t.'title',2,2) AS 't…` |
+| MyTest1.java#testSelect4 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:174：Java 的 selectExpression 产出两个 'title' 列；C# 的投影成员不能重名 | `SELECT t.'id',t.'title',DATE_FORMAT(t.'create_time','%Y-%m-%d') AS 'title' FROM 't_topic' t WHERE t.…` |
 | MyTest2.java#testExists | 待做 |  | `SELECT t.'id' AS 'value1',t.'title' AS 'value2',t.'create_time' AS 'value3',(SELECT t2.'title' FROM …` |
 | MyTest2.java#testSelect3 | 待做 |  | `SELECT t.'title' AS 'id',DATE_FORMAT(t.'create_time','%Y-%m-%d') AS 'id',SUBSTR(t.'title',2,2) AS 't…` |
 | MyTest2.java#testSelect4 | 待做 |  | `SELECT t.'id',t.'title',DATE_FORMAT(t.'create_time','%Y-%m-%d') AS 'title' FROM 't_topic' t WHERE t.…` |
@@ -903,7 +903,7 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| MyTest1.java#testGroup15 | 待做 |  | `SELECT SUBSTR(t.'title',2,2) AS 'id',MAX(t.'title') AS 'title',MIN(CAST(t.'stars' AS DECIMAL(36,18))…` |
+| MyTest1.java#testGroup15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:299 | `SELECT SUBSTR(t.'title',2,2) AS 'id',MAX(t.'title') AS 'title',MIN(CAST(t.'stars' AS DECIMAL(36,18))…` |
 | MyTest2.java#testGroup15 | 待做 |  | `SELECT SUBSTR(t.'title',2,2) AS 'id',MAX(t.'title') AS 'title',MIN(CAST(t.'stars' AS DECIMAL(36,18))…` |
 | QueryTest10.java#testDraft20 | 待做 |  | `SELECT SUBSTR(t.'content',1,8) AS 'value1',GROUP_CONCAT(t.'id' SEPARATOR ?) AS 'value2' FROM 't_blog…` |
 | QueryTest12.java#testDraft21 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:60 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
@@ -967,23 +967,23 @@
 | InsertTest.java#insertTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:15 |  |
 | MathQueryTest.java#testPropertyMath | 待做 |  | `SELECT t.'test_value' AS 'test_value',ABS(t.'test_value') AS 'test_abs',SIGN(t.'test_value') AS 'tes…` |
 | MathQueryTest.java#testPropertyMath2 | 待做 |  | `SELECT t.'test_value' AS 'test_value',ABS(t.'test_value') AS 'test_abs',SIGN(t.'test_value') AS 'tes…` |
-| MyTest1.java#testDraft1 | 待做 |  | `SELECT t.'content' AS 'value1',CHAR_LENGTH(t.'content') AS 'value2' FROM 't_blog' t WHERE t.'deleted…` |
-| MyTest1.java#testDraft1_1 | 待做 |  | `SELECT t.'content' AS 'value1',CHAR_LENGTH(t.'content') AS 'value2' FROM 't_blog' t WHERE t.'deleted…` |
-| MyTest1.java#testDraft2 | 待做 |  | `SELECT t.'content' AS 'value1',CHAR_LENGTH(t.'content') AS 'value2' FROM 't_blog' t WHERE t.'deleted…` |
-| MyTest1.java#testGroup11 | 待做 |  | `SELECT SUBSTR(t.'title',2,2) AS 'id',COUNT(SUBSTR(t.'title',2,2)) AS 'star' FROM 't_topic' t WHERE t…` |
-| MyTest1.java#testGroup12 | 待做 |  | `SELECT t1.'value1' AS 'id',COUNT(t1.'value2') AS 'star' FROM (SELECT t.'title' AS 'value1',SUBSTR(t.…` |
-| MyTest1.java#testGroup13 | 待做 |  | `SELECT t1.'value1' AS 'id',COUNT(t1.'value2') AS 'star' FROM (SELECT t.'title' AS 'value1',SUBSTR(t.…` |
-| MyTest1.java#testGroup14 | 待做 |  | `SELECT t2.'id' AS 'id',t2.'star' AS 'star' FROM (SELECT t1.'value1' AS 'id',COUNT(t1.'value2') AS 's…` |
-| MyTest1.java#testGroup16 | 待做 |  | `SELECT SUBSTR('title',2,2) FROM 't_topic' WHERE 'title' IS NOT NULL GROUP BY SUBSTR('title',2,2)` |
-| MyTest1.java#testGroup17 | 待做 |  | `SELECT SUBSTR('title',2,2) FROM 't_topic' WHERE 'title' IS NOT NULL GROUP BY SUBSTR('title',2,2) HAV…` |
-| MyTest1.java#testGroup18 | 待做 |  | `SELECT SUBSTR(t.'title',2,2) AS 'value1',COUNT(*) AS 'value2' FROM 't_topic' t WHERE t.'title' IS NO…` |
-| MyTest1.java#testGroup19 | 待做 |  | `SELECT SUBSTR(t.'title',2,2) AS 'value1',IFNULL(t1.'score',?) AS 'value2',COUNT(*) AS 'value3' FROM …` |
-| MyTest1.java#testSelect5 | 待做 |  | `SELECT t.'title' AS 'id',SUBSTR(t.'title',2,2) AS 'title' FROM 't_topic' t WHERE t.'title' IS NOT NU…` |
-| MyTest1.java#testSelect6 | 待做 |  | `SELECT t2.'id' AS 'id',t2.'id_count' AS 'id_count' FROM (SELECT t1.'id' AS 'id',COUNT(*) AS 'id_coun…` |
-| MyTest1.java#testSelect6_1 | 待做 |  | `SELECT t1.'id' AS 'id',COUNT(*) AS 'id_count' FROM (SELECT t.'title' AS 'id',SUBSTR(t.'title',2,2) A…` |
-| MyTest1.java#testSelect6_2 | 待做 |  | `SELECT t1.'id' AS 'id',MIN(t1.'id') AS 'id_count' FROM (SELECT t.'title' AS 'id',SUBSTR(t.'title',2,…` |
-| MyTest1.java#testSelect7 | 待做 |  | `SELECT t2.'value1' AS 'value1',t2.'value2' AS 'value2' FROM (SELECT t1.'value1' AS 'value1',COUNT(*)…` |
-| MyTest1.java#testSelect9 | 待做 |  | `SELECT t1.'value1' AS 'value1',COUNT(*) AS 'value2' FROM (SELECT t.'title' AS 'value1',SUBSTR(t.'tit…` |
+| MyTest1.java#testDraft1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:44 | `SELECT t.'content' AS 'value1',CHAR_LENGTH(t.'content') AS 'value2' FROM 't_blog' t WHERE t.'deleted…` |
+| MyTest1.java#testDraft1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:44 | `SELECT t.'content' AS 'value1',CHAR_LENGTH(t.'content') AS 'value2' FROM 't_blog' t WHERE t.'deleted…` |
+| MyTest1.java#testDraft2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:54 | `SELECT t.'content' AS 'value1',CHAR_LENGTH(t.'content') AS 'value2' FROM 't_blog' t WHERE t.'deleted…` |
+| MyTest1.java#testGroup11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:270 | `SELECT SUBSTR(t.'title',2,2) AS 'id',COUNT(SUBSTR(t.'title',2,2)) AS 'star' FROM 't_topic' t WHERE t…` |
+| MyTest1.java#testGroup12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:279 | `SELECT t1.'value1' AS 'id',COUNT(t1.'value2') AS 'star' FROM (SELECT t.'title' AS 'value1',SUBSTR(t.…` |
+| MyTest1.java#testGroup13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:279 | `SELECT t1.'value1' AS 'id',COUNT(t1.'value2') AS 'star' FROM (SELECT t.'title' AS 'value1',SUBSTR(t.…` |
+| MyTest1.java#testGroup14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:290 | `SELECT t2.'id' AS 'id',t2.'star' AS 'star' FROM (SELECT t1.'value1' AS 'id',COUNT(t1.'value2') AS 's…` |
+| MyTest1.java#testGroup16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:311 | `SELECT SUBSTR('title',2,2) FROM 't_topic' WHERE 'title' IS NOT NULL GROUP BY SUBSTR('title',2,2)` |
+| MyTest1.java#testGroup17 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:311 | `SELECT SUBSTR('title',2,2) FROM 't_topic' WHERE 'title' IS NOT NULL GROUP BY SUBSTR('title',2,2) HAV…` |
+| MyTest1.java#testGroup18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:322 | `SELECT SUBSTR(t.'title',2,2) AS 'value1',COUNT(*) AS 'value2' FROM 't_topic' t WHERE t.'title' IS NO…` |
+| MyTest1.java#testGroup19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:333 | `SELECT SUBSTR(t.'title',2,2) AS 'value1',IFNULL(t1.'score',?) AS 'value2',COUNT(*) AS 'value3' FROM …` |
+| MyTest1.java#testSelect5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:177 | `SELECT t.'title' AS 'id',SUBSTR(t.'title',2,2) AS 'title' FROM 't_topic' t WHERE t.'title' IS NOT NU…` |
+| MyTest1.java#testSelect6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:191 | `SELECT t2.'id' AS 'id',t2.'id_count' AS 'id_count' FROM (SELECT t1.'id' AS 'id',COUNT(*) AS 'id_coun…` |
+| MyTest1.java#testSelect6_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:200 | `SELECT t1.'id' AS 'id',COUNT(*) AS 'id_count' FROM (SELECT t.'title' AS 'id',SUBSTR(t.'title',2,2) A…` |
+| MyTest1.java#testSelect6_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:208 | `SELECT t1.'id' AS 'id',MIN(t1.'id') AS 'id_count' FROM (SELECT t.'title' AS 'id',SUBSTR(t.'title',2,…` |
+| MyTest1.java#testSelect7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:232 | `SELECT t2.'value1' AS 'value1',t2.'value2' AS 'value2' FROM (SELECT t1.'value1' AS 'value1',COUNT(*)…` |
+| MyTest1.java#testSelect9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:250 | `SELECT t1.'value1' AS 'value1',COUNT(*) AS 'value2' FROM (SELECT t.'title' AS 'value1',SUBSTR(t.'tit…` |
 | MyTest2.java#testGroup11 | 待做 |  | `SELECT SUBSTR(t.'title',2,2) AS 'id',COUNT(SUBSTR(t.'title',2,2)) AS 'star' FROM 't_topic' t WHERE t…` |
 | MyTest2.java#testGroup12 | 待做 |  | `SELECT t1.'value1' AS 'id',COUNT(t1.'value2') AS 'star' FROM (SELECT t.'title' AS 'value1',SUBSTR(t.…` |
 | MyTest2.java#testGroup13 | 待做 |  | `SELECT t1.'value1' AS 'id',COUNT(t1.'value2') AS 'star' FROM (SELECT t.'title' AS 'value1',SUBSTR(t.…` |
@@ -1940,7 +1940,7 @@
 | EntityQueryAggregateTest6.java#test7 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
 | EntityQueryAggregateTest6.java#test8 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
 | EntityQueryAggregateTest6.java#test9 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id'` |
-| MyTest1.java#testSelect6_3 | 待做 |  | `SELECT t.'id' AS 'id',COUNT(t1.'id') AS 'id_count' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'del…` |
+| MyTest1.java#testSelect6_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/MyTest1.cs:216 | `SELECT t.'id' AS 'id',COUNT(t1.'id') AS 'id_count' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'del…` |
 | MyTest2.java#testSelect6_3 | 待做 |  | `SELECT t.'id' AS 'id',COUNT(t1.'id') AS 'id_count' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'del…` |
 | QueryTest.java#query14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.SubQueries.cs:124 |  |
 | QueryTest27.java#testDiff | 待做 |  |  |
