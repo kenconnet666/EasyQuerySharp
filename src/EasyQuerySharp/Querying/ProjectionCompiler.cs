@@ -51,9 +51,11 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     /// 拆解投影：登记 SELECT 列，并构造（尚未编译的）读取表达式。
     /// 带出需要的父键列、调用方要求的关联键列追加在最后：已经原样选出的列直接复用，否则写成 <c>列 AS __relation__列名</c>（与 Java 版一致）。
     /// </summary>
-    public void Prepare(Expression body, SourceBinding? root = null, IReadOnlyList<ColumnMetadata>? relationKeys = null)
+    public void Prepare(Expression body, SourceBinding? root = null, IReadOnlyList<ColumnMetadata>? relationKeys = null, IReadOnlyList<IncludeSpec>? includes = null)
     {
         _shaped = Shape(body, member: null, topLevel: true);
+        if (includes is { Count: > 0 })
+            _shaped = WithIncludes(_shaped, root as EntityBinding ?? throw new NotSupportedException("Include 只能用在实体查询上"), includes);
         foreach (var (plan, owner) in _includes)
             plan.ParentKeyOrdinals = plan.Navigation.SelfColumns.Select(c => RelationColumn(owner.Table, c)).ToArray();
         if (relationKeys is not null && root is not null)
@@ -152,6 +154,32 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         var plan = new IncludePlan(nav, selector?.ReturnType ?? nav.Target.Type, selector, filters, nav.IsCollection);
         _includes.Add((plan, owner));
         return plan;
+    }
+
+    // 实体查询的 Include：实体读出后，集合导航先放一个空 List（主查询后填充），对一导航登记回填函数
+    private Expression WithIncludes(Expression entity, EntityBinding owner, IReadOnlyList<IncludeSpec> includes)
+    {
+        var instance = Expression.Variable(entity.Type, "entity");
+        var body = new List<Expression> { Expression.Assign(instance, entity) };
+        foreach (var spec in includes)
+        {
+            var nav = translator.FindNavigation(owner, spec.Member) ?? throw new NotSupportedException($"{owner.Entity.Type.Name}.{spec.Member} 不是导航属性");
+            var plan = new IncludePlan(nav, nav.Target.Type, null, [], nav.IsCollection) { Configure = spec.Configure };
+            _includes.Add((plan, owner));
+            var property = owner.Entity.Type.GetProperty(spec.Member)!;
+            var register = typeof(IncludePlan).GetMethod(nameof(IncludePlan.Register))!;
+            if (nav.IsCollection)
+            {
+                body.Add(Expression.Assign(Expression.Property(instance, property),
+                    Expression.Convert(Expression.Call(Expression.Constant(plan), register, _reader, Expression.Constant(null, typeof(Action<object?>))), property.PropertyType)));
+                continue;
+            }
+            var child = Expression.Parameter(typeof(object), "child");
+            var assign = Expression.Lambda<Action<object?>>(Expression.Assign(Expression.Property(instance, property), Expression.Convert(child, property.PropertyType)), child);
+            body.Add(Expression.Call(Expression.Constant(plan), register, _reader, assign));
+        }
+        body.Add(instance);
+        return Expression.Block([instance], body);
     }
 
     // 对一带出：父对象构造完后登记回填函数（构造函数参数 / init 属性都能通过反射赋值）

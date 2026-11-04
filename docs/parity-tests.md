@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2338 个用例。
 
-合计：已移植 529、偏离 94、不适用 8、骨架 15、待做 1692。
+合计：已移植 531、偏离 94、不适用 8、骨架 15、待做 1690。
 
 ## 按能力
 
@@ -36,7 +36,7 @@
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 0 | 0 | 0 | 0 | 4 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 0 | 0 | 1 | 0 | 55 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 0 | 0 | 0 | 2 | 65 |
-| include 带出导航 | `nav.include` | M4 | 37 | 0 | 0 | 0 | 0 | 37 |
+| include 带出导航 | `nav.include` | M4 | 37 | 2 | 0 | 0 | 0 | 35 |
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 44 | 1 | 0 | 0 | 97 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 0 | 0 | 0 | 0 | 25 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
@@ -1619,8 +1619,8 @@
 | --- | --- | --- | --- |
 | DirectRelationTest.java#test | 待做 |  | `SELECT 'c1','c2','c3','c4','c5' FROM 'direct1'` |
 | DirectRelationTest.java#test2 | 待做 |  | `SELECT 'c1','c2','c3','c4','c5' FROM 'direct1'` |
-| QueryTest18.java#esss | 待做 |  |  |
-| QueryTest18.java#test14 | 待做 |  | `SELECT COUNT(*) FROM (SELECT DISTINCT t.'id',t.'stars',t1.'create_time' FROM 't_topic' t LEFT JOIN '…` |
+| QueryTest18.java#esss | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Includes.cs:26 |  |
+| QueryTest18.java#test14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Includes.cs:9 | `SELECT COUNT(*) FROM (SELECT DISTINCT t.'id',t.'stars',t1.'create_time' FROM 't_topic' t LEFT JOIN '…` |
 | QueryTest2.java#query26 | 待做 |  |  |
 | QueryTest28.java#testInterceptor3 | 待做 |  | `SELECT 'id','name' FROM 'm8_interceptor'` |
 | RelationNullValueTest.java#one2oneTest | 待做 |  |  |

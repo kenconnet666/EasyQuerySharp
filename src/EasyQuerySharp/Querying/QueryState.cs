@@ -79,6 +79,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>单表时也写别名 t（带出的子查询在 Java 版里总带别名）。</summary>
     public bool ForceAlias { get; init; }
 
+    /// <summary>实体查询上的导航带出（Include）；有投影时不生效。</summary>
+    public ImmutableArray<Includes.IncludeSpec> Includes { get; init; } = [];
+
     /// <summary>关闭逻辑删除过滤。</summary>
     public bool DisableLogicDelete { get; init; }
 

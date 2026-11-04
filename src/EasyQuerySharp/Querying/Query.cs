@@ -64,6 +64,30 @@ public sealed class Query<T> : QueryBase<Query<T>, T>
     public Query<TResult> Select<TResult>(Expression<Func<T, TResult>> selector) => new(Open with { Selector = selector });
 
     /// <summary>
+    /// 带出导航（对应 Java 的 include）：主查询之后每个导航一条 <c>WHERE 键 IN (…)</c> 查询，结果挂到实体的导航属性上，没有 N+1。
+    /// 多对多经中间表。<c>db.Query&lt;SysUser&gt;().Include(s =&gt; s.MyBlog).Include(s =&gt; s.Blogs)</c>
+    /// </summary>
+    public Query<T> Include<TProperty>(Expression<Func<T, TProperty>> navigation) => AddInclude(navigation, null);
+
+    /// <summary>
+    /// 带出集合导航，并配置子查询（条件、排序、嵌套 Include）：
+    /// <c>.Include(c =&gt; c.SchoolStudents, q =&gt; q.Where(s =&gt; s.Name != "x").Include(s =&gt; s.SchoolStudentAddress))</c>
+    /// </summary>
+    public Query<T> Include<TChild>(Expression<Func<T, IEnumerable<TChild>?>> navigation, Func<Query<TChild>, Query<TChild>> configure) where TChild : class =>
+        AddInclude(navigation, s => configure(new Query<TChild>(s)).State);
+
+    /// <summary>带出对一导航，并配置子查询（如嵌套 Include）。</summary>
+    public Query<T> Include<TChild>(Expression<Func<T, TChild?>> navigation, Func<Query<TChild>, Query<TChild>> configure) where TChild : class =>
+        AddInclude(navigation, s => configure(new Query<TChild>(s)).State);
+
+    private Query<T> AddInclude(LambdaExpression navigation, Func<QueryState, QueryState>? configure)
+    {
+        if (Translation.ExpressionTranslator.StripConvert(navigation.Body) is not MemberExpression { Expression: ParameterExpression } member)
+            throw new ArgumentException($"Include 需要直接的导航属性，如 u => u.Posts：{navigation}", nameof(navigation));
+        return new(State with { Includes = State.Includes.Add(new Includes.IncludeSpec(member.Member.Name, configure)) });
+    }
+
+    /// <summary>
     /// 先分页、再投影（对应 Java 的 limitSelect）：分页后的查询作为派生表，投影里的子查询（如导航计数）只对这一页的行执行。
     /// <c>q.LimitSelect(20, 10, u =&gt; new { u.Id, Blogs = u.Blogs!.Count() })</c>。
     /// </summary>

@@ -27,6 +27,9 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     /// <summary>是否集合（否则是单个对象）。</summary>
     public bool IsCollection { get; } = isCollection;
 
+    /// <summary>子查询的配置（Include 的第二个参数）；为 null 时只按键过滤。</summary>
+    public Func<QueryState, QueryState>? Configure { get; init; }
+
     /// <summary>主查询结果里父键列的序号（投影完成后填入）。</summary>
     public int[] ParentKeyOrdinals { get; set; } = [];
 
@@ -79,3 +82,9 @@ internal readonly record struct CompositeKey(object First, object? Second, objec
     /// <summary>键的各列值。</summary>
     public IEnumerable<object> Values(int count) => new[] { First, Second, Third }.Take(count).Select(v => v!);
 }
+
+/// <summary>
+/// 实体查询上的一处 <c>Include</c>：导航成员名，以及对子查询的配置（条件、排序、嵌套 Include），
+/// 配置作用在以目标实体为来源的查询状态上。
+/// </summary>
+internal sealed record IncludeSpec(string Member, Func<QueryState, QueryState>? Configure);

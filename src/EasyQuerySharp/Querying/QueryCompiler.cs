@@ -161,7 +161,7 @@ internal static class QueryCompiler
         }
         frame.Translator.Bind(selector, frame.Bindings);
         // 先登记列，再把列表交给 AST；读取函数由调用方按需编译
-        projection.Prepare(selector.Body, frame.Bindings[0], relationKeys);
+        projection.Prepare(selector.Body, frame.Bindings[0], relationKeys, state.Selector is null ? (IReadOnlyList<Includes.IncludeSpec>)state.Includes : null);
         frame.Query.Columns.AddRange(projection.Columns);
         frame.Query.ExplicitProjection = state.Selector is not null || state.ForceAlias;
         return (frame, projection);
