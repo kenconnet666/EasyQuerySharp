@@ -105,5 +105,38 @@ public class OracleDialect : SqlDialect
         f[SqlFunctionNames.PadRight] = Pad("RPAD", "' '");
         f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("LISTAGG(TO_CHAR(").Write(a[0]).Append("), ").Write(a[1]).Append(") WITHIN GROUP(ORDER BY 1)");
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("LISTAGG(DISTINCT TO_CHAR(").Write(a[0]).Append("), ").Write(a[1]).Append(") WITHIN GROUP(ORDER BY 1)");
+        // 相差：两个日期相减得到天数，再拆成 DAY / HOUR / MINUTE / SECOND 累加（与 Java 一致）
+        const string interval = "NUMTODSINTERVAL(({1}+0)-({0}+0),'DAY')";
+        f[SqlFunctionNames.Now] = Template("SYSTIMESTAMP");
+        f[SqlFunctionNames.UtcNow] = Template("SYS_EXTRACT_UTC(SYSTIMESTAMP)");
+        DateFunctions(f,
+            unit => unit switch
+            {
+                DateUnit.Year => "add_months({0},({1})*12)",
+                DateUnit.Month => "add_months({0},{1})",
+                DateUnit.Day => "({0}+{1})",
+                DateUnit.Hour => "({0}+({1})/24.0)",
+                DateUnit.Minute => "({0}+({1})/1440.0)",
+                DateUnit.Second => "({0}+({1})/86400.0)",
+                _ => "({0}+({1})/86400000.0)",
+            },
+            part => part switch
+            {
+                DatePart.DayOfYear => "cast(to_char({0},'DDD') as number)",
+                DatePart.DayOfWeek => "(case when to_char({0},'D')='7' then 0 else cast(to_char({0},'D') as number) end)",
+                DatePart.IsoDayOfWeek => "cast(to_char({0},'D') as number)",
+                _ => "cast(to_char({0},'" + part switch
+                {
+                    DatePart.Year => "YYYY", DatePart.Month => "MM", DatePart.Day => "DD", DatePart.Hour => "HH24", DatePart.Minute => "MI", _ => "SS",
+                } + "') as number)",
+            },
+            unit => unit switch
+            {
+                DateUnit.Day => "EXTRACT(DAY FROM " + interval + ")",
+                DateUnit.Hour => "(EXTRACT(DAY FROM " + interval + ")*24+EXTRACT(HOUR FROM " + interval + "))",
+                DateUnit.Minute => "(EXTRACT(DAY FROM " + interval + ")*1440+EXTRACT(HOUR FROM " + interval + ")*60+EXTRACT(MINUTE FROM " + interval + "))",
+                _ => "(EXTRACT(DAY FROM " + interval + ")*86400+EXTRACT(HOUR FROM " + interval + ")*3600+EXTRACT(MINUTE FROM " + interval + ")*60+EXTRACT(SECOND FROM " + interval + "))"
+                     + (unit == DateUnit.Millisecond ? "*1000" : ""),
+            });
     }
 }

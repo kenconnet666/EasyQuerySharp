@@ -46,6 +46,46 @@ public static class Sql
     internal static System.Linq.Expressions.Expression GroupExpression(System.Linq.Expressions.Expression predicate) =>
         System.Linq.Expressions.Expression.Call(typeof(Sql).GetMethod(nameof(Group))!, predicate);
 
+    /// <summary>
+    /// 闭区间 <c>lower &lt;= x &lt;= upper</c>，渲染为 <c>(x &gt;= ? AND x &lt;= ?)</c>（对应 Java 的 rangeClosed）。
+    /// x 是函数（如 <c>b.CreateTime ?? def</c>）、两端都是值时渲染为 <c>BETWEEN</c>，与 Java 一致。
+    /// 配合 <see cref="Querying.QueryBase{TSelf,T}.UseValueFilter"/> 时，被拒绝的一端（如 null）不加条件。
+    /// </summary>
+    public static bool RangeClosed<T>(this T value, T lower, T upper) => throw OnlyInQuery();
+
+    /// <summary>开区间 <c>lower &lt; x &lt; upper</c>（对应 Java 的 rangeOpen）。</summary>
+    public static bool RangeOpen<T>(this T value, T lower, T upper) => throw OnlyInQuery();
+
+    /// <summary>左闭右开 <c>lower &lt;= x &lt; upper</c>（对应 Java 的 rangeClosedOpen）。</summary>
+    public static bool RangeClosedOpen<T>(this T value, T lower, T upper) => throw OnlyInQuery();
+
+    /// <summary>左开右闭 <c>lower &lt; x &lt;= upper</c>（对应 Java 的 rangeOpenClosed）。</summary>
+    public static bool RangeOpenClosed<T>(this T value, T lower, T upper) => throw OnlyInQuery();
+
+    /// <summary>区间标记方法的两端是否为开区间；不是区间方法时返回 null。</summary>
+    internal static (bool LowerOpen, bool UpperOpen)? RangeKind(System.Reflection.MethodInfo method) =>
+        method.DeclaringType != typeof(Sql) ? null
+        : method.Name switch
+        {
+            nameof(RangeClosed) => (false, false),
+            nameof(RangeOpen) => (true, true),
+            nameof(RangeClosedOpen) => (false, true),
+            nameof(RangeOpenClosed) => (true, false),
+            _ => null,
+        };
+
+    /// <summary>数据库的当前时间（MySQL 的 <c>NOW()</c>）；与 <c>DateTime.Now</c> 不同，后者是客户端的值，作为参数传。</summary>
+    public static DateTime Now() => throw OnlyInQuery();
+
+    /// <summary>数据库的当前 UTC 时间（MySQL 的 <c>UTC_TIMESTAMP()</c>）。</summary>
+    public static DateTime UtcNow() => throw OnlyInQuery();
+
+    /// <summary>ISO 星期几：周一 1 … 周日 7（C# 的 <c>x.DayOfWeek</c> 是周日 0 … 周六 6）。</summary>
+    public static int IsoDayOfWeek(this DateTime value) => throw OnlyInQuery();
+
+    /// <summary>ISO 星期几：周一 1 … 周日 7。</summary>
+    public static int IsoDayOfWeek(this DateOnly value) => throw OnlyInQuery();
+
     /// <summary>值在给定集合里（<c>IN (…)</c>）；与 <c>ids.Contains(x)</c> 等价，写法更接近 SQL。</summary>
     public static bool In<T>(this T value, params T[] values) => throw OnlyInQuery();
 

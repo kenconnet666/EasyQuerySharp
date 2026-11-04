@@ -64,6 +64,21 @@ public static class SqlFunctionNames
     /// <summary>(x, 'C# 格式串' 字面量)：按格式转成字符串，方言把 yyyy / MM / dd / HH / mm / ss 转成自己的格式符。</summary>
     public const string DateFormat = "DateFormat";
 
+    /// <summary>()：数据库当前时间（本地）。</summary>
+    public const string Now = "Now";
+
+    /// <summary>()：数据库当前 UTC 时间。</summary>
+    public const string UtcNow = "UtcNow";
+
+    /// <summary>(x, n)：日期加上 n 个 <paramref name="unit"/>。</summary>
+    public static string DateAdd(DateUnit unit) => "DateAdd." + unit;
+
+    /// <summary>(x)：取日期的一部分。</summary>
+    public static string DatePartOf(DatePart part) => "DatePart." + part;
+
+    /// <summary>(start, end)：end 减 start 的整数 <paramref name="unit"/> 数（截断）。</summary>
+    public static string DateDiff(DateUnit unit) => "DateDiff." + unit;
+
     // ---------- 数值 ----------
 
     /// <summary>(x)：绝对值。</summary>

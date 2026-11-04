@@ -46,12 +46,34 @@ internal static class ValueFilterRewriter
             case BinaryExpression { NodeType: ExpressionType.Equal or ExpressionType.NotEqual or ExpressionType.LessThan or ExpressionType.LessThanOrEqual
                 or ExpressionType.GreaterThan or ExpressionType.GreaterThanOrEqual } c:
                 return Rejected(c.Left, filter) || Rejected(c.Right, filter) ? null : e;
+            case MethodCallExpression range when Sql.RangeKind(range.Method) is var (lowerOpen, upperOpen):
+                return RewriteRange(range, lowerOpen, upperOpen, filter);
             case MethodCallExpression { Method.Name: nameof(string.Contains) or nameof(string.StartsWith) or nameof(string.EndsWith), Object: not null } m
                 when m.Method.DeclaringType == typeof(string):
                 return m.Arguments.Any(a => Rejected(a, filter)) ? null : e;
             default:
                 return e;
         }
+    }
+
+    // 区间：两端都保留时不变；只剩一端时退化成单个比较（不加括号，与 Java 一致）；两端都被拒绝时去掉
+    private static Expression? RewriteRange(MethodCallExpression range, bool lowerOpen, bool upperOpen, ValueFilter filter)
+    {
+        var (value, lower, upper) = (range.Arguments[0], range.Arguments[1], range.Arguments[2]);
+        var keepLower = !Rejected(lower, filter);
+        var keepUpper = !Rejected(upper, filter);
+        if (keepLower && keepUpper) return range;
+        if (keepLower) return Compare(value, lower, lowerOpen ? ExpressionType.GreaterThan : ExpressionType.GreaterThanOrEqual);
+        if (keepUpper) return Compare(value, upper, upperOpen ? ExpressionType.LessThan : ExpressionType.LessThanOrEqual);
+        return null;
+    }
+
+    // 字符串没有比较运算符，改写成 string.Compare(a, b) op 0（翻译器认得这个形状）
+    private static Expression Compare(Expression left, Expression right, ExpressionType op)
+    {
+        if (left.Type != typeof(string)) return Expression.MakeBinary(op, left, right);
+        var compare = Expression.Call(typeof(string).GetMethod(nameof(string.Compare), [typeof(string), typeof(string)])!, left, right);
+        return Expression.MakeBinary(op, compare, Expression.Constant(0));
     }
 
     // 只看客户端一侧（不需要翻译成 SQL 的那一侧）的值

@@ -54,5 +54,20 @@ public class SqliteDialect : SqlDialect
         f[SqlFunctionNames.DateFormat] = DateFormat("strftime({1},{0})", ("yyyy", "%Y"), ("MM", "%m"), ("dd", "%d"), ("HH", "%H"), ("mm", "%M"), ("ss", "%S"));
         f[SqlFunctionNames.StringJoin] = Call("GROUP_CONCAT");
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("GROUP_CONCAT(DISTINCT ").Write(a[0]).Append(",").Write(a[1]).Append(")");
+        f[SqlFunctionNames.Now] = Template("datetime(current_timestamp,'localtime')");
+        f[SqlFunctionNames.UtcNow] = Template("CURRENT_TIMESTAMP");
+        DateFunctions(f,
+            unit => unit == DateUnit.Millisecond ? "datetime({0},(({1})/1000)||' seconds')" : "datetime({0},({1})||' " + Lower(unit) + "s')",
+            part => part == DatePart.IsoDayOfWeek
+                ? "(CASE WHEN CAST(strftime('%w',{0}) AS INTEGER) = 0 THEN 7 ELSE CAST(strftime('%w',{0}) AS INTEGER) END)"
+                : "CAST(strftime('" + part switch
+            {
+                DatePart.Year => "%Y", DatePart.Month => "%m", DatePart.Day => "%d", DatePart.Hour => "%H", DatePart.Minute => "%M",
+                DatePart.Second => "%S", DatePart.DayOfYear => "%j", _ => "%w",
+            } + "',{0}) AS INTEGER)",
+            unit => "(strftime('%s',{1})-strftime('%s',{0}))" + unit switch
+            {
+                DateUnit.Day => "/86400", DateUnit.Hour => "/3600", DateUnit.Minute => "/60", DateUnit.Second => "", _ => "*1000",
+            });
     }
 }

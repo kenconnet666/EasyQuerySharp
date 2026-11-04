@@ -65,6 +65,18 @@ public class SqlServerDialect : SqlDialect
         f[SqlFunctionNames.Ceiling] = Call("CEILING");
         f[SqlFunctionNames.Ln] = Call("LOG");
         f[SqlFunctionNames.DateFormat] = DateFormat("FORMAT({0},{1})");
+        f[SqlFunctionNames.Now] = Template("GETDATE()");
+        f[SqlFunctionNames.UtcNow] = Template("GETUTCDATE()");
+        DateFunctions(f,
+            unit => unit == DateUnit.Millisecond ? "dateadd(second, ({1})/1000, {0})" : "dateadd(" + Lower(unit) + ", {1}, {0})",
+            part => part switch
+            {
+                DatePart.DayOfYear => "datepart(dayofyear, {0})",
+                DatePart.DayOfWeek => "(datepart(weekday, {0})-1)",
+                DatePart.IsoDayOfWeek => "(CASE WHEN (datepart(weekday, {0})-1) = 0 THEN 7 ELSE (datepart(weekday, {0})-1) END)",
+                _ => "datepart(" + Lower(part) + ", {0})",
+            },
+            unit => "datediff(" + Lower(unit) + ", {0}, {1})");
         // ROUND 的第三个参数非 0 表示截断
         f[SqlFunctionNames.Truncate] = (r, a) =>
         {

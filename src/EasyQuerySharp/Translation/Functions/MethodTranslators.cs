@@ -15,8 +15,6 @@ internal delegate SqlExpr MethodTranslator(ExpressionTranslator t, MethodCallExp
 /// </summary>
 internal static class MethodTranslators
 {
-    private static readonly Dictionary<MethodInfo, MethodTranslator> Table = Build();
-
     /// <summary>查表翻译；没有登记的方法返回 false。</summary>
     public static bool TryTranslate(ExpressionTranslator t, MethodCallExpression call, out SqlExpr result)
     {
@@ -88,6 +86,15 @@ internal static class MethodTranslators
         foreach (var dateType in new[] { typeof(DateTime), typeof(DateTimeOffset), typeof(DateOnly) })
             Add(dateType.GetMethod(nameof(DateTime.ToString), [s]), (t, c) =>
                 Fn(SqlFunctionNames.DateFormat, t.Translate(c.Object!), new LiteralExpr((string)ClientEvaluator.Evaluate(c.Arguments[0])!)));
+        // 加减：AddDays(n) 等，n 是值时作为参数（整数值按 long 传，与 Java 一致）
+        foreach (var dateType in new[] { typeof(DateTime), typeof(DateTimeOffset), typeof(DateOnly) })
+        {
+            foreach (var (name, unit) in DateAdds)
+            {
+                if ((dateType.GetMethod(name, [typeof(double)]) ?? dateType.GetMethod(name, [typeof(int)])) is not { } add) continue;
+                Add(add, (t, c) => Fn(SqlFunctionNames.DateAdd(unit), t.Translate(c.Object!), Amount(t, c.Arguments[0])));
+            }
+        }
 
         // ---------- Math ----------
         foreach (var name in new[] { nameof(Math.Abs), nameof(Math.Floor), nameof(Math.Ceiling), nameof(Math.Sign), nameof(Math.Sqrt), nameof(Math.Exp), nameof(Math.Log10), nameof(Math.Round), nameof(Math.Truncate), nameof(Math.Pow), nameof(Math.Log) })
@@ -110,6 +117,71 @@ internal static class MethodTranslators
             }
         }
         return table;
+    }
+
+    private static readonly (string Method, DateUnit Unit)[] DateAdds =
+    [
+        (nameof(DateTime.AddYears), DateUnit.Year), (nameof(DateTime.AddMonths), DateUnit.Month), (nameof(DateTime.AddDays), DateUnit.Day),
+        (nameof(DateTime.AddHours), DateUnit.Hour), (nameof(DateTime.AddMinutes), DateUnit.Minute), (nameof(DateTime.AddSeconds), DateUnit.Second),
+        (nameof(DateTime.AddMilliseconds), DateUnit.Millisecond),
+    ];
+
+    private static readonly Dictionary<string, DatePart> DateParts = Enum.GetValues<DatePart>().ToDictionary(p => p.ToString(), StringComparer.Ordinal);
+
+    private static readonly Dictionary<string, DateUnit> TimeSpanTotals = new(StringComparer.Ordinal)
+    {
+        [nameof(TimeSpan.Days)] = DateUnit.Day,
+        [nameof(TimeSpan.TotalDays)] = DateUnit.Day,
+        [nameof(TimeSpan.TotalHours)] = DateUnit.Hour,
+        [nameof(TimeSpan.TotalMinutes)] = DateUnit.Minute,
+        [nameof(TimeSpan.TotalSeconds)] = DateUnit.Second,
+        [nameof(TimeSpan.TotalMilliseconds)] = DateUnit.Millisecond,
+    };
+
+    // 放在上面这些表之后：静态字段按声明顺序初始化
+    private static readonly Dictionary<MethodInfo, MethodTranslator> Table = Build();
+
+    /// <summary>
+    /// 成员访问：<c>s.Length</c>、日期的 <c>x.Year</c> / <c>x.DayOfWeek</c> 等，以及两个日期相减后的
+    /// <c>(end - start).TotalDays</c> / <c>.Days</c> / <c>.TotalHours</c> 等（整数相差，截断小数，对应 Java 的 duration）。
+    /// </summary>
+    public static bool TryTranslateMember(ExpressionTranslator t, MemberExpression m, out SqlExpr result)
+    {
+        result = null!;
+        if (m.Expression is not { } owner) return false;
+        var ownerType = Nullable.GetUnderlyingType(owner.Type) ?? owner.Type;
+        if (ownerType == typeof(string) && m.Member.Name == nameof(string.Length))
+            result = Fn(SqlFunctionNames.Length, t.Translate(owner));
+        else if (IsDate(ownerType) && DateParts.TryGetValue(m.Member.Name, out var part))
+            result = Fn(SqlFunctionNames.DatePartOf(part), t.Translate(owner));
+        else if (ownerType == typeof(TimeSpan) && TimeSpanTotals.TryGetValue(m.Member.Name, out var unit)
+                 && UnwrapValue(owner) is BinaryExpression { NodeType: ExpressionType.Subtract } diff && IsDate(Nullable.GetUnderlyingType(diff.Left.Type) ?? diff.Left.Type))
+            result = Fn(SqlFunctionNames.DateDiff(unit), t.Translate(diff.Right), t.Translate(diff.Left));
+        return result is not null;
+    }
+
+    // (a - b).Value：可空 TimeSpan 取 Value 时看里面的减法
+    private static Expression UnwrapValue(Expression e)
+    {
+        e = ExpressionTranslator.StripConvert(e);
+        return e is MemberExpression { Member.Name: "Value", Expression: { } inner } && Nullable.GetUnderlyingType(inner.Type) is not null
+            ? ExpressionTranslator.StripConvert(inner) : e;
+    }
+
+    private static bool IsDate(Type type) => type == typeof(DateTime) || type == typeof(DateTimeOffset) || type == typeof(DateOnly);
+
+    // 加减的数量：值作为参数，整数值统一按 long（AddDays 的参数是 double，常量 2 也写成 2(Long)，与 Java 一致）
+    private static SqlExpr Amount(ExpressionTranslator t, Expression e)
+    {
+        var stripped = ExpressionTranslator.StripConvert(e);
+        if (ClientEvaluator.MustTranslate(stripped)) return t.Translate(stripped);
+        var value = ClientEvaluator.Evaluate(e);
+        return value switch
+        {
+            double d when d == Math.Truncate(d) => new ParameterExpr((long)d, typeof(long)),
+            int i => new ParameterExpr((long)i, typeof(long)),
+            _ => new ParameterExpr(value, value?.GetType() ?? typeof(long)),
+        };
     }
 
     private static MethodTranslator Unary(string function) => (t, c) => Fn(function, t.Translate(c.Object!));

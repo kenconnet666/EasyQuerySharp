@@ -206,6 +206,22 @@ public abstract class SqlDialect
         f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("STRING_AGG(").Write(a[0]).Append(", ").Write(a[1]).Append(")");
         f[SqlFunctionNames.DateFormat] = DateFormat("TO_CHAR({0},{1})", ("yyyy", "YYYY"), ("MM", "MM"), ("dd", "DD"), ("HH", "HH24"), ("mm", "MI"), ("ss", "SS"));
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("STRING_AGG(DISTINCT ").Write(a[0]).Append(", ").Write(a[1]).Append(")");
+        f[SqlFunctionNames.Now] = Template("CURRENT_TIMESTAMP");
+        f[SqlFunctionNames.UtcNow] = Template("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')");
+        // 日期：标准写法取 PostgreSQL（与 Java 的 PgSQL 函数一致）
+        DateFunctions(f,
+            unit => unit == DateUnit.Millisecond ? "(({0})::timestamp+(({1})||' milliseconds')::interval)" : "(({0})::timestamp+(({1})||' " + Lower(unit) + "')::interval)",
+            part => part switch
+            {
+                DatePart.DayOfYear => "extract(doy from ({0})::timestamp)",
+                DatePart.DayOfWeek => "extract(dow from ({0})::timestamp)",
+                DatePart.IsoDayOfWeek => "(CASE WHEN extract(dow from ({0})::timestamp) = 0 THEN 7 ELSE extract(dow from ({0})::timestamp) END)",
+                _ => "extract(" + Lower(part) + " from ({0})::timestamp)",
+            },
+            unit => "(extract(epoch from ({1})::timestamp-({0})::timestamp)" + unit switch
+            {
+                DateUnit.Day => "/86400", DateUnit.Hour => "/3600", DateUnit.Minute => "/60", DateUnit.Second => "", _ => "*1000",
+            } + ")::int");
     }
 
     /// <summary>
@@ -230,6 +246,37 @@ public abstract class SqlDialect
         r.Append(parts[0].Replace("{1}", literal));
         r.Write(a[0]);
         r.Append(parts[1].Replace("{1}", literal));
+    };
+
+    /// <summary>
+    /// 登记日期加减、取部分、相差三组函数：<paramref name="add"/> 的模板里 {0} 是日期、{1} 是数量；
+    /// <paramref name="diff"/> 的模板里 {0} 是起点、{1} 是终点。
+    /// </summary>
+    protected static void DateFunctions(IDictionary<string, FunctionWriter> f, Func<DateUnit, string> add, Func<DatePart, string> part, Func<DateUnit, string> diff)
+    {
+        foreach (var unit in Enum.GetValues<DateUnit>())
+        {
+            f[SqlFunctionNames.DateAdd(unit)] = Template(add(unit));
+            f[SqlFunctionNames.DateDiff(unit)] = Template(diff(unit));
+        }
+        foreach (var p in Enum.GetValues<DatePart>()) f[SqlFunctionNames.DatePartOf(p)] = Template(part(p));
+    }
+
+    /// <summary>小写的单位 / 部分名，用于拼模板（<c>day</c>、<c>hour</c>）。</summary>
+    protected static string Lower<TEnum>(TEnum value) where TEnum : struct, Enum => value.ToString().ToLowerInvariant();
+
+    /// <summary>按模板输出：<c>{n}</c> 处写第 n 个参数，其余原样。</summary>
+    protected static FunctionWriter Template(string template) => (r, a) =>
+    {
+        var start = 0;
+        for (var i = 0; i < template.Length; i++)
+        {
+            if (template[i] != '{' || i + 2 >= template.Length || !char.IsAsciiDigit(template[i + 1]) || template[i + 2] != '}') continue;
+            r.Append(template[start..i]).Write(a[template[i + 1] - '0']);
+            start = i + 3;
+            i += 2;
+        }
+        r.Append(template[start..]);
     };
 
     /// <summary><c>NAME(a,b)</c>。</summary>

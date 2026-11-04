@@ -3,22 +3,22 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2338 个用例。
 
-合计：已移植 477、偏离 93、不适用 7、骨架 15、待做 1746。
+合计：已移植 494、偏离 94、不适用 7、骨架 15、待做 1728。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 113 | 20 | 2 | 0 | 267 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 117 | 20 | 2 | 0 | 263 |
 | 分页结果 | `query.page` | M1 | 22 | 9 | 2 | 0 | 0 | 11 |
 | 原生 SQL | `sql.native` | M1 | 50 | 13 | 5 | 0 | 0 | 32 |
 | 删除 | `write.delete` | M1 | 21 | 7 | 1 | 2 | 0 | 11 |
 | 插入 | `write.insert` | M1 | 48 | 18 | 0 | 0 | 1 | 29 |
 | 更新 | `write.update` | M1 | 50 | 19 | 3 | 0 | 0 | 28 |
 | CASE WHEN | `expr.case` | M2 | 27 | 5 | 7 | 0 | 0 | 15 |
-| 日期函数 | `func.date` | M2 | 100 | 17 | 2 | 0 | 0 | 81 |
-| 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 19 | 2 | 0 | 0 | 38 |
+| 日期函数 | `func.date` | M2 | 100 | 22 | 2 | 0 | 0 | 76 |
+| 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 20 | 3 | 0 | 0 | 36 |
 | 字符串聚合（joining） | `func.joining` | M2 | 29 | 3 | 0 | 0 | 5 | 21 |
 | JSON 函数 | `func.json` | M2 | 12 | 0 | 0 | 0 | 0 | 12 |
 | 数学函数 | `func.math` | M2 | 4 | 0 | 2 | 1 | 0 | 1 |
@@ -60,7 +60,7 @@
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | M6 | 13 | 0 | 0 | 0 | 0 | 13 |
 | UPDATE / DELETE … RETURNING | `write.returning` | M6 | 3 | 0 | 0 | 0 | 0 | 3 |
 | 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 0 | 0 | 0 | 0 | 17 |
-| 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 21 | 8 | 0 | 0 | 72 |
+| 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 28 | 8 | 0 | 0 | 65 |
 | search 扩展 | `search` | M7 | 45 | 0 | 0 | 0 | 0 | 45 |
 | 分库分表 | `sharding` | M7 | 48 | 0 | 0 | 0 | 0 | 48 |
 | 跨库链接（asTableLink） | `table.link` | M7 | 13 | 0 | 0 | 0 | 0 | 13 |
@@ -79,9 +79,9 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| DateTimeFunctionsTest.java#booleanMySQL | 待做 |  | `SELECT t.'deleted' AS 'value1',(NOT (t.'deleted')) AS 'value2' FROM 't_blog' t WHERE t.'deleted' = ?` |
-| DateTimeFunctionsTest.java#dateTimeProp2MySQL | 待做 |  | `SELECT t.'create_time' AS 'value1',YEAR(t.'create_time') AS 'value2',MONTH(t.'create_time') AS 'valu…` |
-| DateTimeFunctionsTest.java#dateTimePropMySQL | 待做 |  | `SELECT t.'create_time' AS 'value1',YEAR(t.'create_time') AS 'value2',MONTH(t.'create_time') AS 'valu…` |
+| DateTimeFunctionsTest.java#booleanMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:93 | `SELECT t.'deleted' AS 'value1',(NOT (t.'deleted')) AS 'value2' FROM 't_blog' t WHERE t.'deleted' = ?` |
+| DateTimeFunctionsTest.java#dateTimeProp2MySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:55 | `SELECT t.'create_time' AS 'value1',YEAR(t.'create_time') AS 'value2',MONTH(t.'create_time') AS 'valu…` |
+| DateTimeFunctionsTest.java#dateTimePropMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:55 | `SELECT t.'create_time' AS 'value1',YEAR(t.'create_time') AS 'value2',MONTH(t.'create_time') AS 'valu…` |
 | DirectRelationTest.java#test3 | 待做 |  | `SELECT t.'c1',t.'c2',t.'c3',t.'c4',t.'c5' FROM 'direct1' t LEFT JOIN 'direct2' t1 ON t1.'c7' = t.'c1…` |
 | DirectRelationTest.java#testJoin1 | 待做 |  | `SELECT t3.'c18' AS 'value1' FROM 'direct1' t LEFT JOIN 'direct2' t1 ON t1.'c7' = t.'c1' LEFT JOIN 'd…` |
 | EntityQueryAggregateTest1.java#test1 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
@@ -270,7 +270,7 @@
 | QueryTest18.java#andTest | 待做 |  |  |
 | QueryTest18.java#autoFalse | 待做 |  |  |
 | QueryTest18.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:21 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'id' IS NULL` |
-| QueryTest18.java#test125 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest18.java#test125 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Ranges.cs:79 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest18.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:21 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'id' IS NULL` |
 | QueryTest18.java#test8 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:31：Java 代理对象的 __getMappingPath（导航路径字符串），C# 直接写属性路径字符串，没有对应 API |  |
 | QueryTest18.java#testDraft | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:188 |  |
@@ -734,11 +734,11 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| DateTimeFunctionsTest.java#dayOfWeekSunDayIsEndDayMySQL | 待做 |  | `SELECT t.'create_time' AS 'value1',(WEEKDAY(t.'create_time')+1) AS 'value2' FROM 't_blog' t WHERE t.…` |
-| DateTimeFunctionsTest.java#dayOfYearMySQL | 待做 |  | `SELECT t.'create_time' AS 'value1',DAYOFYEAR(t.'create_time') AS 'value2' FROM 't_blog' t WHERE t.'d…` |
-| DateTimeFunctionsTest.java#durationMySQL | 待做 |  | `SELECT t.'create_time' AS 'value1',timestampdiff(DAY, t.'create_time', ?) AS 'value2',timestampdiff(…` |
-| DateTimeFunctionsTest.java#formatMySQL | 待做 |  | `SELECT t.'create_time' AS 'value1',DATE_FORMAT(t.'create_time','%Y年%m-01 %H:%i分%s秒') AS 'value2',DAT…` |
-| DateTimeFunctionsTest.java#testConstant | 待做 |  | `SELECT NOW() AS 'value1',UTC_TIMESTAMP() AS 'value2' FROM 't_blog' t WHERE t.'deleted' = ?` |
+| DateTimeFunctionsTest.java#dayOfWeekSunDayIsEndDayMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:44 | `SELECT t.'create_time' AS 'value1',(WEEKDAY(t.'create_time')+1) AS 'value2' FROM 't_blog' t WHERE t.…` |
+| DateTimeFunctionsTest.java#dayOfYearMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:33 | `SELECT t.'create_time' AS 'value1',DAYOFYEAR(t.'create_time') AS 'value2' FROM 't_blog' t WHERE t.'d…` |
+| DateTimeFunctionsTest.java#durationMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:73 | `SELECT t.'create_time' AS 'value1',timestampdiff(DAY, t.'create_time', ?) AS 'value2',timestampdiff(…` |
+| DateTimeFunctionsTest.java#formatMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:13 | `SELECT t.'create_time' AS 'value1',DATE_FORMAT(t.'create_time','%Y年%m-01 %H:%i分%s秒') AS 'value2',DAT…` |
+| DateTimeFunctionsTest.java#testConstant | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:104 | `SELECT NOW() AS 'value1',UTC_TIMESTAMP() AS 'value2' FROM 't_blog' t WHERE t.'deleted' = ?` |
 | MyTest1.java#testDraft4 | 待做 |  | `SELECT date_add(t.'create_time', interval (?) month) AS 'value1' FROM 't_blog' t WHERE t.'deleted' =…` |
 | MyTest1.java#testDraft5 | 待做 |  | `SELECT date_add(date_add(t.'create_time', interval (?) month), interval (?) day) AS 'value1' FROM 't…` |
 | MyTest1.java#testExists | 待做 |  | `SELECT t.'id' AS 'value1',t.'title' AS 'value2',t.'create_time' AS 'value3',(SELECT t2.'title' FROM …` |
@@ -853,8 +853,8 @@
 | QueryTest11.java#testx27 | 待做 |  | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE IFNULL('topic_type'…` |
 | QueryTest11.java#testx28 | 待做 |  | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE IFNULL('topic_type'…` |
 | QueryTest17.java#testOptional1 | 待做 |  |  |
-| QueryTest18.java#rangeTest1 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest18.java#rangeTest2 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest18.java#rangeTest1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Ranges.cs:26：右端为函数时 Java 渲染 'AND  x <= IFNULL(...)'（两个空格），C# 一个空格 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest18.java#rangeTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Ranges.cs:58 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest18.java#test15 | 待做 |  |  |
 | QueryTest18.java#test1_0 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:11 | `SELECT IFNULL(t.'id',?) AS 'id' FROM 't_topic' t WHERE t.'id' IS NULL` |
 | QueryTest18.java#test1xa | 待做 |  |  |
@@ -2391,13 +2391,13 @@
 | QueryTest.java#query15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.ObjectFilter.cs:9 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'create_time' > ?` |
 | QueryTest.java#query18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest.ObjectFilter.cs:15 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'create_time' > ? ORDER BY 'create_ti…` |
 | QueryTest14.java#testClose | 待做 |  | `select * from t_topic` |
-| QueryTest18.java#rangeTest1_1 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest18.java#rangeTest1_2 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest18.java#rangeTest1_3 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest18.java#rangeTest1_4 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest18.java#rangeTest1_5 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest18.java#rangeTest1_6 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest18.java#rangeTest3 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest18.java#rangeTest1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Ranges.cs:40 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest18.java#rangeTest1_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Ranges.cs:40 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest18.java#rangeTest1_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Ranges.cs:40 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest18.java#rangeTest1_4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Ranges.cs:48 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest18.java#rangeTest1_5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Ranges.cs:48 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest18.java#rangeTest1_6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Ranges.cs:48 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest18.java#rangeTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.Ranges.cs:64 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest18.java#test11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:36 |  |
 | QueryTest18.java#test13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:44 | `SELECT t.'id',t.'create_time',t.'username',t.'phone',t.'id_card',t.'address' FROM 'easy-query-test'.…` |
 | QueryTest19.java#test1 | 待做 |  | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t WHERE t.'name' = ?` |

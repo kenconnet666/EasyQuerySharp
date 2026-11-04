@@ -33,6 +33,7 @@ internal sealed partial class ExpressionTranslator
 
     private SqlExpr TranslateSqlMarker(MethodCallExpression call)
     {
+        if (Sql.RangeKind(call.Method) is var (lowerOpen, upperOpen)) return TranslateRange(call, lowerOpen, upperOpen);
         switch (call.Method.Name)
         {
             case nameof(Sql.Like):
@@ -83,6 +84,12 @@ internal sealed partial class ExpressionTranslator
                 var inner = TranslatePredicate(call.Arguments[0]);
                 return inner is LogicalExpr { IsAnd: true } and ? LogicalExpr.Grouped(and.Operands) : inner;
             }
+            case nameof(Sql.Now):
+                return new FunctionExpr(SqlFunctionNames.Now, []);
+            case nameof(Sql.UtcNow):
+                return new FunctionExpr(SqlFunctionNames.UtcNow, []);
+            case nameof(Sql.IsoDayOfWeek):
+                return new FunctionExpr(SqlFunctionNames.DatePartOf(DatePart.IsoDayOfWeek), [Translate(call.Arguments[0])]);
             case nameof(Sql.Cast):
                 return new CastExpr(Translate(StripConvert(call.Arguments[0])), call.Method.GetGenericArguments()[0]);
             case nameof(Sql.SubQuery):
@@ -103,6 +110,22 @@ internal sealed partial class ExpressionTranslator
             default:
                 throw Unsupported(call);
         }
+    }
+
+    // 区间：两端都是值、左侧是函数且为闭区间时用 BETWEEN（Java 对函数走原生片段），否则是带括号的两个比较
+    private SqlExpr TranslateRange(MethodCallExpression call, bool lowerOpen, bool upperOpen)
+    {
+        var value = Translate(call.Arguments[0]);
+        var (lowerArg, upperArg) = (StripConvert(call.Arguments[1]), StripConvert(call.Arguments[2]));
+        var lower = Translate(lowerArg);
+        var upper = Translate(upperArg);
+        var boundsAreValues = !ClientEvaluator.MustTranslate(lowerArg) && !ClientEvaluator.MustTranslate(upperArg);
+        if (value is not ColumnExpr && boundsAreValues && !lowerOpen && !upperOpen)
+            return new FragmentExpr("{0} BETWEEN {1} AND {2}", [value, lower, upper], isPredicate: true);
+        return LogicalExpr.Grouped([
+            new BinaryExpr(value, lowerOpen ? SqlBinaryOperator.GreaterThan : SqlBinaryOperator.GreaterThanOrEqual, lower),
+            new BinaryExpr(value, upperOpen ? SqlBinaryOperator.LessThan : SqlBinaryOperator.LessThanOrEqual, upper),
+        ]);
     }
 
     // 原生片段的参数：列 / 表达式照常翻译；客户端集合展开成 ?,?,?（对应 Java 的 collection(…)）

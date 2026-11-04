@@ -100,8 +100,7 @@ internal sealed partial class ExpressionTranslator
             if (m.Member.Name == "Value") return Translate(m.Expression);
             if (m.Member.Name == "HasValue") return new IsNullExpr(Translate(m.Expression), negated: true);
         }
-        if (m.Member.Name == "Length" && m.Expression?.Type == typeof(string))
-            return new FunctionExpr(SqlFunctionNames.Length, [Translate(m.Expression)]);
+        if (Functions.MethodTranslators.TryTranslateMember(this, m, out var member)) return member;
 
         throw Unsupported(m);
     }
@@ -113,7 +112,11 @@ internal sealed partial class ExpressionTranslator
             case ExpressionType.Convert or ExpressionType.ConvertChecked or ExpressionType.Quote or ExpressionType.TypeAs:
                 return Translate(u.Operand);
             case ExpressionType.Not when u.Type == typeof(bool) || u.Type == typeof(bool?):
-                return Negate(TranslatePredicate(u.Operand));
+            {
+                // 条件取反；布尔值（列等）取反是值 (NOT (x))，与 Java 的 not() 一致，用在 WHERE 里时再补 = true
+                var operand = Translate(u.Operand);
+                return IsPredicate(operand) ? Negate(operand) : new FragmentExpr("(NOT ({0}))", [operand]);
+            }
             case ExpressionType.Negate or ExpressionType.NegateChecked:
                 return new FragmentExpr("-{0}", [Translate(u.Operand)]);
             default:

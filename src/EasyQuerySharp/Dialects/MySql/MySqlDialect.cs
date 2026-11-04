@@ -81,5 +81,18 @@ public class MySqlDialect : SqlDialect
         f[SqlFunctionNames.DateFormat] = DateFormat("DATE_FORMAT({0},{1})", ("yyyy", "%Y"), ("MM", "%m"), ("dd", "%d"), ("HH", "%H"), ("mm", "%i"), ("ss", "%s"));
         f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("GROUP_CONCAT(").Write(a[0]).Append(" SEPARATOR ").Write(a[1]).Append(")");
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("GROUP_CONCAT(DISTINCT ").Write(a[0]).Append(" SEPARATOR ").Write(a[1]).Append(")");
+        f[SqlFunctionNames.Now] = Template("NOW()");
+        f[SqlFunctionNames.UtcNow] = Template("UTC_TIMESTAMP()");
+        DateFunctions(f,
+            unit => unit == DateUnit.Millisecond ? "date_add({0}, interval ({1})*1000 microsecond)" : "date_add({0}, interval ({1}) " + Lower(unit) + ")",
+            part => part switch
+            {
+                DatePart.DayOfYear => "DAYOFYEAR({0})",
+                DatePart.DayOfWeek => "(DAYOFWEEK({0})-1)",
+                DatePart.IsoDayOfWeek => "(WEEKDAY({0})+1)",
+                DatePart.Day => "DAYOFMONTH({0})",
+                _ => part.ToString().ToUpperInvariant() + "({0})",
+            },
+            unit => unit == DateUnit.Millisecond ? "(timestampdiff(MICROSECOND, {0}, {1}) DIV 1000)" : "timestampdiff(" + unit.ToString().ToUpperInvariant() + ", {0}, {1})");
     }
 }
