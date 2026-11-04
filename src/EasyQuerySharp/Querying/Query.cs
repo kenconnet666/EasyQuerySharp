@@ -106,9 +106,9 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
         var total = await CountAsync(cancellationToken).ConfigureAwait(false);
-        var rows = total == 0 || (page - 1) * size >= total
-            ? []
-            : await LimitSelect((page - 1) * size, size, selector).ToListAsync(cancellationToken).ConfigureAwait(false);
+        if (PageWindow(page, size, total) is not var (paged, reverse)) return new Page<TResult>([], total, page, size);
+        var rows = await new Query<TResult>(paged.Wrap() with { Selector = selector }).ToListAsync(cancellationToken).ConfigureAwait(false);
+        if (reverse) rows.Reverse();
         return new Page<TResult>(rows, total, page, size);
     }
 

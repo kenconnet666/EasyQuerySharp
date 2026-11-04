@@ -107,6 +107,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>追踪作用域里也不追踪这条查询的结果（AsNoTracking）。</summary>
     public bool NoTracking { get; init; }
 
+    /// <summary>分页时不做深分页反向排序（DisableReversePaging）。</summary>
+    public bool NoReversePaging { get; init; }
+
     /// <summary>这条查询上生效的拦截器。</summary>
     public InterceptorSelection Interceptors { get; init; } = InterceptorSelection.Default;
 

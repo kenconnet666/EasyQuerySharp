@@ -94,6 +94,9 @@ internal sealed partial class ExpressionTranslator
                 return new FunctionExpr(SqlFunctionNames.DatePartOf(DatePart.IsoDayOfWeek), [Translate(call.Arguments[0])]);
             case nameof(Sql.Cast):
                 return new CastExpr(Translate(StripConvert(call.Arguments[0])), call.Method.GetGenericArguments()[0]);
+            case nameof(Sql.Column):
+                return Translate(ColumnPath(StripConvert(call.Arguments[0]), ClientEvaluator.Evaluate(call.Arguments[1]) as string
+                    ?? throw Unsupported(call, "Sql.Column 的属性路径必须是字符串")));
             case nameof(Sql.SubQuery):
                 return new SubQueryExpr(TranslateSubQuery(call.Arguments[0]).Query);
             case nameof(Sql.In) or nameof(Sql.NotIn) when IsQueryType(call.Arguments[1].Type):
@@ -244,6 +247,19 @@ internal sealed partial class ExpressionTranslator
             ? new LiteralExpr(isAny ? "1 = 2" : "1 = 1")
             : isAny ? LogicalExpr.Or(items) : LogicalExpr.And(items);
         return true;
+    }
+
+    // Sql.Column(entity, "a.b")：沿属性路径（忽略大小写）构造 entity.A.B，之后与手写的成员访问走同一条翻译
+    private static Expression ColumnPath(Expression entity, string path)
+    {
+        var current = entity;
+        foreach (var segment in path.Split('.'))
+        {
+            var property = current.Type.GetProperty(segment, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.IgnoreCase)
+                           ?? throw new NotSupportedException($"{current.Type.Name} 上没有属性 {segment}（路径 {path}）");
+            current = Expression.Property(current, property);
+        }
+        return current;
     }
 
     /// <summary>把表达式里的某个参数替换成另一个表达式。</summary>

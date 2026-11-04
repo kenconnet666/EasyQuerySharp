@@ -100,6 +100,9 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     /// <summary>追踪作用域里也不追踪这条查询的结果（对应 Java 的 asNoTracking）。</summary>
     public TSelf AsNoTracking() => With(State with { NoTracking = true });
 
+    /// <summary>分页时不做深分页反向排序（对应 Java 的 configure(op -> op.setReverseOrder(false))），见 <see cref="EasyDbOptions.ReverseOffsetThreshold"/>。</summary>
+    public TSelf DisableReversePaging() => With(State with { NoReversePaging = true });
+
     /// <summary>这条查询不应用名为 <paramref name="name"/> 的拦截器（对应 Java 的 noInterceptor(name)）。</summary>
     public TSelf DisableInterceptor(string name) => With(State with { Interceptors = State.Interceptors.Disable(name) });
 
@@ -268,16 +271,40 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
 
     private SqlStatement CountStatement() => SqlRenderer.Render(Db.Options.Dialect, CountQuery());
 
-    /// <summary>分页：先计数，有数据时再取第 <paramref name="page"/> 页（从 1 开始）。</summary>
+    /// <summary>
+    /// 分页：先计数，有数据时再取第 <paramref name="page"/> 页（从 1 开始）。最后一页只取剩下的条数；
+    /// 偏移量过半时按 <see cref="EasyDbOptions.ReverseOffsetThreshold"/> 反向排序取数（与 Java 一致）。
+    /// </summary>
     public async Task<Page<TElement>> ToPageAsync(long page, long size, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
         var total = await CountAsync(cancellationToken).ConfigureAwait(false);
-        var rows = total == 0 || (page - 1) * size >= total
-            ? []
-            : await Limit((page - 1) * size, size).ToListAsync(cancellationToken).ConfigureAwait(false);
+        if (PageWindow(page, size, total) is not var (state, reverse)) return new Page<TElement>([], total, page, size);
+        var rows = await With(state).ToListAsync(cancellationToken).ConfigureAwait(false);
+        if (reverse) rows.Reverse();
         return new Page<TElement>(rows, total, page, size);
+    }
+
+    /// <summary>
+    /// 取第 <paramref name="page"/> 页要执行的查询：超出总数时为 null；剩余不足一页时只取剩下的；
+    /// 偏移量不小于阈值且超过总数一半、排序可以整体反转时，反转排序从另一头取（结果要在内存里倒序）。
+    /// </summary>
+    private protected (QueryState State, bool Reverse)? PageWindow(long page, long size, long total)
+    {
+        var offset = (page - 1) * size;
+        if (total <= offset) return null;
+        var take = Math.Min(total - offset, size);
+        var threshold = Db.Options.ReverseOffsetThreshold;
+        var reverse = threshold > 0 && offset >= threshold && offset > total / 2 && !State.NoReversePaging
+                      && !State.OrderBys.IsEmpty && State.OrderBys.All(Reversible);
+        return reverse
+            ? (State with { OrderBys = [.. State.OrderBys.Select(o => o with { Descending = !o.Descending })], Offset = total - offset - take, Limit = take }, true)
+            : (State with { Offset = offset, Limit = take }, false);
+
+        // 原生片段与指定了 NULL 位置的排序不能简单反转
+        static bool Reversible(OrderSpec order) => !order.Raw
+            && Translation.ExpressionTranslator.StripConvert(order.Key.Body) is not MethodCallExpression { Method.Name: nameof(Sql.NullsFirst) or nameof(Sql.NullsLast) };
     }
 
     // 聚合时不需要用户的投影；去重、分页、分组后的投影先包一层再聚合

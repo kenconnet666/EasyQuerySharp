@@ -55,10 +55,14 @@ internal sealed partial class ExpressionTranslator
 
         switch (call.Method.Name)
         {
+            // 无参计数：COUNT(*)；有条件时计 CASE WHEN 条件 THEN 1；去重时与 Java 一致写成 COUNT(DISTINCT (CASE …)) / COUNT(DISTINCT ?)
             case nameof(IGroup<object, object>.Count) when call.Arguments.Count == 0:
-                return filter is null
-                    ? new FunctionExpr(SqlFunctionNames.Count, [LiteralExpr.Star])
-                    : new FunctionExpr(SqlFunctionNames.Count, [new CaseExpr([(filter, new ParameterExpr(1, typeof(int)))], LiteralExpr.Null)]);
+            {
+                var one = new ParameterExpr(1, typeof(int));
+                if (filter is null && !distinct) return new FunctionExpr(SqlFunctionNames.Count, [LiteralExpr.Star]);
+                SqlExpr counted = filter is null ? one : new CaseExpr([(filter, one)], LiteralExpr.Null);
+                return new FunctionExpr(distinct ? SqlFunctionNames.CountDistinct : SqlFunctionNames.Count, [counted]);
+            }
             case nameof(IGroup<object, object>.Count):
                 return new FunctionExpr(distinct ? SqlFunctionNames.CountDistinct : SqlFunctionNames.Count, [Value(0, LiteralExpr.Null)]);
             case nameof(IGroup<object, object>.Sum):

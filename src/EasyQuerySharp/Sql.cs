@@ -25,6 +25,12 @@ public static partial class Sql
     public static T Raw<T>(string template, params object?[] arguments) => throw OnlyInQuery();
 
     /// <summary>
+    /// 按属性路径动态取列（对应 Java 的 anyColumn）：<c>Sql.Column&lt;int?&gt;(c, "User.Age")</c> 等同于 <c>c.User.Age</c>，
+    /// 路径里的属性名忽略大小写，可以经过对一导航。路径在翻译时解析，适合按前端传入的字段名排序、过滤。
+    /// </summary>
+    public static T Column<T>(object? entity, string path) => throw OnlyInQuery();
+
+    /// <summary>
     /// 转换成 <typeparamref name="T"/>（对应 Java 的 toNumber / asStr / cast），写法按方言，如 MySQL 的 <c>CAST(x AS SIGNED)</c>。
     /// 常见写法也能直接用：<c>int.Parse(t.Title)</c>、<c>Convert.ToInt64(x)</c>、<c>t.Stars.ToString()</c>。
     /// </summary>

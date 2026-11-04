@@ -115,7 +115,7 @@ public sealed class SortBuilder
 {
     private readonly HashSet<string> _allowed = new(StringComparer.OrdinalIgnoreCase);
 
-    internal List<(string Property, bool Ascending, int Table)> Items { get; } = [];
+    internal List<(string Property, bool Ascending, int Table, SqlAst.NullsOrder? Nulls)> Items { get; } = [];
 
     /// <summary>只允许按这些属性排序；不调用时允许实体上的任何列。</summary>
     public SortBuilder Allow(params string[] properties)
@@ -124,13 +124,13 @@ public sealed class SortBuilder
         return this;
     }
 
-    /// <summary>追加一个排序；<paramref name="table"/> 是表来源序号（FROM 为 0）。</summary>
-    public SortBuilder OrderBy(string property, bool ascending = true, int table = 0)
+    /// <summary>追加一个排序；<paramref name="table"/> 是表来源序号（FROM 为 0），<paramref name="nulls"/> 指定 NULL 的位置（对应 Java 的 OrderByModeEnum）。</summary>
+    public SortBuilder OrderBy(string property, bool ascending = true, int table = 0, SqlAst.NullsOrder? nulls = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(property);
         if (_allowed.Count > 0 && !_allowed.Contains(property))
             throw new InvalidOperationException($"不允许按 {property} 排序，允许的属性：{string.Join(", ", _allowed)}");
-        Items.Add((property, ascending, table));
+        Items.Add((property, ascending, table, nulls));
         return this;
     }
 }

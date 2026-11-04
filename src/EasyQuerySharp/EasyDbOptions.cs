@@ -27,6 +27,13 @@ public sealed class EasyDbOptions
     /// </summary>
     public bool AllowDeleteStatement { get; set; } = true;
 
+    /// <summary>
+    /// 深分页反向排序的偏移阈值（对应 Java 的 reverseOffsetThreshold）：分页的偏移量不小于它、且超过总数一半时，
+    /// 把 ORDER BY 整体反过来取 <c>总数 - 偏移 - 本页条数</c> 处的一页，读出后在内存里倒序，减少数据库跳过的行数。
+    /// 0（默认）表示不启用；排序里有原生片段或 NULL 位置时不反转。单条查询可用 <c>DisableReversePaging()</c> 关闭。
+    /// </summary>
+    public long ReverseOffsetThreshold { get; set; }
+
     /// <summary>执行监听器。</summary>
     public List<IExecutionListener> Listeners { get; } = [];
 

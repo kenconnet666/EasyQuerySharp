@@ -233,12 +233,19 @@ internal sealed partial class ExpressionTranslator
     private SqlExpr TranslateEquality(BinaryExpression b)
     {
         var negated = b.NodeType == ExpressionType.NotEqual;
-        // x == null → IS NULL（字面量 null 或运行时为 null 的变量都算）
-        if (IsNullValue(b.Right)) return new IsNullExpr(Translate(b.Left), negated);
-        if (IsNullValue(b.Left)) return new IsNullExpr(Translate(b.Right), negated);
+        // x == null → IS NULL（字面量 null 或运行时为 null 的变量都算）；整个实体判空即主键判空（Java 的 t.isNull()）
+        if (IsNullValue(b.Right)) return NullCheck(b.Left, negated);
+        if (IsNullValue(b.Left)) return NullCheck(b.Right, negated);
 
         var (left, right) = TranslatePair(b.Left, b.Right);
         return new BinaryExpr(AsValue(left), negated ? SqlBinaryOperator.NotEqual : SqlBinaryOperator.Equal, AsValue(right));
+    }
+
+    private SqlExpr NullCheck(Expression operand, bool negated)
+    {
+        if (BindingOf(operand) is not EntityBinding { Entity.KeyColumns: { Count: > 0 } keys } entity) return new IsNullExpr(Translate(operand), negated);
+        var checks = keys.Select(k => (SqlExpr)new IsNullExpr(entity.EntityTable.Column(k), negated)).ToList();
+        return checks.Count == 1 ? checks[0] : LogicalExpr.Grouped(checks);
     }
 
     /// <summary>条件作为值使用（比较的一侧、投影的一列）时整体加括号：<c>(a &lt; ? AND b = ?)</c>（与 Java 的 valueOf 一致）。</summary>

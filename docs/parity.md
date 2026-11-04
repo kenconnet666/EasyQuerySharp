@@ -11,7 +11,7 @@
 | 能力 | key | 用例数 | C# 写法 | M |
 |---|---|---|---|---|
 | 基本查询：条件、排序、选列、分页 | `query.basic` | 402 | `db.Query<T>().Where(..).OrderBy(..).Select(..).Skip(n).Take(n).ToListAsync()`；`FirstAsync` / `SingleAsync` / `FindAsync(id)` / `AnyAsync` / `CountAsync`；`WhereIf` | M1 |
-| 分页结果 | `query.page` | 22 | `ToPageAsync(page, size)` 返回 `Page<T> { Rows, Total, Page, Size }` | M1 |
+| 分页结果 | `query.page` | 22 | `ToPageAsync(page, size)` 返回 `Page<T> { Rows, Total, PageIndex, PageSize }`；最后一页只取剩余条数；`EasyDbOptions.ReverseOffsetThreshold` 开启深分页反向排序（偏移过半时反转 ORDER BY 取数再倒序），单条查询 `DisableReversePaging()` 关闭 | M1 |
 | 原生 SQL | `sql.native` | 50 | `db.Sql<T>($"...{param}")`，插值的值自动参数化；行内片段用 `Sql.Raw<T>($"... {u.Col} ...")` | M1 |
 | 显式 join | `query.join` | 88 | `.LeftJoin<Post>((u, p) => p.UserId == u.Id)`，后续 lambda 依次收到各表 `(u, p)`；right join 之后，前面表的列按可空处理 | M3 |
 | 分组与 having | `query.group` | 78 | `.GroupBy(p => new { p.UserId }).Having(g => g.Count() > 3).Select(g => new { g.Key.UserId, Total = g.Sum(p => p.Amount) })`；`Rollup` / `Cube` / `Grouping()` | M3 |
@@ -82,7 +82,7 @@
 | 换 schema | `table.schema` | 19 | `.InSchema("tenant_a")` | M7 |
 | 跨库链接 | `table.link` | 13 | `.WithTableLink("link")` | M7 |
 | 分库分表 | `sharding` | 48 | `[ShardingTableKey]` 加路由基类；分表按取模或时间路由；分库时在内存里归并排序和分页 | M7 |
-| 按对象筛选排序 | `dto.object` | 101 | `.FilterBy(request, rules)` / `.SortBy(sort, allowList)` / `.Table(request)` | M7 |
+| 按对象筛选排序 | `dto.object` | 101 | `.FilterBy(request, rules)` / `.SortBy(sort, allowList)`（`SortBuilder.OrderBy(path, asc, nulls: NullsOrder.Last)`）/ `.Table(request)`；按路径动态取列 `Sql.Column<T>(c, "user.age")`（对应 anyColumn） | M7 |
 | search 扩展 | `search` | 45 | `EasyQuerySharp.Search`：按 Java 的参数约定解析请求，交给 `Table()` | M7 |
 
 ## 方言

@@ -36,7 +36,7 @@ internal static class ObjectFilter
         var builder = new SortBuilder();
         request.ConfigureSort(builder);
         var result = new List<(LambdaExpression, bool)>();
-        foreach (var (property, ascending, table) in builder.Items)
+        foreach (var (property, ascending, table, nulls) in builder.Items)
         {
             var parameters = sources.Select((t, i) => Expression.Parameter(t, i == 0 ? "t" : "t" + i)).ToArray();
             Expression instance = Parameter(parameters, table, property);
@@ -45,7 +45,11 @@ internal static class ObjectFilter
                 var member = Member(instance.Type, segment) ?? throw new InvalidOperationException($"{instance.Type.Name} 上没有可排序的属性 {property}");
                 instance = Expression.Property(instance, member);
             }
-            result.Add((Expression.Lambda(Expression.Convert(instance, typeof(object)), parameters), !ascending));
+            Expression key = Expression.Convert(instance, typeof(object));
+            // 指定了 NULL 的位置时包成 Sql.NullsFirst / NullsLast，与手写的排序走同一条翻译
+            if (nulls is { } position)
+                key = Expression.Call(typeof(Sql).GetMethod(position == SqlAst.NullsOrder.Last ? nameof(Sql.NullsLast) : nameof(Sql.NullsFirst))!.MakeGenericMethod(typeof(object)), key);
+            result.Add((Expression.Lambda(key, parameters), !ascending));
         }
         return result;
     }

@@ -56,8 +56,13 @@ public sealed class MySqlFixture : IAsyncLifetime
                     skip: s => s.StartsWith("CREATE DATABASE", StringComparison.OrdinalIgnoreCase));
         }
 
-        _db = new EasyDb(o => o.UseMySql(new MySqlDataSource(cs)).AddListener(SqlCapture.Instance)
-            .AddInterceptor(new Interceptors.Topic1Interceptor()));
+        // 与 Java 的 BaseTest 一致：深分页反向排序的阈值为 10
+        _db = new EasyDb(o =>
+        {
+            o.ReverseOffsetThreshold = 10;
+            o.UseMySql(new MySqlDataSource(cs)).AddListener(SqlCapture.Instance)
+                .AddInterceptor(new Interceptors.Topic1Interceptor());
+        });
         await SeedAsync(_db);
     }
 
