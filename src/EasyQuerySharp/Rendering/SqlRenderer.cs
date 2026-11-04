@@ -179,6 +179,7 @@ public sealed class SqlRenderer
         {
             case EntityTableSource e: WriteTableName(e); break;
             case DerivedTableSource d: Append("(").WriteSelect(d.Query).Append(")"); break;
+            case RawTableSource raw: Append("(").Append(raw.Sql).Append(")"); break;
         }
         if (table.Alias is not null) Append(" ").Append(table.Alias);
         return this;

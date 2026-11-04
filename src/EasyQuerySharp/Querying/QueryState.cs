@@ -27,6 +27,9 @@ internal sealed record EntitySource(Type EntityType) : QuerySource
 /// <summary>子查询作为派生表。</summary>
 internal sealed record SubQuerySource(QueryState Inner) : QuerySource;
 
+/// <summary>原生 SQL 作为派生表，列按实体的列名访问（对应 Java 的 queryable(sql, Class)）。</summary>
+internal sealed record RawSqlSource(string Sql, Type EntityType) : QuerySource;
+
 /// <summary>按什么排序。</summary>
 internal sealed record OrderSpec(LambdaExpression Key, bool Descending);
 
@@ -74,6 +77,7 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     {
         EntitySource e => e.EntityType,
         SubQuerySource s => s.Inner.ElementType,
+        RawSqlSource r => r.EntityType,
         _ => throw new NotSupportedException(Sources[0].GetType().Name),
     };
 }

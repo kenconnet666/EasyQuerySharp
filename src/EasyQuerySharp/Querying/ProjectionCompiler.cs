@@ -1,5 +1,6 @@
 using System.Data.Common;
 using System.Linq.Expressions;
+using System.Reflection;
 using EasyQuerySharp.Materialization;
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.SqlAst;
@@ -33,7 +34,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     private Expression? _shaped;
 
     /// <summary>拆解投影：登记 SELECT 列，并构造（尚未编译的）读取表达式。</summary>
-    public void Prepare(Expression body) => _shaped = Shape(body, memberName: null, topLevel: true);
+    public void Prepare(Expression body) => _shaped = Shape(body, member: null, topLevel: true);
 
     /// <summary>编译读取函数；须先调用 <see cref="Prepare"/>。</summary>
     public Func<DbDataReader, T> Compile<T>()
@@ -42,7 +43,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         return Expression.Lambda<Func<DbDataReader, T>>(Coerce(shaped, typeof(T)), _reader).Compile();
     }
 
-    private Expression Shape(Expression body, string? memberName, bool topLevel)
+    private Expression Shape(Expression body, MemberInfo? member, bool topLevel)
     {
         if (translator.BindingOf(body) is { } binding) return ShapeEntity(binding, body.Type, topLevel);
 
@@ -50,19 +51,19 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         {
             case NewExpression n when n.Constructor is not null:
             {
-                var names = MemberNames(n);
-                var args = n.Arguments.Select((a, i) => Coerce(Shape(a, names[i], false), a.Type)).ToList();
+                var members = TargetMembers(n);
+                var args = n.Arguments.Select((a, i) => Coerce(Shape(a, members[i], false), a.Type)).ToList();
                 return n.Members is null ? Expression.New(n.Constructor, args) : Expression.New(n.Constructor, args, n.Members);
             }
             case MemberInitExpression mi:
             {
-                var newExpr = (NewExpression)Shape(mi.NewExpression, memberName, false);
+                var newExpr = (NewExpression)Shape(mi.NewExpression, member, false);
                 var bindings = mi.Bindings.Cast<MemberAssignment>()
-                    .Select(b => Expression.Bind(b.Member, Coerce(Shape(b.Expression, b.Member.Name, false), b.Expression.Type)));
+                    .Select(b => Expression.Bind(b.Member, Coerce(Shape(b.Expression, b.Member, false), b.Expression.Type)));
                 return Expression.MemberInit(newExpr, bindings);
             }
             default:
-                return ShapeScalar(body, memberName);
+                return ShapeScalar(body, member);
         }
     }
 
@@ -89,11 +90,11 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
             type);
     }
 
-    private Expression ShapeScalar(Expression body, string? memberName)
+    private Expression ShapeScalar(Expression body, MemberInfo? member)
     {
         var sql = translator.Translate(body);
         var converter = (sql as ColumnExpr)?.Column?.Converter;
-        var ordinal = AddColumn(sql, memberName is null ? null : naming.Convert(memberName), memberName);
+        var ordinal = AddColumn(sql, member is null ? null : ColumnName(member), member?.Name);
         return Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(body.Type), _reader, Expression.Constant(ordinal),
             Expression.Constant(converter, typeof(IValueConverter)));
     }
@@ -108,12 +109,18 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         return _columns.Count - 1;
     }
 
-    private static string?[] MemberNames(NewExpression n)
+    // new 表达式各参数对应的目标成员：匿名类型直接给出；record 主构造函数按参数名找同名属性（忽略大小写）
+    private static MemberInfo?[] TargetMembers(NewExpression n)
     {
-        if (n.Members is not null) return n.Members.Select(m => m.Name).ToArray<string?>();
-        // record 主构造函数：参数名首字母大写即属性名
-        return n.Constructor!.GetParameters().Select(p => p.Name is null ? null : char.ToUpperInvariant(p.Name[0]) + p.Name[1..]).ToArray();
+        if (n.Members is not null) return [.. n.Members];
+        return n.Constructor!.GetParameters()
+            .Select(p => (MemberInfo?)n.Type.GetProperty(p.Name ?? "", BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase))
+            .ToArray();
     }
+
+    // 目标成员对应的列名：成员上 [Column("…")] 优先，否则按命名约定（Java 版 DTO 的映射规则）
+    private string ColumnName(MemberInfo member) =>
+        member.GetCustomAttribute<ColumnAttribute>()?.Name ?? naming.Convert(member.Name);
 
     private static Expression Coerce(Expression e, Type type) => e.Type == type ? e : Expression.Convert(e, type);
 }

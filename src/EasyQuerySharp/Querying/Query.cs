@@ -44,6 +44,12 @@ public sealed class Query<T> : QueryBase<Query<T>, T>
     /// <summary>追加降序排序。</summary>
     public Query<T> OrderByDescending<TKey>(Expression<Func<T, TKey>> key) => Order(key, true);
 
+    /// <summary><paramref name="condition"/> 为 true 时才追加升序排序。</summary>
+    public Query<T> OrderByIf<TKey>(bool condition, Expression<Func<T, TKey>> key) => condition ? OrderBy(key) : this;
+
+    /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
+    public Query<T> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T, TKey>> key) => condition ? OrderByDescending(key) : this;
+
     /// <summary>追加升序排序（同 <see cref="OrderBy{TKey}"/>）。</summary>
     public Query<T> ThenBy<TKey>(Expression<Func<T, TKey>> key) => Order(key, false);
 
@@ -52,6 +58,20 @@ public sealed class Query<T> : QueryBase<Query<T>, T>
 
     /// <summary>投影到 DTO、匿名类型或标量。投影之后再 Where / OrderBy 会把它包成派生表。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T, TResult>> selector) => new(Open with { Selector = selector });
+
+    /// <summary>
+    /// 按属性名自动投影到 DTO（对应 Java 的 select(Dto.class)）：DTO 的每个可写属性取实体上的同名列，
+    /// DTO 属性上的 <c>[Column("…")]</c> 决定别名。
+    /// </summary>
+    public Query<TResult> Select<TResult>() where TResult : new() =>
+        new(Open with { Selector = AutoProjection.Build(Db.Metadata.Get<T>(), typeof(TResult)) });
+
+    /// <summary>
+    /// 按属性名自动投影到 <typeparamref name="TResult"/>，但排除 <paramref name="excluded"/> 列出的属性（对应 Java 的 FETCHER.allFieldsExclude）。
+    /// </summary>
+    /// <example><code>.SelectExcept&lt;Blog&gt;(b => new { b.Id, b.Content })</code></example>
+    public Query<TResult> SelectExcept<TResult>(Expression<Func<T, object?>> excluded) where TResult : new() =>
+        new(Open with { Selector = AutoProjection.Build(Db.Metadata.Get<T>(), typeof(TResult), AutoProjection.MemberNames(excluded)) });
 
     /// <summary>
     /// 用原生 SQL 作为 SELECT 列表（对应 Java 的 select(String)），结果按列名映射回 <typeparamref name="T"/>。

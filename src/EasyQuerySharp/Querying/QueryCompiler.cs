@@ -15,11 +15,14 @@ internal sealed record CompiledQuery<T>(SelectQuery Sql, Func<DbDataReader, T> S
 /// </summary>
 internal static class QueryCompiler
 {
-    /// <summary>翻译 FROM / JOIN / WHERE / ORDER BY / 分页，不含 SELECT 列表。</summary>
-    public static QueryFrame Build(QueryState state)
+    /// <summary>
+    /// 翻译 FROM / JOIN / WHERE / ORDER BY / 分页，不含 SELECT 列表。
+    /// <paramref name="outer"/> 是外层查询的作用域：关联子查询里引用的外层参数由它解析。
+    /// </summary>
+    public static QueryFrame Build(QueryState state, IReadOnlyDictionary<ParameterExpression, SourceBinding>? outer = null)
     {
         var db = state.Db;
-        var translator = new ExpressionTranslator([]);
+        var translator = new ExpressionTranslator(outer is null ? [] : new Dictionary<ParameterExpression, SourceBinding>(outer));
         var bindings = new List<SourceBinding>();
         SelectQuery? query = null;
 
@@ -66,10 +69,12 @@ internal static class QueryCompiler
     /// <summary>完整翻译：按投影（没有时投影到第一个来源的实体）填入 SELECT 列表并生成读取函数。</summary>
     public static CompiledQuery<T> Compile<T>(QueryState state)
     {
-        if (state.RawSelect is { } raw)
+        // 原生 SELECT 列表、或从原生 SQL 来源整体读取：列序号未知，按列名映射到实体
+        var rawColumns = state.RawSelect ?? (state.Selector is null && state.Sources[0] is RawSqlSource ? "*" : null);
+        if (rawColumns is not null)
         {
             var rawFrame = Build(state);
-            rawFrame.Query.Columns.Add(new SelectColumn(new LiteralExpr(raw), null));
+            rawFrame.Query.Columns.Add(new SelectColumn(new LiteralExpr(rawColumns), null));
             var entity = state.Db.Metadata.Get<T>();
             return new CompiledQuery<T>(rawFrame.Query, r => Materialization.EntityMaterializer.ReadByName<T>(r, entity));
         }
@@ -78,15 +83,17 @@ internal static class QueryCompiler
     }
 
     /// <summary>翻译成带 SELECT 列表的 AST，不生成读取函数（用于子查询、派生表）。</summary>
-    public static (SelectQuery Query, ProjectionCompiler Projection) CompileSelect(QueryState state)
+    public static (SelectQuery Query, ProjectionCompiler Projection) CompileSelect(
+        QueryState state, IReadOnlyDictionary<ParameterExpression, SourceBinding>? outer = null)
     {
-        var (frame, projection) = Project(state);
+        var (frame, projection) = Project(state, outer);
         return (frame.Query, projection);
     }
 
-    private static (QueryFrame Frame, ProjectionCompiler Projection) Project(QueryState state)
+    private static (QueryFrame Frame, ProjectionCompiler Projection) Project(
+        QueryState state, IReadOnlyDictionary<ParameterExpression, SourceBinding>? outer = null)
     {
-        var frame = Build(state);
+        var frame = Build(state, outer);
         var projection = new ProjectionCompiler(frame.Translator, state.Db.Options.NameConversion);
         LambdaExpression selector;
         if (state.Selector is not null) selector = state.Selector;
@@ -99,6 +106,7 @@ internal static class QueryCompiler
         // 先登记列，再把列表交给 AST；读取函数由调用方按需编译
         projection.Prepare(selector.Body);
         frame.Query.Columns.AddRange(projection.Columns);
+        frame.Query.ExplicitProjection = state.Selector is not null;
         return (frame, projection);
     }
 
@@ -116,6 +124,12 @@ internal static class QueryCompiler
                 var (inner, projection) = CompileSelect(s.Inner);
                 var table = new DerivedTableSource(inner) { ExplicitAlias = s.Alias };
                 return new DerivedBinding(table, projection.MemberColumns, projection.Entity);
+            }
+            case RawSqlSource r:
+            {
+                var entity = db.Metadata.Get(r.EntityType);
+                var table = new RawTableSource(r.Sql) { ExplicitAlias = r.Alias };
+                return new DerivedBinding(table, entity.Columns.ToDictionary(c => c.PropertyName, c => c.Name), entity);
             }
             default:
                 throw new NotSupportedException(source.GetType().Name);

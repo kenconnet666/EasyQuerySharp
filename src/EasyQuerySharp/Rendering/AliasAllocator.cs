@@ -16,21 +16,23 @@ internal static class AliasAllocator
     {
         var tables = new List<TableSource>();
         Collect(query, tables);
-        Assign(tables);
+        Assign(tables, query.ExplicitProjection);
     }
 
     public static void Allocate(TableSource single, IEnumerable<SqlExpr> expressions)
     {
         var tables = new List<TableSource> { single };
         foreach (var e in expressions) CollectExpr(e, tables);
-        Assign(tables);
+        Assign(tables, forceAlias: false);
     }
 
-    private static void Assign(List<TableSource> tables)
+    // 单表：有显式投影、或是派生表 / 原生 SQL 来源时用 t，否则不加别名
+    private static void Assign(List<TableSource> tables, bool forceAlias)
     {
         if (tables.Count == 1)
         {
-            tables[0].Alias = tables[0].ExplicitAlias;
+            var table = tables[0];
+            table.Alias = table.ExplicitAlias ?? (forceAlias || table is not EntityTableSource ? "t" : null);
             return;
         }
         for (var i = 0; i < tables.Count; i++)

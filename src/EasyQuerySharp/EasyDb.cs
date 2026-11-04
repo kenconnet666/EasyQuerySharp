@@ -45,6 +45,38 @@ public sealed class EasyDb
     /// <summary>从实体 <typeparamref name="T"/> 开始一条查询。</summary>
     public Query<T> Query<T>() => new(new QueryState(this, [new EntitySource(typeof(T))]));
 
+    /// <summary>
+    /// 以原生 SQL 为来源开始一条查询（对应 Java 的 queryable(sql, Class)）：它作为派生表 <c>(sql) t</c>，
+    /// 列按 <typeparamref name="T"/> 的列名访问，之后可以照常 Where / Select。
+    /// </summary>
+    public Query<T> QuerySql<T>(string sql) => new(new QueryState(this, [new RawSqlSource(sql, typeof(T))]));
+
+    /// <summary>执行原生写入 SQL，<c>?</c> 依次对应参数（对应 Java 的 sqlExecute），返回受影响的行数。</summary>
+    public Task<long> ExecuteSqlAsync(string sql, IReadOnlyList<object?>? parameters = null, CancellationToken cancellationToken = default) =>
+        Executor.ExecuteAsync(RawSql.FromPositional(Options.Dialect, sql, parameters ?? []), cancellationToken);
+
+    /// <summary>执行原生写入 SQL，插值处全部参数化：<c>$"update t set a = {a} where id = {id}"</c>。</summary>
+    public Task<long> ExecuteSqlAsync(FormattableString sql, CancellationToken cancellationToken = default) =>
+        Executor.ExecuteAsync(RawSql.FromInterpolated(Options.Dialect, sql), cancellationToken);
+
+    /// <summary>
+    /// 执行原生查询 SQL（对应 Java 的 sqlQuery）：<typeparamref name="T"/> 是实体或 DTO 时按列名映射，是标量时取第一列。
+    /// </summary>
+    public Task<List<T>> SqlQueryAsync<T>(string sql, IReadOnlyList<object?>? parameters = null, CancellationToken cancellationToken = default) =>
+        Executor.QueryAsync(RawSql.FromPositional(Options.Dialect, sql, parameters ?? []), RowReader<T>(), cancellationToken);
+
+    /// <summary>执行原生查询 SQL，插值处全部参数化。</summary>
+    public Task<List<T>> SqlQueryAsync<T>(FormattableString sql, CancellationToken cancellationToken = default) =>
+        Executor.QueryAsync(RawSql.FromInterpolated(Options.Dialect, sql), RowReader<T>(), cancellationToken);
+
+    // 标量取第一列；实体 / DTO 按列名映射
+    private Func<DbDataReader, T> RowReader<T>()
+    {
+        if (ScalarTypes.IsScalar(typeof(T))) return r => Materialization.ValueReader.Read<T>(r, 0, null);
+        var entity = Metadata.Get<T>();
+        return r => Materialization.EntityMaterializer.ReadByName<T>(r, entity);
+    }
+
     /// <summary>插入一个实体。</summary>
     public InsertCommand<T> Insert<T>(T entity) where T : class => new(this, [entity]);
 

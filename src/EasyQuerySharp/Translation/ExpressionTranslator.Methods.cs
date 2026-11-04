@@ -42,6 +42,15 @@ internal sealed partial class ExpressionTranslator
                     : ((object?[])ClientEvaluator.Evaluate(call.Arguments[1])!).Select(v => (SqlExpr)Parameter(v, v?.GetType() ?? typeof(object))).ToList();
                 return new FragmentExpr(template, args);
             }
+            case nameof(Sql.Exists):
+            case nameof(Sql.NotExists):
+                return TranslateExists(call.Arguments[0], call.Method.Name == nameof(Sql.NotExists));
+            case nameof(Sql.In) or nameof(Sql.NotIn) when IsQueryType(call.Arguments[1].Type):
+            {
+                var operand = Translate(call.Arguments[0]);
+                var (sub, _) = TranslateSubQuery(call.Arguments[1]);
+                return new InExpr(operand, sub, call.Method.Name == nameof(Sql.NotIn));
+            }
             case nameof(Sql.In):
             case nameof(Sql.NotIn):
             {
@@ -165,5 +174,5 @@ internal sealed partial class ExpressionTranslator
         return enumerable?.GetGenericArguments()[0] ?? typeof(object);
     }
 
-    internal static bool IsMarker(MethodInfo method) => method.DeclaringType == typeof(Sql);
+    private static bool IsQueryType(Type type) => typeof(Querying.IQueryStateAccessor).IsAssignableFrom(type);
 }

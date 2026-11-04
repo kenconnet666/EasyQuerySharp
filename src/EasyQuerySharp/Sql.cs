@@ -30,6 +30,23 @@ public static class Sql
     /// <summary>值不在给定集合里（<c>NOT IN (…)</c>）。</summary>
     public static bool NotIn<T>(this T value, params T[] values) => throw OnlyInQuery();
 
+    /// <summary>值在子查询的结果里：<c>x IN (SELECT …)</c>。子查询须投影成单列。</summary>
+    public static bool In<T>(this T value, Querying.Query<T> subQuery) => throw OnlyInQuery();
+
+    /// <summary>值不在子查询的结果里：<c>x NOT IN (SELECT …)</c>。</summary>
+    public static bool NotIn<T>(this T value, Querying.Query<T> subQuery) => throw OnlyInQuery();
+
+    /// <summary>
+    /// 子查询有结果：<c>EXISTS(SELECT 1 …)</c>。子查询的条件可以引用外层查询的参数（关联子查询）：
+    /// <c>.Where(t => Sql.Exists(db.Query&lt;Blog&gt;().Where(b => b.Id == t.Id)))</c>。
+    /// </summary>
+    public static bool Exists<TSelf, T>(Querying.QueryBase<TSelf, T> subQuery) where TSelf : Querying.QueryBase<TSelf, T> =>
+        throw OnlyInQuery();
+
+    /// <summary>子查询没有结果：<c>NOT EXISTS(SELECT 1 …)</c>。</summary>
+    public static bool NotExists<TSelf, T>(Querying.QueryBase<TSelf, T> subQuery) where TSelf : Querying.QueryBase<TSelf, T> =>
+        throw OnlyInQuery();
+
     internal static InvalidOperationException OnlyInQuery() =>
         new("这个方法只能写在 EasyQuerySharp 的查询表达式里，由翻译器转成 SQL，不能直接调用");
 }

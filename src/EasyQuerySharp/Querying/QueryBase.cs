@@ -9,12 +9,14 @@ namespace EasyQuerySharp.Querying;
 /// <typeparamref name="TSelf"/> 是具体的查询类型（链式调用返回它），<typeparamref name="TElement"/> 是结果元素类型。
 /// 查询对象不可变，每次调用返回新对象，可以放心复用（对应 Java 的 cloneQueryable）。
 /// </summary>
-public abstract class QueryBase<TSelf, TElement>
+public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     where TSelf : QueryBase<TSelf, TElement>
 {
     private protected QueryBase(QueryState state) => State = state;
 
     internal QueryState State { get; }
+
+    QueryState IQueryStateAccessor.State => State;
 
     /// <summary>所属的 <see cref="EasyDb"/>。</summary>
     public EasyDb Db => State.Db;
@@ -140,6 +142,7 @@ public abstract class QueryBase<TSelf, TElement>
         frame.Translator.Bind(selector, frame.Bindings);
         var value = frame.Translator.Translate(selector.Body);
         frame.Query.Columns.Add(new SelectColumn(new FunctionExpr(function, [value]), null));
+        frame.Query.ExplicitProjection = true;
         var statement = SqlRenderer.Render(Db.Options.Dialect, frame.Query);
         return await ScalarAsync<TResult>(statement, ct).ConfigureAwait(false);
     }
@@ -161,4 +164,10 @@ public sealed record Page<T>(IReadOnlyList<T> Rows, long Total, long PageIndex, 
 {
     /// <summary>总页数。</summary>
     public long PageCount => Total == 0 ? 0 : (Total + PageSize - 1) / PageSize;
+}
+
+/// <summary>不论具体是哪种查询类型，都能取到它的状态（子查询翻译时用）。</summary>
+internal interface IQueryStateAccessor
+{
+    QueryState State { get; }
 }

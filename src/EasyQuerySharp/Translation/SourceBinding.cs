@@ -35,7 +35,7 @@ internal sealed class EntityBinding(EntityTableSource table) : SourceBinding
 /// 绑定到派生表：成员按内层投影的列名映射。内层投影的是整个实体时带上实体元数据，
 /// 外层的列仍能拿到值转换器，也能按实体整体物化。
 /// </summary>
-internal sealed class DerivedBinding(DerivedTableSource table, IReadOnlyDictionary<string, string> memberColumns, EntityMetadata? entity)
+internal sealed class DerivedBinding(TableSource table, IReadOnlyDictionary<string, string> memberColumns, EntityMetadata? entity)
     : SourceBinding
 {
     /// <inheritdoc />

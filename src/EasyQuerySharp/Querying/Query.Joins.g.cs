@@ -40,6 +40,12 @@ public sealed class Query<T1, T2> : QueryBase<Query<T1, T2>, T1>
     /// <summary>追加降序排序。</summary>
     public Query<T1, T2> ThenByDescending<TKey>(Expression<Func<T1, T2, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, true)) });
 
+    /// <summary><paramref name="condition"/> 为 true 时才追加升序排序。</summary>
+    public Query<T1, T2> OrderByIf<TKey>(bool condition, Expression<Func<T1, T2, TKey>> key) => condition ? OrderBy(key) : this;
+
+    /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
+    public Query<T1, T2> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, TKey>> key) => condition ? OrderByDescending(key) : this;
+
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, TResult>> selector) => new(State with { Selector = selector });
 
@@ -125,6 +131,12 @@ public sealed class Query<T1, T2, T3> : QueryBase<Query<T1, T2, T3>, T1>
 
     /// <summary>追加降序排序。</summary>
     public Query<T1, T2, T3> ThenByDescending<TKey>(Expression<Func<T1, T2, T3, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, true)) });
+
+    /// <summary><paramref name="condition"/> 为 true 时才追加升序排序。</summary>
+    public Query<T1, T2, T3> OrderByIf<TKey>(bool condition, Expression<Func<T1, T2, T3, TKey>> key) => condition ? OrderBy(key) : this;
+
+    /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
+    public Query<T1, T2, T3> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, T3, TKey>> key) => condition ? OrderByDescending(key) : this;
 
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, TResult>> selector) => new(State with { Selector = selector });
@@ -212,6 +224,12 @@ public sealed class Query<T1, T2, T3, T4> : QueryBase<Query<T1, T2, T3, T4>, T1>
     /// <summary>追加降序排序。</summary>
     public Query<T1, T2, T3, T4> ThenByDescending<TKey>(Expression<Func<T1, T2, T3, T4, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, true)) });
 
+    /// <summary><paramref name="condition"/> 为 true 时才追加升序排序。</summary>
+    public Query<T1, T2, T3, T4> OrderByIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, TKey>> key) => condition ? OrderBy(key) : this;
+
+    /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
+    public Query<T1, T2, T3, T4> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, TKey>> key) => condition ? OrderByDescending(key) : this;
+
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, TResult>> selector) => new(State with { Selector = selector });
 
@@ -297,6 +315,12 @@ public sealed class Query<T1, T2, T3, T4, T5> : QueryBase<Query<T1, T2, T3, T4, 
 
     /// <summary>追加降序排序。</summary>
     public Query<T1, T2, T3, T4, T5> ThenByDescending<TKey>(Expression<Func<T1, T2, T3, T4, T5, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, true)) });
+
+    /// <summary><paramref name="condition"/> 为 true 时才追加升序排序。</summary>
+    public Query<T1, T2, T3, T4, T5> OrderByIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, TKey>> key) => condition ? OrderBy(key) : this;
+
+    /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
+    public Query<T1, T2, T3, T4, T5> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, TKey>> key) => condition ? OrderByDescending(key) : this;
 
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, TResult>> selector) => new(State with { Selector = selector });
@@ -384,6 +408,12 @@ public sealed class Query<T1, T2, T3, T4, T5, T6> : QueryBase<Query<T1, T2, T3, 
     /// <summary>追加降序排序。</summary>
     public Query<T1, T2, T3, T4, T5, T6> ThenByDescending<TKey>(Expression<Func<T1, T2, T3, T4, T5, T6, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, true)) });
 
+    /// <summary><paramref name="condition"/> 为 true 时才追加升序排序。</summary>
+    public Query<T1, T2, T3, T4, T5, T6> OrderByIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, TKey>> key) => condition ? OrderBy(key) : this;
+
+    /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
+    public Query<T1, T2, T3, T4, T5, T6> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, TKey>> key) => condition ? OrderByDescending(key) : this;
+
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, TResult>> selector) => new(State with { Selector = selector });
 
@@ -469,6 +499,12 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7> : QueryBase<Query<T1, T2, 
 
     /// <summary>追加降序排序。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7> ThenByDescending<TKey>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, true)) });
+
+    /// <summary><paramref name="condition"/> 为 true 时才追加升序排序。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7> OrderByIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, T7, TKey>> key) => condition ? OrderBy(key) : this;
+
+    /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, T7, TKey>> key) => condition ? OrderByDescending(key) : this;
 
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, TResult>> selector) => new(State with { Selector = selector });
@@ -556,6 +592,12 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8> : QueryBase<Query<T1, 
     /// <summary>追加降序排序。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8> ThenByDescending<TKey>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, true)) });
 
+    /// <summary><paramref name="condition"/> 为 true 时才追加升序排序。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8> OrderByIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, TKey>> key) => condition ? OrderBy(key) : this;
+
+    /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, TKey>> key) => condition ? OrderByDescending(key) : this;
+
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, TResult>> selector) => new(State with { Selector = selector });
 
@@ -642,6 +684,12 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> : QueryBase<Query<
     /// <summary>追加降序排序。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> ThenByDescending<TKey>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, true)) });
 
+    /// <summary><paramref name="condition"/> 为 true 时才追加升序排序。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> OrderByIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TKey>> key) => condition ? OrderBy(key) : this;
+
+    /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TKey>> key) => condition ? OrderByDescending(key) : this;
+
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult>> selector) => new(State with { Selector = selector });
 
@@ -727,6 +775,12 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : QueryBase<Q
 
     /// <summary>追加降序排序。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> ThenByDescending<TKey>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, true)) });
+
+    /// <summary><paramref name="condition"/> 为 true 时才追加升序排序。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> OrderByIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TKey>> key) => condition ? OrderBy(key) : this;
+
+    /// <summary><paramref name="condition"/> 为 true 时才追加降序排序。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> OrderByDescendingIf<TKey>(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TKey>> key) => condition ? OrderByDescending(key) : this;
 
     /// <summary>投影到 DTO、匿名类型或标量。</summary>
     public Query<TResult> Select<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>> selector) => new(State with { Selector = selector });

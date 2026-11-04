@@ -81,6 +81,12 @@ public sealed class SelectQuery(TableSource from)
     /// <summary>最多返回的行数。</summary>
     public long? Limit { get; set; }
 
+    /// <summary>
+    /// 是否有显式投影（select / 聚合选择器）。Java 版在单表查询上只有显式投影时才加别名 <c>t</c>，
+    /// 默认的整实体查询与 COUNT(*) 不加。
+    /// </summary>
+    public bool ExplicitProjection { get; set; }
+
     /// <summary>全部表来源：FROM 与各 JOIN。</summary>
     public IEnumerable<TableSource> Tables => Joins.Select(j => j.Table).Prepend(From);
 }

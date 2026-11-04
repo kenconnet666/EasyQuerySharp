@@ -60,7 +60,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
     }
 
     // 基类属性在前，同一类型内按声明顺序（MetadataToken 递增即声明顺序）；派生类重写的属性只保留一次
-    private static IEnumerable<PropertyInfo> OrderedProperties(Type type)
+    internal static IEnumerable<PropertyInfo> OrderedProperties(Type type)
     {
         var chain = new Stack<Type>();
         for (var t = type; t is not null && t != typeof(object); t = t.BaseType) chain.Push(t);

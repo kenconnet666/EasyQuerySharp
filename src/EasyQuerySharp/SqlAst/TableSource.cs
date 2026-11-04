@@ -43,3 +43,10 @@ public sealed class DerivedTableSource(SelectQuery query) : TableSource
     /// <summary>内部查询。</summary>
     public SelectQuery Query { get; } = query;
 }
+
+/// <summary>原生 SQL 作为表来源：<c>(SELECT * FROM t_blog t) t</c>（对应 Java 的 queryable(sql, Class)）。</summary>
+public sealed class RawTableSource(string sql) : TableSource
+{
+    /// <summary>原生 SQL（不含外层括号）。</summary>
+    public string Sql { get; } = sql;
+}
