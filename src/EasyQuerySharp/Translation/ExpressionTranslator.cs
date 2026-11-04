@@ -48,7 +48,7 @@ internal sealed partial class ExpressionTranslator
             MemberExpression m => TranslateMember(m),
             UnaryExpression u => TranslateUnary(u),
             BinaryExpression b => TranslateBinary(b),
-            ConditionalExpression c => new CaseExpr([(TranslatePredicate(c.Test), Translate(c.IfTrue))], Translate(c.IfFalse)),
+            ConditionalExpression c => TranslateConditional(c),
             MethodCallExpression call => TranslateCall(call),
             LambdaExpression l => Translate(l.Body),
             _ => throw Unsupported(expression),
@@ -176,6 +176,19 @@ internal sealed partial class ExpressionTranslator
 
         var (left, right) = TranslatePair(b.Left, b.Right);
         return new BinaryExpr(left, op, right);
+    }
+
+    // a ? x : b ? y : z 合并成一个多分支 CASE（与 Java 的 caseWhen(..).caseWhen(..) 一致）
+    private CaseExpr TranslateConditional(ConditionalExpression c)
+    {
+        var branches = new List<(SqlExpr When, SqlExpr Then)> { (TranslatePredicate(c.Test), Translate(c.IfTrue)) };
+        var otherwise = c.IfFalse;
+        while (otherwise is ConditionalExpression next)
+        {
+            branches.Add((TranslatePredicate(next.Test), Translate(next.IfTrue)));
+            otherwise = next.IfFalse;
+        }
+        return new CaseExpr(branches, Translate(otherwise));
     }
 
     // string.Compare(a, b) 或 a.CompareTo(b) 的两个操作数

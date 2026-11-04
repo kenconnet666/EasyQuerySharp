@@ -17,10 +17,10 @@ public sealed class Query<T1, T2> : QueryBase<Query<T1, T2>, T1>
     private protected override Query<T1, T2> With(QueryState state) => new(state);
 
     /// <summary>追加只涉及第一张表的条件。</summary>
-    public Query<T1, T2> Where(Expression<Func<T1, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2> Where(Expression<Func<T1, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary>追加涉及各表的条件。</summary>
-    public Query<T1, T2> Where(Expression<Func<T1, T2, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2> Where(Expression<Func<T1, T2, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary><paramref name="condition"/> 为 true 时才追加条件（只涉及第一张表）。</summary>
     public Query<T1, T2> WhereIf(bool condition, Expression<Func<T1, bool>> predicate) => condition ? Where(predicate) : this;
@@ -124,10 +124,10 @@ public sealed class Query<T1, T2, T3> : QueryBase<Query<T1, T2, T3>, T1>
     private protected override Query<T1, T2, T3> With(QueryState state) => new(state);
 
     /// <summary>追加只涉及第一张表的条件。</summary>
-    public Query<T1, T2, T3> Where(Expression<Func<T1, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2, T3> Where(Expression<Func<T1, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary>追加涉及各表的条件。</summary>
-    public Query<T1, T2, T3> Where(Expression<Func<T1, T2, T3, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2, T3> Where(Expression<Func<T1, T2, T3, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary><paramref name="condition"/> 为 true 时才追加条件（只涉及第一张表）。</summary>
     public Query<T1, T2, T3> WhereIf(bool condition, Expression<Func<T1, bool>> predicate) => condition ? Where(predicate) : this;
@@ -231,10 +231,10 @@ public sealed class Query<T1, T2, T3, T4> : QueryBase<Query<T1, T2, T3, T4>, T1>
     private protected override Query<T1, T2, T3, T4> With(QueryState state) => new(state);
 
     /// <summary>追加只涉及第一张表的条件。</summary>
-    public Query<T1, T2, T3, T4> Where(Expression<Func<T1, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2, T3, T4> Where(Expression<Func<T1, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary>追加涉及各表的条件。</summary>
-    public Query<T1, T2, T3, T4> Where(Expression<Func<T1, T2, T3, T4, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2, T3, T4> Where(Expression<Func<T1, T2, T3, T4, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary><paramref name="condition"/> 为 true 时才追加条件（只涉及第一张表）。</summary>
     public Query<T1, T2, T3, T4> WhereIf(bool condition, Expression<Func<T1, bool>> predicate) => condition ? Where(predicate) : this;
@@ -338,10 +338,10 @@ public sealed class Query<T1, T2, T3, T4, T5> : QueryBase<Query<T1, T2, T3, T4, 
     private protected override Query<T1, T2, T3, T4, T5> With(QueryState state) => new(state);
 
     /// <summary>追加只涉及第一张表的条件。</summary>
-    public Query<T1, T2, T3, T4, T5> Where(Expression<Func<T1, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2, T3, T4, T5> Where(Expression<Func<T1, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary>追加涉及各表的条件。</summary>
-    public Query<T1, T2, T3, T4, T5> Where(Expression<Func<T1, T2, T3, T4, T5, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2, T3, T4, T5> Where(Expression<Func<T1, T2, T3, T4, T5, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary><paramref name="condition"/> 为 true 时才追加条件（只涉及第一张表）。</summary>
     public Query<T1, T2, T3, T4, T5> WhereIf(bool condition, Expression<Func<T1, bool>> predicate) => condition ? Where(predicate) : this;
@@ -445,10 +445,10 @@ public sealed class Query<T1, T2, T3, T4, T5, T6> : QueryBase<Query<T1, T2, T3, 
     private protected override Query<T1, T2, T3, T4, T5, T6> With(QueryState state) => new(state);
 
     /// <summary>追加只涉及第一张表的条件。</summary>
-    public Query<T1, T2, T3, T4, T5, T6> Where(Expression<Func<T1, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2, T3, T4, T5, T6> Where(Expression<Func<T1, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary>追加涉及各表的条件。</summary>
-    public Query<T1, T2, T3, T4, T5, T6> Where(Expression<Func<T1, T2, T3, T4, T5, T6, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2, T3, T4, T5, T6> Where(Expression<Func<T1, T2, T3, T4, T5, T6, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary><paramref name="condition"/> 为 true 时才追加条件（只涉及第一张表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6> WhereIf(bool condition, Expression<Func<T1, bool>> predicate) => condition ? Where(predicate) : this;
@@ -552,10 +552,10 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7> : QueryBase<Query<T1, T2, 
     private protected override Query<T1, T2, T3, T4, T5, T6, T7> With(QueryState state) => new(state);
 
     /// <summary>追加只涉及第一张表的条件。</summary>
-    public Query<T1, T2, T3, T4, T5, T6, T7> Where(Expression<Func<T1, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2, T3, T4, T5, T6, T7> Where(Expression<Func<T1, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary>追加涉及各表的条件。</summary>
-    public Query<T1, T2, T3, T4, T5, T6, T7> Where(Expression<Func<T1, T2, T3, T4, T5, T6, T7, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2, T3, T4, T5, T6, T7> Where(Expression<Func<T1, T2, T3, T4, T5, T6, T7, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary><paramref name="condition"/> 为 true 时才追加条件（只涉及第一张表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7> WhereIf(bool condition, Expression<Func<T1, bool>> predicate) => condition ? Where(predicate) : this;
@@ -659,10 +659,10 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8> : QueryBase<Query<T1, 
     private protected override Query<T1, T2, T3, T4, T5, T6, T7, T8> With(QueryState state) => new(state);
 
     /// <summary>追加只涉及第一张表的条件。</summary>
-    public Query<T1, T2, T3, T4, T5, T6, T7, T8> Where(Expression<Func<T1, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8> Where(Expression<Func<T1, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary>追加涉及各表的条件。</summary>
-    public Query<T1, T2, T3, T4, T5, T6, T7, T8> Where(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8> Where(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary><paramref name="condition"/> 为 true 时才追加条件（只涉及第一张表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8> WhereIf(bool condition, Expression<Func<T1, bool>> predicate) => condition ? Where(predicate) : this;
@@ -766,10 +766,10 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> : QueryBase<Query<
     private protected override Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> With(QueryState state) => new(state);
 
     /// <summary>追加只涉及第一张表的条件。</summary>
-    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> Where(Expression<Func<T1, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> Where(Expression<Func<T1, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary>追加涉及各表的条件。</summary>
-    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> Where(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> Where(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary><paramref name="condition"/> 为 true 时才追加条件（只涉及第一张表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> WhereIf(bool condition, Expression<Func<T1, bool>> predicate) => condition ? Where(predicate) : this;
@@ -873,10 +873,10 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : QueryBase<Q
     private protected override Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> With(QueryState state) => new(state);
 
     /// <summary>追加只涉及第一张表的条件。</summary>
-    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> Where(Expression<Func<T1, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> Where(Expression<Func<T1, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary>追加涉及各表的条件。</summary>
-    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> Where(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, bool>> predicate) => new(State with { Wheres = State.Wheres.Add(predicate) });
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> Where(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, bool>> predicate) => new(State.AddWhere(predicate));
 
     /// <summary><paramref name="condition"/> 为 true 时才追加条件（只涉及第一张表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> WhereIf(bool condition, Expression<Func<T1, bool>> predicate) => condition ? Where(predicate) : this;

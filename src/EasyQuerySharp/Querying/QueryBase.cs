@@ -54,6 +54,12 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
             : (TSelf)this;
     }
 
+    /// <summary>
+    /// 之后追加的 Where 按 <paramref name="filter"/> 跳过值为 null / 空白的比较条件（对应 Java 的 filterConfigure），
+    /// 再次调用可以切换，<see cref="Filtering.ValueFilter.All"/> 恢复不过滤。
+    /// </summary>
+    public TSelf UseValueFilter(Filtering.ValueFilter filter) => With(State with { ValueFilter = filter });
+
     /// <summary><paramref name="condition"/> 为 true 时才 <see cref="FilterBy"/>（对应 Java 的 whereObject(bool, obj)）。</summary>
     public TSelf FilterByIf(bool condition, object? request) => condition ? FilterBy(request) : (TSelf)this;
 

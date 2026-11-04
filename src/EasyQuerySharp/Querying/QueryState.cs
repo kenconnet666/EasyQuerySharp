@@ -82,8 +82,15 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>这条查询上生效的拦截器。</summary>
     public InterceptorSelection Interceptors { get; init; } = InterceptorSelection.Default;
 
+    /// <summary>之后追加的 Where 适用的条件值过滤（UseValueFilter）。</summary>
+    public Filtering.ValueFilter ValueFilter { get; init; }
+
+    /// <summary>追加一个 Where 条件：先按 <see cref="ValueFilter"/> 去掉值被拒绝的比较，全部去掉时不追加。</summary>
+    public QueryState AddWhere(LambdaExpression predicate) =>
+        Filtering.ValueFilterRewriter.Apply(predicate, ValueFilter) is { } filtered ? this with { Wheres = Wheres.Add(filtered) } : this;
+
     /// <summary>投影之后再加条件、排序、连接时，把当前查询包成派生表，在外层继续（与 Java 版的 select 之后再 where 一致）。</summary>
-    public QueryState Wrap() => new(Db, [new SubQuerySource(this)]);
+    public QueryState Wrap() => new(Db, [new SubQuerySource(this)]) { ValueFilter = ValueFilter };
 
     /// <summary>是否已经有投影（之后的条件要包一层）。</summary>
     public bool HasSelector => Selector is not null;

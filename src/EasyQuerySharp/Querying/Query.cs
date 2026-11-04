@@ -28,7 +28,7 @@ public sealed class Query<T> : QueryBase<Query<T>, T>
     private QueryState Open => State.HasSelector ? State.Wrap() : State;
 
     /// <summary>追加条件（多个 Where 之间是 AND）。</summary>
-    public Query<T> Where(Expression<Func<T, bool>> predicate) => new(Open with { Wheres = Open.Wheres.Add(predicate) });
+    public Query<T> Where(Expression<Func<T, bool>> predicate) => new(Open.AddWhere(predicate));
 
     /// <summary><paramref name="condition"/> 为 true 时才追加条件。</summary>
     public Query<T> WhereIf(bool condition, Expression<Func<T, bool>> predicate) => condition ? Where(predicate) : this;
