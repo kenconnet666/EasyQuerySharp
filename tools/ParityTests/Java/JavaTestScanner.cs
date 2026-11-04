@@ -40,7 +40,8 @@ internal static partial class JavaTestScanner
             foreach (var path in Directory.EnumerateFiles(root, "*.java", SearchOption.AllDirectories))
             {
                 var source = JavaSource.StripComments(File.ReadAllText(path));
-                if (!source.Contains("@Test")) continue;
+                // 也有写全名的 @org.junit.Test / @org.junit.jupiter.api.Test
+                if (!source.Contains("Test")) continue;
 
                 var relative = Path.GetRelativePath(root, path).Replace('\\', '/');
                 if (relative.StartsWith(prefix, StringComparison.Ordinal)) relative = relative[prefix.Length..];
@@ -72,7 +73,7 @@ internal static partial class JavaTestScanner
 
     private static bool IsSql(string s) => SqlStart().IsMatch(s);
 
-    [GeneratedRegex(@"@Test\b(?:\s*\([^)]*\))?[\s\S]*?(?:public\s+)?void\s+(?<name>\w+)\s*\([^)]*\)[^{;]*\{")]
+    [GeneratedRegex(@"@(?:org\.junit\.(?:jupiter\.api\.)?)?Test\b(?:\s*\([^)]*\))?[\s\S]*?(?:public\s+)?void\s+(?<name>\w+)\s*\([^)]*\)[^{;]*\{")]
     private static partial Regex TestMarker();
 
     [GeneratedRegex(@"^\s*(SELECT|INSERT|UPDATE|DELETE|WITH|MERGE|CREATE|ALTER|DROP|REPLACE|TRUNCATE)\b", RegexOptions.IgnoreCase)]

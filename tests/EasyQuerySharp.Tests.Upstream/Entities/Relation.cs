@@ -107,3 +107,31 @@ public class RelationRoute
     [Column(PrimaryKey = true)]
     public int? Type { get; set; }
 }
+
+/// <summary>对应 Java：entity/relation/MyRelationUser（与 RelationUser 相同的导航，表是 t_user）。</summary>
+[Table("t_user")]
+public class MyRelationUser
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    [Navigate(RelationType.OneToMany, TargetProperties = [nameof(RelationBook.UserId)], ExtraFilter = nameof(UserBookFilter))]
+    public List<RelationBook>? Books { get; set; }
+
+    [Navigate(RelationType.OneToMany, TargetProperties = [nameof(RelationBook.UserId)], ExtraFilter = nameof(HistoryBookFilter))]
+    public List<RelationBook>? HistoryBooks { get; set; }
+
+    [Navigate(RelationType.ManyToMany, Mapping = typeof(RelationRoute), SelfMappingProperties = [nameof(RelationRoute.FirstId)],
+        TargetMappingProperties = [nameof(RelationRoute.SecondId)], ExtraFilter = nameof(TeacherFilter), ExtraMappingFilter = nameof(TeacherRouteFilter))]
+    public List<RelationTeacher>? Teachers { get; set; }
+
+    private static Expression<Func<RelationBook, bool>> UserBookFilter => b => b.BookType == 1;
+
+    private static Expression<Func<RelationBook, bool>> HistoryBookFilter => b => b.CreateTime <= new DateTime(2022, 1, 1);
+
+    private static Expression<Func<RelationTeacher, bool>>? TeacherFilter => DynamicExtraFilter.Enabled ? t => t.Name == "12345" : null;
+
+    private static Expression<Func<RelationRoute, bool>> TeacherRouteFilter => r => r.Type == 1;
+}

@@ -87,3 +87,16 @@ public sealed class UnionTableSource(IReadOnlyList<SelectQuery> parts, bool all)
     /// <summary>各分支各自编号别名（见 <c>UnionSource.IndependentAliases</c>）。</summary>
     public bool IndependentAliases { get; init; }
 }
+
+/// <summary>
+/// 公共表表达式的引用：FROM / JOIN 里写 <c>`名字` t1</c>，定义 <c>WITH `名字` AS (SELECT …)</c> 由渲染器提到整条语句最前面
+/// （对应 Java 的 toCteAs）。同名的定义只写一次；别名编号与派生表相同：先编内部，再编引用自己。
+/// </summary>
+public sealed class CteTableSource(string name, SelectQuery query) : TableSource
+{
+    /// <summary>CTE 的名字。</summary>
+    public string Name { get; } = name;
+
+    /// <summary>CTE 的定义。</summary>
+    public SelectQuery Query { get; } = query;
+}

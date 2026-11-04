@@ -44,6 +44,9 @@ internal sealed record UnionSource(ImmutableArray<QueryState> Parts, bool All) :
 /// <summary>原生 SQL 作为派生表，列按实体的列名访问（对应 Java 的 queryable(sql, Class)）。</summary>
 internal sealed record RawSqlSource(string Sql, Type EntityType, IReadOnlyList<object?> Parameters) : QuerySource;
 
+/// <summary>公共表表达式（AsCte）：定义是 <paramref name="Inner"/>，按名字引用。</summary>
+internal sealed record CteSource(string Name, QueryState Inner) : QuerySource;
+
 /// <summary>按什么排序。</summary>
 internal sealed record OrderSpec(LambdaExpression Key, bool Descending, bool Raw = false);
 
@@ -124,6 +127,16 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
 
     /// <summary>是否已经有投影（之后的条件要包一层）。</summary>
     public bool HasSelector => Selector is not null;
+
+    /// <summary>只是引用一个 CTE（AsCte 之后没有再加条件、投影、排序等）：作为 JOIN 来源时直接引用 CTE 名，不再包一层派生表。</summary>
+    public CteSource? BareCte =>
+        Sources is [CteSource cte] && Wheres.IsEmpty && OrderBys.IsEmpty && Selector is null && RawSelect is null && GroupKey is null
+        && !Distinct && Offset is null && Limit is null && Includes.IsEmpty && Fills.IsEmpty
+            ? cte
+            : null;
+
+    /// <summary>作为 JOIN 来源：裸的 CTE 引用直接用，其余包成派生表。</summary>
+    public QuerySource AsJoinSource() => BareCte is { } cte ? cte with { } : new SubQuerySource(this);
 
     /// <summary>查询结果的元素类型：投影的返回类型，没有投影时是第一个来源的类型。</summary>
     public Type ElementType => Selector?.ReturnType ?? TypeOf(Sources[0]);

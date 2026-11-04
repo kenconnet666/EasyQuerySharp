@@ -24,8 +24,12 @@ public sealed class SqlRenderer
     /// <summary>渲染一条查询。</summary>
     public static SqlStatement Render(SqlDialect dialect, SelectQuery query)
     {
-        AliasAllocator.Allocate(query);
+        var ctes = AliasAllocator.Allocate(query);
         var r = new SqlRenderer(dialect);
+        // WITH `a` AS (…) ,`b` AS (…) SELECT …（与 Java 逐字一致）
+        for (var i = 0; i < ctes.Count; i++)
+            r.Append(i == 0 ? "WITH " : " ,").Append(dialect.QuoteIdentifier(ctes[i].Name)).Append(" AS (").WriteSelect(ctes[i].Query).Append(")");
+        if (ctes.Count > 0) r.Append(" ");
         r.WriteSelect(query);
         return r.Build();
     }
@@ -192,6 +196,7 @@ public sealed class SqlRenderer
                 return Append(segment(QualifiedName(e), e.Alias));
             case EntityTableSource e: WriteTableName(e); break;
             case DerivedTableSource d: Append("(").WriteSelect(d.Query).Append(")"); break;
+            case CteTableSource c: Append(Dialect.QuoteIdentifier(c.Name)); break;
             case RawTableSource raw: Append("(").WriteRawSql(raw).Append(")"); break;
             case UnionTableSource u:
                 // 与 Java 逐字一致：( (q1)  UNION  (q2) )

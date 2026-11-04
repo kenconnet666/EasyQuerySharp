@@ -176,6 +176,13 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
         return new(QueryStates.WithLast(State, s => s is EntitySource e ? e with { TableSegment = segment } : s));
     }
 
+    /// <summary>
+    /// 把这条查询作为公共表表达式（对应 Java 的 toCteAs）：之后的查询从 <c>`名字`</c> 读，定义写在整条语句前面的
+    /// <c>WITH `名字` AS (…)</c> 里。可以继续 Where / Select，也可以作为别的查询的 JOIN 来源；名字默认是 <c>with_类型名</c>。
+    /// </summary>
+    public Query<T> AsCte(string? name = null) =>
+        new(new QueryState(Db, [new CteSource(name ?? "with_" + typeof(T).Name, State)]) { ValueFilter = State.ValueFilter });
+
     /// <summary>LEFT JOIN 实体 <typeparamref name="T2"/>。</summary>
     public Query<T, T2> LeftJoin<T2>(Expression<Func<T, T2, bool>> on) => Join<T2>(JoinKind.Left, new EntitySource(typeof(T2)), on);
 
@@ -186,10 +193,10 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     public Query<T, T2> RightJoin<T2>(Expression<Func<T, T2, bool>> on) => Join<T2>(JoinKind.Right, new EntitySource(typeof(T2)), on);
 
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
-    public Query<T, T2> LeftJoin<T2>(Query<T2> subQuery, Expression<Func<T, T2, bool>> on) => Join<T2>(JoinKind.Left, new SubQuerySource(subQuery.State), on);
+    public Query<T, T2> LeftJoin<T2>(Query<T2> subQuery, Expression<Func<T, T2, bool>> on) => Join<T2>(JoinKind.Left, subQuery.State.AsJoinSource(), on);
 
     /// <summary>INNER JOIN 一个子查询（作为派生表）。</summary>
-    public Query<T, T2> InnerJoin<T2>(Query<T2> subQuery, Expression<Func<T, T2, bool>> on) => Join<T2>(JoinKind.Inner, new SubQuerySource(subQuery.State), on);
+    public Query<T, T2> InnerJoin<T2>(Query<T2> subQuery, Expression<Func<T, T2, bool>> on) => Join<T2>(JoinKind.Inner, subQuery.State.AsJoinSource(), on);
 
     /// <summary>按主键查一行；没有时返回 null（对应 Java 的 findOrNull）。</summary>
     public Task<T?> FindAsync(object id, CancellationToken cancellationToken = default) => WhereById(id).FirstOrDefaultAsync(cancellationToken);

@@ -12,11 +12,13 @@ namespace EasyQuerySharp.Rendering;
 /// </summary>
 internal static class AliasAllocator
 {
-    public static void Allocate(SelectQuery query)
+    /// <summary>分配别名，返回语句里引用到的 CTE（按定义应出现的顺序：被依赖的在前，同名只留第一个）。</summary>
+    public static IReadOnlyList<CteTableSource> Allocate(SelectQuery query)
     {
         var tables = new List<TableSource>();
         Collect(query, tables);
         Assign(tables, query.ExplicitProjection);
+        return tables.OfType<CteTableSource>().DistinctBy(c => c.Name, StringComparer.Ordinal).ToList();
     }
 
     public static void Allocate(TableSource single, IEnumerable<SqlExpr> expressions)
@@ -72,6 +74,9 @@ internal static class AliasAllocator
             Collect(derived.Query, tables, derived.AliasAfterJoins is null ? null : derived);
             if (derived.ReserveExtraAlias && derived.AliasAfterJoins is null) tables.Add(Placeholder.Instance);
         }
+        // CTE：定义只编号一次（第一次引用时），之后的引用只编自己
+        if (table is CteTableSource cte && !tables.OfType<CteTableSource>().Any(c => c.Name == cte.Name))
+            Collect(cte.Query, tables);
         if (table is UnionTableSource { IndependentAliases: true } independent)
         {
             // 各分支单独编号；外层占一个编号之后（分支里的 t 已经用掉 t）

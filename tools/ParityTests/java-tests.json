@@ -765,8 +765,333 @@
     "Sql": "SELECT t3.\u0022id\u0022,t3.\u0022stars\u0022,t3.\u0022title\u0022,t3.\u0022create_time\u0022 FROM ( SELECT t.\u0022id\u0022,t.\u0022stars\u0022,t.\u0022title\u0022,t.\u0022create_time\u0022 FROM \u0022t_topic\u0022 t WHERE t.\u0022id\u0022 IS NOT NULL  UNION  SELECT t1.\u0022id\u0022,t1.\u0022stars\u0022,t1.\u0022title\u0022,t1.\u0022create_time\u0022 FROM \u0022t_topic\u0022 t1 WHERE t1.\u0022id\u0022 IS NULL  UNION  SELECT t2.\u0022id\u0022,t2.\u0022stars\u0022,t2.\u0022title\u0022,t2.\u0022create_time\u0022 FROM \u0022t_topic\u0022 t2 WHERE t2.\u0022id\u0022 = ? ) t3"
   },
   {
+    "Id": "GenericTest2.java#EnumValueTest1",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#EnumValueTest2",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#SqlRangeTest1",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#StringCharSegmentSm4Test",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#StringCharSegmentSm4Test1",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#StringCharSegmentSm4Test2",
+    "Capability": "func.string",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#StringCharSegmentTest1",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#StringCharSegmentTest10",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#StringCharSegmentTest2",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#StringCharSegmentTest3",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#StringCharSegmentTest4",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#StringCharSegmentTest5",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#StringCharSegmentTest6",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#StringCharSegmentTest7",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#StringCharSegmentTest8",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#aesTest2",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#base64Test",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#behavior",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#check",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#createTest1",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#easyEncryptionTest",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#easyEncryptionTest1",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#easySm4EncryptionIdCardTest",
+    "Capability": "func.string",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#easySm4EncryptionTest",
+    "Capability": "func.string",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#executeMethodBehaviorTest1",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#linkedCaseInsensitiveMapTest1",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#nameConversionTest1",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#sm4StandardVectorTest",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#sqlFormat",
+    "Capability": "func.date",
+    "Sql": "SELECT IFNULL(t2.\u0060__sum2__\u0060,0) AS \u0060value1\u0060,IFNULL(t2.\u0060__sum3__\u0060,0) AS \u0060value2\u0060 FROM \u0060m8_province\u0060 t LEFT JOIN (SELECT t1.\u0060pid\u0060 AS \u0060pid\u0060,SUM(IFNULL(t4.\u0060__count2__\u0060,0)) AS \u0060__sum2__\u0060,SUM(IFNULL(t4.\u0060__count3__\u0060,0)) AS \u0060__sum3__\u0060 FROM \u0060m8_city\u0060 t1 LEFT JOIN (SELECT t3.\u0060cid\u0060 AS \u0060cid\u0060,COUNT((CASE WHEN t3.\u0060name\u0060 LIKE CONCAT(\u0027%\u0027,?,\u0027%\u0027) THEN ? ELSE NULL END)) AS \u0060__count2__\u0060,COUNT((CASE WHEN t3.\u0060name\u0060 LIKE CONCAT(\u0027%\u0027,?,\u0027%\u0027) THEN ? ELSE NULL END)) AS \u0060__count3__\u0060 FROM \u0060m8_area\u0060 t3 WHERE t3.\u0060id\u0060 LIKE CONCAT(\u0027%\u0027,?,\u0027%\u0027) GROUP BY t3.\u0060cid\u0060) t4 ON t4.\u0060cid\u0060 = t1.\u0060id\u0060 GROUP BY t1.\u0060pid\u0060) t2 ON t2.\u0060pid\u0060 = t.\u0060id\u0060 WHERE t.\u0060name\u0060 LIKE CONCAT(\u0027%\u0027,?,\u0027%\u0027)"
+  },
+  {
+    "Id": "GenericTest2.java#test1",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
     "Id": "GenericTest2.java#testAgroalGetUrl",
     "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericTest2.java#testLinkedCaseInsensitiveMap1",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#deleteTest13",
+    "Capability": "write.delete",
+    "Sql": "DELETE FROM \u0060query_large_column_test\u0060 WHERE \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#deleteTest14",
+    "Capability": "write.delete",
+    "Sql": "DELETE FROM \u0060aaa\u0060 WHERE \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#deleteTest15",
+    "Capability": "table.schema",
+    "Sql": "DELETE FROM \u0060xxx\u0060.\u0060query_large_column_testaaa\u0060 WHERE \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#deleteTest16",
+    "Capability": "table.schema",
+    "Sql": "DELETE FROM \u0060xxx\u0060.\u0060query_large_column_testaaa\u0060 WHERE \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest1",
+    "Capability": "query.basic",
+    "Sql": "SELECT \u0060id\u0060,\u0060name\u0060,\u0060content\u0060 FROM \u0060query_large_column_test\u0060"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest10",
+    "Capability": "write.strategy",
+    "Sql": "UPDATE \u0060query_large_column_test\u0060 SET \u0060name\u0060 = ? WHERE \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest11",
+    "Capability": "write.strategy",
+    "Sql": "UPDATE \u0060query_large_column_test\u0060 SET \u0060content\u0060 = ? WHERE \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest12",
+    "Capability": "write.strategy",
+    "Sql": null
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest14",
+    "Capability": "write.delete",
+    "Sql": null
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest15",
+    "Capability": "write.delete",
+    "Sql": "DELETE FROM \u0060query_large_column_test\u0060 WHERE \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest19",
+    "Capability": "table.schema",
+    "Sql": "UPDATE \u0060xxx\u0060.\u0060abc\u0060 SET \u0060content\u0060 = ? WHERE \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest20",
+    "Capability": "table.schema",
+    "Sql": "UPDATE \u0060xcv\u0060.\u0060query_large_column_testabc\u0060 SET \u0060content\u0060 = ? WHERE \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest21",
+    "Capability": "table.schema",
+    "Sql": null
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest22",
+    "Capability": "table.schema",
+    "Sql": null
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest23",
+    "Capability": "write.update",
+    "Sql": "UPDATE \u0060query_large_column_test\u0060 SET \u0060id\u0060 = ?,\u0060name\u0060 = ?,\u0060content\u0060 = ? WHERE \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest3",
+    "Capability": "write.insert",
+    "Sql": null
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest4",
+    "Capability": "write.insert",
+    "Sql": "INSERT INTO \u0060query_large_column_test\u0060 (\u0060id\u0060) VALUES (?)"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest5",
+    "Capability": "write.strategy",
+    "Sql": "INSERT INTO \u0060query_large_column_test\u0060 (\u0060id\u0060) VALUES (?)"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest6",
+    "Capability": "write.strategy",
+    "Sql": "INSERT INTO \u0060query_large_column_test\u0060 (\u0060id\u0060,\u0060name\u0060,\u0060content\u0060) VALUES (?,?,?)"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest7",
+    "Capability": "write.strategy",
+    "Sql": "INSERT INTO \u0060query_large_column_test\u0060 (\u0060name\u0060,\u0060content\u0060) VALUES (?,?)"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest8",
+    "Capability": "write.update",
+    "Sql": "UPDATE \u0060query_large_column_test\u0060 SET \u0060name\u0060 = ?,\u0060content\u0060 = ? WHERE \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#queryLargeColumnTest9",
+    "Capability": "write.strategy",
+    "Sql": null
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#repeatApply1",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#testPrintSQL1",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#testPrintSQL2",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#testQueryLockClonePropagation",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#testQueryLockExtendFromPropagation",
+    "Capability": "query.basic",
+    "Sql": null
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#updateTest24",
+    "Capability": "write.update",
+    "Sql": "UPDATE \u0060x_t_blog\u0060 SET \u0060star\u0060 = \u0060star\u0060 \u002B ? WHERE \u0060deleted\u0060 = ? AND \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#updateTest25",
+    "Capability": "write.update",
+    "Sql": "UPDATE \u0060x_t_blog\u0060 SET \u0060star\u0060 = \u0060star\u0060 \u002B ? WHERE \u0060deleted\u0060 = ? AND \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#updateTest26",
+    "Capability": "write.update",
+    "Sql": "UPDATE \u0060x_t_blog\u0060 SET \u0060score\u0060 = \u0060score\u0060 \u002B ? WHERE \u0060deleted\u0060 = ? AND \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#updateTest27",
+    "Capability": "write.update",
+    "Sql": "UPDATE \u0060x_t_blog\u0060 SET \u0060star\u0060 = \u0060star\u0060 - ? WHERE \u0060deleted\u0060 = ? AND \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#updateTest28",
+    "Capability": "write.update",
+    "Sql": "UPDATE \u0060x_t_blog\u0060 SET \u0060star\u0060 = \u0060star\u0060 \u002B ? WHERE \u0060deleted\u0060 = ? AND \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#updateTest29",
+    "Capability": "write.update",
+    "Sql": "UPDATE \u0060t_unknown\u0060 SET \u0060money\u0060 = \u0060money\u0060 \u002B ? WHERE \u0060id\u0060 = ?"
+  },
+  {
+    "Id": "GenericWithDatabaseTest.java#updateTest30",
+    "Capability": "write.update",
     "Sql": null
   },
   {
@@ -3746,6 +4071,11 @@
   },
   {
     "Id": "QueryTest19.java#testDoc100",
+    "Capability": "dto.autoInclude",
+    "Sql": "SELECT t.\u0060id\u0060,t.\u0060name\u0060 FROM \u0060t_user\u0060 t"
+  },
+  {
+    "Id": "QueryTest19.java#testDoc99",
     "Capability": "dto.autoInclude",
     "Sql": "SELECT t.\u0060id\u0060,t.\u0060name\u0060 FROM \u0060t_user\u0060 t"
   },

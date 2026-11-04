@@ -4,7 +4,7 @@
 
 ## 目标与约束
 
-- **能力完整对标** easy-query：上游 `sql-test` 2249 个用例加 fork 的 `sql-fork-test` 89 个，逐条有对应。API 可以和 Java 不一样，但要更顺手。
+- **能力完整对标** easy-query：上游 `sql-test` 2315 个用例加 fork 的 `sql-fork-test` 89 个，逐条有对应。API 可以和 Java 不一样，但要更顺手。
 - **目标框架**：`net10.0`（LTS），不做多目标。生成器和分析器按 Roslyn 的要求用 `netstandard2.0`。
 - **核心零第三方依赖**：只依赖 BCL 和 `Microsoft.Extensions.*.Abstractions`。驱动由各方言包引入。
 - **异步优先**：所有终结方法都是 `…Async(CancellationToken)`。同步版本第一期不做，记进 BACKLOG。

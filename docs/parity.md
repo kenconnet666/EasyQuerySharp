@@ -2,7 +2,7 @@
 
 本表按能力列出 easy-query（Java）的全部能力、计划的 C# 写法，以及排在哪个里程碑。逐条用例的对照见 `docs/parity-tests.md`，它由 `tools/ParityTests` 生成，M0 完成后才会有。
 
-- **用例数**：上游 `sql-test` 共 2249 个用例。分类规则沿用 TS 版的 `tools/capabilities.mjs`：每个用例按方法体里用到的 API 归到一种能力。fork 的 `sql-fork-test` 还有 89 个用例，单独列在最后。
+- **用例数**：上游 `sql-test` 共 2315 个用例。分类规则沿用 TS 版的 `tools/capabilities.mjs`：每个用例按方法体里用到的 API 归到一种能力。fork 的 `sql-fork-test` 还有 89 个用例，单独列在最后。
 - **状态**：现在都是"待做"，各能力完成后由 `ParityTests` 改写成实际状态。
 - **M 列**：所属里程碑，见 [ROADMAP](../ROADMAP.md)。
 
@@ -16,7 +16,7 @@
 | 显式 join | `query.join` | 88 | `.LeftJoin<Post>((u, p) => p.UserId == u.Id)`，后续 lambda 依次收到各表 `(u, p)`；right join 之后，前面表的列按可空处理 | M3 |
 | 分组与 having | `query.group` | 78 | `.GroupBy(p => new { p.UserId }).Having(g => g.Count() > 3).Select(g => new { g.Key.UserId, Total = g.Sum(p => p.Amount) })`；`Rollup` / `Cube` / `Grouping()` | M3 |
 | union / union all | `query.union` | 18 | `q1.Union(q2)` / `UnionAll` | M3 |
-| CTE | `query.cte` | 11 | `db.With("x", q)` / `WithRecursive`；派生表 `q.AsSubQuery()` | M3 |
+| CTE | `query.cte` | 11 | `q.AsCte("x")`（对应 toCteAs，默认名 `with_类型名`）：之后可以 Where / Select，或作为 JOIN 来源；同名定义只写一次，写在 `WITH .. AS (..) ,.. AS (..)` 里；递归 CTE 随树（4.10）实现 | M3 |
 | 无实体的查询、toMap | `query.map` | 11 | `db.Sql<Dictionary<string, object?>>(...)`；投影成 Map：`Select(o => new Dictionary<string, object?> { { "id", o.Id } })`（逐键，总写 AS）、`Select<Dictionary<string, object?>>()`（全部列）、`new Dictionary<string, object?>()`（`SELECT *`）、`new Dictionary<string, object?>(Sql.Columns(b)) { { "xx", .. } }` / `Sql.ColumnsExcept(b, b.CreateTime)`（全部列再追加键）；`ToDictionaryAsync` | M3 |
 | 流式读取 | `query.stream` | 9 | `await foreach (var x in q.AsAsyncEnumerable())` | M3 |
 | 复用查询 | `query.reuse` | 2 | 查询对象不可变，可以直接复用 | M3 |

@@ -4,7 +4,7 @@
 
 ## 背景
 
-- Java 版测试规模：上游 `sql-test` 有 **2249** 个 `@Test`，fork 的 `sql-fork-test` 有 **89** 个，合计 **2338** 个，全部是 JUnit 4。
+- Java 版测试规模：上游 `sql-test` 有 **2315** 个 `@Test`，fork 的 `sql-fork-test` 有 **89** 个，合计 **2404** 个，全部是 JUnit 4（含 66 个写全名 `@org.junit.Test` 的用例）。
 - 大多数用例连 MySQL 实库，执行后通过 `JdbcExecutorListener` 捕获 SQL，再断言**SQL 全文**和**参数文本**（格式如 `123xxx(String)`）。
 - 约 180 个用例不连库：用 `EmptyDataSource` 只生成 SQL，主要是字符串、通用、数值三组函数测试和 `ForUpdateDialectToSQLSmokeTest`。
 - TS 版用 `tools/parity-tests.mjs` 把每个 Java 用例按方法体里的 API 归到一种能力，状态记在能力上，生成 `docs/parity-tests.md`。它的粒度是**能力**：一个能力标成"已对应"，下面所有用例都算对应。TS 还明确不追求和 Java 逐字相同的 SQL。

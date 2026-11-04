@@ -2,7 +2,7 @@
 
 状态标记：`[ ]` 未开始、`[~]` 进行中、`[x]` 完成、`[!]` 待决（原因写在该项下面）。每项一个分支一个 PR，规则见 [CLAUDE.md](CLAUDE.md)。
 
-**目标**：完整对标 easy-query（Java）。对标基准是上游 `sql-test` 的 2249 个用例加 fork `sql-fork-test` 的 89 个，共 2338 个，每个都要有对应的 C# 测试，状态由 `tools/ParityTests` 统计。同时参考 easy-query-ts 的写法、测试结构和文档站。
+**目标**：完整对标 easy-query（Java）。对标基准是上游 `sql-test` 的 2315 个用例加 fork `sql-fork-test` 的 89 个，共 2404 个，每个都要有对应的 C# 测试，状态由 `tools/ParityTests` 统计。同时参考 easy-query-ts 的写法、测试结构和文档站。
 
 设计依据：
 - [0001 查询 API 路线](docs/decisions/0001-query-api-route.md)
@@ -48,7 +48,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [x] 0.5 设计文档：0001–0003、架构、文档站、能力对照总表、本路线图、`CLAUDE.md`。
 - [x] 0.6 推到 GitHub，让 CI 首次跑通。需要建远程仓库，等用户操作。
 - [x] 0.7 `tools/ParityTests`：
-  - 扫描 Java 的 2338 个用例并归类；
+  - 扫描 Java 的 2404 个用例并归类；
   - 读出 C# 测试上的 `[Upstream]` 标注；
   - 生成 `docs/parity-tests.md`；
   - `--scaffold` 生成测试骨架，期望 SQL 和参数从 Java 原样搬过来；
@@ -60,7 +60,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [x] 0.9 L2 项目 `tests/EasyQuerySharp.Tests.Upstream`：
   - 移植 Java 的实体模型（先移 `BaseTest` 用到的那些）；
   - `MySqlFixture`：建表并写入种子数据，code-first 做好之前先执行 Java 的 SQL 脚本；
-  - 对照表的初始状态是 2338 条全部待做。
+  - 对照表的初始状态是 2404 条全部待做。
 - [ ] 0.10 示例模型 `samples/EasyQuerySharp.Samples`：TS 文档站的 17 张表和种子数据原样移植。
 
 ## M1 内核与单表
@@ -127,7 +127,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [x] 3.1 显式 join：`IQuery<T1..T8>` 由仓库内的生成器产出；right join 之后，前面表的列按可空处理。
 - [~] 3.2 `GroupBy` / `Having` / 投影里的 `g.Key`，以及 `Rollup` / `Cube` / `Grouping`。
 - [x] 3.3 子查询：`In(subQuery)`、`Exists`、派生表 `AsSubQuery()`。
-- [~] 3.4 `Union` / `UnionAll`（已完成），CTE 的 `With` / `WithRecursive`。
+- [~] 3.4 `Union` / `UnionAll`（已完成），CTE：`AsCte(name)`（已完成），递归 CTE 随 4.10 的树一起做。
 - [x] 3.5 流式读取 `ToAsyncEnumerable()`，无实体查询 `db.SqlQueryAsync<Dictionary<..>>`、`QuerySql<Dictionary<..>>(sql, params)` 与 `ToDictionariesAsync`。
 - [ ] 3.6 LINQ 查询语法（`from … join … group … select`）的支持测试。
 
@@ -144,7 +144,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [~] 4.5 投影里的嵌套集合：`Where` / `OrderBy` / `Take`（ROW_NUMBER）、`First` / `ElementAt`；`oneOfMany`（导航上的 `First` / `ElementAt` 已完成）。
 - [ ] 4.6 可复用投影：`Project(map)`，以及 `[Projection]` 方法由生成器产出表达式。
 - [ ] 4.7 `[MapFrom<T>]` 自动映射：平铺约定、`[MapPath]`、partial `Configure`；分析器 EQ0003 和 EQ0005。
-- [~] 4.8 `Include(nav, q => …)` 可以嵌套；ExtraFilter 的分析器 EQ0004（Include、嵌套、多对多经中间表已完成；分析器待做）。
+- [~] 4.8 `Include(nav, q => …)` 可以嵌套；ExtraFilter 的分析器 EQ0004（Include、嵌套、多对多经中间表、ExtraFilter / ExtraMappingFilter 已完成；分析器待做）。
 - [~] 4.9 填充：投影里写非导航的关联查询，规划器按键批量执行（`FillMany` / `FillOne` 已完成，带 Take 时按键 UNION ALL）。
 - [ ] 4.10 树：`ToTreeAsync`、`DescendantsOf` / `AncestorsOf`（递归 CTE）；递归 DTO 由生成器诊断。
 - [ ] 4.11 `ToAsyncEnumerable(batchSize)` 按批流式读取对象树；`.AsSnapshot()` 保证多次查询的一致性。
@@ -154,13 +154,13 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 覆盖能力：`write.upsert` 13、`write.strategy` 19、`write.join` 10、`tracking` 62、`save.aggregate` 39、`interceptor` 3、`logicDelete` 10、`version` 13、`column.encryption` 8、`column.converter`，加上 fork 的 insert-select 和 JSON 列。
 
 - [~] 5.1 拦截器（默认关闭、按名启用 / 关闭已完成）：`IQueryFilter<T>` / `IBeforeInsert<T>` / `IBeforeUpdate<T>` / `IAfterWrite`；单条查询上可以关掉某一个；内置多租户、自动填充。
-- [ ] 5.2 逻辑删除：可以按导航单独关闭；`.Hard()`。
+- [x] 5.2 逻辑删除：可以按导航单独关闭（`u.Posts.DisableLogicDelete().Any(..)`）；`.Hard()`。
 - [ ] 5.3 乐观锁 `[Version]`，以及 `ConcurrencyException`。
 - [~] 5.4 值转换器、枚举存储方式、值对象 `[ValueObject]`、JSON 列（`JsonValueConverter<T>` 已完成）。
 - [~] 5.5 列加密：与 Java 的 AES / SM4 密文兼容，支持分段 LIKE（`[Encryption]` 与 AES 策略已完成；SM4 待做）。
 - [~] 5.6 upsert：`OnConflictIgnore()` / `OnConflictUpdate()`（MySQL、PG、SQLite 已完成；SQL Server / Oracle 的 MERGE 待做）。
 - [ ] 5.7 写入策略：按列策略只写非空列；批量写入用 `DbBatch`。
-- [ ] 5.8 UPDATE / DELETE 里用导航：MySQL 用原生多表语法，其余方言按主键自连接。
+- [~] 5.8 UPDATE / DELETE 里用导航：MySQL 用原生多表语法，其余方言按主键自连接（集合导航翻译成关联子查询已完成；对一导航待做）。
 - [ ] 5.9 INSERT … SELECT。
 - [~] 5.10 追踪：`BeginTracking()` / `AsTracking()` 加差异更新、`WhereColumns` 用原始值（已完成）；不追踪时用 `Changes(before, after)`。
 - [ ] 5.11 聚合根保存：显式声明级联路径、按差异增删改、`OrphanPolicy`、生成键回填、必须在事务里。

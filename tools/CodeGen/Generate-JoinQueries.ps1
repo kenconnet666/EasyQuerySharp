@@ -94,7 +94,7 @@ for ($n = 2; $n -le $max; $n++) {
             [void]$sb.AppendLine('')
             [void]$sb.AppendLine("    /// <summary>$($j[1].ToUpper()) JOIN 一个子查询（作为派生表）。</summary>")
             [void]$sb.AppendLine("    public $next $($j[0])<TNext>(Query<TNext> subQuery, Expression<Func<$ts, TNext, bool>> on) =>")
-            [void]$sb.AppendLine("        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.$($j[1]), On = on }));")
+            [void]$sb.AppendLine("        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.$($j[1]), On = on }));")
         }
     }
     foreach ($a in @(@('SumAsync', 'TResult', 'Sum'), @('MaxAsync', 'TResult', 'Max'), @('MinAsync', 'TResult', 'Min'))) {

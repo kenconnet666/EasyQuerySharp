@@ -194,6 +194,12 @@ internal static class QueryCompiler
                 };
                 return new DerivedBinding(table, projection.MemberColumns, projection.Entity, projection.AliasedMembers, projection.NestedEntities);
             }
+            case CteSource c:
+            {
+                var (inner, projection) = CompileSelect(c.Inner);
+                var table = new CteTableSource(c.Name, inner) { ExplicitAlias = c.Alias };
+                return new DerivedBinding(table, projection.MemberColumns, projection.Entity, projection.AliasedMembers, projection.NestedEntities);
+            }
             case UnionSource u:
             {
                 var parts = u.Parts.Select(p => CompileSelect(p)).ToList();

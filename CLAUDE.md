@@ -5,7 +5,7 @@ easy-query（Java，`C:\Users\lionheart\IdeaProjects\easy-query`，软 fork）�
 
 ## 不变的原则
 
-- **能力完整对标**：Java 的 2338 个用例（上游 `sql-test` 2249 个，fork `sql-fork-test` 89 个）每个都要有对应的 C# 测试，用 `[Upstream("文件#方法")]` 标注，见 [0003](docs/decisions/0003-testing-and-parity.md)。
+- **能力完整对标**：Java 的 2404 个用例（上游 `sql-test` 2315 个，fork `sql-fork-test` 89 个）每个都要有对应的 C# 测试，用 `[Upstream("文件#方法")]` 标注，见 [0003](docs/decisions/0003-testing-and-parity.md)。
 - **SQL 文本与 Java 逐字对齐**：期望 SQL 直接从 Java 用例搬过来。偏离必须写 `Deviation` 说明理由。
 - **API 用 C# 的方式写**：POCO 实体加表达式树，不复刻 Java 的 Proxy，见 [0001](docs/decisions/0001-query-api-route.md)。函数做成扩展方法，不用扩展属性（扩展属性写不进表达式树）。
 - **对象树只走一条管线**：Include、DTO、VO、树最后都归一成投影表达式，交给同一个规划器，见 [0002](docs/decisions/0002-object-tree-and-dto.md)。

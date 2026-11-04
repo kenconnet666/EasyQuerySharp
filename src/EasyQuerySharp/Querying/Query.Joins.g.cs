@@ -94,11 +94,11 @@ public sealed class Query<T1, T2> : QueryBase<Query<T1, T2>, T1>
 
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, TNext> LeftJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, TNext, bool>> on) =>
-        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.Left, On = on }));
+        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Left, On = on }));
 
     /// <summary>INNER JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, TNext> InnerJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, TNext, bool>> on) =>
-        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.Inner, On = on }));
+        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Inner, On = on }));
 
     /// <summary>SUM。</summary>
     public Task<TResult> SumAsync<TResult>(Expression<Func<T1, T2, TResult>> selector, CancellationToken cancellationToken = default) =>
@@ -210,11 +210,11 @@ public sealed class Query<T1, T2, T3> : QueryBase<Query<T1, T2, T3>, T1>
 
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, TNext> LeftJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, TNext, bool>> on) =>
-        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.Left, On = on }));
+        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Left, On = on }));
 
     /// <summary>INNER JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, TNext> InnerJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, TNext, bool>> on) =>
-        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.Inner, On = on }));
+        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Inner, On = on }));
 
     /// <summary>SUM。</summary>
     public Task<TResult> SumAsync<TResult>(Expression<Func<T1, T2, T3, TResult>> selector, CancellationToken cancellationToken = default) =>
@@ -326,11 +326,11 @@ public sealed class Query<T1, T2, T3, T4> : QueryBase<Query<T1, T2, T3, T4>, T1>
 
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, TNext> LeftJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, TNext, bool>> on) =>
-        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.Left, On = on }));
+        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Left, On = on }));
 
     /// <summary>INNER JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, TNext> InnerJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, TNext, bool>> on) =>
-        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.Inner, On = on }));
+        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Inner, On = on }));
 
     /// <summary>SUM。</summary>
     public Task<TResult> SumAsync<TResult>(Expression<Func<T1, T2, T3, T4, TResult>> selector, CancellationToken cancellationToken = default) =>
@@ -442,11 +442,11 @@ public sealed class Query<T1, T2, T3, T4, T5> : QueryBase<Query<T1, T2, T3, T4, 
 
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, T5, TNext> LeftJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, T5, TNext, bool>> on) =>
-        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.Left, On = on }));
+        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Left, On = on }));
 
     /// <summary>INNER JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, T5, TNext> InnerJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, T5, TNext, bool>> on) =>
-        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.Inner, On = on }));
+        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Inner, On = on }));
 
     /// <summary>SUM。</summary>
     public Task<TResult> SumAsync<TResult>(Expression<Func<T1, T2, T3, T4, T5, TResult>> selector, CancellationToken cancellationToken = default) =>
@@ -558,11 +558,11 @@ public sealed class Query<T1, T2, T3, T4, T5, T6> : QueryBase<Query<T1, T2, T3, 
 
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, TNext> LeftJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, T5, T6, TNext, bool>> on) =>
-        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.Left, On = on }));
+        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Left, On = on }));
 
     /// <summary>INNER JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, TNext> InnerJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, T5, T6, TNext, bool>> on) =>
-        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.Inner, On = on }));
+        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Inner, On = on }));
 
     /// <summary>SUM。</summary>
     public Task<TResult> SumAsync<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, TResult>> selector, CancellationToken cancellationToken = default) =>
@@ -674,11 +674,11 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7> : QueryBase<Query<T1, T2, 
 
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, TNext> LeftJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, T5, T6, T7, TNext, bool>> on) =>
-        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.Left, On = on }));
+        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Left, On = on }));
 
     /// <summary>INNER JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, TNext> InnerJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, T5, T6, T7, TNext, bool>> on) =>
-        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.Inner, On = on }));
+        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Inner, On = on }));
 
     /// <summary>SUM。</summary>
     public Task<TResult> SumAsync<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, TResult>> selector, CancellationToken cancellationToken = default) =>
@@ -790,11 +790,11 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8> : QueryBase<Query<T1, 
 
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, TNext> LeftJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, TNext, bool>> on) =>
-        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.Left, On = on }));
+        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Left, On = on }));
 
     /// <summary>INNER JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, TNext> InnerJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, TNext, bool>> on) =>
-        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.Inner, On = on }));
+        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Inner, On = on }));
 
     /// <summary>SUM。</summary>
     public Task<TResult> SumAsync<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, TResult>> selector, CancellationToken cancellationToken = default) =>
@@ -906,11 +906,11 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> : QueryBase<Query<
 
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, TNext> LeftJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TNext, bool>> on) =>
-        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.Left, On = on }));
+        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Left, On = on }));
 
     /// <summary>INNER JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, TNext> InnerJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TNext, bool>> on) =>
-        new(QueryStates.AddJoin(State, new SubQuerySource(subQuery.State) { Join = JoinKind.Inner, On = on }));
+        new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Inner, On = on }));
 
     /// <summary>SUM。</summary>
     public Task<TResult> SumAsync<TResult>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult>> selector, CancellationToken cancellationToken = default) =>
