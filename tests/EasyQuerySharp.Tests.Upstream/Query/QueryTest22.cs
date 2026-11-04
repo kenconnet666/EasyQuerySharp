@@ -1,5 +1,4 @@
 using EasyQuerySharp.Filtering;
-using EasyQuerySharp.Querying;
 using EasyQuerySharp.Tests.Upstream.Doc.Entities;
 
 namespace EasyQuerySharp.Tests.Upstream;

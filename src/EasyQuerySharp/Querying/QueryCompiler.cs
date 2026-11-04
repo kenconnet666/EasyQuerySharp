@@ -197,7 +197,7 @@ internal static class QueryCompiler
             case CteSource c:
             {
                 var (inner, projection) = CompileSelect(c.Inner);
-                var table = new CteTableSource(c.Name, inner) { ExplicitAlias = c.Alias };
+                var table = new CteTableSource(c.Name, inner) { ExplicitAlias = c.Alias, ReserveExtraAlias = c.Join is not null && c.Inner.GroupKey is not null };
                 return new DerivedBinding(table, projection.MemberColumns, projection.Entity, projection.AliasedMembers, projection.NestedEntities);
             }
             case UnionSource u:

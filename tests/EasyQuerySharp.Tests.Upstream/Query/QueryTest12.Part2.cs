@@ -20,7 +20,7 @@ public sealed partial class QueryTest12
         Assert.All(rows, r => Assert.Equal(17, r.Count));
     }
 
-    [Fact, Upstream("QueryTest12.java#testMap2")]
+    [Fact, Upstream("QueryTest12.java#testMap2"), Upstream("QueryTest20.java#testMapIgnore")]
     public async Task TestMap2()
     {
         using var listen = SqlCapture.Listen();

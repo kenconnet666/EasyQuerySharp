@@ -99,4 +99,7 @@ public sealed class CteTableSource(string name, SelectQuery query) : TableSource
 
     /// <summary>CTE 的定义。</summary>
     public SelectQuery Query { get; } = query;
+
+    /// <summary>编号时在定义之后多占一个编号（分组后投影的查询作为 JOIN 来源时，与派生表的 <see cref="DerivedTableSource.ReserveExtraAlias"/> 相同）。</summary>
+    public bool ReserveExtraAlias { get; init; }
 }

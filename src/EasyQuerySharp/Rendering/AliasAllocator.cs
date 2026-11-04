@@ -76,7 +76,10 @@ internal static class AliasAllocator
         }
         // CTE：定义只编号一次（第一次引用时），之后的引用只编自己
         if (table is CteTableSource cte && !tables.OfType<CteTableSource>().Any(c => c.Name == cte.Name))
+        {
             Collect(cte.Query, tables);
+            if (cte.ReserveExtraAlias) tables.Add(Placeholder.Instance);
+        }
         if (table is UnionTableSource { IndependentAliases: true } independent)
         {
             // 各分支单独编号；外层占一个编号之后（分支里的 t 已经用掉 t）

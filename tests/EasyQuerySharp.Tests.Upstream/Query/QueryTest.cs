@@ -1,4 +1,3 @@
-using EasyQuerySharp.Querying;
 using EasyQuerySharp.Tests.Upstream.Dto;
 using EasyQuerySharp.Tests.Upstream.Entities;
 using EasyQuerySharp.Tests.Upstream.Infrastructure;
