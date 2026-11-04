@@ -40,7 +40,7 @@ internal sealed class TranslationContext(
     {
         if (owner is not EntityBinding entityOwner) return null;
         if (parent is not null && !Owns(owner.Table)) return parent.GroupJoinFor(owner, navigation);
-        var spec = owner.Table == query.From ? GroupJoinSpecs.LastOrDefault(s => s.Member == navigation.Property.Name) : null;
+        var spec = GroupJoinSpecs.LastOrDefault(s => s.Member == navigation.Property.Name && s.OwnerType.IsAssignableFrom(navigation.Self.Type));
         if (spec is { Enabled: false } || (spec is null && !navigation.GroupJoin)) return null;
         var key = (owner.Table, navigation.Property.Name);
         if (_groupJoins.TryGetValue(key, out var existing)) return existing;
@@ -60,10 +60,12 @@ internal sealed class TranslationContext(
                 plan.AddBaseWhere(translator.TranslatePredicate(where.Body));
             }
         }
+        // 派生表在 Java 里此时创建，别名排在已有的 JOIN（Configure 条件里的导航）之后、之后才加的表之前
+        plan.Table.AliasAfterJoins = plan.Inner.Joins.Count;
         var keys = plan.KeyColumns
             .Select((k, i) => (SqlExpr)new BinaryExpr(k, SqlBinaryOperator.Equal, entityOwner.EntityTable.Column(navigation.SelfColumns[i])))
             .ToList();
-        query.Joins.Add(new JoinClause(navigation.Required ? JoinKind.Inner : JoinKind.Left, plan.Table, keys.Count == 1 ? keys[0] : LogicalExpr.Grouped(keys)));
+        query.Joins.Add(new JoinClause(navigation.Required ? JoinKind.Inner : JoinKind.Left, plan.Table, keys.Count == 1 ? keys[0] : LogicalExpr.Grouped(keys)) { Implicit = true });
         _groupJoins[key] = plan;
         return plan;
     }
@@ -98,7 +100,7 @@ internal sealed class TranslationContext(
             translator.Bind(extra, [new EntityBinding(target)]);
             conditions.Add(translator.TranslatePredicate(extra.Body));
         }
-        query.Joins.Add(new JoinClause(navigation.Required ? JoinKind.Inner : JoinKind.Left, target, LogicalExpr.And(conditions)));
+        query.Joins.Add(new JoinClause(navigation.Required ? JoinKind.Inner : JoinKind.Left, target, LogicalExpr.And(conditions)) { Implicit = true });
         var binding = new EntityBinding(target);
         _joins[key] = binding;
         return binding;

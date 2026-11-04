@@ -3,30 +3,30 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2338 个用例。
 
-合计：已移植 658、偏离 95、不适用 14、骨架 15、待做 1556。
+合计：已移植 692、偏离 96、不适用 14、骨架 15、待做 1521。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 147 | 20 | 3 | 0 | 232 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 402 | 149 | 20 | 3 | 0 | 230 |
 | 分页结果 | `query.page` | M1 | 22 | 9 | 2 | 0 | 0 | 11 |
-| 原生 SQL | `sql.native` | M1 | 50 | 20 | 5 | 0 | 0 | 25 |
+| 原生 SQL | `sql.native` | M1 | 50 | 21 | 5 | 0 | 0 | 24 |
 | 删除 | `write.delete` | M1 | 21 | 7 | 1 | 2 | 0 | 11 |
 | 插入 | `write.insert` | M1 | 48 | 28 | 0 | 0 | 1 | 19 |
 | 更新 | `write.update` | M1 | 50 | 20 | 3 | 0 | 0 | 27 |
-| CASE WHEN | `expr.case` | M2 | 27 | 6 | 7 | 0 | 0 | 14 |
+| CASE WHEN | `expr.case` | M2 | 27 | 7 | 7 | 0 | 0 | 13 |
 | 日期函数 | `func.date` | M2 | 100 | 33 | 2 | 4 | 0 | 61 |
 | 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 22 | 3 | 0 | 0 | 34 |
-| 字符串聚合（joining） | `func.joining` | M2 | 29 | 5 | 0 | 0 | 5 | 19 |
+| 字符串聚合（joining） | `func.joining` | M2 | 29 | 5 | 1 | 0 | 5 | 18 |
 | JSON 函数 | `func.json` | M2 | 12 | 0 | 0 | 0 | 0 | 12 |
 | 数学函数 | `func.math` | M2 | 4 | 0 | 2 | 1 | 0 | 1 |
 | 字符串函数 | `func.string` | M2 | 128 | 101 | 1 | 0 | 1 | 25 |
 | 行锁 | `lock` | M2 | 28 | 0 | 0 | 0 | 0 | 28 |
 | 窗口函数 | `window` | M2 | 44 | 5 | 0 | 0 | 0 | 39 |
 | CTE | `query.cte` | M3 | 11 | 0 | 0 | 0 | 0 | 11 |
-| 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 29 | 2 | 0 | 2 | 50 |
+| 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 30 | 2 | 0 | 2 | 49 |
 | 显式 join | `query.join` | M3 | 88 | 30 | 2 | 1 | 0 | 55 |
 | 无实体的 Map 查询、toMap | `query.map` | M3 | 11 | 2 | 0 | 0 | 0 | 9 |
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 1 | 0 | 0 | 0 | 1 |
@@ -34,10 +34,10 @@
 | union / union all | `query.union` | M3 | 18 | 12 | 3 | 0 | 1 | 2 |
 | 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 35 | 0 | 0 | 0 | 1 | 34 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
-| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 1 | 0 | 1 | 0 | 54 |
-| 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 14 | 0 | 2 | 2 | 49 |
+| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 3 | 0 | 1 | 0 | 52 |
+| 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 35 | 0 | 2 | 2 | 28 |
 | include 带出导航 | `nav.include` | M4 | 37 | 7 | 0 | 0 | 0 | 30 |
-| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 52 | 1 | 0 | 0 | 89 |
+| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 58 | 1 | 0 | 0 | 83 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 0 | 0 | 0 | 0 | 25 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
 | 列加密 | `column.encryption` | M5 | 8 | 7 | 0 | 0 | 0 | 1 |
@@ -311,8 +311,8 @@
 | QueryTest21.java#joinOrderTest | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id' FROM 'doc_bank_card' t LEFT JOIN 'doc_user' t1 O…` |
 | QueryTest21.java#testOrderBy | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id' FROM 'doc_bank_card' t LEFT JOIN 'doc_user' t1 O…` |
 | QueryTest21.java#testOrderBy3 | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id' FROM 'doc_bank_card' t LEFT JOIN 'doc_user' t1 O…` |
-| QueryTest22.java#testAdd | 待做 |  | `SELECT MAX((t.'star' + ?)) FROM 't_blog' t WHERE t.'deleted' = ?` |
-| QueryTest22.java#testBigDecimal | 待做 |  | `SELECT t.'score' FROM 't_blog' t WHERE t.'deleted' = ?` |
+| QueryTest22.java#testAdd | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:247 | `SELECT MAX((t.'star' + ?)) FROM 't_blog' t WHERE t.'deleted' = ?` |
+| QueryTest22.java#testBigDecimal | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:238 | `SELECT t.'score' FROM 't_blog' t WHERE t.'deleted' = ?` |
 | QueryTest23.java#filterOn1 | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id' FROM 'doc_bank_card' t INNER JOIN 'doc_bank' t1 …` |
 | QueryTest23.java#filterOn2 | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id' FROM 'doc_bank_card' t` |
 | QueryTest23.java#filterOn5 | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id' FROM 'doc_bank_card' t INNER JOIN 'doc_bank' t1 …` |
@@ -549,7 +549,7 @@
 | QueryTest2.java#query1231_1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest2.cs:19：同 query1231 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE t.'create_time' = (SELECT M…` |
 | QueryTest2.java#query24 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest2.cs:226 | `SELECT RAND() AS 'id',COUNT(t.'id') AS 'id_count' FROM 't_blog' t WHERE t.'deleted' = ? AND t.'id' =…` |
 | QueryTest21.java#test | 待做 |  |  |
-| QueryTest22.java#testAggregateFx | 待做 |  | `SELECT sum(if(timestampdiff(DAY, t.'create_time', ?) < ?, 1, 0)) AS 'count' FROM 't_blog' t WHERE t.…` |
+| QueryTest22.java#testAggregateFx | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:257 | `SELECT sum(if(timestampdiff(DAY, t.'create_time', ?) < ?, 1, 0)) AS 'count' FROM 't_blog' t WHERE t.…` |
 | QueryTest25.java#tupleTest8 | 待做 |  | `SELECT t.'id' AS 'value1',t.'create_time' AS 'value2',1 AS 'value3' FROM 't_blog' t WHERE t.'deleted…` |
 | QueryTest25.java#tupleTest9 | 待做 |  | `SELECT t.'id' AS 'value1',t.'create_time' AS 'value2',IFNULL(t.'title','1') AS 'value3' FROM 't_blog…` |
 | QueryTest27.java#updateTable | 待做 |  |  |
@@ -718,7 +718,7 @@
 | QueryTest18.java#testUpdate | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.More.cs:126 | `UPDATE 't_topic' SET 'stars' = (CASE WHEN ('stars' - ?) < ? THEN ? ELSE ('stars' - ?) END) WHERE 'id…` |
 | QueryTest21.java#caseWhenTest1 | 待做 |  | `SELECT (CASE WHEN t.'title' = ? THEN ? ELSE ? END) AS 'title',t.'id' AS 'id' FROM 't_topic' t WHERE …` |
 | QueryTest21.java#caseWhenTest2 | 待做 |  | `SELECT (CASE WHEN t.'title' = ? THEN ? ELSE ? END) AS 'title',t.'id' AS 'id' FROM 't_topic' t WHERE …` |
-| QueryTest22.java#testaa | 待做 |  |  |
+| QueryTest22.java#testaa | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:270 |  |
 | QueryTest23.java#fetcherOrder | 待做 |  |  |
 | QueryTest23.java#testOrderSQL1 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest25.java#testOrderCaseWhen | 待做 |  |  |
@@ -912,7 +912,7 @@
 | QueryTest14.java#testMapQuery | 待做 |  | `SELECT * FROM 't_topic' WHERE 'id' = ?` |
 | QueryTest17.java#xxx123 | 待做 |  | `SELECT t.'id' AS 'my_code',GROUP_CONCAT(t1.'title' SEPARATOR ?) AS 'my_name' FROM 't_topic' t LEFT J…` |
 | QueryTest19.java#testaaa | 待做 |  |  |
-| QueryTest22.java#testSelectAnyElement2 | 待做 |  | `SELECT (SELECT GROUP_CONCAT(t1.'code' SEPARATOR ?) FROM 'doc_bank_card' t1 WHERE t1.'uid' = t.'id' A…` |
+| QueryTest22.java#testSelectAnyElement2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:198：Java 第二个子查询的别名跳过了 t2（写成 t3），C# 按顺序编号为 t2 | `SELECT (SELECT GROUP_CONCAT(t1.'code' SEPARATOR ?) FROM 'doc_bank_card' t1 WHERE t1.'uid' = t.'id' A…` |
 | QueryTest26.java#joiningTest | 待做 |  |  |
 | StringFunctionsTest.java#joining2MySQL | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:101 | `SELECT t.'code' AS 'value1',GROUP_CONCAT(DISTINCT (CASE WHEN t.'type' = ? THEN t1.'name' ELSE NULL E…` |
 | StringFunctionsTest.java#joiningMSSQL | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:137 | `SELECT t.[code] AS [value1],STRING_AGG(DISTINCT (CASE WHEN t.[type] = ? THEN t1.[name] ELSE NULL END…` |
@@ -1246,7 +1246,7 @@
 | QueryTest21.java#testWhereGroup4 | 待做 |  | `SELECT t.'title' AS 'value1',COUNT(DISTINCT (CASE WHEN t.'star' >= ? THEN ? ELSE NULL END)) AS 'valu…` |
 | QueryTest21.java#testWhereGroup5 | 待做 |  | `SELECT t.'title' AS 'value1',SUM((CASE WHEN t.'star' >= ? THEN t.'score' ELSE ? END)) AS 'value2' FR…` |
 | QueryTest21.java#testWhereGroup6 | 待做 |  | `SELECT t.'title' AS 'value1',SUM(DISTINCT (CASE WHEN t.'star' >= ? THEN t.'score' ELSE ? END)) AS 'v…` |
-| QueryTest22.java#testManyGroup39 | 待做 |  |  |
+| QueryTest22.java#testManyGroup39 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:82 |  |
 | QueryTest23.java#testaaa1 | 待做 |  |  |
 | QueryTest25.java#tupleTest1 | 待做 |  | `SELECT t.'id' AS 'value1' FROM 't_topic' t GROUP BY t.'id'` |
 | QueryTest25.java#tupleTest2 | 待做 |  | `SELECT t.'id' AS 'value1' FROM 't_topic' t GROUP BY t.'id',t.'title'` |
@@ -1495,8 +1495,8 @@
 | QueryTest17.java#testNop2 | 待做 |  | `SELECT t4.'value1' AS 'value1',SUM(t4.'value2') AS 'value2',COUNT(t5.'type') AS 'value3' FROM (SELEC…` |
 | QueryTest17.java#testaaa | 待做 |  |  |
 | QueryTest18.java#test8_1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest18.cs:32：同 test8 |  |
-| QueryTest22.java#testManyGroup17 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testManyGroup18 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testManyGroup17 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:64 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testManyGroup18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:64 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
 | QueryTest25.java#test11a | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest25.java#testToListFlat1 | 待做 |  |  |
 | QueryTest25.java#xxx22 | 待做 |  |  |
@@ -1548,15 +1548,15 @@
 | NumberFunctionsTest.java#subQueryMySQL | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:78 | `SELECT IFNULL(t2.'__any7__',?) AS 'value1' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__grou…` |
 | NumberFunctionsTest.java#subQueryORACLE | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:118 | `SELECT NVL(t2."__any7__",?) AS "value1" FROM "t_sys_user" t LEFT JOIN (SELECT t1."uid" AS "__group_k…` |
 | QueryTest19.java#test1_3 | 待做 |  | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN (SELECT t2.'…` |
-| QueryTest22.java#testDoubleField | 待做 |  | `SELECT IFNULL(t2.'__count3__',0) AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 'my_com_user…` |
+| QueryTest22.java#testDoubleField | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:179 | `SELECT IFNULL(t2.'__count3__',0) AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 'my_com_user…` |
 | QueryTest22.java#testManyGroup | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.cs:21 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
 | QueryTest22.java#testManyGroup10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.cs:132 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testManyGroup11 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testManyGroup12 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testManyGroup13 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t2.'uid' AS '__group_ke…` |
-| QueryTest22.java#testManyGroup14 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testManyGroup15 | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id' FROM 'doc_bank_card' t LEFT JOIN 'doc_user' t1 O…` |
-| QueryTest22.java#testManyGroup16 | 待做 |  | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
+| QueryTest22.java#testManyGroup11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:13 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testManyGroup12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:13 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testManyGroup13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:23 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t2.'uid' AS '__group_ke…` |
+| QueryTest22.java#testManyGroup14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:32 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testManyGroup15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:43 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id' FROM 'doc_bank_card' t LEFT JOIN 'doc_user' t1 O…` |
+| QueryTest22.java#testManyGroup16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:54 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
 | QueryTest22.java#testManyGroup2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.cs:89 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
 | QueryTest22.java#testManyGroup3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.cs:95 | `SELECT IFNULL(t2.'__count3__',0) AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2',IFNULL(t2.'__coun…` |
 | QueryTest22.java#testManyGroup4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.cs:105 | `SELECT IFNULL(t2.'__any2__',?) AS 'value1',IFNULL(t2.'__none3__',?) AS 'value2' FROM 'doc_user' t LE…` |
@@ -1571,20 +1571,20 @@
 | QueryTest22.java#testManyGroupJoin2_2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.cs:66：Java 在条件中途写 filter，之后引用的聚合另起一个分组 JOIN；C# 的子查询条件统一写在 GroupJoin 的配置里 | `SELECT t.'id' AS 'value1',IFNULL(t5.'__sum2__',0) AS 'value2',t5.'__min4__' AS 'value3' FROM 'doc_us…` |
 | QueryTest22.java#testManyGroupJoin3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.cs:69 | `SELECT t.'id' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2',IFNULL(t2.'__count4__',0) AS 'value3…` |
 | QueryTest22.java#testManyGroupx | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.cs:31 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testManyJoinCount | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testManyJoinNone | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testOrderCountDistinct10 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testOrderCountDistinct12 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testOrderCountDistinct13 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testOrderCountDistinct15 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testOrderCountDistinct2 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testOrderCountDistinct4 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testOrderCountDistinct6 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testOrderCountDistinct7 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testOrderCountDistinct8 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testOrderCountDistinct9 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
-| QueryTest22.java#testSelectAnyElement | 待做 |  | `SELECT t2.'__joining2__' AS 'value1',t2.'__joining3__' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELE…` |
-| QueryTest22.java#testSelectAnyElement3 | 待做 |  | `SELECT t2.'__max2__' AS 'value1',t2.'__min3__' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t1.'u…` |
+| QueryTest22.java#testManyJoinCount | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:222 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testManyJoinNone | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:214 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testOrderCountDistinct10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:147 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testOrderCountDistinct12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:159 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testOrderCountDistinct13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:159 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testOrderCountDistinct15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:172 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testOrderCountDistinct2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:100 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testOrderCountDistinct4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:113 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testOrderCountDistinct6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:125 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testOrderCountDistinct7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:131 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testOrderCountDistinct8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:137 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testOrderCountDistinct9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:147 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
+| QueryTest22.java#testSelectAnyElement | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:190 | `SELECT t2.'__joining2__' AS 'value1',t2.'__joining3__' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELE…` |
+| QueryTest22.java#testSelectAnyElement3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:206 | `SELECT t2.'__max2__' AS 'value1',t2.'__min3__' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t1.'u…` |
 | QueryTest23.java#manyJoinMany2Many | 待做 |  | `SELECT t.'id',t.'name' FROM 'school_class' t LEFT JOIN (SELECT t2.'class_id' AS '__group_key1__',COU…` |
 | QueryTest23.java#testElement3 | 待做 |  | `SELECT t2.'__max2__' AS 'value1',t5.'type' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' …` |
 | QueryTest23.java#testJoin3 | 待做 |  |  |
@@ -1715,12 +1715,12 @@
 | QueryTest21.java#subNumberRangeClosed1 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t WHERE (SELECT COUNT(*) FROM 'doc_bank_car…` |
 | QueryTest21.java#testDistinctCount | 待做 |  | `SELECT COUNT(DISTINCT t.'id') FROM 't_blog' t WHERE t.'deleted' = ? AND t.'title' LIKE ?` |
 | QueryTest21.java#testDistinctCount1 | 待做 |  | `SELECT COUNT(DISTINCT t.'id') FROM 't_blog' t WHERE t.'deleted' = ? AND t.'title' LIKE ?` |
-| QueryTest22.java#testManyGroup29 | 待做 |  |  |
-| QueryTest22.java#testOrderCountDistinct1 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t ORDER BY IFNULL((SELECT SUM((SELECT COUNT…` |
-| QueryTest22.java#testOrderCountDistinct11 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t WHERE (SELECT MAX(t1.'type') FROM 'doc_ba…` |
-| QueryTest22.java#testOrderCountDistinct14 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t WHERE (SELECT MIN(t1.'type') FROM 'doc_ba…` |
-| QueryTest22.java#testOrderCountDistinct3 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t ORDER BY (SELECT COUNT(DISTINCT t2.'id') …` |
-| QueryTest22.java#testOrderCountDistinct5 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t ORDER BY IFNULL((SELECT SUM(DISTINCT (SEL…` |
+| QueryTest22.java#testManyGroup29 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:75 |  |
+| QueryTest22.java#testOrderCountDistinct1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:94 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t ORDER BY IFNULL((SELECT SUM((SELECT COUNT…` |
+| QueryTest22.java#testOrderCountDistinct11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:154 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t WHERE (SELECT MAX(t1.'type') FROM 'doc_ba…` |
+| QueryTest22.java#testOrderCountDistinct14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:166 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t WHERE (SELECT MIN(t1.'type') FROM 'doc_ba…` |
+| QueryTest22.java#testOrderCountDistinct3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:107 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t ORDER BY (SELECT COUNT(DISTINCT t2.'id') …` |
+| QueryTest22.java#testOrderCountDistinct5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest22.Part2.cs:119 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t ORDER BY IFNULL((SELECT SUM(DISTINCT (SEL…` |
 | QueryTest22.java#testOrderCountDistinct6_1 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
 | QueryTest23.java#anyTest | 待做 |  | `SELECT (SELECT MAX(t2.'type') FROM 'doc_bank_card' t2 WHERE t2.'uid' = t.'id' AND t.'name' = t2.'cod…` |
 | QueryTest23.java#filterOn3 | 待做 |  | `SELECT COUNT(*) FROM 'doc_bank_card' t INNER JOIN 'doc_bank' t1 ON t1.'id' = t.'bank_id' AND t1.'nam…` |

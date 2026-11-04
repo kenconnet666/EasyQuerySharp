@@ -8,7 +8,7 @@ namespace EasyQuerySharp.Translation;
 /// <paramref name="Enabled"/> 为 false 时显式关闭（导航上声明了 GroupJoin 也按子查询翻译）；
 /// <paramref name="Configure"/> 给分组子查询再加条件。
 /// </summary>
-internal sealed record GroupJoinSpec(string Member, bool Enabled, Func<Querying.QueryState, Querying.QueryState>? Configure);
+internal sealed record GroupJoinSpec(Type OwnerType, string Member, bool Enabled, Func<Querying.QueryState, Querying.QueryState>? Configure);
 
 /// <summary>分组合并里的一种聚合。</summary>
 internal enum GroupAggregate
@@ -20,6 +20,7 @@ internal enum GroupAggregate
     Avg,
     Any,
     None,
+    Joining,
 }
 
 /// <summary>
@@ -69,21 +70,21 @@ internal sealed class GroupJoinPlan
     /// 登记一个聚合，返回外层引用它的表达式。<paramref name="filterKey"/> / <paramref name="valueKey"/> 是条件、值的结构键：
     /// 种类、条件、值、是否去重都相同时复用同一列。
     /// </summary>
-    public SqlExpr Reference(GroupAggregate kind, SqlExpr? value, SqlExpr? filter, bool distinct, string filterKey, string valueKey)
+    public SqlExpr Reference(GroupAggregate kind, SqlExpr? value, SqlExpr? filter, bool distinct, string filterKey, string valueKey, SqlExpr? separator = null)
     {
-        var key = string.Join('\u0001', kind, filterKey, valueKey, distinct);
+        var key = string.Join('\u0001', kind, filterKey, valueKey, distinct, separator is ParameterExpr p ? p.Value : null);
         if (!_byKey.TryGetValue(key, out var entry))
         {
-            // 编号从 2 开始（1 是分组键）
-            var alias = "__" + kind.ToString().ToLowerInvariant() + (_entries.Count + 2) + "__";
-            entry = new Entry(kind, value, filter, distinct, alias, filterKey);
+            // 编号接在分组键之后（单列键时从 2 开始）
+            var alias = "__" + kind.ToString().ToLowerInvariant() + (_entries.Count + _keyColumns.Count + 1) + "__";
+            entry = new Entry(kind, value, filter, distinct, alias, filterKey, separator);
             _entries.Add(entry);
             _byKey[key] = entry;
         }
         var column = new ColumnExpr(Table, entry.Alias);
         return kind switch
         {
-            GroupAggregate.Count or GroupAggregate.Sum => new FunctionExpr(SqlFunctionNames.NullOrDefault, [column, new LiteralExpr("0")]),
+            GroupAggregate.Count or GroupAggregate.Sum or GroupAggregate.Avg => new FunctionExpr(SqlFunctionNames.NullOrDefault, [column, new LiteralExpr("0")]),
             GroupAggregate.Any => new FunctionExpr(SqlFunctionNames.NullOrDefault, [column, new ParameterExpr(false, typeof(bool))]),
             GroupAggregate.None => new FunctionExpr(SqlFunctionNames.NullOrDefault, [column, new ParameterExpr(true, typeof(bool))]),
             _ => column,
@@ -123,9 +124,10 @@ internal sealed class GroupJoinPlan
             GroupAggregate.Min => new FunctionExpr(SqlFunctionNames.Min, [argument]),
             GroupAggregate.Avg => new FunctionExpr(e.Distinct ? SqlFunctionNames.AvgDistinct : SqlFunctionNames.Avg, [argument]),
             GroupAggregate.Any => new FragmentExpr("(COUNT({0}) > 0)", [argument]),
-            _ => new FragmentExpr("(COUNT({0}) <= 0)", [argument]),
+            GroupAggregate.None => new FragmentExpr("(COUNT({0}) <= 0)", [argument]),
+            _ => new FunctionExpr(e.Distinct ? SqlFunctionNames.StringJoinDistinct : SqlFunctionNames.StringJoin, [argument, e.Separator!]),
         };
     }
 
-    private sealed record Entry(GroupAggregate Kind, SqlExpr? Value, SqlExpr? Filter, bool Distinct, string Alias, string FilterKey);
+    private sealed record Entry(GroupAggregate Kind, SqlExpr? Value, SqlExpr? Filter, bool Distinct, string Alias, string FilterKey, SqlExpr? Separator);
 }

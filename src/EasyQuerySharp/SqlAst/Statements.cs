@@ -28,6 +28,9 @@ public sealed class JoinClause(JoinKind kind, TableSource table, SqlExpr? on)
 
     /// <summary>ON 条件；CROSS JOIN 为 null。</summary>
     public SqlExpr? On { get; } = on;
+
+    /// <summary>翻译时自动加上的 JOIN（导航的隐式 JOIN、分组合并），而不是查询上声明的 JOIN；别名编号排在声明的表之后。</summary>
+    public bool Implicit { get; init; }
 }
 
 /// <summary>SELECT 列表里的一项。</summary>

@@ -135,11 +135,20 @@ internal sealed partial class ExpressionTranslator
                 return true;
             case nameof(Enumerable.Count) or nameof(Enumerable.LongCount):
                 if (predicate is not null) sub.Where.Add(predicate);
-                sub.Columns.Add(new SelectColumn(new FunctionExpr(SqlFunctionNames.Count, [LiteralExpr.Star]), null));
+                // Select(x => x.Col).Count() 计非 NULL 的值：COUNT(列) / COUNT(DISTINCT 列)（对应 Java 的 count(x -> x.col)）
+                SqlExpr counted = LiteralExpr.Star;
+                if (selector is not null && predicate is null)
+                {
+                    t.Bind(selector, [element]);
+                    counted = t.Translate(StripConvert(selector.Body));
+                }
+                sub.Columns.Add(new SelectColumn(new FunctionExpr(distinct && selector is not null ? SqlFunctionNames.CountDistinct : SqlFunctionNames.Count, [counted]), null));
                 break;
             case nameof(Enumerable.Sum):
                 sub.Columns.Add(new SelectColumn(new FunctionExpr(distinct ? SqlFunctionNames.SumDistinct : SqlFunctionNames.Sum, [Value()]), null));
-                break;
+                // 没有行时 SUM 是 NULL，与 Java 一致补成 0
+                result = new FunctionExpr(SqlFunctionNames.NullOrDefault, [new SubQueryExpr(sub), new LiteralExpr("0")]);
+                return true;
             case nameof(Enumerable.Max):
                 sub.Columns.Add(new SelectColumn(new FunctionExpr(SqlFunctionNames.Max, [Value()]), null));
                 break;
@@ -148,7 +157,8 @@ internal sealed partial class ExpressionTranslator
                 break;
             case nameof(Enumerable.Average):
                 sub.Columns.Add(new SelectColumn(new FunctionExpr(distinct ? SqlFunctionNames.AvgDistinct : SqlFunctionNames.Avg, [Value()]), null));
-                break;
+                result = new FunctionExpr(SqlFunctionNames.NullOrDefault, [new SubQueryExpr(sub), new LiteralExpr("0")]);
+                return true;
             default:
                 throw Unsupported(terminal, "集合导航上不支持这个方法");
         }
@@ -161,7 +171,7 @@ internal sealed partial class ExpressionTranslator
     /// <c>Any</c> / <c>!Any</c>（<paramref name="negated"/>）/ <c>All</c> / <c>Count</c> / <c>Sum</c> / <c>Max</c> / <c>Min</c> / <c>Average</c>。
     /// <c>Select(x =&gt; x.Col).Count()</c> 计的是非 NULL 的值（SQL 的 COUNT(列)，对应 Java 的 count(x -&gt; x.col)）。
     /// </summary>
-    private SqlExpr TranslateGroupJoin(GroupJoinPlan plan, List<MethodCallExpression> chain, bool negated)
+    private SqlExpr TranslateGroupJoin(GroupJoinPlan plan, List<MethodCallExpression> chain, bool negated, SqlExpr? separator = null)
     {
         var t = new ExpressionTranslator(new Dictionary<ParameterExpression, SourceBinding>(_scope)) { Context = plan.InnerContext };
         var element = new EntityBinding(plan.Element);
@@ -169,7 +179,8 @@ internal sealed partial class ExpressionTranslator
         var filterKeys = new List<string>();
         LambdaExpression? selector = null;
         var distinct = false;
-        foreach (var op in chain.Take(chain.Count - 1))
+        // string.Join 时链上全是中间操作，没有终结方法
+        foreach (var op in separator is null ? chain.Take(chain.Count - 1) : chain)
         {
             switch (op.Method.Name)
             {
@@ -188,11 +199,15 @@ internal sealed partial class ExpressionTranslator
         }
 
         var terminal = chain[^1];
-        var argument = terminal.Arguments.Count > 1 ? Lambda(terminal.Arguments[1]) : null;
+        var argument = separator is null && terminal.Arguments.Count > 1 ? Lambda(terminal.Arguments[1]) : null;
         GroupAggregate kind;
         LambdaExpression? valueLambda = null;
-        switch (terminal.Method.Name)
+        switch (separator is null ? terminal.Method.Name : "StringJoin")
         {
+            case "StringJoin":
+                kind = GroupAggregate.Joining;
+                valueLambda = selector ?? throw Unsupported(terminal, "string.Join 需要先 Select 出字符串，如 string.Join(\",\", u.Cards.Select(c => c.Code))");
+                break;
             case nameof(Enumerable.Any):
                 if (argument is not null) AddFilter(argument, negate: false);
                 kind = negated ? GroupAggregate.None : GroupAggregate.Any;
@@ -229,7 +244,7 @@ internal sealed partial class ExpressionTranslator
             value = t.Translate(StripConvert(valueLambda.Body));
         }
         var filter = filters.Count == 0 ? null : LogicalExpr.And(filters);
-        return plan.Reference(kind, value, filter, distinct, string.Join(" && ", filterKeys), valueLambda is null ? "" : GroupJoinKey(valueLambda));
+        return plan.Reference(kind, value, filter, distinct, string.Join(" && ", filterKeys), valueLambda is null ? "" : GroupJoinKey(valueLambda), separator);
 
         void AddFilter(LambdaExpression predicate, bool negate)
         {
@@ -246,6 +261,59 @@ internal sealed partial class ExpressionTranslator
         for (var i = 0; i < lambda.Parameters.Count; i++)
             body = new ParameterReplacer(lambda.Parameters[i], Expression.Parameter(lambda.Parameters[i].Type, "p" + i)).Visit(body);
         return body.ToString();
+    }
+
+    /// <summary>
+    /// <c>string.Join(",", u.Cards.Where(…).Select(c =&gt; c.Code))</c> → 字符串聚合（对应 Java 的 joining(x -&gt; x.code(), ",")）：
+    /// 分组合并时是派生表的一列，否则是 <c>(SELECT GROUP_CONCAT(code SEPARATOR ?) FROM … )</c> 相关子查询。
+    /// </summary>
+    private bool TryTranslateCollectionStringJoin(MethodCallExpression call, out SqlExpr result)
+    {
+        result = null!;
+        if (call.Method.DeclaringType != typeof(string) || call.Method.Name != nameof(string.Join) || call.Arguments.Count != 2
+            || !call.Method.GetParameters()[1].ParameterType.IsGenericType) return false;
+        var chain = new List<MethodCallExpression>();
+        var current = StripConvert(call.Arguments[1]);
+        while (current is MethodCallExpression mc && mc.Method.DeclaringType == typeof(Enumerable) && mc.Arguments.Count > 0)
+        {
+            chain.Add(mc);
+            current = StripConvert(mc.Arguments[0]);
+        }
+        if (chain.Count == 0 || CollectionNavigation(current) is not var (owner, nav)) return false;
+        chain.Reverse();
+        var separator = Translate(call.Arguments[0]);
+
+        if (Context?.GroupJoinFor(owner, nav) is { } plan)
+        {
+            result = TranslateGroupJoin(plan, chain, negated: false, separator);
+            return true;
+        }
+        var sub = NewCollectionSubQuery(owner, nav, out var t, out var element);
+        LambdaExpression? selector = null;
+        var distinct = false;
+        foreach (var op in chain)
+        {
+            switch (op.Method.Name)
+            {
+                case nameof(Enumerable.Where):
+                    sub.Where.Add(t.ElementPredicate(Lambda(op.Arguments[1]), element));
+                    break;
+                case nameof(Enumerable.Select):
+                    selector = Lambda(op.Arguments[1]);
+                    break;
+                case nameof(Enumerable.Distinct):
+                    distinct = true;
+                    break;
+                default:
+                    throw Unsupported(op, "string.Join 的集合导航上不支持这个方法");
+            }
+        }
+        if (selector is null) throw Unsupported(call, "string.Join 需要先 Select 出字符串");
+        t.Bind(selector, [element]);
+        sub.Columns.Add(new SelectColumn(new FunctionExpr(distinct ? SqlFunctionNames.StringJoinDistinct : SqlFunctionNames.StringJoin,
+            [t.Translate(StripConvert(selector.Body)), separator]), null));
+        result = new SubQueryExpr(sub);
+        return true;
     }
 
     /// <summary><c>x.Cards.Count</c>（List 的 Count 属性）→ 计数子查询。</summary>

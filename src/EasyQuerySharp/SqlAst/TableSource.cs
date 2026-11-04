@@ -51,6 +51,12 @@ public sealed class DerivedTableSource(SelectQuery query) : TableSource
     /// 外层看到的派生表别名因此跳过一个（如 t3 而不是 t2）；为了 SQL 逐字一致在这里复现。
     /// </summary>
     public bool ReserveExtraAlias { get; init; }
+
+    /// <summary>
+    /// 别名按创建顺序编号：先编内部 FROM 和前 N 个 JOIN，再编派生表自己，最后才是内部之后加上的 JOIN 与子查询。
+    /// 分组合并的派生表在 Java 里一创建就占了编号，之后翻译聚合时才加的表排在它后面；为 null 时按默认的先内后外。
+    /// </summary>
+    public int? AliasAfterJoins { get; set; }
 }
 
 /// <summary>

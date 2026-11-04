@@ -39,14 +39,25 @@ internal static class AliasAllocator
             tables[i].Alias = tables[i].ExplicitAlias ?? (i == 0 ? "t" : "t" + i);
     }
 
-    private static void Collect(SelectQuery query, List<TableSource> tables)
+    private static void Collect(SelectQuery query, List<TableSource> tables, DerivedTableSource? owner = null)
     {
         CollectTable(query.From, tables);
-        foreach (var join in query.Joins)
+        // 声明的 JOIN 先编号（Java 在声明时就建了表），翻译中自动加上的 JOIN（隐式 JOIN、分组合并）排在后面
+        var declared = query.Joins.Where(j => !j.Implicit).ToList();
+        var automatic = query.Joins.Where(j => j.Implicit).ToList();
+        foreach (var join in declared)
         {
             CollectTable(join.Table, tables);
             if (join.On is not null) CollectExpr(join.On, tables);
         }
+        for (var i = 0; i < automatic.Count; i++)
+        {
+            // 按创建顺序编号的派生表：在它创建时已有的 JOIN 之后占位
+            if (owner?.AliasAfterJoins == i) tables.Add(owner);
+            CollectTable(automatic[i].Table, tables);
+            if (automatic[i].On is not null) CollectExpr(automatic[i].On!, tables);
+        }
+        if (owner is not null && !tables.Contains(owner)) tables.Add(owner);
         foreach (var e in query.Where) CollectExpr(e, tables);
         foreach (var c in query.Columns) CollectExpr(c.Expr, tables);
         foreach (var e in query.GroupBy) CollectExpr(e, tables);
@@ -58,7 +69,7 @@ internal static class AliasAllocator
     {
         if (table is DerivedTableSource derived)
         {
-            Collect(derived.Query, tables);
+            Collect(derived.Query, tables, derived.AliasAfterJoins is null ? null : derived);
             if (derived.ReserveExtraAlias) tables.Add(Placeholder.Instance);
         }
         if (table is UnionTableSource { IndependentAliases: true } independent)
