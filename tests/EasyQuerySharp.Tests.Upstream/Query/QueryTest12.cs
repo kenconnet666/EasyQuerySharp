@@ -215,4 +215,64 @@ public sealed partial class QueryTest12(MySqlFixture fixture) : MySqlTest(fixtur
         };
         listen.AssertSql("SELECT (CASE WHEN t.`id` = ? THEN ? ELSE ? END) AS `score` FROM `t_blog` t WHERE t.`deleted` = ? AND " + where);
     }
+
+    // Java 的 caseWhen(..).then(1).elseEnd("2") 两个分支类型可以不同；C# 的条件表达式要求同一类型，参数类型因此不同（SQL 相同）
+    [Theory, Upstream("QueryTest12.java#testSelectPropTypeColumn7", Deviation = "参数类型：C# 条件表达式两个分支同类型（都是字符串），Java 是 Integer 与 String"),
+     Upstream("QueryTest12.java#testSelectPropTypeColumn8", Deviation = "同 testSelectPropTypeColumn7"),
+     Upstream("QueryTest12.java#testSelectPropTypeColumn9", Deviation = "同 testSelectPropTypeColumn7")]
+    [InlineData(7)]
+    [InlineData(8)]
+    [InlineData(9)]
+    public async Task TestSelectPropTypeColumn7(int variant)
+    {
+        var query = variant switch
+        {
+            7 => Db.Query<BlogEntity>().Where(b => ((b.Title == b.Id ? "1" : "2") ?? "xx") == (b.Title ?? "yy")),
+            8 => Db.Query<BlogEntity>().Where(b => (b.Title ?? "yy") == ((b.Title == b.Id ? "1" : "2") ?? "xx")),
+            _ => Db.Query<BlogEntity>().Where(b => (b.Title ?? "yy") == ((b.Title == b.Id || b.Title!.Contains("123") ? "1" : "2") ?? "xx")),
+        };
+        using var listen = SqlCapture.Listen();
+        await query.Select(b => new BlogEntity { Score = b.Id == "123" ? 1m : 2m }).ToListAsync(Ct);
+        var where = variant switch
+        {
+            7 => "IFNULL((CASE WHEN t.`title` = t.`id` THEN ? ELSE ? END),?) = IFNULL(t.`title`,?)",
+            8 => "IFNULL(t.`title`,?) = IFNULL((CASE WHEN t.`title` = t.`id` THEN ? ELSE ? END),?)",
+            _ => "IFNULL(t.`title`,?) = IFNULL((CASE WHEN (t.`title` = t.`id` OR t.`title` LIKE ?) THEN ? ELSE ? END),?)",
+        };
+        listen.AssertSql("SELECT (CASE WHEN t.`id` = ? THEN ? ELSE ? END) AS `score` FROM `t_blog` t WHERE t.`deleted` = ? AND " + where);
+    }
+
+    [Fact, Upstream("QueryTest12.java#testSelectPropTypeColumn10")]
+    public async Task TestSelectPropTypeColumn10()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<BlogEntity>().GroupBy(b => b.Id).Select(g => new BlogEntity
+        {
+            Star = g.Sum(e => e.Id == "123" ? 1 : 0),
+            Score = g.Min(e => Sql.Raw<decimal?>("case {0} when {1} then 1 else 0 end", e.Score, 1)),
+        }).ToListAsync(Ct);
+        listen.AssertSql("SELECT SUM((CASE WHEN t.`id` = ? THEN ? ELSE ? END)) AS `star`,MIN(case t.`score` when ? then 1 else 0 end) AS `score` FROM `t_blog` t WHERE t.`deleted` = ? GROUP BY t.`id`");
+        listen.AssertParams("123(String),1(Integer),0(Integer),1(Integer),false(Boolean)");
+    }
+
+    [Fact, Upstream("QueryTest12.java#testSelectPropTypeColumn11", Deviation = "参数类型：C# 条件表达式两个分支同类型，ELSE 的 2 是 decimal（Java 是 String）")]
+    public async Task TestSelectPropTypeColumn11()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<BlogEntity>()
+            .Where(b => (b.Title ?? "yy") == ((b.Title == b.Id || b.Title!.Contains("123") ? (b.Score ?? 12m).ToString() : "2") ?? "xx"))
+            .Select(b => new BlogEntity { Star = (int?)Sql.Sum(b.Id == "123" ? b.Score : 0m) }).ToListAsync(Ct);
+        listen.AssertSql("SELECT SUM((CASE WHEN t.`id` = ? THEN t.`score` ELSE ? END)) AS `star` FROM `t_blog` t WHERE t.`deleted` = ? AND IFNULL(t.`title`,?) = IFNULL((CASE WHEN (t.`title` = t.`id` OR t.`title` LIKE ?) THEN CAST(IFNULL(t.`score`,?) AS CHAR) ELSE ? END),?)");
+    }
+
+    [Fact, Upstream("QueryTest12.java#testSelectPropTypeColumn12")]
+    public async Task TestSelectPropTypeColumn12()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<BlogEntity>()
+            .Where(b => (object?)(b.Title ?? "yy") == ((object?)(b.Title == b.Id || b.Title!.Contains("123") ? b.Score ?? 12m : b.Score ?? 13m) ?? "xx"))
+            .Select(b => new BlogEntity { Star = (int?)Sql.Sum(b.Id == "123" ? b.Score : b.Status * 1) }).ToListAsync(Ct);
+        listen.AssertSql("SELECT SUM((CASE WHEN t.`id` = ? THEN t.`score` ELSE (t.`status` * ?) END)) AS `star` FROM `t_blog` t WHERE t.`deleted` = ? AND IFNULL(t.`title`,?) = IFNULL((CASE WHEN (t.`title` = t.`id` OR t.`title` LIKE ?) THEN IFNULL(t.`score`,?) ELSE IFNULL(t.`score`,?) END),?)");
+        listen.AssertParams("123(String),1(Integer),false(Boolean),yy(String),%123%(String),12(BigDecimal),13(BigDecimal),xx(String)");
+    }
 }

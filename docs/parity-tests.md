@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2338 个用例。
 
-合计：已移植 446、偏离 87、不适用 5、骨架 15、待做 1785。
+合计：已移植 448、偏离 91、不适用 5、骨架 15、待做 1779。
 
 ## 按能力
 
@@ -16,7 +16,7 @@
 | 删除 | `write.delete` | M1 | 21 | 7 | 1 | 2 | 0 | 11 |
 | 插入 | `write.insert` | M1 | 48 | 17 | 0 | 0 | 1 | 30 |
 | 更新 | `write.update` | M1 | 50 | 19 | 3 | 0 | 0 | 28 |
-| CASE WHEN | `expr.case` | M2 | 27 | 3 | 3 | 0 | 0 | 21 |
+| CASE WHEN | `expr.case` | M2 | 27 | 5 | 7 | 0 | 0 | 15 |
 | 日期函数 | `func.date` | M2 | 100 | 16 | 2 | 0 | 0 | 82 |
 | 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 18 | 2 | 0 | 0 | 39 |
 | 字符串聚合（joining） | `func.joining` | M2 | 29 | 3 | 0 | 0 | 5 | 21 |
@@ -702,16 +702,16 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| QueryTest12.java#testSelectPropTypeColumn10 | 待做 |  | `SELECT SUM((CASE WHEN t.'id' = ? THEN ? ELSE ? END)) AS 'star',MIN(case t.'score' when ? then 1 else…` |
-| QueryTest12.java#testSelectPropTypeColumn11 | 待做 |  | `SELECT SUM((CASE WHEN t.'id' = ? THEN t.'score' ELSE ? END)) AS 'star' FROM 't_blog' t WHERE t.'dele…` |
-| QueryTest12.java#testSelectPropTypeColumn12 | 待做 |  | `SELECT SUM((CASE WHEN t.'id' = ? THEN t.'score' ELSE (t.'status' * ?) END)) AS 'star' FROM 't_blog' …` |
+| QueryTest12.java#testSelectPropTypeColumn10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:245 | `SELECT SUM((CASE WHEN t.'id' = ? THEN ? ELSE ? END)) AS 'star',MIN(case t.'score' when ? then 1 else…` |
+| QueryTest12.java#testSelectPropTypeColumn11 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:258：参数类型：C# 条件表达式两个分支同类型，ELSE 的 2 是 decimal（Java 是 String） | `SELECT SUM((CASE WHEN t.'id' = ? THEN t.'score' ELSE ? END)) AS 'star' FROM 't_blog' t WHERE t.'dele…` |
+| QueryTest12.java#testSelectPropTypeColumn12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:268 | `SELECT SUM((CASE WHEN t.'id' = ? THEN t.'score' ELSE (t.'status' * ?) END)) AS 'star' FROM 't_blog' …` |
 | QueryTest12.java#testSelectPropTypeColumn3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:193：Java 的 WHERE 里多一个空格（AND  t.'title' = SUBSTR(..)），C# 是单个空格 | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
 | QueryTest12.java#testSelectPropTypeColumn4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:194：同 testSelectPropTypeColumn3 | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
 | QueryTest12.java#testSelectPropTypeColumn5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:195：同 testSelectPropTypeColumn3 | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
 | QueryTest12.java#testSelectPropTypeColumn6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:196 | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
-| QueryTest12.java#testSelectPropTypeColumn7 | 待做 |  | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
-| QueryTest12.java#testSelectPropTypeColumn8 | 待做 |  | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
-| QueryTest12.java#testSelectPropTypeColumn9 | 待做 |  | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
+| QueryTest12.java#testSelectPropTypeColumn7 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:220：参数类型：C# 条件表达式两个分支同类型（都是字符串），Java 是 Integer 与 String | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
+| QueryTest12.java#testSelectPropTypeColumn8 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:221：同 testSelectPropTypeColumn7 | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
+| QueryTest12.java#testSelectPropTypeColumn9 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Query/QueryTest12.cs:222：同 testSelectPropTypeColumn7 | `SELECT (CASE WHEN t.'id' = ? THEN ? ELSE ? END) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND…` |
 | QueryTest15.java#testCaseWhenLazy | 待做 |  | `SELECT (CASE WHEN t.'title' = ? THEN ? ELSE ? END) AS 'value1' FROM 't_topic' t` |
 | QueryTest15.java#testCaseWhenLazy2 | 待做 |  | `SELECT (CASE WHEN t.'title' = ? THEN ? ELSE ? END) AS 'title' FROM 't_topic' t` |
 | QueryTest15.java#testOrderCase | 待做 |  | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'id' = ? ORDER BY (CASE WHEN 'stars' …` |
