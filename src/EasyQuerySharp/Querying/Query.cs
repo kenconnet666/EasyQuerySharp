@@ -1,5 +1,5 @@
-using System.Collections.Immutable;
 using System.Collections;
+using System.Collections.Immutable;
 using System.Linq.Expressions;
 using EasyQuerySharp.SqlAst;
 
@@ -34,10 +34,10 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     public Query<T> WhereIf(bool condition, Expression<Func<T, bool>> predicate) => condition ? Where(predicate) : this;
 
     /// <summary>按主键等值（对应 Java 的 whereById）。</summary>
-    public Query<T> WhereById(object id) => Where(Commands.KeyPredicates.ById<T>(Db.Metadata.Get<T>(), id));
+    public Query<T> WhereById(object id) => Where(Translation.KeyPredicates.ById<T>(Db.Metadata.Get<T>(), id));
 
     /// <summary>按主键 IN（对应 Java 的 whereByIds）。</summary>
-    public Query<T> WhereByIds(IEnumerable ids) => Where(Commands.KeyPredicates.ByIds<T>(Db.Metadata.Get<T>(), ids));
+    public Query<T> WhereByIds(IEnumerable ids) => Where(Translation.KeyPredicates.ByIds<T>(Db.Metadata.Get<T>(), ids));
 
     /// <summary>追加升序排序。</summary>
     public Query<T> OrderBy<TKey>(Expression<Func<T, TKey>> key) => Order(key, false);
@@ -84,7 +84,7 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     {
         if (Translation.ExpressionTranslator.StripConvert(navigation.Body) is not MemberExpression { Expression: ParameterExpression } member)
             throw new ArgumentException($"Include 需要直接的导航属性，如 u => u.Posts：{navigation}", nameof(navigation));
-        return new(State with { Includes = State.Includes.Add(new Includes.IncludeSpec(member.Member.Name, configure)) });
+        return new(State with { Includes = State.Includes.Add(new IncludeSpec(member.Member.Name, configure)) });
     }
 
     /// <summary>

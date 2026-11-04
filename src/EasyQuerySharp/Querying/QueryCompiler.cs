@@ -10,7 +10,7 @@ namespace EasyQuerySharp.Querying;
 internal sealed record CompiledQuery<T>(SelectQuery Sql, Func<DbDataReader, T> Shaper)
 {
     /// <summary>投影里的导航带出。</summary>
-    public IReadOnlyList<Includes.IncludePlan> Includes { get; init; } = [];
+    public IReadOnlyList<IncludePlan> Includes { get; init; } = [];
 
     /// <summary>关联键在结果里的列序号（作为带出的子查询时用）。</summary>
     public int[] RelationOrdinals { get; init; } = [];
@@ -168,7 +168,7 @@ internal static class QueryCompiler
         }
         frame.Translator.Bind(selector, frame.Bindings);
         // 先登记列，再把列表交给 AST；读取函数由调用方按需编译
-        projection.Prepare(selector.Body, frame.Bindings[0], relationKeys, state.Selector is null ? (IReadOnlyList<Includes.IncludeSpec>)state.Includes : null);
+        projection.Prepare(selector.Body, frame.Bindings[0], relationKeys, state.Selector is null ? (IReadOnlyList<IncludeSpec>)state.Includes : null);
         frame.Query.Columns.AddRange(projection.Columns);
         // 分组合并的派生表要等整条查询（含投影）翻译完才知道全部聚合
         frame.Translator.Context?.CompleteGroupJoins();

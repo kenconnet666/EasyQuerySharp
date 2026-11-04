@@ -1,4 +1,3 @@
-using EasyQuerySharp.Metadata;
 using EasyQuerySharp.SqlAst;
 
 namespace EasyQuerySharp.Translation;

@@ -1,7 +1,7 @@
 using EasyQuerySharp.Rendering;
 using EasyQuerySharp.SqlAst;
 
-namespace EasyQuerySharp.Dialects.Sqlite;
+namespace EasyQuerySharp.Dialects;
 
 /// <summary>SQLite 方言。驱动用 Microsoft.Data.Sqlite：<c>o.UseSqlite(SqliteFactory.Instance.CreateDataSource(cs))</c>。</summary>
 public class SqliteDialect : SqlDialect
@@ -32,7 +32,7 @@ public class SqliteDialect : SqlDialect
             return;
         }
         renderer.Append("INSTR(").Write(predicate.Operand).Append(",").Write(predicate.Value).Append(")");
-        Oracle.OracleDialect.WriteInstrComparison(renderer, predicate);
+        OracleDialect.WriteInstrComparison(renderer, predicate);
     }
 
     /// <summary>SQLite 的类型转换（对应 Java 的 SQLiteCastSQLFunction）。</summary>

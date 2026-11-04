@@ -1,7 +1,7 @@
 using EasyQuerySharp.Rendering;
 using EasyQuerySharp.SqlAst;
 
-namespace EasyQuerySharp.Dialects.PostgreSql;
+namespace EasyQuerySharp.Dialects;
 
 /// <summary>
 /// PostgreSQL 方言（17 实测）。openGauss、人大金仓 PG 模式共用。驱动用 Npgsql：<c>o.UsePostgreSql(NpgsqlDataSource.Create(cs))</c>。

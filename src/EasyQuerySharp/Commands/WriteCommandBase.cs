@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Linq.Expressions;
-using EasyQuerySharp.Interceptors;
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.Querying;
 using EasyQuerySharp.SqlAst;
@@ -8,101 +7,6 @@ using EasyQuerySharp.Translation;
 
 namespace EasyQuerySharp.Commands;
 
-/// <summary>
-/// 插入、更新、删除共有的部分：目标表（AsTable / AsSchema）与拦截器的开关。
-/// 写入命令是一次性的可变构建器（与不可变的查询不同），链式调用返回自身。
-/// </summary>
-public abstract class EntityCommandBase<TSelf, T>
-    where TSelf : EntityCommandBase<TSelf, T>
-    where T : class
-{
-    private string? _tableName;
-    private string? _schema;
-    private string? _alias;
-
-    private protected EntityCommandBase(EasyDb db)
-    {
-        Db = db;
-        Entity = db.Metadata.Get<T>();
-    }
-
-    /// <summary>所属的 <see cref="EasyDb"/>。</summary>
-    public EasyDb Db { get; }
-
-    private protected EntityMetadata Entity { get; }
-
-    private protected InterceptorSelection Interceptors { get; private set; } = InterceptorSelection.Default;
-
-    private protected TSelf Self => (TSelf)this;
-
-    /// <summary>写入到另一张同结构的表（对应 Java 的 asTable）。</summary>
-    public TSelf AsTable(string tableName)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(tableName);
-        _tableName = tableName;
-        return Self;
-    }
-
-    /// <summary>按当前表名算出新表名（对应 Java 的 asTable(Function)），如 <c>.AsTable(name => name + "_2024")</c>。</summary>
-    public TSelf AsTable(Func<string, string> rename)
-    {
-        ArgumentNullException.ThrowIfNull(rename);
-        return AsTable(rename(_tableName ?? Entity.TableName));
-    }
-
-    /// <summary>写入到另一个 schema（对应 Java 的 asSchema）。</summary>
-    public TSelf AsSchema(string schema)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(schema);
-        _schema = schema;
-        return Self;
-    }
-
-    /// <summary>按当前 schema 算出新 schema（对应 Java 的 asSchema(Function)）；实体没有 schema 时传入空串。</summary>
-    public TSelf AsSchema(Func<string, string> rename)
-    {
-        ArgumentNullException.ThrowIfNull(rename);
-        return AsSchema(rename(_schema ?? Entity.Schema ?? ""));
-    }
-
-    /// <summary>给目标表起别名（对应 Java 的 asAlias），列引用随之带上别名：<c>UPDATE `t_blog` xx SET xx.`deleted` = ?</c>。</summary>
-    public TSelf AsAlias(string alias)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(alias);
-        _alias = alias;
-        return Self;
-    }
-
-    /// <summary>不应用名为 <paramref name="name"/> 的拦截器（对应 Java 的 noInterceptor(name)）。</summary>
-    public TSelf DisableInterceptor(string name)
-    {
-        Interceptors = Interceptors.Disable(name);
-        return Self;
-    }
-
-    /// <summary>不应用任何拦截器（对应 Java 的 noInterceptor()）；之后再 EnableInterceptor 的除外。</summary>
-    public TSelf DisableInterceptors()
-    {
-        Interceptors = Interceptors.DisableAll();
-        return Self;
-    }
-
-    /// <summary>应用名为 <paramref name="name"/> 的拦截器，包括默认关闭的（对应 Java 的 useInterceptor(name)）。</summary>
-    public TSelf EnableInterceptor(string name)
-    {
-        Interceptors = Interceptors.Enable(name);
-        return Self;
-    }
-
-    /// <summary>恢复默认生效的全部拦截器（对应 Java 的 useInterceptor()）。</summary>
-    public TSelf EnableInterceptors()
-    {
-        Interceptors = Interceptors.EnableAll();
-        return Self;
-    }
-
-    private protected EntityTableSource NewTable() => new(Entity) { TableNameOverride = _tableName, SchemaOverride = _schema, ExplicitAlias = _alias };
-}
 
 /// <summary>更新、删除的公共部分：条件、关闭逻辑删除、无条件写入的保护。</summary>
 public abstract class WriteCommandBase<TSelf, T> : EntityCommandBase<TSelf, T>
@@ -234,37 +138,4 @@ public abstract class WriteCommandBase<TSelf, T> : EntityCommandBase<TSelf, T>
 
     /// <summary>新建一条写入语句的翻译作用域。</summary>
     private protected WriteScope NewScope() => new(Db, NewTable(), Interceptors);
-
-    /// <summary>
-    /// 一条写入语句的翻译作用域：SET 与条件共用一个翻译上下文，集合导航翻译成关联子查询，
-    /// 对一导航补出的 JOIN 收集起来（别名按出现顺序编号，所以先翻译 SET 再翻译条件，与 Java 一致）。
-    /// </summary>
-    private protected sealed class WriteScope
-    {
-        private readonly SelectQuery _scratch;
-        private readonly TranslationContext _context;
-
-        public WriteScope(EasyDb db, EntityTableSource table, InterceptorSelection interceptors)
-        {
-            Table = table;
-            _scratch = new SelectQuery(table);
-            _context = new TranslationContext(db.Metadata,
-                (t, logicDelete) => [.. (logicDelete && QueryCompiler.LogicDeleteFilter(db, t) is { } filter ? [filter] : Array.Empty<SqlExpr>()), .. db.Interceptors.QueryFilters(t, interceptors)],
-                _scratch) { Db = db };
-        }
-
-        /// <summary>写入的目标表。</summary>
-        public EntityTableSource Table { get; }
-
-        /// <summary>对一导航连接的表；写入里都是 INNER JOIN（与 Java 一致）。</summary>
-        public IEnumerable<JoinClause> Joins => _scratch.Joins.Select(j => new JoinClause(JoinKind.Inner, j.Table, j.On));
-
-        /// <summary>翻译参数为目标实体的 lambda（条件或值）。</summary>
-        public SqlExpr Translate(LambdaExpression lambda, bool predicate)
-        {
-            var translator = new ExpressionTranslator([]) { Context = _context };
-            translator.Bind(lambda, [new EntityBinding(Table)]);
-            return predicate ? translator.TranslatePredicate(lambda.Body) : translator.Translate(lambda.Body);
-        }
-    }
 }

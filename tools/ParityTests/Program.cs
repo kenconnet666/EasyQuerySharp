@@ -1,4 +1,3 @@
-using ParityTests;
 using ParityTests.CSharp;
 using ParityTests.Java;
 using ParityTests.Report;

@@ -2,7 +2,7 @@ using System.Globalization;
 using EasyQuerySharp.Rendering;
 using EasyQuerySharp.SqlAst;
 
-namespace EasyQuerySharp.Dialects.SqlServer;
+namespace EasyQuerySharp.Dialects;
 
 /// <summary>
 /// SQL Server 方言（2012 起的 OFFSET … FETCH 分页；2008 及更早用 <see cref="SqlServer2008Dialect"/>）。标识符用方括号。

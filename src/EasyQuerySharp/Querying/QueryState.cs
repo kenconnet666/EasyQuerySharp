@@ -93,7 +93,7 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     public ImmutableArray<Translation.GroupJoinSpec> GroupJoins { get; init; } = [];
 
     /// <summary>实体查询上的导航带出（Include）；有投影时不生效。</summary>
-    public ImmutableArray<Includes.IncludeSpec> Includes { get; init; } = [];
+    public ImmutableArray<IncludeSpec> Includes { get; init; } = [];
 
     /// <summary>投影是框架补上的（如分组后只取键），不算显式投影：单表时不写别名（与 Java 的 groupBy(…).toList() 一致）。</summary>
     public bool ImplicitSelector { get; init; }

@@ -3,7 +3,7 @@ using System.Data.Common;
 using System.Linq.Expressions;
 using EasyQuerySharp.Metadata;
 
-namespace EasyQuerySharp.Querying.Includes;
+namespace EasyQuerySharp.Querying;
 
 /// <summary>
 /// 投影里的一处导航带出（对应 Java 的 include / 投影里的 set(nav, …)）：主查询读完后，按收集到的父键用一条

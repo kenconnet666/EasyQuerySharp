@@ -1,8 +1,5 @@
 using System.Data.Common;
 using EasyQuerySharp.Dialects;
-using EasyQuerySharp.Dialects.MySql;
-using EasyQuerySharp.Dialects.PostgreSql;
-using EasyQuerySharp.Dialects.Sqlite;
 using EasyQuerySharp.Execution;
 using EasyQuerySharp.Interceptors;
 using EasyQuerySharp.Metadata;

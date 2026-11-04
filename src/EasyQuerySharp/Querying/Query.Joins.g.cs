@@ -30,10 +30,10 @@ public sealed class Query<T1, T2> : QueryBase<Query<T1, T2>, T1>
     public Query<T1, T2> WhereIf(bool condition, Expression<Func<T1, T2, bool>> predicate) => condition ? Where(predicate) : this;
 
     /// <summary>第一张表按主键等值。</summary>
-    public Query<T1, T2> WhereById(object id) => Where(Commands.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
+    public Query<T1, T2> WhereById(object id) => Where(Translation.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
 
     /// <summary>第一张表按主键 IN。</summary>
-    public Query<T1, T2> WhereByIds(System.Collections.IEnumerable ids) => Where(Commands.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
+    public Query<T1, T2> WhereByIds(System.Collections.IEnumerable ids) => Where(Translation.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
 
     /// <summary>追加升序排序。</summary>
     public Query<T1, T2> OrderBy<TKey>(Expression<Func<T1, T2, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, false)) });
@@ -146,10 +146,10 @@ public sealed class Query<T1, T2, T3> : QueryBase<Query<T1, T2, T3>, T1>
     public Query<T1, T2, T3> WhereIf(bool condition, Expression<Func<T1, T2, T3, bool>> predicate) => condition ? Where(predicate) : this;
 
     /// <summary>第一张表按主键等值。</summary>
-    public Query<T1, T2, T3> WhereById(object id) => Where(Commands.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
+    public Query<T1, T2, T3> WhereById(object id) => Where(Translation.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
 
     /// <summary>第一张表按主键 IN。</summary>
-    public Query<T1, T2, T3> WhereByIds(System.Collections.IEnumerable ids) => Where(Commands.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
+    public Query<T1, T2, T3> WhereByIds(System.Collections.IEnumerable ids) => Where(Translation.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
 
     /// <summary>追加升序排序。</summary>
     public Query<T1, T2, T3> OrderBy<TKey>(Expression<Func<T1, T2, T3, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, false)) });
@@ -262,10 +262,10 @@ public sealed class Query<T1, T2, T3, T4> : QueryBase<Query<T1, T2, T3, T4>, T1>
     public Query<T1, T2, T3, T4> WhereIf(bool condition, Expression<Func<T1, T2, T3, T4, bool>> predicate) => condition ? Where(predicate) : this;
 
     /// <summary>第一张表按主键等值。</summary>
-    public Query<T1, T2, T3, T4> WhereById(object id) => Where(Commands.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
+    public Query<T1, T2, T3, T4> WhereById(object id) => Where(Translation.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
 
     /// <summary>第一张表按主键 IN。</summary>
-    public Query<T1, T2, T3, T4> WhereByIds(System.Collections.IEnumerable ids) => Where(Commands.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
+    public Query<T1, T2, T3, T4> WhereByIds(System.Collections.IEnumerable ids) => Where(Translation.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
 
     /// <summary>追加升序排序。</summary>
     public Query<T1, T2, T3, T4> OrderBy<TKey>(Expression<Func<T1, T2, T3, T4, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, false)) });
@@ -378,10 +378,10 @@ public sealed class Query<T1, T2, T3, T4, T5> : QueryBase<Query<T1, T2, T3, T4, 
     public Query<T1, T2, T3, T4, T5> WhereIf(bool condition, Expression<Func<T1, T2, T3, T4, T5, bool>> predicate) => condition ? Where(predicate) : this;
 
     /// <summary>第一张表按主键等值。</summary>
-    public Query<T1, T2, T3, T4, T5> WhereById(object id) => Where(Commands.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
+    public Query<T1, T2, T3, T4, T5> WhereById(object id) => Where(Translation.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
 
     /// <summary>第一张表按主键 IN。</summary>
-    public Query<T1, T2, T3, T4, T5> WhereByIds(System.Collections.IEnumerable ids) => Where(Commands.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
+    public Query<T1, T2, T3, T4, T5> WhereByIds(System.Collections.IEnumerable ids) => Where(Translation.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
 
     /// <summary>追加升序排序。</summary>
     public Query<T1, T2, T3, T4, T5> OrderBy<TKey>(Expression<Func<T1, T2, T3, T4, T5, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, false)) });
@@ -494,10 +494,10 @@ public sealed class Query<T1, T2, T3, T4, T5, T6> : QueryBase<Query<T1, T2, T3, 
     public Query<T1, T2, T3, T4, T5, T6> WhereIf(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, bool>> predicate) => condition ? Where(predicate) : this;
 
     /// <summary>第一张表按主键等值。</summary>
-    public Query<T1, T2, T3, T4, T5, T6> WhereById(object id) => Where(Commands.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
+    public Query<T1, T2, T3, T4, T5, T6> WhereById(object id) => Where(Translation.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
 
     /// <summary>第一张表按主键 IN。</summary>
-    public Query<T1, T2, T3, T4, T5, T6> WhereByIds(System.Collections.IEnumerable ids) => Where(Commands.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
+    public Query<T1, T2, T3, T4, T5, T6> WhereByIds(System.Collections.IEnumerable ids) => Where(Translation.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
 
     /// <summary>追加升序排序。</summary>
     public Query<T1, T2, T3, T4, T5, T6> OrderBy<TKey>(Expression<Func<T1, T2, T3, T4, T5, T6, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, false)) });
@@ -610,10 +610,10 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7> : QueryBase<Query<T1, T2, 
     public Query<T1, T2, T3, T4, T5, T6, T7> WhereIf(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, T7, bool>> predicate) => condition ? Where(predicate) : this;
 
     /// <summary>第一张表按主键等值。</summary>
-    public Query<T1, T2, T3, T4, T5, T6, T7> WhereById(object id) => Where(Commands.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
+    public Query<T1, T2, T3, T4, T5, T6, T7> WhereById(object id) => Where(Translation.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
 
     /// <summary>第一张表按主键 IN。</summary>
-    public Query<T1, T2, T3, T4, T5, T6, T7> WhereByIds(System.Collections.IEnumerable ids) => Where(Commands.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
+    public Query<T1, T2, T3, T4, T5, T6, T7> WhereByIds(System.Collections.IEnumerable ids) => Where(Translation.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
 
     /// <summary>追加升序排序。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7> OrderBy<TKey>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, false)) });
@@ -726,10 +726,10 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8> : QueryBase<Query<T1, 
     public Query<T1, T2, T3, T4, T5, T6, T7, T8> WhereIf(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, bool>> predicate) => condition ? Where(predicate) : this;
 
     /// <summary>第一张表按主键等值。</summary>
-    public Query<T1, T2, T3, T4, T5, T6, T7, T8> WhereById(object id) => Where(Commands.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8> WhereById(object id) => Where(Translation.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
 
     /// <summary>第一张表按主键 IN。</summary>
-    public Query<T1, T2, T3, T4, T5, T6, T7, T8> WhereByIds(System.Collections.IEnumerable ids) => Where(Commands.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8> WhereByIds(System.Collections.IEnumerable ids) => Where(Translation.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
 
     /// <summary>追加升序排序。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8> OrderBy<TKey>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, false)) });
@@ -842,10 +842,10 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> : QueryBase<Query<
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> WhereIf(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, bool>> predicate) => condition ? Where(predicate) : this;
 
     /// <summary>第一张表按主键等值。</summary>
-    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> WhereById(object id) => Where(Commands.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> WhereById(object id) => Where(Translation.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
 
     /// <summary>第一张表按主键 IN。</summary>
-    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> WhereByIds(System.Collections.IEnumerable ids) => Where(Commands.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> WhereByIds(System.Collections.IEnumerable ids) => Where(Translation.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
 
     /// <summary>追加升序排序。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> OrderBy<TKey>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, false)) });
@@ -958,10 +958,10 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : QueryBase<Q
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> WhereIf(bool condition, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, bool>> predicate) => condition ? Where(predicate) : this;
 
     /// <summary>第一张表按主键等值。</summary>
-    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> WhereById(object id) => Where(Commands.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> WhereById(object id) => Where(Translation.KeyPredicates.ById<T1>(Db.Metadata.Get<T1>(), id));
 
     /// <summary>第一张表按主键 IN。</summary>
-    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> WhereByIds(System.Collections.IEnumerable ids) => Where(Commands.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> WhereByIds(System.Collections.IEnumerable ids) => Where(Translation.KeyPredicates.ByIds<T1>(Db.Metadata.Get<T1>(), ids));
 
     /// <summary>追加升序排序。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> OrderBy<TKey>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TKey>> key) => new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, false)) });

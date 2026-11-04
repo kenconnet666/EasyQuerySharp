@@ -1,6 +1,5 @@
 using EasyQuerySharp.Filtering;
 using EasyQuerySharp.Tests.Upstream.Entities;
-using EasyQuerySharp.Tests.Upstream.Infrastructure;
 
 namespace EasyQuerySharp.Tests.Upstream;
 

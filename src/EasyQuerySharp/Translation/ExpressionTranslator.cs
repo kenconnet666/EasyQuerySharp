@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using EasyQuerySharp.Metadata;
 using EasyQuerySharp.SqlAst;
 
 namespace EasyQuerySharp.Translation;
@@ -123,7 +122,7 @@ internal sealed partial class ExpressionTranslator
             if (m.Member.Name == "Value") return Translate(m.Expression);
             if (m.Member.Name == "HasValue") return new IsNullExpr(Translate(m.Expression), negated: true);
         }
-        if (Functions.MethodTranslators.TryTranslateMember(this, m, out var member)) return member;
+        if (MethodTranslators.TryTranslateMember(this, m, out var member)) return member;
 
         throw Unsupported(m);
     }

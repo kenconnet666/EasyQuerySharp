@@ -1,4 +1,4 @@
-using EasyQuerySharp.Dialects.Oracle;
+using EasyQuerySharp.Dialects;
 using EasyQuerySharp.Tests.Upstream.Entities;
 using EasyQuerySharp.Tests.Upstream.Infrastructure;
 

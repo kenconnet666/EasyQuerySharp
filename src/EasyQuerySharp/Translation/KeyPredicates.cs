@@ -3,9 +3,8 @@ using System.Linq.Expressions;
 using EasyQuerySharp.Materialization;
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.SqlAst;
-using EasyQuerySharp.Translation;
 
-namespace EasyQuerySharp.Commands;
+namespace EasyQuerySharp.Translation;
 
 /// <summary>按主键构造条件：查询与写入共用。</summary>
 internal static class KeyPredicates

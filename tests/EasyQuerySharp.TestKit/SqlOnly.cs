@@ -1,9 +1,4 @@
 using EasyQuerySharp.Dialects;
-using EasyQuerySharp.Dialects.MySql;
-using EasyQuerySharp.Dialects.Oracle;
-using EasyQuerySharp.Dialects.PostgreSql;
-using EasyQuerySharp.Dialects.Sqlite;
-using EasyQuerySharp.Dialects.SqlServer;
 
 namespace EasyQuerySharp.TestKit;
 

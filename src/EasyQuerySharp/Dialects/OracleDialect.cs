@@ -2,7 +2,7 @@ using System.Globalization;
 using EasyQuerySharp.Rendering;
 using EasyQuerySharp.SqlAst;
 
-namespace EasyQuerySharp.Dialects.Oracle;
+namespace EasyQuerySharp.Dialects;
 
 /// <summary>
 /// Oracle 方言。标识符用双引号，占位符 <c>:p0</c>。分页与 Java 版一致用 ROWNUM 包两层（各版本通用）。

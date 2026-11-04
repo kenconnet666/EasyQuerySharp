@@ -1,7 +1,7 @@
 using EasyQuerySharp.Rendering;
 using EasyQuerySharp.SqlAst;
 
-namespace EasyQuerySharp.Dialects.MySql;
+namespace EasyQuerySharp.Dialects;
 
 /// <summary>
 /// MySQL 方言（8.0.18 起，兼容 PolarDB MySQL 版、MariaDB 的大部分写法）。标识符用反引号。

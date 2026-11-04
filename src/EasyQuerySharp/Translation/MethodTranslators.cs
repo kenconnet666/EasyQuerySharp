@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using EasyQuerySharp.SqlAst;
 
-namespace EasyQuerySharp.Translation.Functions;
+namespace EasyQuerySharp.Translation;
 
 /// <summary>把一次方法调用翻译成 SQL；参数已经是原始表达式，按需用 <see cref="ExpressionTranslator"/> 翻译。</summary>
 internal delegate SqlExpr MethodTranslator(ExpressionTranslator t, MethodCallExpression call);

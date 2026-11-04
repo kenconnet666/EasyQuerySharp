@@ -6,7 +6,7 @@ using EasyQuerySharp.Rendering;
 using EasyQuerySharp.SqlAst;
 using EasyQuerySharp.Translation;
 
-namespace EasyQuerySharp.Querying.Includes;
+namespace EasyQuerySharp.Querying;
 
 /// <summary>
 /// 执行带出：对每个 <see cref="IncludePlan"/>，用主查询收集到的父键查一次子数据（<c>WHERE 子键 IN (…)</c>，

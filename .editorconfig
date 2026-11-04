@@ -18,6 +18,8 @@ trim_trailing_whitespace = false
 csharp_style_namespace_declarations = file_scoped:warning
 csharp_using_directive_placement = outside_namespace
 dotnet_sort_system_directives_first = true
+# 不留无用的 using（整理代码时移动文件最容易留下）
+dotnet_diagnostic.IDE0005.severity = warning
 csharp_style_var_for_built_in_types = true
 csharp_style_var_when_type_is_apparent = true
 csharp_style_var_elsewhere = true
