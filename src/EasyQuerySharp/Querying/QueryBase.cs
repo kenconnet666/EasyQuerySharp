@@ -214,6 +214,18 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     /// <summary>计数语句（分页时与数据查询共用条件）。</summary>
     internal SelectQuery CountQuery()
     {
+        // 去重且投影只有一列：COUNT(DISTINCT 列)，不必包子查询（与 Java 一致）
+        if (State is { Distinct: true, HasSelector: true, Offset: null, Limit: null, GroupKey: null })
+        {
+            var (select, _) = QueryCompiler.CompileSelect(State with { OrderBys = [], Distinct = false });
+            if (select.Columns.Count == 1)
+            {
+                var column = select.Columns[0].Expr;
+                select.Columns.Clear();
+                select.Columns.Add(new SelectColumn(new FunctionExpr(SqlFunctionNames.CountDistinct, [column]), null));
+                return select;
+            }
+        }
         var state = State.Distinct || State.Offset is not null || State.Limit is not null ? State.Wrap() : ForAggregate();
         var frame = QueryCompiler.Build(state with { OrderBys = [] });
         frame.Query.Columns.Add(new SelectColumn(new FunctionExpr(SqlFunctionNames.Count, [LiteralExpr.Star]), null));
