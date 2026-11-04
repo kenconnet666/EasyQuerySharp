@@ -50,6 +50,25 @@ public class LogicDelTopic
     public DateTime? CreateTime { get; set; }
 }
 
+/// <summary>对应 Java：entity/LogicDelTopicCustom（自定义逻辑删除策略 MyLogicDelStrategy）。</summary>
+[Table("t_logic_del_topic_custom")]
+public class LogicDelTopicCustom
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public int? Stars { get; set; }
+
+    public string? Title { get; set; }
+
+    [LogicDelete(LogicDeleteStrategy.Custom, StrategyName = nameof(LogicDelete.MyLogicDelStrategy))]
+    public DateTime? DeletedAt { get; set; }
+
+    public string? DeletedUser { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+}
+
 /// <summary>对应 Java：entity/TopicInterceptor。</summary>
 [Table("t_topic_interceptor")]
 public class TopicInterceptor

@@ -1,6 +1,7 @@
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.Rendering;
 using EasyQuerySharp.SqlAst;
+using EasyQuerySharp.Translation;
 
 namespace EasyQuerySharp.Commands;
 
@@ -65,14 +66,9 @@ public sealed class DeleteCommand<T> : WriteCommandBase<DeleteCommand<T>, T> whe
         }
 
         var update = new UpdateStatement(table);
-        var column = Entity.LogicDeleteColumn!;
-        SqlExpr deleted = Entity.LogicDelete!.Strategy switch
-        {
-            LogicDeleteStrategy.Boolean => new ParameterExpr(true, typeof(bool)),
-            LogicDeleteStrategy.DeletedTime => new ParameterExpr(DateTime.Now, typeof(DateTime)),
-            _ => throw new NotSupportedException($"逻辑删除策略 {Entity.LogicDelete.Strategy} 需要注册自定义策略"),
-        };
-        update.Sets.Add((table.Column(column), deleted));
+        var strategy = LogicDeleteStrategies.Resolve(Db.Options, Entity);
+        foreach (var (column, value) in strategy.DeletedValues(Entity, Entity.LogicDeleteColumn!))
+            update.Sets.Add((table.Column(column), ExpressionTranslator.Parameter(value, column.ClrType)));
         AddVersionSet(update, table, entity);
         update.Where.AddRange(BuildWhere(table, entity, applyLogicDelete: true));
         return SqlRenderer.Render(Db.Options.Dialect, update);

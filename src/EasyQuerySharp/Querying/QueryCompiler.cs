@@ -224,23 +224,16 @@ internal static class QueryCompiler
     {
         var result = new List<SqlExpr>();
         if (binding is not EntityBinding { EntityTable: var table }) return result;
-        if (!state.DisableLogicDelete && !noLogicDelete && LogicDeleteFilter(table) is { } logicDelete) result.Add(logicDelete);
+        if (!state.DisableLogicDelete && !noLogicDelete && LogicDeleteFilter(db, table) is { } logicDelete) result.Add(logicDelete);
         result.AddRange(db.Interceptors.QueryFilters(table, state.Interceptors));
         return result;
     }
 
     /// <summary>逻辑删除的"未删除"条件；实体没有逻辑删除列时为 null。</summary>
-    internal static SqlExpr? LogicDeleteFilter(EntityTableSource table)
-    {
-        var entity = table.Entity;
-        if (entity.LogicDeleteColumn is not { } column) return null;
-        return entity.LogicDelete!.Strategy switch
-        {
-            LogicDeleteStrategy.Boolean => new BinaryExpr(table.Column(column), SqlBinaryOperator.Equal, new ParameterExpr(false, typeof(bool))),
-            LogicDeleteStrategy.DeletedTime => new IsNullExpr(table.Column(column), negated: false),
-            _ => throw new NotSupportedException($"逻辑删除策略 {entity.LogicDelete.Strategy} 需要注册自定义策略"),
-        };
-    }
+    internal static SqlExpr? LogicDeleteFilter(EasyDb db, EntityTableSource table) =>
+        table.Entity.LogicDeleteColumn is { } column
+            ? LogicDeleteStrategies.Resolve(db.Options, table.Entity).NotDeleted(table.Column(column))
+            : null;
 }
 
 /// <summary>翻译到 SELECT 列表之前的中间结果。</summary>

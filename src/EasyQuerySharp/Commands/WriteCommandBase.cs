@@ -222,7 +222,7 @@ public abstract class WriteCommandBase<TSelf, T> : EntityCommandBase<TSelf, T>
             throw new InvalidOperationException($"{typeof(T).Name} 的更新 / 删除没有条件；确认要整表操作请调用 All()");
 
         var result = new List<SqlExpr>();
-        if (applyLogicDelete && !LogicDeleteDisabled && QueryCompiler.LogicDeleteFilter(table) is { } ld) result.Add(ld);
+        if (applyLogicDelete && !LogicDeleteDisabled && QueryCompiler.LogicDeleteFilter(Db, table) is { } ld) result.Add(ld);
         if (VersionOf(entity) is var (versionColumn, current))
             result.Add(new BinaryExpr(table.Column(versionColumn), SqlBinaryOperator.Equal, ExpressionTranslator.Parameter(current, versionColumn.ClrType)));
         result.AddRange(Db.Interceptors.QueryFilters(table, Interceptors));
@@ -232,7 +232,7 @@ public abstract class WriteCommandBase<TSelf, T> : EntityCommandBase<TSelf, T>
         // 条件里的集合导航翻译成关联子查询，需要翻译上下文；对一导航要 JOIN 到目标表，UPDATE / DELETE 还不支持
         var scratch = new SelectQuery(table);
         var context = new TranslationContext(Db.Metadata,
-            (t, logicDelete) => [.. (logicDelete && QueryCompiler.LogicDeleteFilter(t) is { } filter ? [filter] : Array.Empty<SqlExpr>()), .. Db.Interceptors.QueryFilters(t, Interceptors)],
+            (t, logicDelete) => [.. (logicDelete && QueryCompiler.LogicDeleteFilter(Db, t) is { } filter ? [filter] : Array.Empty<SqlExpr>()), .. Db.Interceptors.QueryFilters(t, Interceptors)],
             scratch) { Db = Db };
         foreach (var where in _wheres)
         {

@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 933、偏离 121、不适用 20、骨架 15、待做 1315。
+合计：已移植 943、偏离 121、不适用 20、骨架 15、待做 1305。
 
 ## 按能力
 
@@ -42,7 +42,7 @@
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
 | 列加密 | `column.encryption` | M5 | 8 | 7 | 0 | 0 | 0 | 1 |
 | 拦截器 | `interceptor` | M5 | 3 | 0 | 0 | 0 | 0 | 3 |
-| 逻辑删除 | `logicDelete` | M5 | 10 | 0 | 0 | 0 | 0 | 10 |
+| 逻辑删除 | `logicDelete` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
 | 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 0 | 0 | 0 | 0 | 39 |
 | 追踪与差异更新 | `tracking` | M5 | 62 | 24 | 15 | 0 | 0 | 23 |
 | 乐观锁版本 | `version` | M5 | 13 | 13 | 0 | 0 | 0 | 0 |
@@ -1924,16 +1924,16 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| LogicDeleteTest.java#Test1 | 待做 |  | `SELECT 'id','stars','title','deleted','create_time' FROM 't_logic_del_topic' WHERE 'deleted' = ?` |
-| LogicDeleteTest.java#Test10 | 待做 |  | `SELECT 'id','stars','title','deleted_at','deleted_user','create_time' FROM 't_logic_del_topic_custom…` |
-| LogicDeleteTest.java#Test2 | 待做 |  | `UPDATE 't_logic_del_topic' SET 'deleted' = ? WHERE 'deleted' = ? AND 'id' = ?` |
-| LogicDeleteTest.java#Test3 | 待做 |  | `UPDATE 't_logic_del_topic' SET 'deleted' = ? WHERE 'deleted' = ? AND 'id' = ?` |
-| LogicDeleteTest.java#Test4 | 待做 |  | `SELECT 'id','stars','title','deleted','create_time' FROM 't_logic_del_topic'` |
-| LogicDeleteTest.java#Test5 | 待做 |  | `DELETE FROM 't_logic_del_topic' WHERE 'id' = ?` |
-| LogicDeleteTest.java#Test6 | 待做 |  | `UPDATE 't_logic_del_topic' SET 'title' = ? WHERE 'id' = ?` |
-| LogicDeleteTest.java#Test7 | 待做 |  | `SELECT 'id','stars','title','deleted_at','deleted_user','create_time' FROM 't_logic_del_topic_custom…` |
-| LogicDeleteTest.java#Test8 | 待做 |  | `SELECT 'id','stars','title','deleted_at','deleted_user','create_time' FROM 't_logic_del_topic_custom…` |
-| LogicDeleteTest.java#Test9 | 待做 |  | `SELECT 'id','stars','title','deleted_at','deleted_user','create_time' FROM 't_logic_del_topic_custom…` |
+| LogicDeleteTest.java#Test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/LogicDelete/LogicDeleteTest.cs:15 | `SELECT 'id','stars','title','deleted','create_time' FROM 't_logic_del_topic' WHERE 'deleted' = ?` |
+| LogicDeleteTest.java#Test10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/LogicDelete/LogicDeleteTest.cs:94 | `SELECT 'id','stars','title','deleted_at','deleted_user','create_time' FROM 't_logic_del_topic_custom…` |
+| LogicDeleteTest.java#Test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/LogicDelete/LogicDeleteTest.cs:22 | `UPDATE 't_logic_del_topic' SET 'deleted' = ? WHERE 'deleted' = ? AND 'id' = ?` |
+| LogicDeleteTest.java#Test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/LogicDelete/LogicDeleteTest.cs:29 | `UPDATE 't_logic_del_topic' SET 'deleted' = ? WHERE 'deleted' = ? AND 'id' = ?` |
+| LogicDeleteTest.java#Test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/LogicDelete/LogicDeleteTest.cs:37 | `SELECT 'id','stars','title','deleted','create_time' FROM 't_logic_del_topic'` |
+| LogicDeleteTest.java#Test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/LogicDelete/LogicDeleteTest.cs:44 | `DELETE FROM 't_logic_del_topic' WHERE 'id' = ?` |
+| LogicDeleteTest.java#Test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/LogicDelete/LogicDeleteTest.cs:51 | `UPDATE 't_logic_del_topic' SET 'title' = ? WHERE 'id' = ?` |
+| LogicDeleteTest.java#Test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/LogicDelete/LogicDeleteTest.cs:61 | `SELECT 'id','stars','title','deleted_at','deleted_user','create_time' FROM 't_logic_del_topic_custom…` |
+| LogicDeleteTest.java#Test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/LogicDelete/LogicDeleteTest.cs:69 | `SELECT 'id','stars','title','deleted_at','deleted_user','create_time' FROM 't_logic_del_topic_custom…` |
+| LogicDeleteTest.java#Test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/LogicDelete/LogicDeleteTest.cs:81 | `SELECT 'id','stars','title','deleted_at','deleted_user','create_time' FROM 't_logic_del_topic_custom…` |
 
 ### 聚合根保存（savable）（`save.aggregate`，M5）
 

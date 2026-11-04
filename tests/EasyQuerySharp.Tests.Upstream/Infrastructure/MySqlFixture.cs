@@ -61,7 +61,8 @@ public sealed class MySqlFixture : IAsyncLifetime
         {
             o.ReverseOffsetThreshold = 10;
             o.UseMySql(new MySqlDataSource(cs)).AddListener(SqlCapture.Instance)
-                .AddInterceptor(new Interceptors.Topic1Interceptor());
+                .AddInterceptor(new Interceptors.Topic1Interceptor())
+                .AddLogicDeleteStrategy(nameof(LogicDelete.MyLogicDelStrategy), new LogicDelete.MyLogicDelStrategy());
         });
         await SeedAsync(_db);
     }
@@ -124,6 +125,14 @@ public sealed class MySqlFixture : IAsyncLifetime
             Title = "标题" + i,
             CreateTime = DateTime.Now.AddDays(i),
             Deleted = false,
+        })).ExecuteAsync();
+
+        await db.Insert(Enumerable.Range(0, 100).Select(i => new LogicDelTopicCustom
+        {
+            Id = i.ToString(),
+            Stars = i + 100,
+            Title = "标题" + i,
+            CreateTime = DateTime.Now.AddDays(i),
         })).ExecuteAsync();
 
         await db.Insert(Enumerable.Range(0, 100).Select(i => new TopicInterceptor
