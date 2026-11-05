@@ -86,6 +86,12 @@ public abstract class SqlDialect
         _ => throw new ArgumentOutOfRangeException(nameof(rowLock), rowLock, null),
     });
 
+    /// <summary>
+    /// 写入某列的参数要包的类型转换（列声明了 <c>[Column(DbType = …)]</c> 时）：返回参数前后的文本，不需要时返回 null。
+    /// 默认不转换；PG 的 json / jsonb 列写成 <c>(?)::jsonb</c>（驱动把字符串参数当 text 发送）。
+    /// </summary>
+    public virtual (string Before, string After)? ParameterWrap(string? columnDbType) => null;
+
     /// <summary>写 GROUP BY 之后的键。默认是标准写法 <c>ROLLUP(a,b)</c> / <c>CUBE(a,b)</c>；不支持的方言覆盖成抛出 <see cref="NotSupportedException"/>。</summary>
     public virtual void WriteGroupBy(SqlRenderer renderer, IReadOnlyList<SqlExpr> keys, GroupByMode mode)
     {
@@ -283,6 +289,8 @@ public abstract class SqlDialect
         f[SqlFunctionNames.NullSafeEquals] = Template("(({0} = {1}) OR ({0} IS NULL AND {1} IS NULL))");
         foreach (var unit in Enum.GetValues<DateTruncUnit>())
             f[SqlFunctionNames.DateTrunc(unit)] = (_, _) => throw new NotSupportedException($"{Name} 方言不支持 DateTrunc({unit})");
+        foreach (var json in new[] { SqlFunctionNames.JsonGet, SqlFunctionNames.JsonGetIndex, SqlFunctionNames.JsonText, SqlFunctionNames.JsonTextIndex, SqlFunctionNames.JsonLength, SqlFunctionNames.JsonContainsKey })
+            f[json] = (_, _) => throw new NotSupportedException($"{Name} 方言还不支持 Sql.Json 的 {json}");
         f[SqlFunctionNames.Concat] = Call("CONCAT");
         f[SqlFunctionNames.Length] = Call("CHAR_LENGTH");
         f[SqlFunctionNames.Trim] = Call("TRIM");

@@ -88,6 +88,10 @@ public class PostgreSqlDialect : SqlDialect
         _ => base.CastTemplate(targetType),
     };
 
+    /// <summary>json / jsonb 列的参数写成 <c>(?)::jsonb</c>：驱动把字符串当 text 发送，不转换时写不进 jsonb 列。</summary>
+    public override (string Before, string After)? ParameterWrap(string? columnDbType) =>
+        columnDbType?.Trim().ToLowerInvariant() is "json" or "jsonb" ? ("(", ")::" + columnDbType.Trim().ToLowerInvariant()) : null;
+
     /// <inheritdoc />
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {
@@ -96,6 +100,13 @@ public class PostgreSqlDialect : SqlDialect
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("STRING_AGG(DISTINCT (").Write(a[0]).Append(")::TEXT, ").Write(a[1]).Append(")");
         // 与 Java 的 PgSQLDateTimeFormatSQLFunction 一致：先转成 TIMESTAMP 再格式化
         f[SqlFunctionNames.NullSafeEquals] = Template("({0} IS NOT DISTINCT FROM {1})");
+        // JSON：列须是 json / jsonb（与 Java 的 PgSQLJSON*SQLFunction 一致）
+        f[SqlFunctionNames.JsonGet] = Template("({0} -> '{1}')");
+        f[SqlFunctionNames.JsonGetIndex] = Template("({0} -> {1})");
+        f[SqlFunctionNames.JsonText] = Template("({0} ->> '{1}')");
+        f[SqlFunctionNames.JsonTextIndex] = Template("({0} ->> {1})");
+        f[SqlFunctionNames.JsonLength] = Call("JSONB_ARRAY_LENGTH");
+        f[SqlFunctionNames.JsonContainsKey] = Template("JSONB_EXISTS({0}, '{1}')");
         foreach (var unit in Enum.GetValues<DateTruncUnit>())
             f[SqlFunctionNames.DateTrunc(unit)] = Template("DATE_TRUNC('" + unit.ToString().ToLowerInvariant() + "', {0})");
         f[SqlFunctionNames.DateFormat] = DateFormat("TO_CHAR(({0})::TIMESTAMP,{1})", ("yyyy", "YYYY"), ("MM", "MM"), ("dd", "DD"), ("HH", "HH24"), ("mm", "MI"), ("ss", "SS"));

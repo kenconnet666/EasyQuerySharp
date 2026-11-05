@@ -82,6 +82,13 @@ public class SqliteDialect : SqlDialect
         base.RegisterFunctions(f);
         f[SqlFunctionNames.Length] = Call("LENGTH");
         f[SqlFunctionNames.NullSafeEquals] = Template("({0} IS {1})");
+        // JSON：json_extract 对标量返回 SQL 值、对对象 / 数组返回 JSON 文本，取值与取文本同一个写法
+        f[SqlFunctionNames.JsonGet] = Template("json_extract({0},'$.{1}')");
+        f[SqlFunctionNames.JsonGetIndex] = Template("json_extract({0},'$[{1}]')");
+        f[SqlFunctionNames.JsonText] = Template("json_extract({0},'$.{1}')");
+        f[SqlFunctionNames.JsonTextIndex] = Template("json_extract({0},'$[{1}]')");
+        f[SqlFunctionNames.JsonLength] = Call("json_array_length");
+        f[SqlFunctionNames.JsonContainsKey] = Template("(json_type({0},'$.{1}') IS NOT NULL)");
         f[SqlFunctionNames.DateFormat] = DateFormat("strftime({1}, {0})", ("yyyy", "%Y"), ("MM", "%m"), ("dd", "%d"), ("HH", "%H"), ("mm", "%M"), ("ss", "%S"));
         f[SqlFunctionNames.StringJoin] = Call("GROUP_CONCAT");
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("GROUP_CONCAT(DISTINCT ").Write(a[0]).Append(",").Write(a[1]).Append(")");

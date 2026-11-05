@@ -104,8 +104,11 @@ internal sealed partial class ExpressionTranslator
     }
 
     /// <summary>列的数据库值（已经过值转换器）作为参数，类型取列的数据库类型。</summary>
-    internal static ParameterExpr Parameter(ColumnMetadata column, object? providerValue) =>
-        Parameter(providerValue, column.Converter?.ProviderType ?? column.ClrType);
+    internal static ParameterExpr Parameter(ColumnMetadata column, object? providerValue)
+    {
+        var parameter = Parameter(providerValue, column.Converter?.ProviderType ?? column.ClrType);
+        return column.DbType is null ? parameter : new ParameterExpr(parameter.Value, parameter.ClrType) { ColumnDbType = column.DbType };
+    }
 
     /// <summary>属性类型的值（还没经过值转换器）作为这一列的参数。</summary>
     internal static ParameterExpr ParameterFromModel(ColumnMetadata column, object? value) =>

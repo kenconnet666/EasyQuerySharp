@@ -257,10 +257,13 @@ public sealed class SqlRenderer
 
     private void WriteParameter(ParameterExpr p)
     {
+        var wrap = Dialect.ParameterWrap(p.ColumnDbType);
+        if (wrap is { } before) Append(before.Before);
         var index = _parameters.Count;
         _parameters.Add(new SqlParameterValue(p.Value, p.ClrType));
         _command.Append(Dialect.ParameterPlaceholder(index));
         _text.Append('?');
+        if (wrap is { } after) Append(after.After);
     }
 
     // 算术运算总是加括号（Java 版的写法）：(a + b)、((a + b) * c)；比较不加

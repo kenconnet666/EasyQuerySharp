@@ -66,11 +66,13 @@ internal static class AutoProjection
         return new Translation.ExpressionTranslator.ParameterReplacer(parameter, row).Visit(lambda.Body);
     }
 
-    // 同名的列
+    // 同名的列；带值转换器的列（如 JSON 对象列）属性类型兼容时同样映射，读取时照样转换
     private static MemberExpression? ColumnValue(EntityMetadata source, Expression row, PropertyInfo property)
     {
         var column = source.Columns.FirstOrDefault(c => string.Equals(c.PropertyName, property.Name, StringComparison.OrdinalIgnoreCase));
-        return column is null || !ScalarTypes.IsScalar(property.PropertyType) ? null : Expression.Property(row, column.Property);
+        if (column is null) return null;
+        var mappable = ScalarTypes.IsScalar(property.PropertyType) || (column.Converter is not null && property.PropertyType.IsAssignableFrom(column.ClrType));
+        return mappable ? Expression.Property(row, column.Property) : null;
     }
 
     private static Expression? Value(MetadataRegistry registry, EntityMetadata source, Expression row, PropertyInfo property, HashSet<Type> visiting)

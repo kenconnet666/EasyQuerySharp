@@ -48,14 +48,17 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
         Assert.Equal(4565, item.Age);
     }
 
-    // Jackson 与 fastjson 两种序列化器在 C# 里都是 System.Text.Json
-    [Fact, Upstream("QueryTest4.java#testJson2Jackson")]
+    // Jackson 与 fastjson 两种序列化器在 C# 里都是 System.Text.Json；testJson2 还按数组第一个元素的 name 查回来
+    [Fact, Upstream("QueryTest4.java#testJson2Jackson"), Upstream("QueryTest4.java#testJson2")]
     public async Task TestJson2Jackson()
     {
         var read = await SaveArrayJson("1231", ("1234", 4565), ("12345", 45655));
         Assert.Equal(2, read.Title2!.Count);
         Assert.Equal(("1234", 4565), (read.Title2[0].Name, read.Title2[0].Age!.Value));
         Assert.Equal(("12345", 45655), (read.Title2[1].Name, read.Title2[1].Age!.Value));
+
+        var byName = await Db.Query<TopicTypeArrayJson>().Where(t => Sql.Json(t.Title2).Get(0).Text("name") == "1234").ToListAsync(Ct);
+        Assert.Equal("1234", Assert.Single(byName).Title2![0].Name);
     }
 
     [SqlFunction("FIND_IN_SET({0},{1})")]

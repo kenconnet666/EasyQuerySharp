@@ -33,6 +33,9 @@ public sealed class ParameterExpr(object? value, Type clrType) : SqlExpr
 
     /// <summary>值的 CLR 类型（用于驱动类型推断与测试里的参数文本）。</summary>
     public Type ClrType { get; } = clrType;
+
+    /// <summary>写入的目标列声明的数据库类型（<c>[Column(DbType = …)]</c>）；方言据此给参数加类型转换（如 PG 的 jsonb）。</summary>
+    public string? ColumnDbType { get; init; }
 }
 
 /// <summary>原样输出的 SQL 片段，不含参数：<c>1</c>、<c>NULL</c>、<c>*</c>。</summary>

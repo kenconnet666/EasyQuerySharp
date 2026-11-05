@@ -38,9 +38,18 @@ public sealed class NullSafeSqlTest
     }
 }
 
-/// <summary>对应 Java fork：functions/SmallFixesSqlTest.java。jsonArraySize 随 JSON 函数一起移植。</summary>
+/// <summary>对应 Java fork：functions/SmallFixesSqlTest.java。</summary>
 public sealed class SmallFixesSqlTest
 {
+    [Fact, Upstream("fork/functions/SmallFixesSqlTest.java#jsonArraySize")]
+    public void JsonArraySize()
+    {
+        Assert.Equal("SELECT `id`,`name`,`age`,`company_id`,`attrs`,`created_at` FROM `t_fork_user` WHERE JSON_LENGTH(`attrs`) > ?",
+            SqlOnly.Db("mysql").Query<ForkUser>().Where(u => Sql.Json(u.Attrs).Length() > 1).ToSql());
+        Assert.Equal("SELECT \"id\",\"name\",\"age\",\"company_id\",\"attrs\",\"created_at\" FROM \"t_fork_user\" WHERE JSONB_ARRAY_LENGTH(\"attrs\") > ?",
+            SqlOnly.Db("pgsql").Query<ForkUser>().Where(u => Sql.Json(u.Attrs).Length() > 1).ToSql());
+    }
+
     [Fact, Upstream("fork/functions/SmallFixesSqlTest.java#offsetWindowHasSpaceBeforeOrderBy")]
     public void OffsetWindowHasSpaceBeforeOrderBy()
     {

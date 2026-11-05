@@ -10,6 +10,7 @@ internal sealed partial class ExpressionTranslator
     {
         var method = call.Method;
 
+        if (method.DeclaringType == typeof(JsonNode) || (method.DeclaringType == typeof(Sql) && method.Name == nameof(Sql.Json))) return TranslateJson(call);
         if (method.DeclaringType == typeof(Sql)) return TranslateSqlMarker(call);
         if (method.DeclaringType == typeof(Sql.Over)) return TranslateWindow(call);
         if (method.DeclaringType is { } declaring && IsGroupType(declaring)) return TranslateGroupAggregate(call);

@@ -129,6 +129,13 @@ public class MySqlDialect : SqlDialect
         base.RegisterFunctions(f);
         f[SqlFunctionNames.NullOrDefault] = Call("IFNULL");
         f[SqlFunctionNames.NullSafeEquals] = Template("({0} <=> {1})");
+        // JSON：键写进路径字面量（与 Java 的 JSONObjectFieldSQLFunction 等一致，数组下标的逗号后没有空格）
+        f[SqlFunctionNames.JsonGet] = Template("JSON_EXTRACT({0}, '$.{1}')");
+        f[SqlFunctionNames.JsonGetIndex] = Template("JSON_EXTRACT({0},'$[{1}]')");
+        f[SqlFunctionNames.JsonText] = Template("JSON_UNQUOTE(JSON_EXTRACT({0}, '$.{1}'))");
+        f[SqlFunctionNames.JsonTextIndex] = Template("JSON_UNQUOTE(JSON_EXTRACT({0},'$[{1}]'))");
+        f[SqlFunctionNames.JsonLength] = Call("JSON_LENGTH");
+        f[SqlFunctionNames.JsonContainsKey] = Template("JSON_CONTAINS_PATH({0}, 'one', '$.{1}')");
         // MySQL 没有 DATE_TRUNC：DATE_FORMAT 把更小的部分清零再转回 DATETIME；季度、周再减去月 / 天的偏移（WEEKDAY 周一为 0），与 Java 一致
         f[SqlFunctionNames.DateTrunc(DateTruncUnit.Year)] = Template("CAST(DATE_FORMAT({0},'%Y-01-01 00:00:00') AS DATETIME)");
         f[SqlFunctionNames.DateTrunc(DateTruncUnit.Quarter)] = Template("DATE_SUB(CAST(DATE_FORMAT({0},'%Y-%m-01 00:00:00') AS DATETIME), INTERVAL ((MONTH({0}) - 1) % 3) MONTH)");

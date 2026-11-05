@@ -21,6 +21,24 @@ public static class SqlFunctionNames
     /// <summary>(a, b)：null 安全的相等（两边都为 NULL 也算相等），作为条件使用。MySQL <c>&lt;=&gt;</c>、PG <c>IS NOT DISTINCT FROM</c>、SQLite <c>IS</c>。</summary>
     public const string NullSafeEquals = "NullSafeEquals";
 
+    /// <summary>(json, key)：对象成员，仍是 JSON。</summary>
+    public const string JsonGet = "JsonGet";
+
+    /// <summary>(json, index)：数组元素，仍是 JSON。</summary>
+    public const string JsonGetIndex = "JsonGetIndex";
+
+    /// <summary>(json, key)：对象成员的文本值。</summary>
+    public const string JsonText = "JsonText";
+
+    /// <summary>(json, index)：数组元素的文本值。</summary>
+    public const string JsonTextIndex = "JsonTextIndex";
+
+    /// <summary>(json)：数组长度。</summary>
+    public const string JsonLength = "JsonLength";
+
+    /// <summary>(json, key)：对象是否有这个键，作为条件使用。</summary>
+    public const string JsonContainsKey = "JsonContainsKey";
+
     /// <summary>(key)：<c>GROUPING(key)</c>，ROLLUP / CUBE 的小计行里被汇总掉的键为 1。</summary>
     public const string Grouping = "GROUPING";
 

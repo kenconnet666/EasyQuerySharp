@@ -155,3 +155,77 @@ public class NoKeyEntity
 
     public string? Name { get; set; }
 }
+
+/// <summary>对应 Java：mysql8/entity/TopicJson（JSON 存成普通文本列）。</summary>
+[Table("t_test_json")]
+public class TopicJson
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    [Column(DbType = "varchar(255)")]
+    public string? ExtraJson { get; set; }
+
+    [Column(DbType = "varchar(255)")]
+    public string? ExtraJsonArray { get; set; }
+}
+
+/// <summary>对应 Java：pgsql/PgTopicJson（jsonb 列，属性是 JSON 文本）。</summary>
+[Table("t_test_json")]
+public class PgTopicJson
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    [Column(DbType = "jsonb")]
+    public string? ExtraJson { get; set; }
+
+    [Column(DbType = "jsonb")]
+    public string? ExtraJsonArray { get; set; }
+}
+
+/// <summary>对应 Java：pgsql/TopicExtraJson。</summary>
+public class TopicExtraJson
+{
+    public bool? Success { get; set; }
+
+    public int? Age { get; set; }
+
+    public string? Code { get; set; }
+
+    public string? Name { get; set; }
+}
+
+/// <summary>对应 Java：pgsql/PgTopicJson2（jsonb 列，属性是对象与对象列表）。</summary>
+[Table("t_test_json2")]
+public class PgTopicJson2
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    [Column(DbType = "jsonb", Converter = typeof(JsonValueConverter<TopicExtraJson>))]
+    public TopicExtraJson? ExtraJson { get; set; }
+
+    [Column(DbType = "jsonb", Converter = typeof(JsonValueConverter<List<TopicExtraJson>>))]
+    public List<TopicExtraJson>? ExtraJsonArray { get; set; }
+}
+
+/// <summary>对应 Java：pgsql/TopicJson2VO（按同名列投影，JSON 列照样转换）。</summary>
+public class TopicJson2VO
+{
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    [Column(Converter = typeof(JsonValueConverter<TopicExtraJson>))]
+    public TopicExtraJson? ExtraJson { get; set; }
+
+    [Column(Converter = typeof(JsonValueConverter<List<TopicExtraJson>>))]
+    public List<TopicExtraJson>? ExtraJsonArray { get; set; }
+}
