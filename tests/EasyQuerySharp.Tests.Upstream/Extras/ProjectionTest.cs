@@ -51,6 +51,28 @@ public sealed class ProjectionTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
             string.Join("|", users.Select(u => u.Id + ":" + string.Join(",", u.Cards.OrderBy(c => c.Code).Select(c => c.Code + "@" + c.Bank.Name))));
     }
 
+
+    /// <summary>[MapFrom] 的 DTO：Select&lt;TDto&gt;() 按结构映射并带出导航。</summary>
+    [EasyQuerySharp.Metadata.MapFrom<Mysql8.SysUser>]
+    public sealed class UserCardsVo
+    {
+        public string? Id { get; set; }
+
+        public List<SysBankCard>? BankCards { get; set; }
+    }
+
+    [Fact]
+    public async Task SelectMapFromDtoIncludesLikeSelectAutoInclude()
+    {
+        using var listen = SqlCapture.Listen();
+        var list = await Db.Query<Mysql8.SysUser>().Select<UserCardsVo>().ToListAsync(Ct);
+        var viaSelect = listen.Events.Select(e => e.Statement.Text).ToList();
+        Assert.Contains(list, u => u.BankCards is { Count: > 0 });
+        using var again = SqlCapture.Listen();
+        await Db.Query<Mysql8.SysUser>().SelectAutoInclude<UserCardsVo>().ToListAsync(Ct);
+        Assert.Equal(again.Events.Select(e => e.Statement.Text), viaSelect);
+        Assert.Throws<InvalidOperationException>(() => Db.Query<SysBankCard>().Select<UserCardsVo>());
+    }
     // 在内存里调用就是普通方法
     [Fact]
     public void ProjectionMethodRunsInMemory() =>

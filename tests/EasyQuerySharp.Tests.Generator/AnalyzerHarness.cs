@@ -35,6 +35,14 @@ internal static class AnalyzerHarness
         MetadataReference.CreateFromFile(typeof(EasyDb).Assembly.Location),
     ];
 
+    /// <summary>编译 <paramref name="types"/>（顶层类型声明），返回 <typeparamref name="TAnalyzer"/> 报出的诊断。</summary>
+    public static async Task<ImmutableArray<Diagnostic>> AnalyzeTypesAsync<TAnalyzer>(string types) where TAnalyzer : DiagnosticAnalyzer, new()
+    {
+        var compilation = CSharpCompilation.Create("Snippet", [CSharpSyntaxTree.ParseText("using System.Linq.Expressions;\n" + Prelude + types)], References,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
+        return await compilation.WithAnalyzers([new TAnalyzer()]).GetAnalyzerDiagnosticsAsync(TestContext.Current.CancellationToken);
+    }
+
     /// <summary>
     /// 编译 <paramref name="types"/>（顶层类型声明）并运行生成器 <typeparamref name="TGenerator"/>：返回生成器报出的诊断、
     /// 加入生成代码之后的编译错误，以及生成的源码。

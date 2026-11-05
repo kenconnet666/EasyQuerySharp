@@ -130,10 +130,18 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
 
     /// <summary>
     /// 按属性名自动投影到 DTO（对应 Java 的 select(Dto.class)）：DTO 的每个可写属性取实体上的同名列，
-    /// DTO 属性上的 <c>[Column("…")]</c> 决定别名。
+    /// DTO 属性上的 <c>[Column("…")]</c> 决定别名。标了 <see cref="Metadata.MapFromAttribute{TEntity}"/> 的 DTO 同 <see cref="SelectAutoInclude{TResult}"/>，按结构带出导航。
     /// </summary>
-    public Query<TResult> Select<TResult>() where TResult : new() =>
-        new(Open with { Selector = AutoProjection.Build(Db.Metadata.Get<T>(), typeof(TResult)) });
+    public Query<TResult> Select<TResult>() where TResult : new()
+    {
+        // 标了 [MapFrom<T>] 的 DTO 按结构映射并带出导航（同 SelectAutoInclude）
+        if (AutoProjection.MapFromEntity(typeof(TResult)) is { } source)
+        {
+            if (source != typeof(T)) throw new InvalidOperationException($"{typeof(TResult).Name} 声明的是 [MapFrom<{source.Name}>]，不能从 {typeof(T).Name} 的查询映射");
+            return SelectAutoInclude<TResult>();
+        }
+        return new(Open with { Selector = AutoProjection.Build(Db.Metadata.Get<T>(), typeof(TResult)) });
+    }
 
     /// <summary>
     /// 按 DTO 的结构自动投影并带出导航（对应 Java 的 selectAutoInclude）：同名属性取列；与实体导航同名的属性按导航映射——

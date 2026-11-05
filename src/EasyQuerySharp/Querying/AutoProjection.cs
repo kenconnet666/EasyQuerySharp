@@ -25,6 +25,11 @@ internal static class AutoProjection
         return Build(null, source, target, excluded, [], root: true);
     }
 
+
+    /// <summary>DTO 上 <see cref="MapFromAttribute{TEntity}"/> 声明的实体类型；没有声明时为 null。</summary>
+    public static Type? MapFromEntity(Type dto) =>
+        dto.GetCustomAttributes(inherit: false).Select(a => a.GetType())
+            .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(MapFromAttribute<>))?.GetGenericArguments()[0];
     /// <summary>按结构带出导航的自动映射（selectAutoInclude）：嵌套 DTO 沿同名导航递归映射；DTO 引用自身的集合（树）留给 ToTreeAsync 拼。</summary>
     public static LambdaExpression BuildWithIncludes(MetadataRegistry registry, EntityMetadata source, Type target) => Build(registry, source, target, null, [], root: true);
 

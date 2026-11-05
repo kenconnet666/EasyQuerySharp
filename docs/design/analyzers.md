@@ -8,6 +8,9 @@
 |---|---|---|---|
 | EQ0001 | 警告 | 调用了用到查询参数、又不能翻译成 SQL 的方法（不是 BCL、`Sql.*`，也没标 `[SqlFunction]`） | 给静态方法标 `[SqlFunction("模板")]`，或者在查询外算好再传进来；不引用查询参数的调用会在客户端先求值，不报 |
 | EQ0002 | 提示 | 用了 `?.`（表达式树不支持，编译器同时报 CS8072） | 改成 `!.`：导航翻译成 LEFT JOIN / 子查询，取不到时本来就是 NULL。诊断消息里直接给出改写后的整段写法，嵌套的 `a?.b?.c` 一次改完 |
+| EQ0003 | 警告 | `[MapFrom<T>]` 的 DTO 成员在实体上对不上：同名属性（忽略大小写）不存在，或 `[MapPath]` 的路径某一段找不到 | 改名，或用 `[MapPath]` / `[MapExpression]` 指定，或标 `[ColumnIgnore]` |
+| EQ0004 | 错误 | `[Navigate]` 的 `ExtraFilter` / `ExtraMappingFilter` 引用的成员不存在、不是静态，或类型不是 `Expression<Func<目标（中间表）, bool>>` | 用 `nameof` 引用本实体上的静态表达式属性或字段 |
+| EQ0005 | 警告 | `[MapFrom<T>]` 的 DTO 把没有标 `Required` 的可空对一导航映射成了非空成员 | DTO 成员加 `?`，或在导航上标 `Required = true` |
 | EQ0006 | 错误 | `[Projection]` 方法写法生成器处理不了：不是静态、是泛型、所在类型不是 partial 或是泛型、方法体不止一个表达式 | 按诊断说明改写；方法体只写一个表达式（`=> 表达式` 或只有一句 `return`） |
 
 ## 生成器
@@ -18,4 +21,4 @@
 
 没有做自动修复：代码修复要引用 Roslyn Workspaces，而分析器程序集不能引用它（RS1038），要单独再建一个程序集。等规则多到值得时再拆。
 
-计划中的规则：EQ0003 / EQ0005（`[MapFrom]` 映射，4.7）、EQ0004（导航 ExtraFilter，4.8）。EQ0001 不报 `[Projection]` 方法（它们会内联）。
+EQ0001 不报 `[Projection]` 方法（它们会内联）。`[MapFrom<T>]` 的映射表达式目前在运行时构造（与 `SelectAutoInclude` 相同），编译期生成随 1.1 的生成器一起做。

@@ -27,6 +27,36 @@ internal static class Descriptors
         isEnabledByDefault: true,
         description: "查询里的导航翻译成 LEFT JOIN 或子查询，取不到时值就是 NULL，不需要 ?. 来防空引用；写成 !. 即可。");
 
+    /// <summary>[MapFrom] DTO 的成员在实体上对不上。</summary>
+    public static readonly DiagnosticDescriptor UnmappedMember = new(
+        "EQ0003",
+        "DTO 成员在实体上找不到对应",
+        "{0}.{1} 在 {2} 上找不到对应：{3}",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "[MapFrom<T>] 的 DTO 按名字（忽略大小写）对应实体的属性，[MapPath] 按路径逐段对应；对不上的成员在查询结果里永远是默认值。改名、加 [MapPath] / [MapExpression]，或标 [ColumnIgnore]。");
+
+    /// <summary>导航的 ExtraFilter / ExtraMappingFilter 引用不对。</summary>
+    public static readonly DiagnosticDescriptor InvalidExtraFilter = new(
+        "EQ0004",
+        "导航的固定条件引用不对",
+        "导航 {0} 的 {1} = \"{2}\"：{3}",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "ExtraFilter 要引用本实体上返回 Expression<Func<目标, bool>> 的静态属性或字段，ExtraMappingFilter 的参数是中间表实体；用 nameof 引用，运行时才不会找不到。");
+
+    /// <summary>对一导航在 DTO 里声明为非空，但关系可空。</summary>
+    public static readonly DiagnosticDescriptor NonNullableOptionalNavigation = new(
+        "EQ0005",
+        "可空的对一导航映射到了非空的 DTO 成员",
+        "{0}.{1} 声明为非空，但 {2}.{3} 是可空的对一导航（没有标 Required）：取不到时会是 null",
+        Category,
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "对一导航没有标 Required 时按 LEFT JOIN 或带出查询取，可能取不到；DTO 成员声明成可空（加 ?），或在导航上标 Required = true。");
+
     /// <summary>[Projection] 方法的写法生成器处理不了。</summary>
     public static readonly DiagnosticDescriptor UnsupportedProjection = new(
         "EQ0006",
