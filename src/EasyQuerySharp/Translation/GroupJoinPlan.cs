@@ -68,6 +68,9 @@ internal sealed class GroupJoinPlan
     /// <summary>子查询里集合元素的绑定。</summary>
     public SourceBinding Element { get; }
 
+    /// <summary>必有的导航（INNER JOIN）：每行都连得上，外层引用聚合时不包 IFNULL。</summary>
+    public bool Required { get; set; }
+
     /// <summary>GroupJoin(…, q =&gt; q.UseValueFilter(…)) 配的值过滤：只作用于这个导航聚合里的条件（主查询的值过滤管不到导航里）。</summary>
     public Filtering.ValueFilter ValueFilter { get; set; }
 
@@ -99,6 +102,7 @@ internal sealed class GroupJoinPlan
             _byKey[key] = entry;
         }
         var column = new ColumnExpr(Table, entry.Alias);
+        if (Required) return column;
         return kind switch
         {
             GroupAggregate.Count or GroupAggregate.Sum or GroupAggregate.Avg => new FunctionExpr(SqlFunctionNames.NullOrDefault, [column, new LiteralExpr("0")]),

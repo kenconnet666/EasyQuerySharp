@@ -178,10 +178,10 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
 
     /// <summary>
     /// 把这条查询作为公共表表达式（对应 Java 的 toCteAs）：之后的查询从 <c>`名字`</c> 读，定义写在整条语句前面的
-    /// <c>WITH `名字` AS (…)</c> 里。可以继续 Where / Select，也可以作为别的查询的 JOIN 来源；名字默认是 <c>with_类型名</c>。
+    /// <c>WITH `名字` AS (…)</c> 里。可以继续 Where / Select，也可以作为别的查询的 JOIN 来源；名字默认是 <c>with_类型名</c>（泛型去掉反引号，如 <c>with_Draft2</c>，与 Java 一致）。
     /// </summary>
     public Query<T> AsCte(string? name = null) =>
-        new(new QueryState(Db, [new CteSource(name ?? "with_" + typeof(T).Name, State)]) { ValueFilter = State.ValueFilter });
+        new(new QueryState(Db, [new CteSource(name ?? "with_" + typeof(T).Name.Replace("`", "", StringComparison.Ordinal), State)]) { ValueFilter = State.ValueFilter });
 
     /// <summary>LEFT JOIN 实体 <typeparamref name="T2"/>。</summary>
     public Query<T, T2> LeftJoin<T2>(Expression<Func<T, T2, bool>> on) => Join<T2>(JoinKind.Left, new EntitySource(typeof(T2)), on);

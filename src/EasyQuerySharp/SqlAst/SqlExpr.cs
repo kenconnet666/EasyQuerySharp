@@ -20,6 +20,9 @@ public sealed class ColumnExpr(TableSource table, string name, ColumnMetadata? c
 
     /// <summary>映射信息；派生表上的列为 null。</summary>
     public ColumnMetadata? Column { get; } = column;
+
+    /// <summary>派生表上内层写了 AS 的列：外层投影到同名成员时同样写 AS（与 Java 一致）。</summary>
+    public bool KeepAlias { get; init; }
 }
 
 /// <summary>绑定的参数值，渲染为占位符。</summary>

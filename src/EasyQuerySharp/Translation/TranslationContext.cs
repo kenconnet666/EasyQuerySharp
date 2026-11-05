@@ -47,6 +47,7 @@ internal sealed class TranslationContext(
         var key = (owner.Table, navigation.Property.Name + "|" + window?.Key);
         if (_groupJoins.TryGetValue(key, out var existing)) return existing;
         var plan = window is null ? WholePlan(navigation, spec) : WindowedPlan(navigation, spec, window);
+        plan.Required = navigation.Required;
         if (spec?.Configure is { } configure && Db is not null)
             plan.ValueFilter = configure(new Querying.QueryState(Db, [new Querying.EntitySource(navigation.Target.Type)])).ValueFilter;
         // 派生表在 Java 里此时创建，别名排在已有的 JOIN（Configure 条件里的导航）之后、之后才加的表之前

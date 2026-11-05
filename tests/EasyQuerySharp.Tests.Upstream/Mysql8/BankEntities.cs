@@ -63,6 +63,15 @@ public class SysUser
     [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(SysBankCard.Uid)])]
     public List<SysBankCard>? BankCards { get; set; }
 
+    /// <summary>默认合并成分组 JOIN 的银行卡（Java 的 subQueryToGroupJoin = true）。</summary>
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(SysBankCard.Uid)], GroupJoin = true)]
+    public List<SysBankCard>? BankCards2 { get; set; }
+
+    /// <summary>同上且必有（Java 的 required = true）：取某一张时用 INNER JOIN。</summary>
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(SysBankCard.Uid)], GroupJoin = true, Required = true)]
+    public List<SysBankCard>? BankCards3 { get; set; }
+
+
     [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(SysUserBook.Uid)])]
     public List<SysUserBook>? UserBooks { get; set; }
 }

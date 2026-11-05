@@ -133,6 +133,6 @@ internal sealed class DerivedBinding(
     /// <inheritdoc />
     public override SqlExpr? Member(MemberInfo member) =>
         memberColumns.TryGetValue(member.Name, out var column)
-            ? new ColumnExpr(table, column, entity?.FindColumn(member.Name))
+            ? new ColumnExpr(table, column, entity?.FindColumn(member.Name)) { KeepAlias = AliasedMembers.Contains(member.Name) }
             : null;
 }

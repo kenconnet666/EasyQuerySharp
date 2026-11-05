@@ -375,6 +375,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     private int AddColumn(SqlExpr sql, string? alias, string? memberName, bool forceAlias = false, bool plainColumn = false)
     {
         var columnName = (sql as ColumnExpr)?.Name;
+        forceAlias |= sql is ColumnExpr { KeepAlias: true };
         if (neverAlias || (alias == columnName && !forceAlias && (!alwaysAlias || plainColumn))) alias = null;
         _columns.Add(new SelectColumn(sql, alias));
         if (memberName is not null && (alias ?? columnName) is { } output) MemberColumns.TryAdd(memberName, output);
