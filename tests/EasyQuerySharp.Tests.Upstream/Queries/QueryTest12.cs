@@ -357,4 +357,20 @@ public sealed partial class QueryTest12(MySqlFixture fixture) : MySqlTest(fixtur
         listen.AssertSql("SELECT `id`,`create_time`,`username`,`phone`,`id_card`,`address` FROM `easy-query-test`.`t_sys_user` WHERE CONCAT(?,`id_card`,?) LIKE ?");
         listen.AssertParams(",(String),,(String),%,2,%(String)");
     }
+
+    // 实体的全部列再拼上两个对一导航的部分列（Java 的 FETCHER.allFields()._concat(..)）：C# 写成嵌套对象，导航的列各 JOIN 一次
+    [Fact, Upstream("QueryTest12.java#testFetchSub2"), Upstream("QueryTest12.java#testFetchSub3")]
+    public async Task TestFetchSub2()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<MySchoolStudent>().Where(m => m.Name!.Contains("123"))
+            .Select(b => new MySchoolStudent
+            {
+                Id = b.Id, ClassId = b.ClassId, Name = b.Name,
+                SchoolClass = new MySchoolClass { Id = b.SchoolClass!.Id, Name = b.SchoolClass.Name },
+                SchoolStudentAddress = new MySchoolStudentAddress { Address = b.SchoolStudentAddress!.Address },
+            }).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`id`,t.`class_id`,t.`name`,t1.`id`,t1.`name`,t2.`address` FROM `my_school_student` t LEFT JOIN `my_school_class` t1 ON t1.`id` = t.`class_id` LEFT JOIN `school_student_address` t2 ON t2.`student_id` = t.`id` WHERE t.`name` LIKE ?");
+        listen.AssertParams("%123%(String)");
+    }
 }
