@@ -97,6 +97,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>单表时也写别名 t（带出的子查询在 Java 版里总带别名）。</summary>
     public bool ForceAlias { get; init; }
 
+    /// <summary>投影之后加的条件尽量推进派生表内层（见 <see cref="SmartPredicates"/>，对应 Java 的 SMART_PREDICATE）。</summary>
+    public bool SmartPredicate { get; init; }
+
     /// <summary>结果读出后依次执行的填充（FillMany / FillOne），参数是本次的结果行。</summary>
     public ImmutableArray<Func<System.Collections.IList, CancellationToken, Task>> Fills { get; init; } = [];
 
@@ -148,7 +151,10 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
         var filtered = Filtering.ValueFilterRewriter.Apply(predicate, ValueFilter);
         // 被过滤掉的条件里用过会建表的导航时，Java 已经按多表写法给主表起了别名 t，去掉条件后仍保留（逐字对齐）
         var state = Filtering.ValueFilterRewriter.DroppedNavigation(predicate, filtered, IsGroupJoined) ? this with { ForceAlias = true } : this;
-        return filtered is null ? state : state with { Wheres = state.Wheres.Add(filtered) };
+        if (filtered is null) return state;
+        if (!SmartPredicate) return state with { Wheres = state.Wheres.Add(filtered) };
+        var (pushed, remaining) = SmartPredicates.PushDown(state, filtered);
+        return remaining is null ? pushed : pushed with { Wheres = pushed.Wheres.Add(remaining) };
     }
 
     // 这个集合导航是否合并成分组 JOIN：GroupJoinAll、GroupJoin 声明或导航上标了 GroupJoin
@@ -163,6 +169,7 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
         ValueFilter = ValueFilter, NavigationValueFilter = NavigationValueFilter, Fills = Fills, Lock = Lock,
         // 分组合并的设置跟到外层：投影包一层后，外层投影里的导航仍按同样的方式合并
         GroupJoins = GroupJoins, GroupJoinAll = GroupJoinAll, GroupJoinNoMerge = GroupJoinNoMerge, NavigationFilters = NavigationFilters,
+        SmartPredicate = SmartPredicate,
     };
 
     /// <summary>是否已经有投影（之后的条件要包一层）。</summary>

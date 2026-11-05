@@ -113,6 +113,14 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     public TSelf GroupJoinAll() => With(State with { GroupJoinAll = true });
 
     /// <summary>
+    /// 投影之后再加的条件尽量推进派生表内层（对应 Java 的 SMART_PREDICATE）：只用到某张表直接投影出的列的合取项，
+    /// 第一张表的写进内层 WHERE，连接表的写进它的 ON；其余留在外层。
+    /// <code>db.Query&lt;Blog&gt;().SmartPredicate().Select(b =&gt; new BlogVo { Status = b.Status }).Where(v =&gt; v.Status == 0)
+    /// // SELECT … FROM (SELECT t.status AS status FROM t_blog t WHERE t.status = ?) t1</code>
+    /// </summary>
+    public TSelf SmartPredicate() => With(State with { SmartPredicate = true });
+
+    /// <summary>
     /// 分组合并时不把各聚合共有的条件提到派生表的 WHERE，每个聚合都写成 CASE WHEN（对应 Java 的 GROUP_JOIN_NOT_ALLOW_AUTO_MERGE）。
     /// </summary>
     public TSelf GroupJoinNoMerge() => With(State with { GroupJoinNoMerge = true });

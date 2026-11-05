@@ -216,4 +216,60 @@ public sealed class QueryTest23(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertSql("SELECT t.`id`,t.`create_time`,t.`update_time`,t.`create_by`,t.`update_by`,t.`deleted`,t.`title`,t.`content`,t.`url`,t.`star`,t.`publish_time`,t.`score`,t.`status`,t.`order`,t.`is_top`,t.`top` FROM `t_blog` t WHERE t.`deleted` = ? AND t.`id` = ? AND EXISTS(SELECT 1 FROM `t_topic` t1 WHERE  t.`id` = IFNULL(t1.`id`,?) GROUP BY t1.`id` HAVING COUNT(t.`id`) > ? ORDER BY t.`id` ASC)");
         listen.AssertParams("false(Boolean),123(String),1(String),1(Long)");
     }
+
+    // Java 在条件里写 bank().filter(..)：导航级条件，写进 JOIN 的 ON
+    [Fact, Upstream("QueryTest23.java#filterOn1")]
+    public async Task FilterOn1()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<DocBankCard>().FilterNavigation(c => c.Bank, b => b.Name.LikeContains("工商银行")).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id` FROM `doc_bank_card` t INNER JOIN `doc_bank` t1 ON t1.`id` = t.`bank_id` AND t1.`name` LIKE CONCAT('%',?,'%')");
+        listen.AssertParams("工商银行(String)");
+    }
+
+    // 可选导航（LEFT JOIN）上的条件不影响行数：没用到就不连
+    [Fact, Upstream("QueryTest23.java#filterOn2")]
+    public async Task FilterOn2()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<DocBankCard>().FilterNavigation(c => c.Bank2, b => b.Name.LikeContains("工商银行")).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id` FROM `doc_bank_card` t");
+    }
+
+    [Fact, Upstream("QueryTest23.java#filterOn3")]
+    public async Task FilterOn3()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<DocBankCard>().FilterNavigation(c => c.Bank, b => b.Name.LikeContains("工商银行")).CountAsync(Ct);
+        listen.AssertSql("SELECT COUNT(*) FROM `doc_bank_card` t INNER JOIN `doc_bank` t1 ON t1.`id` = t.`bank_id` AND t1.`name` LIKE CONCAT('%',?,'%')");
+    }
+
+    [Fact, Upstream("QueryTest23.java#filterOn4")]
+    public async Task FilterOn4()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<DocBankCard>().FilterNavigation(c => c.Bank, b => !b.Name.LikeContains("工商银行")).ToPageAsync(1, 2, Ct);
+        listen.AssertSql(0, "SELECT COUNT(*) FROM `doc_bank_card` t INNER JOIN `doc_bank` t1 ON t1.`id` = t.`bank_id` AND (NOT (t1.`name` LIKE CONCAT('%',?,'%')))");
+    }
+
+    // 同一导航的两个条件依次写进 ON
+    [Fact, Upstream("QueryTest23.java#filterOn5")]
+    public async Task FilterOn5()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<DocBankCard>().FilterNavigation(c => c.Bank, b => !b.Name.LikeContains("工商银行"))
+            .FilterNavigation(c => c.Bank, b => !b.Name.LikeContains("工商银行")).ToListAsync(Ct);
+        Assert.Single(listen.Events);
+        listen.AssertSql("SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id` FROM `doc_bank_card` t INNER JOIN `doc_bank` t1 ON t1.`id` = t.`bank_id` AND (NOT (t1.`name` LIKE CONCAT('%',?,'%'))) AND (NOT (t1.`name` LIKE CONCAT('%',?,'%')))");
+    }
+
+    // LIKE 的值里有 % 时转义
+    [Fact, Upstream("QueryTest23.java#testLt")]
+    public async Task TestLt()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<BlogEntity>().Where(b => b.Title.LikeContains("30%")).ToListAsync(Ct);
+        listen.AssertSql("SELECT `id`,`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`title`,`content`,`url`,`star`,`publish_time`,`score`,`status`,`order`,`is_top`,`top` FROM `t_blog` WHERE `deleted` = ? AND `title` LIKE CONCAT('%',?,'%') ESCAPE '\\\\'");
+        listen.AssertParams("false(Boolean),30\\%(String)");
+    }
 }

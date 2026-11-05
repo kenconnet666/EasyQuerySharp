@@ -173,4 +173,37 @@ public sealed class QueryTestRelationTest(MySqlFixture fixture) : MySqlTest(fixt
         listen.AssertSql("SELECT t.`id` AS `value1`,t1.`gw` AS `value2` FROM `my_sign_up` t LEFT JOIN `my_com_user` t1 ON (t1.`com_id` = t.`com_id` AND t1.`user_id` = t.`user_id`) WHERE t.`com_id` = ?");
         listen.AssertParams("123(String)");
     }
+
+    private const string CountAlias = "Java 的 sqlConversion 在计数子查询里写了 COUNT(t1.`id`) AS `id`；C# 的计算列是表达式，子查询的列不写别名（见 QueryTest15）";
+
+    // 计算列（关联学生计数）包在原生片段里投影
+    [Fact, Upstream("QueryTestRelationTest.java#relation10", Deviation = CountAlias)]
+    public async Task Relation10()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SchoolClassAggregate>().Where(s => s.Name!.Contains("123"))
+            .Select(s => new Draft<object?>(Sql.Raw<object?>("{0}", s.StudentSize))).ToListAsync(Ct);
+        listen.AssertSql("SELECT (SELECT COUNT(t1.`id`) FROM `school_student` t1 WHERE t1.`class_id` = t.`id`) AS `value1` FROM `school_class` t WHERE t.`name` LIKE ?");
+        listen.AssertParams("%123%(String)");
+    }
+
+    [Fact, Upstream("QueryTestRelationTest.java#relation11", Deviation = CountAlias)]
+    public async Task Relation11()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SchoolClassAggregate>().Where(s => s.Name!.Contains("123")).Select(s => new Draft<long?>(s.StudentSize)).ToListAsync(Ct);
+        listen.AssertSql("SELECT (SELECT COUNT(t1.`id`) FROM `school_student` t1 WHERE t1.`class_id` = t.`id`) AS `value1` FROM `school_class` t WHERE t.`name` LIKE ?");
+        listen.AssertParams("%123%(String)");
+    }
+
+    // 值过滤也作用于集合导航的条件：空字符串的条件去掉后 EXISTS 里只剩关联键，没有参数
+    [Fact, Upstream("QueryTestRelationTest.java#relationTest0")]
+    public async Task RelationTest0()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<MyComUser>().UseValueFilter(ValueFilter.NotNullOrBlank, includeNavigations: true)
+            .Where(m => m.MySignUps!.Any(s => s.UserId == "")).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`id`,t.`com_id`,t.`user_id`,t.`gw` FROM `my_com_user` t WHERE EXISTS(SELECT 1 FROM `my_sign_up` t1 WHERE (t1.`com_id` = t.`com_id` AND t1.`user_id` = t.`user_id`) LIMIT 1)");
+        Assert.Empty(listen.Last.Statement.Parameters);
+    }
 }

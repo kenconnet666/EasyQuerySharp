@@ -75,10 +75,11 @@ internal static class QueryCompiler
             query.Joins.Add(new JoinClause(source.Join!.Value, binding.Table, conditions.Count == 0 ? null : LogicalExpr.And(conditions)));
         }
 
-        // 声明了条件的对一导航在 Java 里此时就建了表：JOIN 排在条件里的隐式 JOIN 之前，没用到也照样连接
+        // 声明了条件的必有对一导航（INNER JOIN）在 Java 里此时就建了表：JOIN 排在条件里的隐式 JOIN 之前，没用到也照样连接（它影响行数）；
+        // 可选导航（LEFT JOIN）不影响行数，没用到时 Java 会省掉，用到时再连
         if (translator.Context is { } navContext && bindings[0].OwnerEntity is { } root)
             foreach (var spec in state.NavigationFilters)
-                if (db.Metadata.FindNavigation(root, spec.Member) is { IsCollection: false } nav && spec.OwnerType.IsAssignableFrom(root.Type))
+                if (db.Metadata.FindNavigation(root, spec.Member) is { IsCollection: false, Required: true } nav && spec.OwnerType.IsAssignableFrom(root.Type))
                     navContext.JoinFor(bindings[0], nav);
 
         // 外层传播下来的值过滤也作用于子查询自己的条件（本查询的条件在 Where 时已按自己的值过滤处理过）
@@ -225,8 +226,8 @@ internal static class QueryCompiler
         TranslationContext? outerContext = null)
     {
         var frame = Build(state, outer, outerContext);
-        // 分组查询的投影总是写列别名（Java 版的 set / as 写法）
-        var projection = new ProjectionCompiler(frame.Translator, state.Db.Options.NameConversion, alwaysAlias: state.GroupKey is not null, neverAlias: state.ImplicitSelector);
+        // 分组查询、开了条件下推（Java 的 SMART_PREDICATE）的投影总是写列别名（与 Java 一致）
+        var projection = new ProjectionCompiler(frame.Translator, state.Db.Options.NameConversion, alwaysAlias: state.GroupKey is not null || state.SmartPredicate, neverAlias: state.ImplicitSelector);
         LambdaExpression selector;
         if (state.Selector is not null) selector = state.Selector;
         else
@@ -244,7 +245,8 @@ internal static class QueryCompiler
         // 分组合并的派生表要等整条查询（含投影）翻译完才知道全部聚合
         frame.Translator.Context?.CompleteGroupJoins();
         // 无实体的表（db.Table）单表选列时不加别名（与 Java 的 Map 查询一致）；联表、UNION 时照常编号
-        frame.Query.ExplicitProjection = (state.Selector is not null && !state.ImplicitSelector && !state.IsDynamicTable) || state.ForceAlias;
+        // 声明了导航条件时 Java 已经建了导航的表（没用到的可选导航随后省掉），别名照多表的规则加
+        frame.Query.ExplicitProjection = (state.Selector is not null && !state.ImplicitSelector && !state.IsDynamicTable) || state.ForceAlias || !state.NavigationFilters.IsEmpty;
         return (frame, projection);
     }
 

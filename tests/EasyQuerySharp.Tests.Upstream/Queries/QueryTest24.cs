@@ -218,4 +218,36 @@ public sealed class QueryTest24(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertSql("SELECT t.`id`,t.`create_time`,t.`title`,IFNULL(t2.`__count2__`,0) AS `stars` FROM `t_blog` t LEFT JOIN (SELECT t1.`id` AS `__group_key1__`,COUNT(*) AS `__count2__` FROM `easy-query-test`.`t_sys_user` t1 GROUP BY t1.`id`) t2 ON t2.`__group_key1__` = t.`title` WHERE t.`deleted` = ?");
         listen.AssertParams("false(Boolean)");
     }
+
+    // 先右连接、只取第一张表，再整体作为派生表左连接
+    [Fact, Upstream("QueryTest24.java#testJoinParameterCount", Deviation = "Java 两参 lambda 的 leftJoin 把前面的连接收成第一张表的派生表；C# 显式 Select((t, b) => t) 再连接，SQL 相同")]
+    public async Task TestJoinParameterCount()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<Topic>().RightJoin<BlogEntity>((t, b) => t.Id == b.Id).Select((t, _) => t)
+            .LeftJoin<Topic>((a, c) => a.Stars == c.Stars)
+            .Where((_, b) => b.Stars != null)
+            .Select((a, _) => new Draft<string?>(a.Title!.Substring(1, 2))).ToListAsync(Ct);
+        listen.AssertSql("SELECT SUBSTR(t2.`title`,2,2) AS `value1` FROM (SELECT t.`id`,t.`stars`,t.`title`,t.`create_time` FROM `t_topic` t RIGHT JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id`) t2 LEFT JOIN `t_topic` t3 ON t2.`stars` = t3.`stars` WHERE t3.`stars` IS NOT NULL");
+        listen.AssertParams("false(Boolean)");
+    }
+
+    [Fact, Upstream("QueryTest24.java#testdraft1", Deviation = "同 testJoinParameterCount")]
+    public async Task Testdraft1()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<Topic>().RightJoin<BlogEntity>((t, b) => t.Id == b.Id).Where((_, b) => b.Score == 0m).Select((t, _) => t)
+            .LeftJoin<Topic>((a, c) => a.Stars == c.Stars)
+            .Select((a, _) => new Draft<string?>(a.Title!.Substring(1, 2))).Take(1).ToListAsync(Ct);
+        listen.AssertSql("SELECT SUBSTR(t2.`title`,2,2) AS `value1` FROM (SELECT t.`id`,t.`stars`,t.`title`,t.`create_time` FROM `t_topic` t RIGHT JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` WHERE t1.`score` = ?) t2 LEFT JOIN `t_topic` t3 ON t2.`stars` = t3.`stars` LIMIT 1");
+        listen.AssertParams("false(Boolean),0(BigDecimal)");
+    }
+
+    // 实体更新只生成 SQL 不执行
+    [Fact, Upstream("QueryTest24.java#test123")]
+    public void Test123()
+    {
+        var topic = new Topic { Id = "123", Title = "title123", Stars = 1, CreateTime = DateTime.Now };
+        Assert.Equal("UPDATE `t_topic` SET `stars` = ?,`title` = ?,`create_time` = ? WHERE `id` = ?", Db.Update(topic).ToSql());
+    }
 }
