@@ -90,17 +90,20 @@ internal static class AliasAllocator
             Reserve(2, tables);
             return;
         }
-        // CTE：定义只编号一次（第一次引用时），之后的引用只编自己
-        if (table is CteTableSource cte && !tables.OfType<CteTableSource>().Any(c => c.Name == cte.Name))
+        // CTE：定义在第一次引用时编号（Java 按创建顺序），按定义来自哪个查询对象分三种情况（与 Java 一致）
+        if (table is CteTableSource cte)
         {
-            // 第一个 CTE 的定义按出现位置编号；之后不同名的 CTE 定义各自从同一个编号起单独编号，不占外层编号（与 Java 一致）
-            if (tables.OfType<CteTableSource>().FirstOrDefault() is { } first && tables.IndexOf(first.Query.From) is var start and >= 0)
+            var earlier = tables.OfType<CteTableSource>().ToList();
+            bool SameDefinition(CteTableSource c) => c.DefinitionKey is not null && ReferenceEquals(c.DefinitionKey, cte.DefinitionKey);
+            // 同一个查询对象换了名字再作 CTE：Java 里那个对象的表已经编过号，从它第一次出现的编号起单独编号，不占外层编号
+            if (earlier.FirstOrDefault(c => c.Name != cte.Name && SameDefinition(c)) is { } same && tables.IndexOf(same.Query.From) is var start and >= 0)
             {
                 var own = Enumerable.Repeat<TableSource>(Placeholder.Instance, start).ToList();
                 Collect(cte.Query, own);
                 Assign(own, forceAlias: true);
             }
-            else
+            // 第一次出现的名字；或同名但定义是另建的查询（如视图实体每次引用都重新构造）：编号照常占用，语句里只写第一份定义
+            else if (!earlier.Any(c => c.Name == cte.Name) || earlier.Any(c => c.Name == cte.Name && c.DefinitionKey is not null && cte.DefinitionKey is not null && !SameDefinition(c)))
             {
                 Collect(cte.Query, tables);
                 if (cte.ReserveExtraAlias) tables.Add(Placeholder.Instance);

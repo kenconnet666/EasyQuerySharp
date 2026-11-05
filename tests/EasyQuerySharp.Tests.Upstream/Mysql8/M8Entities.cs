@@ -344,3 +344,34 @@ public class Comment
     [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(ParentId)])]
     public List<Comment>? Children { get; set; }
 }
+
+/// <summary>对应 Java：mysql8/entity/M8UserTemp（由查询定义的实体：age 为空的用户，查询时写成 WITH `m8_user_temp` AS (…)）。</summary>
+public class M8UserTemp : ICteView<M8UserTemp>
+{
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    [Navigate(RelationType.ManyToMany, SelfProperties = [nameof(Id)], SelfMappingProperties = [nameof(M8UserRole.UserId)], Mapping = typeof(M8UserRole),
+        TargetProperties = [nameof(M8Role.Id)], TargetMappingProperties = [nameof(M8UserRole.RoleId)], PartitionOrder = PartitionOrder.None)]
+    public List<M8Role>? Roles { get; set; }
+
+    public static Query<M8UserTemp> View(EasyDb db) => db.Query<M8User>().Where(m => m.Age == null).Select(m => new M8UserTemp { Id = m.Id, Name = m.Name });
+}
+
+/// <summary>对应 Java：mysql8/entity/M8UserTemp2（视图里带窗口函数列）。</summary>
+public class M8UserTemp2 : ICteView<M8UserTemp2>
+{
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    public int? Age { get; set; }
+
+    public long? RowNumber { get; set; }
+
+    public static Query<M8UserTemp2> View(EasyDb db) => db.Query<M8User>().Where(m => m.Age == null).Select(m => new M8UserTemp2
+    {
+        Id = m.Id, Name = m.Name, Age = m.Age, RowNumber = Sql.Over.RowNumber(w => w.PartitionBy(m.Age).OrderByDescending(m.CreateTime)),
+    });
+}

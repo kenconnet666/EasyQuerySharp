@@ -45,7 +45,11 @@ internal sealed record UnionSource(ImmutableArray<QueryState> Parts, bool All) :
 internal sealed record RawSqlSource(string Sql, Type EntityType, IReadOnlyList<object?> Parameters) : QuerySource;
 
 /// <summary>公共表表达式（AsCte）：定义是 <paramref name="Inner"/>，按名字引用。</summary>
-internal sealed record CteSource(string Name, QueryState Inner) : QuerySource;
+internal sealed record CteSource(string Name, QueryState Inner) : QuerySource
+{
+    /// <summary>由查询定义的实体（ICteView）的类型；普通 AsCte 时为 null。</summary>
+    public Type? ViewType { get; init; }
+}
 
 /// <summary>
 /// 树查询（AsTreeCte，对应 Java 的 asTreeCTE）：递归 CTE 的基础部分是 <paramref name="Base"/>，递归部分按

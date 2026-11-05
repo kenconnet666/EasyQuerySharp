@@ -100,6 +100,9 @@ public sealed class CteTableSource(string name, SelectQuery query) : TableSource
     /// <summary>CTE 的定义。</summary>
     public SelectQuery Query { get; } = query;
 
+    /// <summary>定义来自哪个查询对象（别名编号用：同一对象再作 CTE 时沿用它的编号）；为 null 时不区分。</summary>
+    public object? DefinitionKey { get; init; }
+
     /// <summary>编号时在定义之后多占一个编号（分组后投影的查询作为 JOIN 来源时，与派生表的 <see cref="DerivedTableSource.ReservedAliases"/> 相同）。</summary>
     public bool ReserveExtraAlias { get; init; }
 

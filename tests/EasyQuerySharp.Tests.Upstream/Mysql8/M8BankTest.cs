@@ -146,4 +146,33 @@ public sealed partial class M8BankTest(Mysql8Fixture fixture) : Mysql8Test(fixtu
         listen.AssertSql("SELECT t2.`vo1` AS `vo1`,t2.`vo2` AS `vo2`,t2.`vo3` AS `vo3`,t2.`bank_card_count` AS `bank_card_count` FROM (SELECT t.`name` AS `vo1`,t.`id` AS `vo2`,t.`phone` AS `vo3`,(SELECT COUNT(*) FROM `t_bank_card` t1 WHERE t1.`uid` = t.`id`) AS `bank_card_count` FROM `t_sys_user` t WHERE t.`name` LIKE ?) t2 WHERE t2.`bank_card_count` > ? ORDER BY t2.`bank_card_count` ASC");
         listen.AssertParams("%123%(String),1(Long)");
     }
+
+    // Java 的 subQueryToGroupJoin(bank -> bank.bankCards())：GroupJoin(b => b.BankCards)
+    [Fact, Upstream("mysql8/M8BankTest.java#testExtraFilter5")]
+    public async Task TestExtraFilter5()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysBank>().GroupJoin(b => b.BankCards).Select(b => new Draft<string?, long>(b.Name, b.BankCards!.LongCount())).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`name` AS `value1`,IFNULL(t2.`__count2__`,0) AS `value2` FROM `t_bank` t LEFT JOIN (SELECT t1.`bank_id` AS `__group_key1__`,COUNT(*) AS `__count2__` FROM `t_bank_card` t1 GROUP BY t1.`bank_id`) t2 ON t2.`__group_key1__` = t.`id`");
+    }
+
+    // 导航上标了 GroupJoin = true：Part 投影里的条件计数自动合并
+    [Fact, Upstream("mysql8/M8BankTest.java#testUserAutoSubQueryToGroupJoin")]
+    public async Task TestUserAutoSubQueryToGroupJoin()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysUser>().Select(u => new Part<SysUser, long>(u, u.BankCards2!.Where(s => s.Type == "储蓄卡").LongCount())).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`id`,t.`name`,t.`phone`,t.`age`,t.`create_time`,IFNULL(t2.`__count2__`,0) AS `__part__column1` FROM `t_sys_user` t LEFT JOIN (SELECT t1.`uid` AS `__group_key1__`,COUNT(?) AS `__count2__` FROM `t_bank_card` t1 WHERE t1.`type` = ? GROUP BY t1.`uid`) t2 ON t2.`__group_key1__` = t.`id`");
+        listen.AssertParams("1(Integer),储蓄卡(String)");
+    }
+
+    // 同上且导航必有（Required）：INNER JOIN，不写 IFNULL
+    [Fact, Upstream("mysql8/M8BankTest.java#testUserAutoSubQueryToGroupJoin1")]
+    public async Task TestUserAutoSubQueryToGroupJoin1()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysUser>().Select(u => new Part<SysUser, long>(u, u.BankCards3!.Where(s => s.Type == "储蓄卡").LongCount())).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`id`,t.`name`,t.`phone`,t.`age`,t.`create_time`,t2.`__count2__` AS `__part__column1` FROM `t_sys_user` t INNER JOIN (SELECT t1.`uid` AS `__group_key1__`,COUNT(?) AS `__count2__` FROM `t_bank_card` t1 WHERE t1.`type` = ? GROUP BY t1.`uid`) t2 ON t2.`__group_key1__` = t.`id`");
+        listen.AssertParams("1(Integer),储蓄卡(String)");
+    }
 }

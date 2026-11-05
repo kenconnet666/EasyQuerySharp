@@ -249,6 +249,9 @@ internal static class QueryCompiler
     {
         switch (source)
         {
+            // 由查询定义的实体（ICteView）：按 CTE 读，名字是它的表名
+            case EntitySource e when CteViews.Of(db, e.EntityType) is { } view:
+                return CreateBinding(db, new CteSource(db.Metadata.Get(e.EntityType).TableName, view) { Alias = e.Alias, Join = e.Join, On = e.On, ViewType = e.EntityType });
             case EntitySource e:
             {
                 var table = new EntityTableSource(db.Metadata.Get(e.EntityType)) { ExplicitAlias = e.Alias, TableNameOverride = e.TableName, Segment = e.TableSegment };
@@ -273,8 +276,16 @@ internal static class QueryCompiler
             case CteSource c:
             {
                 var (inner, projection) = CompileSelect(c.Inner);
-                var table = new CteTableSource(c.Name, inner) { ExplicitAlias = c.Alias, ReserveExtraAlias = c.Join is not null && c.Inner.GroupKey is not null };
-                return new DerivedBinding(table, projection.MemberColumns, projection.Entity, projection.AliasedMembers, projection.NestedEntities);
+                // 投影过的查询（分组后作为 JOIN 来源、视图实体）：Java 内部多一层匿名表，引用的别名跳过一个
+                var projected = c.ViewType is not null || c.Join is not null && c.Inner.GroupKey is not null;
+                var table = new CteTableSource(c.Name, inner) { ExplicitAlias = c.Alias, ReserveExtraAlias = projected, DefinitionKey = c.Inner };
+                // 视图实体按实体读：外层的列取它的元数据（不带内层的别名），导航照常可用
+                if (c.ViewType is { } viewType)
+                    return new DerivedBinding(table, projection.MemberColumns, db.Metadata.Get(viewType));
+                return new DerivedBinding(table, projection.MemberColumns, projection.Entity, projection.AliasedMembers, projection.NestedEntities)
+                {
+                    NavigationOwner = projection.Entity is null ? DtoWithNavigations(db, c.Inner.Selector?.ReturnType) : null,
+                };
             }
             case UnionSource u:
             {

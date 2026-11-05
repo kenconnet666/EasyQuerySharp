@@ -55,7 +55,8 @@ public sealed class Mysql8Fixture : IAsyncLifetime
         }
 
         _db = new EasyDb(o => o.UseMySql(new MySqlDataSource(TestDatabases.MySql.TryConnectionString(Database)!)).AddListener(SqlCapture.Instance)
-            .AddInterceptor(new MyProtectInterceptor()));
+            .AddInterceptor(new MyProtectInterceptor())
+            .AddInterceptor(new M8UserNameInterceptor()));
         await _db.CodeFirst.CreateTablesAsync(Tables);
         await SeedAsync(_db);
     }
@@ -156,4 +157,14 @@ public sealed class MyProtectInterceptor : EasyQuerySharp.Interceptors.QueryFilt
 
     /// <inheritdoc />
     public override System.Linq.Expressions.Expression<Func<M8UserProtect, bool>> Filter() => _ => Sql.Raw<bool>("1=1");
+}
+
+/// <summary>对应 Java：mysql8/entity/QueryInterceptor（名字 aaaaxx，默认关闭；启用时 M8User 的查询追加 name = '123'）。</summary>
+public sealed class M8UserNameInterceptor : EasyQuerySharp.Interceptors.QueryFilter<M8User>
+{
+    public override string Name => "aaaaxx";
+
+    public override bool EnabledByDefault => false;
+
+    public override System.Linq.Expressions.Expression<Func<M8User, bool>>? Filter() => m => m.Name == "123";
 }
