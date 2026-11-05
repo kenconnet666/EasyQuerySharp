@@ -21,6 +21,40 @@ public sealed class FunctionsLiveTest(Mysql8Fixture mysql, PgFixture pg)
 
     private static ForkPost Post(string id, string userId, decimal amount) => new() { Id = id, UserId = userId, Title = id, Amount = amount };
 
+    /// <summary>归档表：ForkPost 的列再加归档时间。</summary>
+    [EasyQuerySharp.Metadata.Table("t_fork_post_archive")]
+    public sealed class ForkPostArchive
+    {
+        [EasyQuerySharp.Metadata.Column(PrimaryKey = true)]
+        public string? Id { get; set; }
+
+        public string? UserId { get; set; }
+
+        public string? Title { get; set; }
+
+        public decimal? Amount { get; set; }
+
+        public DateTime? ArchivedAt { get; set; }
+    }
+
+    // 把一个用户的帖子连同归档时间整批写进归档表
+    [Theory, Upstream("fork/live/InsertSelectLiveTest.java#copyMatchingRowsWithArchiveTime")]
+    [InlineData("mysql")]
+    [InlineData("pg")]
+    public async Task CopyMatchingRowsWithArchiveTime(string database)
+    {
+        var db = await Fresh<ForkPost>(database);
+        await db.CodeFirst.DropTablesIfExistsAsync([typeof(ForkPostArchive)], Ct);
+        await db.CodeFirst.CreateTablesAsync([typeof(ForkPostArchive)], Ct);
+        await db.Insert(new[] { Post("p1", "u1", 1m), Post("p2", "u1", 1.5m), Post("p3", "u2", 2m) }).ExecuteAsync(Ct);
+
+        var now = new DateTime(2026, 10, 28, 9, 0, 0);
+        Assert.Equal(2, await db.Query<ForkPost>().Where(p => p.UserId == "u1").InsertInto("t_fork_post_archive").Column("archived_at", now).ExecuteAsync(Ct));
+        Assert.Equal(2, await db.Query<ForkPostArchive>().CountAsync(Ct));
+        Assert.Equal(1.5m, (await db.Query<ForkPostArchive>().WhereById("p2").SingleAsync(Ct)).Amount);
+        Assert.Equal(now, (await db.Query<ForkPostArchive>().WhereById("p1").SingleAsync(Ct)).ArchivedAt);
+    }
+
     [Theory, Upstream("fork/live/DateTruncLiveTest.java#truncatesToEachUnit")]
     [InlineData("mysql")]
     [InlineData("pg")]

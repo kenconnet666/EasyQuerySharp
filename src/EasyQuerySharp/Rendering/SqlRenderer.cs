@@ -77,6 +77,21 @@ public sealed class SqlRenderer
         return r.Build();
     }
 
+    /// <summary>渲染一条 INSERT … SELECT：来源查询包成派生表 eq_src，按输出列名写进目标表（与 Java fork 一致）。</summary>
+    public static SqlStatement Render(SqlDialect dialect, InsertSelectStatement insert)
+    {
+        if (AliasAllocator.Allocate(insert.Source).Count > 0) throw new NotSupportedException("INSERT … SELECT 的来源查询不能带 CTE");
+        insert.Table.Alias = null;
+        var names = insert.Source.Columns.Select(c => c.Alias ?? (c.Expr as ColumnExpr)?.Name ?? throw new InvalidOperationException("INSERT … SELECT 的来源查询有无名的列")).ToList();
+        var r = new SqlRenderer(dialect);
+        r.Append("INSERT INTO ").WriteTableName(insert.Table).Append(" (")
+            .Append(string.Join(",", names.Concat(insert.ExtraColumns).Select(dialect.QuoteIdentifier))).Append(") SELECT ")
+            .Append(string.Join(",", names.Select(n => "eq_src." + dialect.QuoteIdentifier(n))));
+        foreach (var value in insert.ExtraValues) r.Append(",").Write(value);
+        r.Append(" FROM (").WriteSelect(insert.Source).Append(") eq_src");
+        return r.Build();
+    }
+
     /// <summary>渲染一条更新。</summary>
     public static SqlStatement Render(SqlDialect dialect, UpdateStatement update)
     {

@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1689、偏离 207、不适用 77、骨架 6、待做 425。
+合计：已移植 1692、偏离 207、不适用 77、骨架 6、待做 422。
 
 ## 按能力
 
@@ -14,7 +14,7 @@
 | 分页结果 | `query.page` | M1 | 22 | 18 | 3 | 0 | 0 | 1 |
 | 原生 SQL | `sql.native` | M1 | 50 | 40 | 9 | 1 | 0 | 0 |
 | 删除 | `write.delete` | M1 | 25 | 13 | 1 | 10 | 0 | 1 |
-| 插入 | `write.insert` | M1 | 50 | 45 | 1 | 0 | 0 | 4 |
+| 插入 | `write.insert` | M1 | 50 | 48 | 1 | 0 | 0 | 1 |
 | 更新 | `write.update` | M1 | 59 | 46 | 5 | 8 | 0 | 0 |
 | CASE WHEN | `expr.case` | M2 | 27 | 20 | 7 | 0 | 0 | 0 |
 | 日期函数 | `func.date` | M2 | 101 | 79 | 15 | 7 | 0 | 0 |
@@ -672,10 +672,10 @@
 | QueryTest4.java#testJson2Jackson | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:52 |  |
 | UpperPropertyTest.java#test1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpperPropertyTest.cs:9：Java 的库是宽松模式，MyTopicTestDTO 不写 create_time 也能插入；MySQL 8.4 严格模式下改为比对插入 SQL、读取已有的行 |  |
 | UpperPropertyTest.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpperPropertyTest.cs:46 |  |
-| fork/insert/InsertSelectSqlTest.java#defaultTargetIsTheEntityTable | 待做 |  | `INSERT INTO "t_fork_post" ("id","user_id","title","amount") SELECT eq_src."id",eq_src."user_id",eq_s…` |
+| fork/insert/InsertSelectSqlTest.java#defaultTargetIsTheEntityTable | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/InsertSelectSqlTest.cs:15 | `INSERT INTO "t_fork_post" ("id","user_id","title","amount") SELECT eq_src."id",eq_src."user_id",eq_s…` |
 | fork/insert/InsertSelectSqlTest.java#hanaUsesQuotedNames | 待做 |  | `INSERT INTO "t_fork_post_archive" ("id","user_id","title","amount") SELECT eq_src."id",eq_src."user_…` |
-| fork/insert/InsertSelectSqlTest.java#mysqlCopiesEntityColumnsPlusExtraColumn | 待做 |  | `INSERT INTO 't_fork_post_archive' ('id','user_id','title','amount','archived_at') SELECT eq_src.'id'…` |
-| fork/live/InsertSelectLiveTest.java#copyMatchingRowsWithArchiveTime | 待做 |  | `CREATE COLUMN TABLE` |
+| fork/insert/InsertSelectSqlTest.java#mysqlCopiesEntityColumnsPlusExtraColumn | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/InsertSelectSqlTest.cs:6 | `INSERT INTO 't_fork_post_archive' ('id','user_id','title','amount','archived_at') SELECT eq_src.'id'…` |
+| fork/live/InsertSelectLiveTest.java#copyMatchingRowsWithArchiveTime | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsLiveTest.cs:41 | `CREATE COLUMN TABLE` |
 | mysql8/MySQL8Test5.java#testLikeStartsWith | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:129 | `SELECT 'column1','column2','column3' FROM 'no_key_table' WHERE 'column2' LIKE CONCAT(?,'%') ESCAPE '…` |
 | pgsql/QueryTest.java#testDraft9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:119 |  |
 | pgsql/QueryTest.java#testDraft9_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:119 |  |
@@ -877,7 +877,7 @@
 | fork/functions/DateTruncSqlTest.java#mysqlRepeatsTheColumnForWeeks | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:13 | `SELECT DATE_SUB(CAST(DATE_FORMAT(t.'created_at','%Y-%m-%d 00:00:00') AS DATETIME), INTERVAL WEEKDAY(…` |
 | fork/functions/DateTruncSqlTest.java#postgresUsesDateTrunc | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:9 | `SELECT DATE_TRUNC('quarter', t."created_at") AS "value1" FROM "t_fork_user" t` |
 | fork/functions/DateTruncSqlTest.java#unsupportedDialectSaysSo | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:18 |  |
-| fork/live/DateTruncLiveTest.java#truncatesToEachUnit | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsLiveTest.cs:24 | `DROP TABLE {…}t_fork_user` |
+| fork/live/DateTruncLiveTest.java#truncatesToEachUnit | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsLiveTest.cs:58 | `DROP TABLE {…}t_fork_user` |
 | mysql8/M8BankTest.java#includeSubQuery4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:61 | `SELECT t.'name' AS 'vo1',t.'id' AS 'vo2',t.'phone' AS 'vo3',t.'id' AS '__relation__id' FROM 't_sys_u…` |
 | pgsql/QueryTest.java#query7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:70 |  |
 | pgsql/QueryTest.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:166 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
@@ -941,7 +941,7 @@
 | fork/functions/NullSafeSqlTest.java#nullSafeEqualsPerDialect | 待做 |  | `SELECT t.'id' FROM 't_fork_user' t WHERE (t.'name' <=> ?)` |
 | fork/functions/SmallFixesSqlTest.java#jsonArraySize | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:44 | `SELECT 'id','name','age','company_id','attrs','created_at' FROM 't_fork_user' WHERE JSON_LENGTH('att…` |
 | fork/functions/SmallFixesSqlTest.java#offsetWindowHasSpaceBeforeOrderBy | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:53 |  |
-| fork/live/NullSafeLiveTest.java#nullMatchesNullAndEmptyBecomesNull | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsLiveTest.cs:62 | `DROP TABLE {…}t_fork_user` |
+| fork/live/NullSafeLiveTest.java#nullMatchesNullAndEmptyBecomesNull | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsLiveTest.cs:96 | `DROP TABLE {…}t_fork_user` |
 | mysql8/ManyJoinTest.java#testElement5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:33 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'co…` |
 | mysql8/ManyJoinTest.java#testElement6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:43 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'co…` |
 | mysql8/ManyJoinTest.java#testElement7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:55 | `SELECT t3.'type' AS 'value1',t3.'code' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'u…` |
@@ -1196,7 +1196,7 @@
 | fork/functions/WindowSqlTest.java#globalWindowWithoutPartition | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:86 |  |
 | fork/functions/WindowSqlTest.java#invalidArgumentsAreRejected | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:114 |  |
 | fork/functions/WindowSqlTest.java#partitionedWindowIsUnchanged | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:77 |  |
-| fork/live/WindowLiveTest.java#runningTotalRowNumberAndNtile | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsLiveTest.cs:78 | `DROP TABLE {…}t_fork_post` |
+| fork/live/WindowLiveTest.java#runningTotalRowNumberAndNtile | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsLiveTest.cs:112 | `DROP TABLE {…}t_fork_post` |
 | mysql8/ManyJoinTest.java#test111 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:482 |  |
 | mysql8/MySQL8Test3.java#nextTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:165 | `SELECT t.'type' AS 'value1',LAG(t.'type', 1) OVER (ORDER BY t.'type' ASC,t.'code' DESC) AS 'value2',…` |
 | mysql8/MySQL8Test3.java#nextTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:184 | `SELECT t.'type' AS 'value1',LAG(t.'type', 1) OVER (ORDER BY t.'type' ASC,t.'code' DESC) AS 'value2',…` |
@@ -1324,7 +1324,7 @@
 | fork/functions/GroupingSqlTest.java#plainGroupByIsUnchanged | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:148 |  |
 | fork/functions/GroupingSqlTest.java#postgresRollupAndCube | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:126 | `SELECT t."user_id" AS "value1",t."title" AS "value2",SUM(t."amount") AS "value3",GROUPING(t."title")…` |
 | fork/functions/GroupingSqlTest.java#rollupNeedsGroupBy | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:153：Rollup 只定义在 GroupBy 之后的分组查询上，没有分组时写不出来（编译期保证） |  |
-| fork/live/GroupingLiveTest.java#rollupAddsGrandTotal | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsLiveTest.cs:48 | `DROP TABLE {…}t_fork_post` |
+| fork/live/GroupingLiveTest.java#rollupAddsGrandTotal | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsLiveTest.cs:82 | `DROP TABLE {…}t_fork_post` |
 | mysql8/M8BankTest.java#testExtraFilter3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:102 | `SELECT t.'name' AS 'value1',t3.'value2' AS 'value2' FROM 't_bank' t LEFT JOIN (SELECT t1.'bank_id' A…` |
 | mysql8/M8BankTest.java#testUserAutoSubQueryToGroupJoin3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:54 | `SELECT t.'name' AS 'value1',COUNT((CASE WHEN IFNULL(t2.'__any2__',?) = ? THEN ? ELSE NULL END)) AS '…` |
 | mysql8/M8BankTest.java#testUserAutoSubQueryToGroupJoin3_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:65 | `SELECT t.'name' AS 'value1',COUNT((CASE WHEN t2.'__any2__' = ? THEN ? ELSE NULL END)) AS 'value2' FR…` |

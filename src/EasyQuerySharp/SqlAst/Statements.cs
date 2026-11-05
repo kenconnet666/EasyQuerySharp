@@ -192,3 +192,25 @@ public enum GroupByMode
     /// <summary>键的所有组合都小计。</summary>
     Cube,
 }
+
+/// <summary>
+/// <c>INSERT INTO 表 (列…) SELECT eq_src.列…, 额外值… FROM (查询) eq_src</c>：把查询结果整批写进另一张表（对应 Java fork 的 InsertSelect）。
+/// </summary>
+/// <param name="table">目标表（换表名后可以是别的表）。</param>
+/// <param name="source">来源查询，各输出列按名字写进目标表的同名列。</param>
+/// <param name="extraColumns">来源之外再写的列名，与 <paramref name="extraValues"/> 一一对应。</param>
+/// <param name="extraValues">额外列的值。</param>
+public sealed class InsertSelectStatement(EntityTableSource table, SelectQuery source, IReadOnlyList<string> extraColumns, IReadOnlyList<SqlExpr> extraValues)
+{
+    /// <summary>目标表。</summary>
+    public EntityTableSource Table { get; } = table;
+
+    /// <summary>来源查询。</summary>
+    public SelectQuery Source { get; } = source;
+
+    /// <summary>额外的列名。</summary>
+    public IReadOnlyList<string> ExtraColumns { get; } = extraColumns;
+
+    /// <summary>额外列的值。</summary>
+    public IReadOnlyList<SqlExpr> ExtraValues { get; } = extraValues;
+}

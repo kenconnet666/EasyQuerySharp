@@ -189,7 +189,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [x] 5.6 upsert：`OnConflictIgnore()` / `OnConflictUpdate()`：MySQL（INSERT IGNORE / ON DUPLICATE KEY UPDATE）、PG 与 SQLite（ON CONFLICT），SQL Server 与 Oracle 改写成单行 MERGE；约束列只取写入了的列。
 - [ ] 5.7 写入策略：按列策略只写非空列；批量写入用 `DbBatch`。
 - [x] 5.8 UPDATE / DELETE 里用导航：集合导航翻译成关联子查询；对一导航生成 JOIN，MySQL 用多表语法，PostgreSQL 用 FROM / USING。SQL Server、Oracle、SQLite 的写法随 M6 实库验证再加（现在抛 NotSupportedException）。
-- [ ] 5.9 INSERT … SELECT。
+- [x] 5.9 INSERT … SELECT：`Query<T>.InsertInto(表?)` 把查询结果整批写进表（来源包成 eq_src，按列名对应），`.Column(名, 值)` 追加固定值列（HANA 的用例随 HANA 方言补）。
 - [~] 5.10 追踪：`BeginTracking()` / `AsTracking()` 加差异更新、`WhereColumns` 用原始值（已完成）；不追踪时用 `Changes(before, after)`。
 - [ ] 5.11 聚合根保存：显式声明级联路径、按差异增删改、`OrphanPolicy`、生成键回填、必须在事务里。
 

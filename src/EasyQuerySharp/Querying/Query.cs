@@ -129,6 +129,12 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     }
 
     /// <summary>
+    /// 把这条查询的结果整批写进表 <paramref name="table"/>（INSERT … SELECT，对应 Java fork 的 InsertSelect）；不指定时写回实体自己的表。
+    /// </summary>
+    /// <example><code>db.Query&lt;Post&gt;().Where(p =&gt; p.UserId == "u1").InsertInto("t_post_archive").Column("archived_at", DateTime.Now).ExecuteAsync()</code></example>
+    public Commands.InsertSelectCommand<T> InsertInto(string? table = null) => new(Open, table);
+
+    /// <summary>
     /// 按属性名自动投影到 DTO（对应 Java 的 select(Dto.class)）：DTO 的每个可写属性取实体上的同名列，
     /// DTO 属性上的 <c>[Column("…")]</c> 决定别名。标了 <see cref="Metadata.MapFromAttribute{TEntity}"/> 的 DTO 同 <see cref="SelectAutoInclude{TResult}"/>，按结构带出导航。
     /// </summary>
