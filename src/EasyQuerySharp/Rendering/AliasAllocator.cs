@@ -25,11 +25,7 @@ internal static class AliasAllocator
     public static void Allocate(TableSource single, IReadOnlyList<JoinClause> joins, IEnumerable<SqlExpr> expressions)
     {
         var tables = new List<TableSource> { single };
-        foreach (var join in joins)
-        {
-            CollectTable(join.Table, tables);
-            if (join.On is not null) CollectExpr(join.On, tables);
-        }
+        foreach (var join in joins) CollectJoin(join, tables);
         foreach (var e in expressions) CollectExpr(e, tables);
         Assign(tables, forceAlias: false);
     }
@@ -52,25 +48,29 @@ internal static class AliasAllocator
         CollectTable(query.From, tables);
         // 声明的 JOIN 先编号（Java 在声明时就建了表），翻译中自动加上的 JOIN（隐式 JOIN、分组合并）排在后面
         var declared = query.Joins.Where(j => !j.Implicit).ToList();
-        var automatic = query.Joins.Where(j => j.Implicit).ToList();
-        foreach (var join in declared)
-        {
-            CollectTable(join.Table, tables);
-            if (join.On is not null) CollectExpr(join.On, tables);
-        }
+        // 条件翻译完之后（排序、投影里）才加的隐式 JOIN 排在条件里的子查询之后（Java 按创建顺序编号）
+        var automatic = query.Joins.Where(j => j is { Implicit: true, AfterWhere: false }).ToList();
+        var afterWhere = query.Joins.Where(j => j is { Implicit: true, AfterWhere: true }).ToList();
+        foreach (var join in declared) CollectJoin(join, tables);
         for (var i = 0; i < automatic.Count; i++)
         {
             // 按创建顺序编号的派生表：在它创建时已有的 JOIN 之后占位
             if (owner?.AliasAfterJoins == i) AddOwner(owner, tables);
-            CollectTable(automatic[i].Table, tables);
-            if (automatic[i].On is not null) CollectExpr(automatic[i].On!, tables);
+            CollectJoin(automatic[i], tables);
         }
         if (owner is not null && !tables.Contains(owner)) AddOwner(owner, tables);
         foreach (var e in query.Where) CollectExpr(e, tables);
+        foreach (var join in afterWhere) CollectJoin(join, tables);
         foreach (var c in query.Columns) CollectExpr(c.Expr, tables);
         foreach (var e in query.GroupBy) CollectExpr(e, tables);
         foreach (var e in query.Having) CollectExpr(e, tables);
         foreach (var o in query.OrderBy) CollectExpr(o.Expr, tables);
+    }
+
+    private static void CollectJoin(JoinClause join, List<TableSource> tables)
+    {
+        CollectTable(join.Table, tables);
+        if (join.On is not null) CollectExpr(join.On, tables);
     }
 
     private static void CollectTable(TableSource table, List<TableSource> tables)

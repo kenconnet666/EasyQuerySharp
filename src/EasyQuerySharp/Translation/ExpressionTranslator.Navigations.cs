@@ -102,9 +102,11 @@ internal sealed partial class ExpressionTranslator
                 result = new ExistsExpr(sub, negated: false) { FromNavigation = true };
                 return true;
             case nameof(Enumerable.All):
-                sub.Where.Add(Negate(predicate ?? throw Unsupported(terminal)));
+                // 没有不满足的：NOT (EXISTS(… AND (NOT (p)) LIMIT 1))（与 Java 一致）
+                sub.Where.Add(NotSatisfying(predicate ?? throw Unsupported(terminal)));
                 sub.Columns.Add(new SelectColumn(LiteralExpr.One, null));
-                result = new ExistsExpr(sub, negated: true);
+                sub.Limit ??= 1;
+                result = new NotExpr(new ExistsExpr(sub, negated: false) { FromNavigation = true });
                 return true;
             case nameof(Enumerable.Count) or nameof(Enumerable.LongCount):
                 if (predicate is not null) sub.Where.Add(predicate);

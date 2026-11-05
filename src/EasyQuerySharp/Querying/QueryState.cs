@@ -132,10 +132,16 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     public QueryState AddWhere(LambdaExpression predicate)
     {
         var filtered = Filtering.ValueFilterRewriter.Apply(predicate, ValueFilter);
-        // 被过滤掉的条件里用过导航时，Java 已经按多表写法给主表起了别名 t，去掉条件后仍保留（逐字对齐）
-        var state = Filtering.ValueFilterRewriter.DroppedNavigation(predicate, filtered) ? this with { ForceAlias = true } : this;
+        // 被过滤掉的条件里用过会建表的导航时，Java 已经按多表写法给主表起了别名 t，去掉条件后仍保留（逐字对齐）
+        var state = Filtering.ValueFilterRewriter.DroppedNavigation(predicate, filtered, IsGroupJoined) ? this with { ForceAlias = true } : this;
         return filtered is null ? state : state with { Wheres = state.Wheres.Add(filtered) };
     }
+
+    // 这个集合导航是否合并成分组 JOIN：GroupJoinAll、GroupJoin 声明或导航上标了 GroupJoin
+    private bool IsGroupJoined(System.Reflection.MemberInfo member) =>
+        GroupJoins.LastOrDefault(s => s.Member == member.Name) is { } spec
+            ? spec.Enabled
+            : GroupJoinAll || member.GetCustomAttributes(typeof(Metadata.NavigateAttribute), true) is [Metadata.NavigateAttribute { GroupJoin: true }];
 
     /// <summary>投影之后再加条件、排序、连接时，把当前查询包成派生表，在外层继续（与 Java 版的 select 之后再 where 一致）。行锁跟到外层：锁只写在最外层查询上。</summary>
     public QueryState Wrap() => new(Db, [new SubQuerySource(this with { Fills = [], Lock = RowLock.None })])

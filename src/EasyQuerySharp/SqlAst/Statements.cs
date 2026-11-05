@@ -31,6 +31,9 @@ public sealed class JoinClause(JoinKind kind, TableSource table, SqlExpr? on)
 
     /// <summary>翻译时自动加上的 JOIN（导航的隐式 JOIN、分组合并），而不是查询上声明的 JOIN；别名编号排在声明的表之后。</summary>
     public bool Implicit { get; init; }
+
+    /// <summary>条件翻译完之后（排序、投影里）才加的隐式 JOIN：Java 按创建顺序编号，它的表排在 WHERE 里的子查询之后。</summary>
+    public bool AfterWhere { get; init; }
 }
 
 /// <summary>SELECT 列表里的一项。</summary>

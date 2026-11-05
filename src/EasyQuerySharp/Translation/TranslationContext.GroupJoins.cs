@@ -38,7 +38,7 @@ internal sealed partial class TranslationContext
         var keys = plan.KeyColumns
             .Select((k, i) => (SqlExpr)new BinaryExpr(k, SqlBinaryOperator.Equal, owner.OwnerColumn(navigation.SelfColumns[i])))
             .ToList();
-        query.Joins.Add(new JoinClause(navigation.Required ? JoinKind.Inner : JoinKind.Left, plan.Table, keys.Count == 1 ? keys[0] : LogicalExpr.Grouped(keys)) { Implicit = true });
+        query.Joins.Add(new JoinClause(navigation.Required ? JoinKind.Inner : JoinKind.Left, plan.Table, keys.Count == 1 ? keys[0] : LogicalExpr.Grouped(keys)) { Implicit = true, AfterWhere = WhereTranslated });
         _groupJoins[key] = plan;
         return plan;
     }

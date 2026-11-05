@@ -80,6 +80,8 @@ internal static class QueryCompiler
             translator.Bind(where, bindings);
             query!.Where.Add(translator.TranslatePredicate(where.Body));
         }
+        // Java 按创建顺序编别名：之后（分组、排序、投影里）才加的隐式 JOIN 排在条件里的子查询之后
+        if (translator.Context is { } context) context.WhereTranslated = true;
         if (state.GroupKey is { } groupKey) BuildGroup(query!, translator, bindings, groupKey, state);
         foreach (var order in state.OrderBys)
         {

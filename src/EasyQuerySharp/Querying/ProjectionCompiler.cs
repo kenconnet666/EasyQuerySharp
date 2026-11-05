@@ -41,6 +41,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     public Dictionary<string, EntityMetadata> NestedEntities { get; } = new(StringComparer.Ordinal);
 
     private Expression? _shaped;
+
     private readonly List<(IncludePlan Plan, EntityBinding Owner)> _includes = [];
 
     /// <summary>投影里的导航带出（主查询执行后由 <see cref="IncludeRunner"/> 依次执行）。</summary>

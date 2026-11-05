@@ -176,6 +176,9 @@ internal sealed partial class ExpressionTranslator
     }
 
     /// <summary>取反：能直接改成否定形式的（NOT IN、NOT LIKE、IS NOT NULL、NOT EXISTS、&lt;&gt;）就改，其余包一层 NOT。</summary>
+    /// <summary>All(p) 里"不满足 p"的写法（与 Java 一致）：<c>(NOT (p))</c>，不把 LIKE 等改写成 NOT LIKE。</summary>
+    private static SqlExpr NotSatisfying(SqlExpr predicate) => LogicalExpr.Grouped([new NotExpr(predicate)]);
+
     internal static SqlExpr Negate(SqlExpr predicate) => predicate switch
     {
         InExpr { SubQuery: { } sub } i => new InExpr(i.Operand, sub, !i.Negated),

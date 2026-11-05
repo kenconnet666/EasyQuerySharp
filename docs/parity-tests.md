@@ -3,14 +3,14 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1102、偏离 130、不适用 21、骨架 15、待做 1136。
+合计：已移植 1118、偏离 132、不适用 21、骨架 15、待做 1118。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 230 | 28 | 4 | 0 | 173 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 235 | 30 | 4 | 0 | 166 |
 | 分页结果 | `query.page` | M1 | 22 | 15 | 2 | 0 | 0 | 5 |
 | 原生 SQL | `sql.native` | M1 | 50 | 25 | 6 | 1 | 0 | 18 |
 | 删除 | `write.delete` | M1 | 25 | 9 | 1 | 2 | 0 | 13 |
@@ -36,8 +36,8 @@
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 31 | 1 | 2 | 0 | 22 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 59 | 1 | 2 | 2 | 3 |
-| include 带出导航 | `nav.include` | M4 | 37 | 7 | 0 | 0 | 0 | 30 |
-| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 103 | 2 | 0 | 0 | 37 |
+| include 带出导航 | `nav.include` | M4 | 37 | 12 | 0 | 0 | 0 | 25 |
+| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 106 | 2 | 0 | 0 | 34 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 0 | 0 | 0 | 0 | 25 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
 | 列加密 | `column.encryption` | M5 | 8 | 7 | 0 | 0 | 0 | 1 |
@@ -60,7 +60,7 @@
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | M6 | 13 | 0 | 0 | 0 | 0 | 13 |
 | UPDATE / DELETE … RETURNING | `write.returning` | M6 | 3 | 0 | 0 | 0 | 0 | 3 |
 | 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 0 | 1 | 0 | 0 | 16 |
-| 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 70 | 17 | 0 | 0 | 14 |
+| 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 73 | 17 | 0 | 0 | 11 |
 | search 扩展 | `search` | M7 | 45 | 0 | 0 | 0 | 0 | 45 |
 | 分库分表 | `sharding` | M7 | 48 | 0 | 0 | 0 | 0 | 48 |
 | 跨库链接（asTableLink） | `table.link` | M7 | 13 | 0 | 0 | 0 | 0 | 13 |
@@ -487,13 +487,13 @@
 | mysql8/MySQL8Test3.java#testQueryFirstLimit3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:215 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
 | mysql8/MySQL8Test3.java#testQueryFirstLimit4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:224 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
 | mysql8/MySQL8Test4.java#includeOneTest2 | 待做 |  | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
-| mysql8/MySQL8Test4.java#testAll4 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (EXISTS(SELECT 1 …` |
-| mysql8/MySQL8Test4.java#testAll5 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
-| mysql8/MySQL8Test4.java#testPartition | 待做 |  | `SELECT t.'id' AS 'value1',t.'name' AS 'value2',t3.'code' AS 'value3',t3.'type' AS 'value4',t3.'open_…` |
-| mysql8/MySQL8Test4.java#testSelect | 待做 |  | `SELECT t1.'id',t1.'phone' AS 'phone',t1.'age' FROM (SELECT t.'id',t.'name' AS 'phone',t.'age' FROM '…` |
-| mysql8/MySQL8Test4.java#testSelect1 | 待做 |  | `SELECT t1.'id',t1.'phone' AS 'phone',t1.'age' FROM (SELECT t.'id',t.'name' AS 'phone',t.'age' FROM '…` |
-| mysql8/MySQL8Test4.java#testTimeAfterNull1 | 待做 |  | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user' WHERE 'create_time' > ?` |
-| mysql8/MySQL8Test4.java#testTimeBeforeNull1 | 待做 |  | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user' WHERE 'create_time' < ?` |
+| mysql8/MySQL8Test4.java#testAll4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:216：Java 的 notEmptyAll(…) 是一个方法；C# 写成 Sql.Group(Any() && All(…))，SQL 相同 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (EXISTS(SELECT 1 …` |
+| mysql8/MySQL8Test4.java#testAll5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:227：Java 的 notEmptyAll(…) 是一个方法；C# 写成 Sql.Group(Any() && All(…))，SQL 相同 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
+| mysql8/MySQL8Test4.java#testPartition | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:12 | `SELECT t.'id' AS 'value1',t.'name' AS 'value2',t3.'code' AS 'value3',t3.'type' AS 'value4',t3.'open_…` |
+| mysql8/MySQL8Test4.java#testSelect | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:241 | `SELECT t1.'id',t1.'phone' AS 'phone',t1.'age' FROM (SELECT t.'id',t.'name' AS 'phone',t.'age' FROM '…` |
+| mysql8/MySQL8Test4.java#testSelect1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:241 | `SELECT t1.'id',t1.'phone' AS 'phone',t1.'age' FROM (SELECT t.'id',t.'name' AS 'phone',t.'age' FROM '…` |
+| mysql8/MySQL8Test4.java#testTimeAfterNull1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:107 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user' WHERE 'create_time' > ?` |
+| mysql8/MySQL8Test4.java#testTimeBeforeNull1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:126 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user' WHERE 'create_time' < ?` |
 | mysql8/MySQL8Test5.java#configurationLogicDelete | 待做 |  | `SELECT 'id','name','deleted' FROM 'my_config_logic' WHERE 'deleted' = ?` |
 | mysql8/MySQL8Test5.java#interceptorTest1 | 待做 |  | `SELECT 'id','name','age','create_time' FROM 'm8_user' WHERE 1=1` |
 | mysql8/MySQL8Test5.java#interceptorTest2 | 待做 |  | `SELECT 'id','name','age','create_time' FROM 'm8_user' WHERE 1=1` |
@@ -1693,11 +1693,11 @@
 | mysql8/M8Test1.java#testSelfTargetTypeDiff | 待做 |  |  |
 | mysql8/MySQL8Test3.java#testQueryFirstLimit1 | 待做 |  | `SELECT t2.'id' AS 'id',t2.'uid' AS 'uid',t2.'code' AS 'code',t2.'type' AS 'type',t2.'bank_id' AS 'ba…` |
 | mysql8/MySQL8Test4.java#includeOneTest1 | 待做 |  | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
-| mysql8/MySQL8Test4.java#testAll | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE NOT (EXISTS(SELEC…` |
-| mysql8/MySQL8Test4.java#testAll1 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE NOT (EXISTS(SELEC…` |
-| mysql8/MySQL8Test4.java#testAll2 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE NOT (EXISTS(SELEC…` |
-| mysql8/MySQL8Test4.java#testAllGroupJoin | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
-| mysql8/MySQL8Test4.java#testAllGroupJoin2 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
+| mysql8/MySQL8Test4.java#testAll | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:154 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE NOT (EXISTS(SELEC…` |
+| mysql8/MySQL8Test4.java#testAll1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:167 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE NOT (EXISTS(SELEC…` |
+| mysql8/MySQL8Test4.java#testAll2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:179 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE NOT (EXISTS(SELEC…` |
+| mysql8/MySQL8Test4.java#testAllGroupJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:191 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
+| mysql8/MySQL8Test4.java#testAllGroupJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:203 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
 | mysql8/MySQL8Test4.java#testIncludeIdOnly1 | 待做 |  | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
 | mysql8/MySQL8Test4.java#testIncludeIdOnly2 | 待做 |  | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
 | mysql8/MySQL8Test5.java#selectJoinInclude | 待做 |  |  |
@@ -1851,9 +1851,9 @@
 | mysql8/ManyJoinTest.java#testMany2Many2GroupJoin3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:226 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
 | mysql8/MySQL8Test2.java#testAA | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:288 |  |
 | mysql8/MySQL8Test3.java#testDTO1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:148 |  |
-| mysql8/MySQL8Test4.java#testPartition2 | 待做 |  | `SELECT t.'id' AS 'id',t.'name' AS 'name',t5.'type' AS 'third_card_type',t5.'code' AS 'third_card_cod…` |
-| mysql8/MySQL8Test4.java#testPartition3 | 待做 |  | `SELECT t.'id' AS 'id',t.'name' AS 'name',t5.'type' AS 'third_card_type',t5.'code' AS 'third_card_cod…` |
-| mysql8/MySQL8Test4.java#testSubQueryCountCompareNull1 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (SELECT COUNT(*) …` |
+| mysql8/MySQL8Test4.java#testPartition2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:45 | `SELECT t.'id' AS 'id',t.'name' AS 'name',t5.'type' AS 'third_card_type',t5.'code' AS 'third_card_cod…` |
+| mysql8/MySQL8Test4.java#testPartition3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:64 | `SELECT t.'id' AS 'id',t.'name' AS 'name',t5.'type' AS 'third_card_type',t5.'code' AS 'third_card_cod…` |
+| mysql8/MySQL8Test4.java#testSubQueryCountCompareNull1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:84 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (SELECT COUNT(*) …` |
 
 ### 树（toTreeList / asTreeCTE）（`tree`，M4）
 
@@ -2545,9 +2545,9 @@
 | mysql8/MySQL8Test3.java#testDynamicJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:14 |  |
 | mysql8/MySQL8Test4.java#testFilter | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN 't_sys_user' …` |
 | mysql8/MySQL8Test4.java#testFilterAndDependency | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t2.'i…` |
-| mysql8/MySQL8Test4.java#testSubQueryCountCompareNull2 | 待做 |  | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
-| mysql8/MySQL8Test4.java#testTimeAfterNull2 | 待做 |  | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
-| mysql8/MySQL8Test4.java#testTimeBeforeNull2 | 待做 |  | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
+| mysql8/MySQL8Test4.java#testSubQueryCountCompareNull2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:95 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
+| mysql8/MySQL8Test4.java#testTimeAfterNull2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:117 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
+| mysql8/MySQL8Test4.java#testTimeBeforeNull2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:136 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
 | mysql8/MySQL8Test5.java#testToSelectPageResult | 待做 |  | `SELECT t1.'id',t1.'name',t1.'create_time',t3.'__joining2__' AS '__part__column1' FROM (SELECT t.'id'…` |
 
 ### search 扩展（`search`，M7）

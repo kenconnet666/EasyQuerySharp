@@ -92,7 +92,7 @@ internal sealed partial class ExpressionTranslator
             if (NavigationPredicate(original, plan.ValueFilter) is not { } predicate) return;
             if (negate)
             {
-                filters.Add(new GroupFilter(Negate(t.ElementPredicate(predicate, element)), "!" + GroupJoinKey(predicate)));
+                filters.Add(new GroupFilter(NotSatisfying(t.ElementPredicate(predicate, element)), "!" + GroupJoinKey(predicate)));
                 return;
             }
             // 按 AND 拆成合取项：几个聚合共有的合取项可以提到派生表的 WHERE

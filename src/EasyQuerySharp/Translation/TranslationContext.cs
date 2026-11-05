@@ -29,6 +29,9 @@ internal sealed partial class TranslationContext(
             Db = Db, GroupJoinAll = GroupJoinAll, MergeGroupFilters = MergeGroupFilters, NavigationValueFilter = NavigationValueFilter, GroupJoinSpecs = groupJoinSpecs ?? [],
         };
 
+    /// <summary>本查询的条件已经翻译完（之后加的隐式 JOIN 标 <see cref="JoinClause.AfterWhere"/>）。</summary>
+    public bool WhereTranslated { get; set; }
+
     /// <summary>所属的 EasyDb（分组合并的 Configure 要构造目标实体的查询状态）。</summary>
     public EasyDb? Db { get; init; }
 
@@ -56,7 +59,7 @@ internal sealed partial class TranslationContext(
         if (parent is not null && !Owns(owner.Table)) return parent.ElementJoinFor(owner, key, required, build);
         if (_elementJoins.TryGetValue((owner.Table, key), out var existing)) return existing;
         var (table, on, binding) = build(this);
-        query.Joins.Add(new JoinClause(required ? JoinKind.Inner : JoinKind.Left, table, on) { Implicit = true });
+        query.Joins.Add(new JoinClause(required ? JoinKind.Inner : JoinKind.Left, table, on) { Implicit = true, AfterWhere = WhereTranslated });
         _elementJoins[(owner.Table, key)] = binding;
         return binding;
     }
@@ -80,7 +83,7 @@ internal sealed partial class TranslationContext(
         // 复合键整体加括号：ON (a = a AND b = b)
         conditions.Add(keys.Count == 1 ? keys[0] : LogicalExpr.Grouped(keys));
         if (navigation.ExtraFilter is { } extra) conditions.Add(PredicateOn(extra, target));
-        query.Joins.Add(new JoinClause(navigation.Required ? JoinKind.Inner : JoinKind.Left, target, LogicalExpr.And(conditions)) { Implicit = true });
+        query.Joins.Add(new JoinClause(navigation.Required ? JoinKind.Inner : JoinKind.Left, target, LogicalExpr.And(conditions)) { Implicit = true, AfterWhere = WhereTranslated });
         var binding = new EntityBinding(target);
         _joins[key] = binding;
         return binding;

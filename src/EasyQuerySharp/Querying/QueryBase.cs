@@ -308,9 +308,11 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         }
         var state = State.Distinct || State.Offset is not null || State.Limit is not null ? State.Wrap() : ForAggregate();
         var frame = QueryCompiler.Build(state with { OrderBys = [] });
-        // 排序、投影里用到了导航时，Java 已为它建了表：计数去掉排序与投影后主表仍带别名 t
-        frame.Query.ExplicitProjection |= State.OrderBys.Any(o => Translation.NavigationUsage.Count(o.Key.Body) > 0)
-                                          || (state.Selector is null && State.Selector is { } dropped && Translation.NavigationUsage.Count(dropped.Body) > 0);
+        // 排序、投影里的导航在 Java 里已经建了表（隐式 JOIN、分组合并）：计数去掉排序与投影后主表仍带别名 t。
+        // 是否建表要看完整查询翻译出的 JOIN，只在确实去掉了东西时多翻译一次
+        var dropped = !State.OrderBys.IsEmpty || (state.Selector is null && State.HasSelector);
+        if (dropped && !frame.Query.ExplicitProjection)
+            frame.Query.ExplicitProjection = QueryCompiler.CompileSelect(State).Query.Joins.Count > frame.Query.Joins.Count;
         frame.Query.Columns.Add(new SelectColumn(new FunctionExpr(SqlFunctionNames.Count, [LiteralExpr.Star]), null));
         return frame.Query;
     }

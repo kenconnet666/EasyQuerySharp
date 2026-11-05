@@ -61,9 +61,11 @@ internal static class ValueFilterRewriter
         }
     }
 
-    /// <summary>过滤后去掉的部分里是否用到了导航（参数上实体类型的成员，如 <c>x.User.Name</c>、<c>x.Cards.Count()</c>）。</summary>
-    public static bool DroppedNavigation(LambdaExpression original, LambdaExpression? filtered) =>
-        NavigationUsage.Count(original.Body) > (filtered is null ? 0 : NavigationUsage.Count(filtered.Body));
+    /// <summary>
+    /// 过滤后去掉的部分里是否用到了会建表的导航（见 <see cref="NavigationUsage"/>）；<paramref name="groupJoined"/> 判断集合导航是否合并成分组表。
+    /// </summary>
+    public static bool DroppedNavigation(LambdaExpression original, LambdaExpression? filtered, Func<System.Reflection.MemberInfo, bool>? groupJoined = null) =>
+        NavigationUsage.Count(original.Body, groupJoined) > (filtered is null ? 0 : NavigationUsage.Count(filtered.Body, groupJoined));
 
     // 区间：两端都保留时不变；只剩一端时退化成单个比较（不加括号，与 Java 一致）；两端都被拒绝时去掉
     private static Expression? RewriteRange(MethodCallExpression range, bool lowerOpen, bool upperOpen, ValueFilter filter)
