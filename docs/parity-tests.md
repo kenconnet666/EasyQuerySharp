@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1323、偏离 155、不适用 34、骨架 15、待做 877。
+合计：已移植 1327、偏离 155、不适用 34、骨架 15、待做 873。
 
 ## 按能力
 
@@ -15,7 +15,7 @@
 | 原生 SQL | `sql.native` | M1 | 50 | 33 | 6 | 1 | 0 | 10 |
 | 删除 | `write.delete` | M1 | 25 | 9 | 1 | 2 | 0 | 13 |
 | 插入 | `write.insert` | M1 | 50 | 33 | 0 | 0 | 1 | 16 |
-| 更新 | `write.update` | M1 | 59 | 27 | 4 | 0 | 0 | 28 |
+| 更新 | `write.update` | M1 | 59 | 28 | 4 | 0 | 0 | 27 |
 | CASE WHEN | `expr.case` | M2 | 27 | 19 | 6 | 0 | 0 | 2 |
 | 日期函数 | `func.date` | M2 | 101 | 70 | 14 | 7 | 0 | 10 |
 | 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 49 | 3 | 0 | 0 | 7 |
@@ -27,7 +27,7 @@
 | 窗口函数 | `window` | M2 | 44 | 32 | 1 | 1 | 0 | 10 |
 | CTE | `query.cte` | M3 | 11 | 4 | 3 | 0 | 0 | 4 |
 | 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 59 | 2 | 1 | 2 | 19 |
-| 显式 join | `query.join` | M3 | 88 | 64 | 4 | 1 | 0 | 19 |
+| 显式 join | `query.join` | M3 | 88 | 67 | 4 | 1 | 0 | 16 |
 | 无实体的 Map 查询、toMap | `query.map` | M3 | 11 | 2 | 0 | 0 | 0 | 9 |
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 1 | 0 | 0 | 0 | 1 |
 | 流式读取 | `query.stream` | M3 | 9 | 5 | 2 | 1 | 0 | 1 |
@@ -700,7 +700,7 @@
 | QueryTest24.java#test123 | 待做 |  |  |
 | QueryTest26.java#testQuery2 | 待做 |  | `UPDATE 'sys_user_encrypt' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
 | QueryTest26.java#testQuery3 | 待做 |  | `UPDATE 'sys_user2' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
-| QueryTest26.java#updateConcat | 待做 |  |  |
+| QueryTest26.java#updateConcat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:240 |  |
 | QueryTest28.java#testIncrementNullZero | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest28.cs:72 | `UPDATE 't_topic' SET 'stars' = (IFNULL('stars',?) + ?) WHERE 'id' = ?` |
 | TestUpdateFlatAndPredicate.java#testExpressionKey | 待做 |  |  |
 | TestUpdateFlatAndPredicate.java#testExpressionKey2 | 待做 |  |  |
@@ -1378,9 +1378,9 @@
 | QueryTest24.java#aaa | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:50 |  |
 | QueryTest25.java#testDraft | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:113 | `SELECT t1.'id',t1.'star',t.'title' AS 'content' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'delete…` |
 | QueryTest25.java#testDraft2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:113 | `SELECT t1.'id',t1.'star',t.'title' AS 'content' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'delete…` |
-| QueryTest26.java#testRelationOn | 待做 |  | `SELECT t.'aid',t.'aname' FROM 'on_relation_a' t LEFT JOIN 'on_relation_b' t2 ON t2.'aid' = t.'aid' L…` |
-| QueryTest26.java#testViewWhere | 待做 |  |  |
-| QueryTest26.java#testViewWhere2 | 待做 |  |  |
+| QueryTest26.java#testRelationOn | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:249 | `SELECT t.'aid',t.'aname' FROM 'on_relation_a' t LEFT JOIN 'on_relation_b' t2 ON t2.'aid' = t.'aid' L…` |
+| QueryTest26.java#testViewWhere | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:219 |  |
+| QueryTest26.java#testViewWhere2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:229 |  |
 | QueryTest26.java#testaa | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.Part2.cs:20 | `SELECT t.'id',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'content',t.'url',…` |
 | QueryTest27.java#testDerivedTable2 | 待做 |  | `SELECT t2.'score' AS 'score',t2.'status1' AS 'status1',t2.'order' AS 'order',t2.'is_top' AS 'is_top'…` |
 | QueryTest27.java#testDerivedTable3 | 待做 |  | `SELECT t2.'score' AS 'score',t2.'status1' AS 'status1',t2.'order' AS 'order',t2.'is_top' AS 'is_top'…` |

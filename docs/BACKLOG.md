@@ -8,3 +8,5 @@
 - 和 TS 文档站合并成一个站，同一张卡片切换两种代码：两边的卡片都稳定以后再评估。
 - 方言能力做进类型系统（参考 TS 的 `Adapter<C>`）：先用运行时检查加分析器。
 - 一条 SQL 用 JSON 聚合出整棵对象树：不做，理由见 [0002](decisions/0002-object-tree-and-dto.md)。
+- 标量投影之后再聚合（`q.Select(x => x.Score ?? 0m).SumAsync(v => v)`）：选择器参数绑定到单列派生表还不支持，多表时直接用 `SumAsync((a, b) => …)`；有真实需求时再补。
+- 对一导航上的固定条件写进 ON（Java 的 `bank().filter(..)`，QueryTest26 test11 / test22）：需要查询级的声明方式（同一导航多处使用共用一个 JOIN），与 GroupJoin 的声明一起设计。

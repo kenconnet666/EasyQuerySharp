@@ -214,4 +214,45 @@ public sealed class QueryTest26(MySqlFixture fixture) : MySqlTest(fixture)
 
     [Fact, Upstream("QueryTest26.java#test", NotApplicable = "测的是 Java 的 Linq / Stream 在内存里分组，与查询无关")]
     public void Test() => Assert.Empty(Array.Empty<int>().GroupBy(x => x));
+
+    // Java 用例没有断言：先投影到 VO，再按 VO 的列过滤（包一层派生表）
+    [Fact, Upstream("QueryTest26.java#testViewWhere")]
+    public async Task TestViewWhere()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<Topic>().LeftJoin<BlogEntity>((t, b) => b.Id == t.Id)
+            .Select((t, b) => new TopicType1VO { Column1 = t.Id, Column2 = b.Id, Column3 = b.Title, Column4 = t.Title })
+            .Where(t => t.Column1 == "123").ToListAsync(Ct);
+        listen.AssertSql("SELECT t2.`column1` AS `column1`,t2.`column2` AS `column2`,t2.`column3` AS `column3`,t2.`column4` AS `column4` FROM (SELECT t.`id` AS `column1`,t1.`id` AS `column2`,t1.`title` AS `column3`,t.`title` AS `column4` FROM `t_topic` t LEFT JOIN `t_blog` t1 ON t1.`deleted` = ? AND t1.`id` = t.`id`) t2 WHERE t2.`column1` = ?");
+    }
+
+    [Fact, Upstream("QueryTest26.java#testViewWhere2")]
+    public async Task TestViewWhere2() =>
+        await Db.Query<Topic>().InnerJoin<Topic>((t1, t2) => t1.Id == t2.Id)
+            .LeftJoin<Topic>((t1, _, t3) => t1.Id == t3.Id).LeftJoin<Topic>((t1, _, _, t4) => t1.Id == t4.Id)
+            .LeftJoin<Topic>((t1, _, _, _, t5) => t1.Id == t5.Id).LeftJoin<Topic>((t1, _, _, _, _, t6) => t1.Id == t6.Id)
+            .LeftJoin<Topic>((t1, _, _, _, _, _, t7) => t1.Id == t7.Id).LeftJoin<Topic>((t1, _, _, _, _, _, _, t8) => t1.Id == t8.Id)
+            .LeftJoin<Topic>((t1, _, _, _, _, _, _, _, t9) => t1.Id == t9.Id)
+            .Select((a, b, _, _, _, _, _, _, _) => new TopicType1VO { Column1 = a.Id, Column2 = b.Id, Column3 = b.Title, Column4 = a.Title })
+            .Where(t => t.Column1 == "123").ToListAsync(Ct);
+
+    // Java 用例没有断言：SET 里拼接常量与列；联表后对可空列求和，没有行时取默认值
+    [Fact, Upstream("QueryTest26.java#updateConcat")]
+    public async Task UpdateConcat()
+    {
+        await Db.Update<BlogEntity>().Set(b => new BlogEntity { Title = "DSL_" + b.Url }).Where(o => o.Id == "1234fdcvb").ExecuteAsync(Ct);
+        var sum = await Db.Query<Topic>().LeftJoin<BlogEntity>((t, b) => t.Title == b.Title).SumAsync((_, b) => b.Score ?? 0m, Ct);
+        Assert.True(sum >= 0m);
+    }
+
+    // JOIN 的 ON 里用到导航：导航的隐式 JOIN 写在这个 JOIN 之前，别名排在它之后（Java 在声明 JOIN 时先建了表）
+    [Fact, Upstream("QueryTest26.java#testRelationOn")]
+    public async Task TestRelationOn()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<OnRelationA>().LeftJoin<OnRelationD>((o, o2) => o.OnRelationB!.OnRelationC!.Cid == o2.Did)
+            .Where((o1, _) => Sql.LikeContains(o1.OnRelationB!.Bname, "123")).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`aid`,t.`aname` FROM `on_relation_a` t LEFT JOIN `on_relation_b` t2 ON t2.`aid` = t.`aid` LEFT JOIN `on_relation_c` t3 ON t3.`bid` = t2.`bid` LEFT JOIN `on_relation_d` t1 ON t3.`cid` = t1.`did` WHERE t2.`bname` LIKE CONCAT('%',?,'%')");
+        listen.AssertParams("123(String)");
+    }
 }

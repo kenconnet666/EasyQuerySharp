@@ -18,7 +18,8 @@ public sealed class MySqlFixture : IAsyncLifetime
 
     // 不在建表脚本里、由 Java 用例在 @Before 里 syncTable 创建的表
     private static readonly Type[] CodeFirstTables =
-        [typeof(SubJoinUser), typeof(SubJoinBook), typeof(SubJoinAuthor), typeof(InterceptorEntity), typeof(Interceptor2Entity)];
+        [typeof(SubJoinUser), typeof(SubJoinBook), typeof(SubJoinAuthor), typeof(InterceptorEntity), typeof(Interceptor2Entity),
+        typeof(OnRelationA), typeof(OnRelationB), typeof(OnRelationC), typeof(OnRelationD)];
 
     private EasyDb? _db;
     private string? _skipReason;
