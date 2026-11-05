@@ -1,5 +1,5 @@
 -- FirstMissing：查不到时返回 null
-SELECT rt.* FROM (SELECT "id","name","age","company_id","department_id","manager_id","level","joined_at" FROM "t_user" WHERE "name" = ?) rt WHERE ROWNUM < 2;
+SELECT "id","name","age","company_id","department_id","manager_id","level","joined_at" FROM "t_user" WHERE "name" = ? AND ROWNUM < 2;
 -- params: ['不存在的人']
 SELECT "id","name","age","company_id","department_id","manager_id","level","joined_at" FROM "t_user" WHERE "id" = ?;
 -- params: [999]
@@ -19,11 +19,11 @@ WITH "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."company_id",t1."pare
 -- CountAndAny：按条件计数与判断存在
 SELECT COUNT(*) FROM "t_user" WHERE "age" >= ?;
 -- params: [18]
-SELECT rt.* FROM (SELECT  1  FROM "t_post" WHERE "status" = ?) rt WHERE ROWNUM < 2;
+SELECT  1  FROM "t_post" WHERE "status" = ? AND ROWNUM < 2;
 -- params: ['draft']
 
 -- SelectExpressions：选表达式
-SELECT rt.* FROM (SELECT UPPER(t."title") AS "title",(t."views" + ?) AS "next_views",(t."views" >= ?) AS "is_hot" FROM "t_post" t WHERE t."status" = ?) rt WHERE ROWNUM < 4;
+SELECT UPPER(t."title") AS "title",(t."views" + ?) AS "next_views",(t."views" >= ?) AS "is_hot" FROM "t_post" t WHERE t."status" = ? AND ROWNUM < 4;
 -- params: [1, 2000, 'published']
 
 -- SelectNavigation：经导航取关联表的列

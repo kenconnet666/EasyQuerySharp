@@ -344,7 +344,7 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
 
     /// <summary>行数：<c>SELECT COUNT(*)</c>；有 DISTINCT 或分页时先包成派生表再计数。</summary>
     public async Task<long> CountAsync(CancellationToken cancellationToken = default) =>
-        await ScalarAsync<long>(CountStatement(), cancellationToken).ConfigureAwait(false);
+        await ScalarAsync<long>(ToCountStatement(), cancellationToken).ConfigureAwait(false);
 
     /// <summary>计数语句（分页时与数据查询共用条件）。</summary>
     internal SelectQuery CountQuery()
@@ -372,7 +372,8 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         return frame.Query;
     }
 
-    private SqlStatement CountStatement() => SqlRenderer.Render(Db.Options.Dialect, CountQuery());
+    /// <summary>计数时执行的语句（<c>SELECT COUNT(*) …</c>），不执行；用于调试或自己拼分页。</summary>
+    public SqlStatement ToCountStatement() => SqlRenderer.Render(Db.Options.Dialect, CountQuery());
 
     /// <summary>
     /// 分页：先计数，有数据时再取第 <paramref name="page"/> 页（从 1 开始）。最后一页只取剩下的条数；

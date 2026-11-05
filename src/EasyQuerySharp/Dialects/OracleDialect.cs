@@ -43,12 +43,39 @@ public class OracleDialect : SqlDialect
     {
         var offset = query.Offset ?? 0;
         var rownum = QuoteIdentifier("__rownum__");
+        // 没有排序、没有分组时 ROWNUM 直接写进这一层（与 Java 一致）：<c>SELECT rt.* FROM(SELECT …, ROWNUM AS "__rownum__" … WHERE … AND ROWNUM &lt; 末行+1) rt WHERE rt."__rownum__" &gt; 跳过行数</c>
+        if (query.OrderBy.Count == 0 && query.GroupBy.Count == 0)
+        {
+            WriteInlineRowNum(renderer, query, writeUnpaged, offset, rownum);
+            return;
+        }
         if (offset > 0) renderer.Append("SELECT rt1.* FROM (");
         renderer.Append(offset > 0 ? $"SELECT rt.*, ROWNUM AS {rownum} FROM (" : "SELECT rt.* FROM (");
         writeUnpaged();
         renderer.Append(") rt");
         if (query.Limit is { } limit) renderer.Append(" WHERE ROWNUM < ").Append((offset + limit + 1).ToString(CultureInfo.InvariantCulture));
         if (offset > 0) renderer.Append($") rt1 WHERE rt1.{rownum} > ").Append(offset.ToString(CultureInfo.InvariantCulture));
+    }
+
+    // 临时给这一层加上 ROWNUM 列与 ROWNUM 条件，写完再拿掉（查询对象在别处还会复用）
+    private static void WriteInlineRowNum(SqlRenderer renderer, SelectQuery query, Action writeUnpaged, long offset, string rownum)
+    {
+        // Java 在列表后写 ", ROWNUM AS …"（逗号后有空格）
+        var column = offset > 0 ? new SelectColumn(new LiteralExpr(" ROWNUM"), "__rownum__") : null;
+        var limit = query.Limit is { } rows ? new LiteralExpr("ROWNUM < " + (offset + rows + 1).ToString(CultureInfo.InvariantCulture)) : null;
+        if (column is not null) query.Columns.Add(column);
+        if (limit is not null) query.Where.Add(limit);
+        try
+        {
+            if (offset > 0) renderer.Append("SELECT rt.* FROM(");
+            writeUnpaged();
+            if (offset > 0) renderer.Append($") rt WHERE rt.{rownum} > ").Append(offset.ToString(CultureInfo.InvariantCulture));
+        }
+        finally
+        {
+            if (column is not null) query.Columns.Remove(column);
+            if (limit is not null) query.Where.Remove(limit);
+        }
     }
 
     /// <summary>值里含 % 或 _ 时，包含 / 开头 / 结尾改写成 INSTR，避免被当成通配符（与 Java 版一致）。</summary>

@@ -13,7 +13,7 @@ UPDATE "t_post" SET "views" = ("views" + ?),"title" = "title" || ? WHERE "id" = 
 -- params: [100, '（修订）', 1]
 
 -- UpdateThroughNavigation：条件里用集合导航
-UPDATE "t_user" t SET t."level" = ? WHERE EXISTS(SELECT rt.* FROM (SELECT 1 FROM "t_post" t1 WHERE t1."author_id" = t."id" AND t1."views" >= ?) rt WHERE ROWNUM < 2);
+UPDATE "t_user" t SET t."level" = ? WHERE EXISTS(SELECT 1 FROM "t_post" t1 WHERE t1."author_id" = t."id" AND t1."views" >= ? AND ROWNUM < 2);
 -- params: ['senior', 2000]
 
 -- UpdateEntity：按实体更新：按主键写全部列

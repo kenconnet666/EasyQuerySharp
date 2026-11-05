@@ -84,7 +84,7 @@ for ($n = 2; $n -le $max; $n++) {
     [void]$sb.AppendLine("    public $self GroupJoinIf<TChild>(bool condition, Expression<Func<$ts, IEnumerable<TChild>?>> navigation, Func<Query<TChild>, Query<TChild>>? configure = null) => new(GroupJoinSpecs.Add(State, navigation, condition, configure));")
     if ($n -lt $max) {
         $next = "Query<$ts, TNext>"
-        foreach ($j in @(@('LeftJoin', 'Left'), @('InnerJoin', 'Inner'), @('RightJoin', 'Right'))) {
+        foreach ($j in @(@('LeftJoin', 'Left'), @('InnerJoin', 'Inner'), @('RightJoin', 'Right'), @('CrossJoin', 'Cross'))) {
             [void]$sb.AppendLine('')
             [void]$sb.AppendLine("    /// <summary>$($j[1].ToUpper()) JOIN 实体 <typeparamref name=`"TNext`"/>。</summary>")
             [void]$sb.AppendLine("    public $next $($j[0])<TNext>(Expression<Func<$ts, TNext, bool>> on) =>")

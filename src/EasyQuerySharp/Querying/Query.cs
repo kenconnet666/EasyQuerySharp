@@ -216,6 +216,9 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     /// <summary>RIGHT JOIN 实体 <typeparamref name="T2"/>。</summary>
     public Query<T, T2> RightJoin<T2>(Expression<Func<T, T2, bool>> on) => Join<T2>(JoinKind.Right, new EntitySource(typeof(T2)), on);
 
+    /// <summary>CROSS JOIN 实体 <typeparamref name="T2"/>，带 ON 条件（对应 Java 的 crossJoin；MySQL 上等同 INNER JOIN）。</summary>
+    public Query<T, T2> CrossJoin<T2>(Expression<Func<T, T2, bool>> on) => Join<T2>(JoinKind.Cross, new EntitySource(typeof(T2)), on);
+
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T, T2> LeftJoin<T2>(Query<T2> subQuery, Expression<Func<T, T2, bool>> on) => Join<T2>(JoinKind.Left, subQuery.State.AsJoinSource(), on);
 

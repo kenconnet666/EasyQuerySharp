@@ -92,6 +92,10 @@ public sealed class Query<T1, T2> : QueryBase<Query<T1, T2>, T1>
     public Query<T1, T2, TNext> RightJoin<TNext>(Expression<Func<T1, T2, TNext, bool>> on) =>
         new(QueryStates.AddJoin(State, new EntitySource(typeof(TNext)) { Join = JoinKind.Right, On = on }));
 
+    /// <summary>CROSS JOIN 实体 <typeparamref name="TNext"/>。</summary>
+    public Query<T1, T2, TNext> CrossJoin<TNext>(Expression<Func<T1, T2, TNext, bool>> on) =>
+        new(QueryStates.AddJoin(State, new EntitySource(typeof(TNext)) { Join = JoinKind.Cross, On = on }));
+
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, TNext> LeftJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, TNext, bool>> on) =>
         new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Left, On = on }));
@@ -207,6 +211,10 @@ public sealed class Query<T1, T2, T3> : QueryBase<Query<T1, T2, T3>, T1>
     /// <summary>RIGHT JOIN 实体 <typeparamref name="TNext"/>。</summary>
     public Query<T1, T2, T3, TNext> RightJoin<TNext>(Expression<Func<T1, T2, T3, TNext, bool>> on) =>
         new(QueryStates.AddJoin(State, new EntitySource(typeof(TNext)) { Join = JoinKind.Right, On = on }));
+
+    /// <summary>CROSS JOIN 实体 <typeparamref name="TNext"/>。</summary>
+    public Query<T1, T2, T3, TNext> CrossJoin<TNext>(Expression<Func<T1, T2, T3, TNext, bool>> on) =>
+        new(QueryStates.AddJoin(State, new EntitySource(typeof(TNext)) { Join = JoinKind.Cross, On = on }));
 
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, TNext> LeftJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, TNext, bool>> on) =>
@@ -324,6 +332,10 @@ public sealed class Query<T1, T2, T3, T4> : QueryBase<Query<T1, T2, T3, T4>, T1>
     public Query<T1, T2, T3, T4, TNext> RightJoin<TNext>(Expression<Func<T1, T2, T3, T4, TNext, bool>> on) =>
         new(QueryStates.AddJoin(State, new EntitySource(typeof(TNext)) { Join = JoinKind.Right, On = on }));
 
+    /// <summary>CROSS JOIN 实体 <typeparamref name="TNext"/>。</summary>
+    public Query<T1, T2, T3, T4, TNext> CrossJoin<TNext>(Expression<Func<T1, T2, T3, T4, TNext, bool>> on) =>
+        new(QueryStates.AddJoin(State, new EntitySource(typeof(TNext)) { Join = JoinKind.Cross, On = on }));
+
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, TNext> LeftJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, TNext, bool>> on) =>
         new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Left, On = on }));
@@ -439,6 +451,10 @@ public sealed class Query<T1, T2, T3, T4, T5> : QueryBase<Query<T1, T2, T3, T4, 
     /// <summary>RIGHT JOIN 实体 <typeparamref name="TNext"/>。</summary>
     public Query<T1, T2, T3, T4, T5, TNext> RightJoin<TNext>(Expression<Func<T1, T2, T3, T4, T5, TNext, bool>> on) =>
         new(QueryStates.AddJoin(State, new EntitySource(typeof(TNext)) { Join = JoinKind.Right, On = on }));
+
+    /// <summary>CROSS JOIN 实体 <typeparamref name="TNext"/>。</summary>
+    public Query<T1, T2, T3, T4, T5, TNext> CrossJoin<TNext>(Expression<Func<T1, T2, T3, T4, T5, TNext, bool>> on) =>
+        new(QueryStates.AddJoin(State, new EntitySource(typeof(TNext)) { Join = JoinKind.Cross, On = on }));
 
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, T5, TNext> LeftJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, T5, TNext, bool>> on) =>
@@ -556,6 +572,10 @@ public sealed class Query<T1, T2, T3, T4, T5, T6> : QueryBase<Query<T1, T2, T3, 
     public Query<T1, T2, T3, T4, T5, T6, TNext> RightJoin<TNext>(Expression<Func<T1, T2, T3, T4, T5, T6, TNext, bool>> on) =>
         new(QueryStates.AddJoin(State, new EntitySource(typeof(TNext)) { Join = JoinKind.Right, On = on }));
 
+    /// <summary>CROSS JOIN 实体 <typeparamref name="TNext"/>。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, TNext> CrossJoin<TNext>(Expression<Func<T1, T2, T3, T4, T5, T6, TNext, bool>> on) =>
+        new(QueryStates.AddJoin(State, new EntitySource(typeof(TNext)) { Join = JoinKind.Cross, On = on }));
+
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, TNext> LeftJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, T5, T6, TNext, bool>> on) =>
         new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Left, On = on }));
@@ -671,6 +691,10 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7> : QueryBase<Query<T1, T2, 
     /// <summary>RIGHT JOIN 实体 <typeparamref name="TNext"/>。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, TNext> RightJoin<TNext>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, TNext, bool>> on) =>
         new(QueryStates.AddJoin(State, new EntitySource(typeof(TNext)) { Join = JoinKind.Right, On = on }));
+
+    /// <summary>CROSS JOIN 实体 <typeparamref name="TNext"/>。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7, TNext> CrossJoin<TNext>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, TNext, bool>> on) =>
+        new(QueryStates.AddJoin(State, new EntitySource(typeof(TNext)) { Join = JoinKind.Cross, On = on }));
 
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, TNext> LeftJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, T5, T6, T7, TNext, bool>> on) =>
@@ -788,6 +812,10 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8> : QueryBase<Query<T1, 
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, TNext> RightJoin<TNext>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, TNext, bool>> on) =>
         new(QueryStates.AddJoin(State, new EntitySource(typeof(TNext)) { Join = JoinKind.Right, On = on }));
 
+    /// <summary>CROSS JOIN 实体 <typeparamref name="TNext"/>。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, TNext> CrossJoin<TNext>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, TNext, bool>> on) =>
+        new(QueryStates.AddJoin(State, new EntitySource(typeof(TNext)) { Join = JoinKind.Cross, On = on }));
+
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, TNext> LeftJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, TNext, bool>> on) =>
         new(QueryStates.AddJoin(State, subQuery.State.AsJoinSource() with { Join = JoinKind.Left, On = on }));
@@ -903,6 +931,10 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> : QueryBase<Query<
     /// <summary>RIGHT JOIN 实体 <typeparamref name="TNext"/>。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, TNext> RightJoin<TNext>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TNext, bool>> on) =>
         new(QueryStates.AddJoin(State, new EntitySource(typeof(TNext)) { Join = JoinKind.Right, On = on }));
+
+    /// <summary>CROSS JOIN 实体 <typeparamref name="TNext"/>。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, TNext> CrossJoin<TNext>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TNext, bool>> on) =>
+        new(QueryStates.AddJoin(State, new EntitySource(typeof(TNext)) { Join = JoinKind.Cross, On = on }));
 
     /// <summary>LEFT JOIN 一个子查询（作为派生表）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, TNext> LeftJoin<TNext>(Query<TNext> subQuery, Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TNext, bool>> on) =>

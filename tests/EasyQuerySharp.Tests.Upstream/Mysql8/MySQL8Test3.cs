@@ -323,4 +323,47 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
             Db.Query<Comment>().Where(c => c.ParentId != null).FilterBy(new Comment()).AsTreeCte().SelectAutoInclude<MyComment4>().ToTreeAsync(Ct));
         Assert.Equal("MyComment4 上没有属性 ParentId，拼树时取不到父子键", ex.Message);
     }
+
+    /// <summary>对应 Java：mysql8/vo/UserBankDTO2。</summary>
+    private sealed class UserBankDTO2
+    {
+        public string? Name { get; set; }
+
+        public string? Phone { get; set; }
+
+        public string? Code2 { get; set; }
+    }
+
+    private Query<UserBankDTO2> UserBanks(System.Linq.Expressions.Expression<Func<SysUser, SysBankCard, bool>> where) =>
+        Db.Query<SysUser>().SmartPredicate().InnerJoin<SysBankCard>((user, card) => user.Id == card.Uid).Where(where)
+            .Select((user, card) => new UserBankDTO2 { Name = user.Name, Phone = user.Phone, Code2 = card.Code });
+
+    // 条件下推（SMART_PREDICATE）：只涉及银行卡的条件推进它的 ON，只涉及用户的推进内层 WHERE
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testDTOWhereToTableWhere")]
+    public async Task TestDTOWhereToTableWhere()
+    {
+        using var listen = SqlCapture.Listen();
+        await UserBanks((user, _) => user.Age == 18).Where(u => u.Code2 == "123" && (u.Name == "name" || u.Phone == "phone")).ToListAsync(Ct);
+        listen.AssertSql("SELECT t2.`name` AS `name`,t2.`phone` AS `phone`,t2.`code2` AS `code2` FROM (SELECT t.`name` AS `name`,t.`phone` AS `phone`,t1.`code` AS `code2` FROM `t_sys_user` t INNER JOIN `t_bank_card` t1 ON t.`id` = t1.`uid` AND t1.`code` = ? WHERE t.`age` = ? AND (t.`name` = ? OR t.`phone` = ?)) t2");
+        listen.AssertParams("123(String),18(Integer),name(String),phone(String)");
+    }
+
+    // OR 里混了两张表的列：整组条件留在外层
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testDTOWhereToTableWhere1")]
+    public async Task TestDTOWhereToTableWhere1()
+    {
+        using var listen = SqlCapture.Listen();
+        await UserBanks((_, card) => card.Code == "456").Where(u => u.Code2 == "123" && (u.Name == "name" || u.Code2 == "phone")).ToListAsync(Ct);
+        listen.AssertSql("SELECT t2.`name` AS `name`,t2.`phone` AS `phone`,t2.`code2` AS `code2` FROM (SELECT t.`name` AS `name`,t.`phone` AS `phone`,t1.`code` AS `code2` FROM `t_sys_user` t INNER JOIN `t_bank_card` t1 ON t.`id` = t1.`uid` WHERE t1.`code` = ?) t2 WHERE t2.`code2` = ? AND (t2.`name` = ? OR t2.`code2` = ?)");
+        listen.AssertParams("456(String),123(String),name(String),phone(String)");
+    }
+
+    // CROSS JOIN 也能带 ON（MySQL 等同 INNER JOIN）
+    [Fact, Upstream("mysql8/CrossJoinTest.java#crossJoin1")]
+    public async Task CrossJoin1()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysBankCard>().CrossJoin<SysBankCard>((c1, c2) => c1.Id == c2.Id).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time` FROM `t_bank_card` t CROSS JOIN `t_bank_card` t1 ON t.`id` = t1.`id`");
+    }
 }

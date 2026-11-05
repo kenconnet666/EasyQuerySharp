@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1630、偏离 204、不适用 77、骨架 7、待做 486。
+合计：已移植 1634、偏离 204、不适用 77、骨架 7、待做 482。
 
 ## 按能力
 
@@ -27,9 +27,9 @@
 | 窗口函数 | `window` | M2 | 44 | 42 | 1 | 1 | 0 | 0 |
 | CTE | `query.cte` | M3 | 11 | 8 | 3 | 0 | 0 | 0 |
 | 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 73 | 8 | 2 | 0 | 0 |
-| 显式 join | `query.join` | M3 | 88 | 80 | 4 | 1 | 0 | 3 |
+| 显式 join | `query.join` | M3 | 88 | 83 | 4 | 1 | 0 | 0 |
 | 无实体的 Map 查询、toMap | `query.map` | M3 | 11 | 10 | 1 | 0 | 0 | 0 |
-| 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 1 | 0 | 0 | 0 | 1 |
+| 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 2 | 0 | 0 | 0 | 0 |
 | 流式读取 | `query.stream` | M3 | 9 | 6 | 2 | 1 | 0 | 0 |
 | union / union all | `query.union` | M3 | 18 | 14 | 4 | 0 | 0 | 0 |
 | 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 12 | 1 | 0 | 1 | 22 |
@@ -1413,14 +1413,14 @@
 | QueryTest9.java#selectThrow9 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest9.cs:66：Java 按方法分 First / Single / Find / Required 四种异常，C# 都是 NotFoundException；多于一行时 C# 抛 InvalidOperationException，消息不同 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'del…` |
 | UpdateTest.java#aaaa | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:457：Java 把 BlogEntity 全部列映射到 SysMenuDto（类型并不匹配）；C# 只投影用到的两列 |  |
 | mysql8/CTETest.java#cteTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:76 | `WITH 'm8_user_temp' AS (SELECT t.'id',t.'name' FROM 'm8_user' t WHERE t.'age' IS NULL) SELECT t2.'na…` |
-| mysql8/CrossJoinTest.java#crossJoin1 | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t CROSS JOIN 't…` |
+| mysql8/CrossJoinTest.java#crossJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:362 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t CROSS JOIN 't…` |
 | mysql8/MySQL8Test2.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:13 | `SELECT t2.'id',t2.'name',t2.'create_time',t2.'__part__column1' AS '__part__column1' FROM (SELECT t.'…` |
 | mysql8/MySQL8Test2.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:26 | `SELECT t3.'id',t3.'name',t3.'create_time',t3.'__part__column1' AS '__part__column1' FROM (SELECT t.'…` |
 | mysql8/MySQL8Test2.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:46 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t LEFT JOIN (SE…` |
 | mysql8/MySQL8Test2.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:57 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t LEFT JOIN (SE…` |
 | mysql8/MySQL8Test2.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:67 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t LEFT JOIN (SE…` |
-| mysql8/MySQL8Test3.java#testDTOWhereToTableWhere | 待做 |  | `SELECT t2.'name' AS 'name',t2.'phone' AS 'phone',t2.'code2' AS 'code2' FROM (SELECT t.'name' AS 'nam…` |
-| mysql8/MySQL8Test3.java#testDTOWhereToTableWhere1 | 待做 |  | `SELECT t2.'name' AS 'name',t2.'phone' AS 'phone',t2.'code2' AS 'code2' FROM (SELECT t.'name' AS 'nam…` |
+| mysql8/MySQL8Test3.java#testDTOWhereToTableWhere | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:342 | `SELECT t2.'name' AS 'name',t2.'phone' AS 'phone',t2.'code2' AS 'code2' FROM (SELECT t.'name' AS 'nam…` |
+| mysql8/MySQL8Test3.java#testDTOWhereToTableWhere1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:352 | `SELECT t2.'name' AS 'name',t2.'phone' AS 'phone',t2.'code2' AS 'code2' FROM (SELECT t.'name' AS 'nam…` |
 | mysql8/MySQL8Test5.java#testWhereJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:157 |  |
 
 ### 无实体的 Map 查询、toMap（`query.map`，M3）
@@ -1433,7 +1433,7 @@
 | QueryTest15.java#test1223 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:321 | `SELECT * FROM '123' WHERE 'name' = ?` |
 | QueryTest15.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:336 |  |
 | QueryTest15.java#testxxx | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:326 | `SELECT * FROM 'table1' t INNER JOIN 'table2' t1 ON t.'id1' = t1.'id2'` |
-| QueryTest16.java#test16 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:101：Java 的 Map 查询 select 之后每个 UNION 分支多占一个别名编号（t、t2，外层 t4）；C# 按实际出现的表连续编号 | `SELECT t4.'a' AS 'a',t4.'b' AS 'b' FROM ( (SELECT t.'a' AS 'a',t.'b' AS 'b' FROM 't_user' t) UNION (…` |
+| QueryTest16.java#test16 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:126：Java 的 Map 查询 select 之后每个 UNION 分支多占一个别名编号（t、t2，外层 t4）；C# 按实际出现的表连续编号 | `SELECT t4.'a' AS 'a',t4.'b' AS 'b' FROM ( (SELECT t.'a' AS 'a',t.'b' AS 'b' FROM 't_user' t) UNION (…` |
 | QueryTest19.java#mapJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:288 | `SELECT t.'table1Column' AS 'table1Column',t1.'table2Column' AS 'table2Column',t2.'table3Column' AS '…` |
 | QueryTest19.java#mapQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:306 | `SELECT 'id' AS 'id','age' AS 'age','id_card' AS 'id_card' FROM 'aaa' WHERE 'id' = ? AND 'name' = ?` |
 | QueryTest19.java#testMapJson | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:318 | `SELECT * FROM 'table1' t LEFT JOIN 'table2' t1 ON t1.'id1' = t.'id2' LEFT JOIN 'table3' t2 ON t2.'id…` |
@@ -1443,7 +1443,7 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| QueryTest16.java#testSubSumOracle2 | 待做 |  | `SELECT COUNT(*) FROM "t_company" WHERE "name" LIKE ?` |
+| QueryTest16.java#testSubSumOracle2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:113 | `SELECT COUNT(*) FROM "t_company" WHERE "name" LIKE ?` |
 | QueryTest18.java#testSubCountPage | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.Encryption.cs:9 | `SELECT COUNT(*) FROM 'easy-query-test'.'t_sys_user' WHERE 'phone' LIKE ?` |
 
 ### 流式读取（`query.stream`，M3）

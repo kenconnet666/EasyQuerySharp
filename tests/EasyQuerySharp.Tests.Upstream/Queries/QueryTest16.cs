@@ -97,6 +97,31 @@ public sealed class QueryTest16(MySqlFixture fixture) : MySqlTest(fixture)
         AssertStatement(Db.Query<Company>().Where(com => com.Name!.Contains("xx公司")).LimitSelect(10, 20, com => new Draft<string?, int?>(com.Id, com.Users!.Sum(x => x.Age))).ToStatement(),
             "SELECT t1.`id` AS `value1`,IFNULL((SELECT SUM(t2.`age`) FROM `t_user` t2 WHERE t2.`company_id` = t1.`id`),0) AS `value2` FROM (SELECT t.`id`,t.`name`,t.`create_time` FROM `t_company` t WHERE t.`name` LIKE ? LIMIT 20 OFFSET 10) t1", "%xx公司%(String)");
 
+    /// <summary>对应 Java：vo/CompanyVO。</summary>
+    private sealed class CompanyVO
+    {
+        public string? Id { get; set; }
+
+        public string? Name { get; set; }
+
+        public DateTime? CreateTime { get; set; }
+
+        public int? UseTotalAge { get; set; }
+    }
+
+    // Oracle 上先分页（ROWNUM 两层）再在外层投影集合的求和；总数单独一条 COUNT
+    [Fact, Upstream("QueryTest16.java#testSubSumOracle2")]
+    public void TestSubSumOracle2()
+    {
+        var db = SqlOnly.Db("oracle");
+        const long pageIndex = 10, pageSize = 20;
+        var query = db.Query<Company>().Where(com => com.Name!.Contains("xx公司"));
+        AssertStatement(query.ToCountStatement(), "SELECT COUNT(*) FROM \"t_company\" WHERE \"name\" LIKE ?", "%xx公司%(String)");
+        AssertStatement(query.LimitSelect((pageIndex - 1) * pageSize, pageSize, com => new CompanyVO { Id = com.Id, Name = com.Name, CreateTime = com.CreateTime, UseTotalAge = com.Users!.Sum(u => u.Age) }).ToStatement(),
+            "SELECT t1.\"id\",t1.\"name\",t1.\"create_time\",NVL((SELECT SUM(t2.\"age\") FROM \"t_user\" t2 WHERE t2.\"company_id\" = t1.\"id\"),0) AS \"use_total_age\" FROM (SELECT rt.* FROM(SELECT t.\"id\",t.\"name\",t.\"create_time\", ROWNUM AS \"__rownum__\" FROM \"t_company\" t WHERE t.\"name\" LIKE ? AND ROWNUM < 201) rt WHERE rt.\"__rownum__\" > 180) t1",
+            "%xx公司%(String)");
+    }
+
     // 无实体的表各自选列后 UNION / UNION ALL，外层包一层派生表
     [Fact, Upstream("QueryTest16.java#test16", Deviation = "Java 的 Map 查询 select 之后每个 UNION 分支多占一个别名编号（t、t2，外层 t4）；C# 按实际出现的表连续编号")]
     public void Test16()

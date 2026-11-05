@@ -7,7 +7,7 @@ namespace EasyQuerySharp.Querying;
 /// <summary>
 /// 条件下推（对应 Java 的 SMART_PREDICATE）：投影之后再加的条件本该写在派生表外层；
 /// 开了 <c>SmartPredicate()</c> 时，只用到某一张表直接投影出来的列的那些合取项，改写成对那张表的条件推进内层：
-/// 第一张表写进内层 WHERE，左连接（及其他连接）的表写进它的 ON（不改变行数）。用到多张表、或投影值不是直接列的合取项留在外层。
+/// 第一张表写进内层 WHERE，左连接（及其他连接）的表写进它的 ON（不改变行数）。有一个合取项用到多张表、或投影值不是直接列时，整个条件留在外层。
 /// </summary>
 internal static class SmartPredicates
 {
@@ -19,22 +19,19 @@ internal static class SmartPredicates
             || Mapping(selector) is not { } mapping)
             return (state, predicate);
 
+        // 全部合取项都能推进去才下推，有一项不行就整个留在外层（与 Java 一致：外层条件不拆开）
         var outer = predicate.Parameters[0];
-        var remaining = new List<Expression>();
+        var pushes = new List<(int Index, Expression Body)>();
         foreach (var conjunct in Conjuncts(predicate.Body))
         {
             var rewriter = new Rewriter(outer, mapping);
             var body = rewriter.Visit(conjunct);
-            if (rewriter.Failed || rewriter.Sources.Count != 1)
-            {
-                remaining.Add(conjunct);
-                continue;
-            }
-            var index = selector.Parameters.IndexOf(rewriter.Sources.Single());
-            inner = index == 0 ? inner with { Wheres = inner.Wheres.Add(Expression.Lambda(body, selector.Parameters)) } : AddToOn(inner, index, body, selector.Parameters);
+            if (rewriter.Failed || rewriter.Sources.Count != 1) return (state, predicate);
+            pushes.Add((selector.Parameters.IndexOf(rewriter.Sources.Single()), body));
         }
-        var pushed = state with { Sources = [sub with { Inner = inner }] };
-        return (pushed, remaining.Count == 0 ? null : Expression.Lambda(remaining.Aggregate(Expression.AndAlso), predicate.Parameters));
+        foreach (var (index, body) in pushes)
+            inner = index == 0 ? inner with { Wheres = inner.Wheres.Add(Expression.Lambda(body, selector.Parameters)) } : AddToOn(inner, index, body, selector.Parameters);
+        return (state with { Sources = [sub with { Inner = inner }] }, null);
     }
 
     // 第 index 个来源的 ON 后面追加条件（ON 的参数是前 index + 1 个来源）
