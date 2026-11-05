@@ -44,6 +44,22 @@ apps/
   docs/                              文档站（静态站点）
 ```
 
+核心包内部只有一层目录，命名空间与目录一致，同一目录里用文件名区分职责（不再建 `Attributes/`、`Includes/` 这类二级目录）：
+
+| 目录 | 内容 |
+|---|---|
+| 根目录 | 用户直接用的入口：`EasyDb`、`EasyDbOptions`、`Sql`（含 `Sql.Over`、`Window`）、`Draft` / `Part`、异常 |
+| `Metadata/` | 实体元数据、`[Table]` / `[Column]` / `[Navigate]` / `[LogicDelete]` / `[Version]` 等特性、值转换、逻辑删除策略 |
+| `Querying/` | 公开的 `Query` / `QueryBase` / `GroupQuery`，以及内部的 `QueryState`、`QueryCompiler`、`ProjectionCompiler`、`Include*` |
+| `Translation/` | 表达式树 → SQL AST：`ExpressionTranslator.*`（按主题分 partial）、`TranslationContext`、`MethodTranslators`、`KeyPredicates` |
+| `SqlAst/` `Rendering/` | SQL 语法树与渲染（别名分配、方言回调） |
+| `Dialects/` | `SqlDialect` 与各库的 `XxxDialect`（命名空间都是 `EasyQuerySharp.Dialects`） |
+| `Commands/` | 插入、更新、删除：`EntityCommandBase` → `WriteCommandBase`，`WriteScope` 是一条写入语句的翻译作用域 |
+| `Execution/` `Tracking/` `Interceptors/` `Filtering/` `Encryption/` `Materialization/` `Schema/` | 执行与事务、追踪、拦截器、按对象筛选、列加密、读取结果、code-first |
+
+测试项目 `Tests.Upstream` 也只有一层：用例按主题放在 `Queries/`、`Write/`、`Functions/`、`Features/`、`Dialects/`、`Fork/`、`Mysql8/`、`Pgsql/`、`Extras/`（C# 独有 API，不计入对标），
+实体在 `Entities/`、DTO 在 `Dto/`，共用的夹具和测试用策略、拦截器在 `Support/`；某个库专用的实体与夹具放在该库的目录里。
+
 模块边界的规则：
 
 - 方言包只做两件事：一是 `Dialect` 子类（渲染 SQL 和函数表），二是驱动适配。业务逻辑不能写进方言包。

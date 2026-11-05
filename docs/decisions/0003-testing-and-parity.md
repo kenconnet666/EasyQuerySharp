@@ -102,7 +102,7 @@ L2 的组织方式：
 - `LiveSuiteOptions` 是一个 record，用布尔开关裁剪能力：`Returning`、`RecursiveCte`、`Rollup`、`Cube`、`RowLocks`、`NoWait`、`JsonEdits`、`Savepoints` 等，和 TS 的选项同名。
 - 连接串取自环境变量 `EQS_<KEY>_CS`（ADO.NET 连接串）。没有设置时，回退到仓库根的 `.local/db.env`。两处都没有时，这组测试跳过（用 xUnit v3 的 `Assert.Skip`）。
 - `EQS_REQUIRE_DBS`（逗号分隔的 Key）列出必须连上的库：列出的库没配置或连不上时，判失败而不是跳过。CI 用它防止服务容器没起来时测试被静默跳过。
-- 数据库在 `tests/EasyQuerySharp.Tests.Live/Infrastructure/TestDatabases.cs` 里登记：Key、驱动工厂、参数前缀。
+- 数据库在 `tests/EasyQuerySharp.TestKit/Databases/TestDatabases.cs` 里登记：Key、驱动工厂、参数前缀。
 
 ### 本地与 CI 的分工
 
