@@ -108,6 +108,8 @@ internal sealed partial class ExpressionTranslator
                 return new FunctionExpr(SqlFunctionNames.Random, []);
             case nameof(Sql.IsoDayOfWeek):
                 return new FunctionExpr(SqlFunctionNames.DatePartOf(DatePart.IsoDayOfWeek), [Translate(call.Arguments[0])]);
+            case nameof(Sql.Constant):
+                return Parameter(ClientEvaluator.Evaluate(call.Arguments[0]), call.Method.GetGenericArguments()[0]);
             case nameof(Sql.Cast):
                 return new CastExpr(Translate(StripConvert(call.Arguments[0])), call.Method.GetGenericArguments()[0]);
             case nameof(Sql.Column):

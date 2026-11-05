@@ -64,6 +64,12 @@ public static partial class Sql
     /// </summary>
     public static T Cast<T>(object? value) => throw OnlyInQuery();
 
+    /// <summary>
+    /// 把客户端的值作为参数放进 SQL，之后的运算在数据库里做（对应 Java 的 expression().constant(x)）：
+    /// <c>b.Title.Contains(Sql.Constant("ABc").ToLower())</c> → <c>LIKE CONCAT('%',LOWER(?),'%')</c>。
+    /// </summary>
+    public static T Constant<T>(T value) => throw OnlyInQuery();
+
     /// <summary>排序键：NULL 排在最前（对应 Java 的 asc(NULLS_FIRST) / desc(NULLS_FIRST)）：<c>.OrderBy(t => Sql.NullsFirst(t.CreateTime))</c>。</summary>
     public static T NullsFirst<T>(T value) => throw OnlyInQuery();
 
