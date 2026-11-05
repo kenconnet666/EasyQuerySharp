@@ -77,7 +77,7 @@ internal static class AutoProjection
 
     private static Expression? Value(MetadataRegistry registry, EntityMetadata source, Expression row, PropertyInfo property, HashSet<Type> visiting)
     {
-        if (property.GetCustomAttribute<MapPathAttribute>() is { } path) return PathValue(registry, source, row, property, path.Path, path.Join);
+        if (property.GetCustomAttribute<MapPathAttribute>() is { } path) return PathValue(registry, source, row, property, path.Path, path.Join, visiting);
         if (ColumnValue(source, row, property) is { } column) return column;
         var navName = source.NavigationProperties.Keys.FirstOrDefault(n => string.Equals(n, property.Name, StringComparison.OrdinalIgnoreCase));
         if (navName is null || registry.FindNavigation(source, navName) is not { } nav) return null;
@@ -123,7 +123,8 @@ internal static class AutoProjection
 
     // [MapPath("A.B.C")]：遇到集合导航时，剩下的路径在集合元素上取，结果是列表；全是对一导航时默认走带出查询（Flat 标记），
     // join 为 true（[MapPath(.., Join = true)]，或已经在带出查询里面）时直接成员访问（隐式 JOIN）
-    private static Expression PathValue(MetadataRegistry registry, EntityMetadata source, Expression row, PropertyInfo property, string path, bool join)
+    private static Expression PathValue(MetadataRegistry registry, EntityMetadata source, Expression row, PropertyInfo property, string path, bool join,
+        HashSet<Type> visiting)
     {
         var segments = path.Split('.');
         Expression current = row;
@@ -137,8 +138,18 @@ internal static class AutoProjection
             {
                 var rest = string.Join('.', segments.Skip(i + 1));
                 if (rest.Length == 0) throw new InvalidOperationException($"{property.Name} 的 MapPath 以集合导航结尾，需要再指定元素上的属性");
+                // 剩下的全是导航（如 BankCards.User、Areas.Builds）：逐段查中间表，带出最后一个导航的目标（实体或嵌套 DTO 的列表）
+                if (NavigationChain(registry, nav.Target, segments.Skip(i + 1)) is [.., var last] chain)
+                {
+                    var targetElement = MetadataRegistry.ElementType(property.PropertyType);
+                    var through = targetElement.IsAssignableFrom(last.Target.Type) ? null : Build(registry, last.Target, targetElement, null, visiting, root: false);
+                    var method = typeof(AutoIncludeMarkers).GetMethod(nameof(AutoIncludeMarkers.Through))!
+                        .MakeGenericMethod(member.PropertyType, last.Target.Type, through?.ReturnType ?? last.Target.Type);
+                    return Expression.Call(method, Expression.Property(current, member), Expression.Constant(chain.Select(n => n.Property.Name).ToArray()),
+                        Expression.Constant(ConfigureOf(targetElement, last.Target.Type), typeof(Func<QueryState, QueryState>)), Expression.Constant(through, typeof(LambdaExpression)));
+                }
                 var element = Expression.Parameter(nav.Target.Type, "e");
-                var selector = Expression.Lambda(PathValue(registry, nav.Target, element, property, rest, join: true), element);
+                var selector = Expression.Lambda(PathValue(registry, nav.Target, element, property, rest, join: true, visiting), element);
                 return Expression.Call(typeof(AutoIncludeMarkers).GetMethod(nameof(AutoIncludeMarkers.Many))!.MakeGenericMethod(nav.Target.Type, selector.ReturnType),
                     Expression.Property(current, member), Expression.Constant(null, typeof(Func<QueryState, QueryState>)), Expression.Constant(selector, typeof(LambdaExpression)));
             }
@@ -146,7 +157,7 @@ internal static class AutoProjection
             if (nav is { IsCollection: false } && !join && !HasCollection(registry, nav.Target, segments.Skip(i + 1)))
             {
                 var target = Expression.Parameter(nav.Target.Type, "e");
-                var rest = segments.Length == i + 1 ? (Expression)target : PathValue(registry, nav.Target, target, property, string.Join('.', segments.Skip(i + 1)), join: true);
+                var rest = segments.Length == i + 1 ? (Expression)target : PathValue(registry, nav.Target, target, property, string.Join('.', segments.Skip(i + 1)), join: true, visiting);
                 var flat = Expression.Lambda(rest, target);
                 return Expression.Call(typeof(AutoIncludeMarkers).GetMethod(nameof(AutoIncludeMarkers.Flat))!.MakeGenericMethod(nav.Target.Type, flat.ReturnType),
                     Expression.Property(current, member), Expression.Constant(flat, typeof(LambdaExpression)));
@@ -155,6 +166,20 @@ internal static class AutoProjection
             if (nav is not null) entity = nav.Target;
         }
         return current;
+    }
+
+    // 剩下的路径段全是导航时依次返回它们，否则为 null
+    private static List<NavigationMetadata>? NavigationChain(MetadataRegistry registry, EntityMetadata entity, IEnumerable<string> segments)
+    {
+        var chain = new List<NavigationMetadata>();
+        foreach (var segment in segments)
+        {
+            var member = entity.Type.GetProperty(segment, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            if (member is null || registry.FindNavigation(entity, member.Name) is not { } nav) return null;
+            chain.Add(nav);
+            entity = nav.Target;
+        }
+        return chain;
     }
 
     // 剩下的路径段里有没有集合导航
@@ -186,5 +211,12 @@ internal static class AutoIncludeMarkers
 
     /// <summary>集合导航带出成列表，<paramref name="selector"/> 为 null 时取整个实体。</summary>
     public static List<TResult> Many<TEntity, TResult>(IEnumerable<TEntity>? navigation, Func<QueryState, QueryState>? configure, LambdaExpression? selector) =>
+        throw new InvalidOperationException("只能出现在查询的投影里");
+
+    /// <summary>
+    /// 经过集合导航再沿导航走到的实体（<c>[MapPath("BankCards.User")]</c>）带出成列表：<paramref name="path"/> 是第一个导航之后依次经过的导航名，
+    /// <paramref name="selector"/> 的参数是最后一个导航的目标实体，为 null 时取整个实体。
+    /// </summary>
+    public static List<TResult> Through<TNavigation, TEntity, TResult>(TNavigation navigation, string[] path, Func<QueryState, QueryState>? configure, LambdaExpression? selector) =>
         throw new InvalidOperationException("只能出现在查询的投影里");
 }

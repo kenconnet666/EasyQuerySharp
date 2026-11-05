@@ -34,6 +34,15 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
         return Expression.Lambda(Expression.NewArrayInit(typeof(object), values), e);
     }
 
+    /// <summary>
+    /// 到达 <see cref="Navigation"/> 之前依次经过的导航（<c>[MapPath("BankCards.User")]</c> 里的 BankCards）：先逐段查中间表取出下一段的键，
+    /// 再按最后一段的键查子数据（与 Java 的平铺路径一致）。不经过时为空。
+    /// </summary>
+    public IReadOnlyList<NavigationMetadata> Via { get; init; } = [];
+
+    /// <summary>父对象上的关联列：经过中间导航时是第一段导航的自身列。</summary>
+    public IReadOnlyList<ColumnMetadata> ParentColumns => Via.Count > 0 ? Via[0].SelfColumns : Navigation.SelfColumns;
+
     /// <summary>子数据上的过滤条件（参数是目标实体）。</summary>
     public IReadOnlyList<LambdaExpression> ChildFilters { get; } = childFilters;
 
@@ -81,7 +90,7 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     public void RegisterLoaded(object entity, System.Reflection.PropertyInfo property)
     {
         if (Navigation.IncludeOn is { } on && !Applies(on.Column.Getter(entity))) return;
-        var key = CompositeKey.Of(Navigation.SelfColumns.Select(c => c.Property.GetValue(entity)));
+        var key = CompositeKey.Of(ParentColumns.Select(c => c.Property.GetValue(entity)));
         if (IsCollection)
         {
             var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(ChildType))!;

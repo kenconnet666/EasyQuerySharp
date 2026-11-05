@@ -28,10 +28,7 @@ internal static class IncludeRunner
             var nav = plan.Navigation;
             if (nav.TargetColumns.Count != 1) throw new NotSupportedException($"复合键导航 {nav} 的带出还不支持");
 
-            // 多对多：父键 → 目标键（经中间表）；其余：父键就是目标键
-            var links = nav.Mapping is { } mapping
-                ? await LoadLinksAsync(db, nav, mapping, plan.Pending.Keys, ct).ConfigureAwait(false)
-                : plan.Pending.Keys.Select(k => (Parent: k, Target: k)).ToList();
+            var links = await ResolveLinksAsync(db, plan, ct).ConfigureAwait(false);
             if (links.Count == 0)
             {
                 plan.Pending.Clear();
@@ -136,6 +133,50 @@ internal static class IncludeRunner
         return query;
     }
 
+
+    /// <summary>
+    /// 父键 → 子数据的目标键：经过中间导航（<see cref="IncludePlan.Via"/>）时逐段查中间表换成下一段的键；
+    /// 多对多再经中间表换成目标键；其余情况父键就是目标键。
+    /// </summary>
+    private static async Task<List<(CompositeKey Parent, CompositeKey Target)>> ResolveLinksAsync(EasyDb db, IncludePlan plan, CancellationToken ct)
+    {
+        var links = plan.Pending.Keys.Select(k => (Parent: k, Target: k)).ToList();
+        for (var i = 0; i < plan.Via.Count && links.Count > 0; i++)
+        {
+            var next = i + 1 < plan.Via.Count ? plan.Via[i + 1] : plan.Navigation;
+            links = Compose(links, await LoadViaAsync(db, plan.Via[i], next, links.Select(l => l.Target), ct).ConfigureAwait(false));
+        }
+        if (plan.Navigation.Mapping is { } mapping && links.Count > 0)
+            links = Compose(links, await LoadLinksAsync(db, plan.Navigation, mapping, links.Select(l => l.Target), ct).ConfigureAwait(false));
+        return links;
+
+        // (父, 中间键) 与 (中间键, 下一段键) 连成 (父, 下一段键)；同一对只留一个
+        static List<(CompositeKey Parent, CompositeKey Target)> Compose(List<(CompositeKey Parent, CompositeKey Target)> links, List<(CompositeKey From, CompositeKey To)> step)
+        {
+            var byFrom = step.ToLookup(s => s.From, s => s.To);
+            return links.SelectMany(l => byFrom[l.Target].Select(to => (l.Parent, Target: to))).Distinct().ToList();
+        }
+    }
+
+    // 经过的一段导航：SELECT 下一段的自身列 AS __relation__…, 本段的目标列 AS __relation__… FROM 本段目标表 WHERE 本段目标列 IN (…)（与 Java 一致，不写别名）
+    private static async Task<List<(CompositeKey From, CompositeKey To)>> LoadViaAsync(
+        EasyDb db, NavigationMetadata step, NavigationMetadata next, IEnumerable<CompositeKey> keys, CancellationToken ct)
+    {
+        if (step.Mapping is not null || step.TargetColumns.Count != 1 || next.SelfColumns.Count != 1)
+            throw new NotSupportedException($"平铺路径经过的 {step} 只支持单列键的一对多 / 对一导航");
+        var table = new EntityTableSource(step.Target);
+        var from = step.TargetColumns[0];
+        var to = next.SelfColumns[0];
+        var query = new SelectQuery(table);
+        query.Columns.Add(new SelectColumn(table.Column(to), ProjectionCompiler.RelationAlias(to)));
+        query.Columns.Add(new SelectColumn(table.Column(from), ProjectionCompiler.RelationAlias(from)));
+        var values = keys.Select(k => k.First).Distinct()
+            .Select(v => (SqlExpr)ExpressionTranslator.Parameter(ValueReader.ConvertTo(v, from.ClrType), from.ClrType)).ToList();
+        query.Where.Add(new InExpr(table.Column(from), values, negated: false));
+        var statement = SqlRenderer.Render(db.Options.Dialect, query);
+        var rows = await db.Executor.QueryAsync(statement, r => (From: CompositeKey.Read(r, [1]), To: CompositeKey.Read(r, [0])), ct).ConfigureAwait(false);
+        return rows.Where(r => r.From is not null && r.To is not null).Select(r => (r.From!.Value, r.To!.Value)).ToList();
+    }
     // 多对多的中间表：按父键取出 (父键, 目标键) 对
     private static async Task<List<(CompositeKey Parent, CompositeKey Target)>> LoadLinksAsync(
         EasyDb db, NavigationMetadata nav, EntityMetadata mapping, IEnumerable<CompositeKey> parentKeys, CancellationToken ct)

@@ -23,7 +23,7 @@ public sealed class Mysql8Fixture : IAsyncLifetime
         typeof(SchoolClass), typeof(SchoolTeacher), typeof(SchoolClassTeacher),
         typeof(M8User), typeof(M8Role), typeof(M8UserRole), typeof(M8User2), typeof(M8Role2), typeof(M8UserRole2),
         typeof(M8UserBook), typeof(M8RoleMenu), typeof(M8Menu), typeof(M8Province), typeof(M8City), typeof(M8Area),
-        typeof(M8AreaBuild), typeof(M8Parent), typeof(M8Child), typeof(M8ParentChild), typeof(BatchInsert),
+        typeof(M8AreaBuild), typeof(M8AreaBuildLicense), typeof(M8Parent), typeof(M8Child), typeof(M8ParentChild), typeof(BatchInsert),
         typeof(TableNoKey), typeof(OffsetChunkTest), typeof(M8UserTest), typeof(Comment), typeof(M8SaveA), typeof(MyConfigLogicDelete), typeof(M8IncludeLimitTopic), typeof(M8IncludeLimitChild), typeof(TreeA), typeof(TreeB),
     ];
 

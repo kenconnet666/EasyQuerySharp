@@ -64,7 +64,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
             _shaped = WithIncludes(_shaped, root as EntityBinding ?? throw new NotSupportedException("Include 只能用在实体查询上"), includes);
         foreach (var (plan, owner) in _includes)
         {
-            plan.ParentKeyOrdinals = plan.Navigation.SelfColumns.Select(c => RelationColumn(owner.Table, c)).ToArray();
+            plan.ParentKeyOrdinals = plan.ParentColumns.Select(c => RelationColumn(owner.Table, c)).ToArray();
             // 只给满足条件的父对象带出：条件列也要读出来（没选出时写成 __relation__列）
             if (plan.Navigation.IncludeOn is { } on) plan.ConditionOrdinal = RelationColumn(owner.Table, on.Column);
         }
@@ -72,10 +72,12 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
             RelationOrdinals = relationKeys.Select(c => RelationColumn(root.Table, c)).ToArray();
     }
 
+    /// <summary>关联键列的别名：与 Java 一致按字段名起（首字母小写的属性名，如 <c>__relation__bankId</c>）。</summary>
+    internal static string RelationAlias(ColumnMetadata column) => "__relation__" + char.ToLowerInvariant(column.PropertyName[0]) + column.PropertyName[1..];
+
     private int RelationColumn(TableSource table, ColumnMetadata column)
     {
-        // 与 Java 一致按字段名起别名（首字母小写的属性名，如 __relation__bankId）
-        var alias = "__relation__" + char.ToLowerInvariant(column.PropertyName[0]) + column.PropertyName[1..];
+        var alias = RelationAlias(column);
         for (var i = 0; i < _columns.Count; i++)
         {
             var existing = _columns[i];
@@ -201,10 +203,22 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
             if (marker.Arguments[0] is not MemberExpression { Expression: { } markerOwner } markerNav || translator.BindingOf(markerOwner) is not { OwnerEntity: not null } navOwner
                 || translator.FindNavigation(navOwner, markerNav.Member.Name) is not { } navigation)
                 throw new NotSupportedException($"自动映射的带出只能从实体的导航出发：{marker.Arguments[0]}");
-            var childSelector = (LambdaExpression?)((ConstantExpression)marker.Arguments[2]).Value;
-            var markerPlan = new IncludePlan(navigation, childSelector?.ReturnType ?? navigation.Target.Type, childSelector, [], navigation.IsCollection)
+            // Through(第一个导航, 后续导航名, 配置, 投影)：经过的导航记在 Via 里，带出的是最后一个导航
+            var through = marker.Method.Name == nameof(AutoIncludeMarkers.Through);
+            var via = new List<NavigationMetadata>();
+            if (through)
+                foreach (var name in (string[])((ConstantExpression)marker.Arguments[1]).Value!)
+                {
+                    via.Add(navigation);
+                    navigation = translator.Context!.Metadata.FindNavigation(navigation.Target, name)
+                                 ?? throw new NotSupportedException($"{navigation.Target.Type.Name}.{name} 不是导航属性");
+                }
+            var offset = through ? 1 : 0;
+            var childSelector = (LambdaExpression?)((ConstantExpression)marker.Arguments[2 + offset]).Value;
+            var markerPlan = new IncludePlan(navigation, childSelector?.ReturnType ?? navigation.Target.Type, childSelector, [], navigation.IsCollection || through)
             {
-                Configure = (Func<QueryState, QueryState>?)((ConstantExpression)marker.Arguments[1]).Value,
+                Configure = (Func<QueryState, QueryState>?)((ConstantExpression)marker.Arguments[1 + offset]).Value,
+                Via = via,
             };
             _includes.Add((markerPlan, navOwner));
             return markerPlan;

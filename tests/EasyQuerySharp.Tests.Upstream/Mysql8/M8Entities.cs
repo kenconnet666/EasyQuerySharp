@@ -191,6 +191,21 @@ public class M8AreaBuild
     public string? Aid { get; set; }
 
     public string? Name { get; set; }
+
+    [Navigate(RelationType.OneToOne, SelfProperties = [nameof(Id)], TargetProperties = [nameof(M8AreaBuildLicense.BuildId)])]
+    public M8AreaBuildLicense? License { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/many/M8AreaBuildLicense（楼的许可证，一对一）。</summary>
+[Table("m8_build_license")]
+public class M8AreaBuildLicense
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? BuildId { get; set; }
+
+    public string? No { get; set; }
 }
 
 /// <summary>对应 Java：mysql8/entity/M8Parent（一对多与经中间表的多对多子项，order 是关键字列）。</summary>
