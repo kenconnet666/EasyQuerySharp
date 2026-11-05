@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1669、偏离 205、不适用 77、骨架 6、待做 447。
+合计：已移植 1672、偏离 206、不适用 77、骨架 6、待做 443。
 
 ## 按能力
 
@@ -34,8 +34,8 @@
 | union / union all | `query.union` | M3 | 18 | 14 | 4 | 0 | 0 | 0 |
 | 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 32 | 1 | 0 | 1 | 2 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
-| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 23 | 25 | 3 | 0 | 5 |
-| 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 60 | 1 | 2 | 2 | 2 |
+| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 25 | 25 | 3 | 0 | 3 |
+| 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 61 | 2 | 2 | 2 | 0 |
 | include 带出导航 | `nav.include` | M4 | 37 | 34 | 2 | 0 | 0 | 1 |
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 133 | 3 | 1 | 0 | 5 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 23 | 2 | 0 | 0 | 0 |
@@ -1572,8 +1572,8 @@
 | mysql8/M8BankTest.java#testFlatTest | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:76：Java 用 ALL_SUB_QUERY_GROUP_JOIN 行为让全部集合导航合并成分组 JOIN；C# 在查询上显式 GroupJoin(导航)，flatElement 写成 Any | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t LEFT JOIN (SELECT t1.'bank_id' AS '__group_ke…` |
 | mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:93 | `SELECT t.'id',t.'name',t.'create_time',(NOT (EXISTS(SELECT 1 FROM (SELECT t1.'id',t1.'uid',t1.'code'…` |
 | mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:104 | `SELECT t.'id',t.'name',t.'create_time',IFNULL(t4.'__none2__',?) AS '__part__column1' FROM 't_bank' t…` |
-| mysql8/M8OrderTest.java#testSubQuery | 待做 |  | `SELECT t.'id',t.'no',t.'price',t.'create_time' FROM 't_order' t INNER JOIN (SELECT t1.'order_id' AS …` |
-| mysql8/M8OrderTest.java#testSubQuery3 | 待做 |  | `SELECT t.'id',t.'no',t.'price',t.'create_time' FROM 't_order' t INNER JOIN (SELECT t1.'order_id' AS …` |
+| mysql8/M8OrderTest.java#testSubQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8OrderTest.cs:13 | `SELECT t.'id',t.'no',t.'price',t.'create_time' FROM 't_order' t INNER JOIN (SELECT t1.'order_id' AS …` |
+| mysql8/M8OrderTest.java#testSubQuery3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8OrderTest.cs:25 | `SELECT t.'id',t.'no',t.'price',t.'create_time' FROM 't_order' t INNER JOIN (SELECT t1.'order_id' AS …` |
 | mysql8/ManyJoinTest.java#testElement8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:85 | `SELECT t4.'__max2__' AS 'value1',t7.'type' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t3.'uid' …` |
 | mysql8/ManyJoinTest.java#testMany2Many2GroupJoin2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:207：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
 | mysql8/ManyJoinTest.java#testMany2Many2GroupJoin24 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:216：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
@@ -1652,8 +1652,8 @@
 | mysql8/M8BankTest.java#whereSubQuery2_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:156 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
 | mysql8/M8BankTest.java#whereSubQuery3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:168：Java 把与导航同表的显式 EXISTS 也改写进分组合并；C# 只合并集合导航上的聚合，显式 Sql.Exists 照写成 EXISTS 子查询 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE EXISTS(SELECT 1 F…` |
 | mysql8/M8BankTest.java#whereSubQuery4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:178 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
-| mysql8/M8OrderTest.java#testSubQuery2 | 待做 |  | `SELECT t.'id',t.'no',t.'price',t.'create_time' FROM 't_order' t INNER JOIN (SELECT t1.'id',t1.'order…` |
-| mysql8/M8OrderTest.java#testSubQuery4 | 待做 |  |  |
+| mysql8/M8OrderTest.java#testSubQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8OrderTest.cs:19 | `SELECT t.'id',t.'no',t.'price',t.'create_time' FROM 't_order' t INNER JOIN (SELECT t1.'id',t1.'order…` |
+| mysql8/M8OrderTest.java#testSubQuery4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8OrderTest.cs:31：异常信息用中文，说明缺主键、该怎样声明排序 |  |
 | mysql8/ManyJoinTest.java#manyJoinMany2Many10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:170 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t1…` |
 | mysql8/ManyJoinTest.java#manyJoinMany2Many2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:99 | `SELECT t.'id',t.'name' FROM 'school_class' t LEFT JOIN (SELECT t2.'class_id' AS '__class_id__',t1.'i…` |
 | mysql8/ManyJoinTest.java#manyJoinMany2Many3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:110 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |

@@ -27,6 +27,9 @@ public enum PartitionOrder
 
     /// <summary>按导航上声明的 <see cref="NavigateAttribute.OrderBy"/>（对应 Java 的 NAVIGATE）。</summary>
     Navigation,
+
+    /// <summary>按目标表主键降序（对应 Java 的 KEY_DESC）。</summary>
+    KeyDescending,
 }
 
 /// <summary>

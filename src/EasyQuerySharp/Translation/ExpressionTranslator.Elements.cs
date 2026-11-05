@@ -96,6 +96,12 @@ internal sealed partial class ExpressionTranslator
             Bind(o.Key, [new EntityBinding(element)]);
             return OrderItem(o.Key.Body, o.Descending);
         }).ToList(),
-        _ => nav.Target.KeyColumns.Select(k => new OrderByItem(element.Column(k), false)),
+        _ => KeyOrder(nav, element),
     };
+
+    // 按目标表主键排（Key 升序、KeyDescending 降序）；没有主键时无从排序，明确报错（与 Java 一致，不悄悄不排）
+    private static IEnumerable<OrderByItem> KeyOrder(NavigationMetadata nav, EntityTableSource element) =>
+        nav.Target.KeyColumns.Count == 0
+            ? throw new NotSupportedException($"[{nav}] 取第几个元素要按主键排序，但 {nav.Target.Type.Name} 没有主键：请在导航上声明 OrderBy 或在链上写 OrderBy")
+            : nav.Target.KeyColumns.Select(k => new OrderByItem(element.Column(k), nav.PartitionOrder == PartitionOrder.KeyDescending)).ToList();
 }

@@ -652,3 +652,35 @@ public class SysDept
     [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(Pid)])]
     public List<SysDept>? Children { get; set; }
 }
+
+/// <summary>对应 Java：mysql8/entity/M8Order（没有主键；两个必有的一对多，组内排序分别是不排序与主键降序）。</summary>
+[Table("t_order")]
+public class M8Order
+{
+    public string? Id { get; set; }
+
+    public string? No { get; set; }
+
+    public decimal? Price { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(M8OrderItem.OrderId)], Required = true, PartitionOrder = PartitionOrder.None)]
+    public List<M8OrderItem>? OrderItems { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(M8OrderItem.OrderId)], Required = true, PartitionOrder = PartitionOrder.KeyDescending)]
+    public List<M8OrderItem>? OrderItem2s { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/M8OrderItem（没有主键）。</summary>
+[Table("t_order_item")]
+public class M8OrderItem
+{
+    public string? Id { get; set; }
+
+    public string? OrderId { get; set; }
+
+    public decimal? Price { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+}
