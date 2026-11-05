@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1687、偏离 207、不适用 77、骨架 6、待做 427。
+合计：已移植 1689、偏离 207、不适用 77、骨架 6、待做 425。
 
 ## 按能力
 
@@ -48,7 +48,7 @@
 | 乐观锁版本 | `version` | M5 | 13 | 13 | 0 | 0 | 0 | 0 |
 | UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
 | 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 20 | 6 | 0 | 0 | 0 |
-| upsert | `write.upsert` | M5 | 13 | 9 | 0 | 0 | 2 | 2 |
+| upsert | `write.upsert` | M5 | 13 | 11 | 0 | 0 | 2 | 0 |
 | ClickHouse 方言 | `dialect.clickhouse` | M6 | 4 | 0 | 0 | 0 | 0 | 4 |
 | 达梦方言 | `dialect.dameng` | M6 | 51 | 0 | 0 | 0 | 0 | 51 |
 | DuckDB 方言 | `dialect.duckdb` | M6 | 16 | 0 | 0 | 0 | 0 | 16 |
@@ -2116,12 +2116,12 @@
 | --- | --- | --- | --- |
 | GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:141 | `INSERT INTO 'doc_bank_card' ('id','code','type') VALUES (?,?,?) ON DUPLICATE KEY UPDATE 'id' = VALUE…` |
 | GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey2 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:172 |  |
-| InsertOrUpdateTest.java#test1 | 待做 |  | `MERGE INTO [t_user] t1 USING (SELECT ? AS [column1],? AS [column2],? AS [column3],? AS [column4],? A…` |
+| InsertOrUpdateTest.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertOrUpdateTest.cs:27 | `MERGE INTO [t_user] t1 USING (SELECT ? AS [column1],? AS [column2],? AS [column3],? AS [column4],? A…` |
 | InsertTest.java#insertDuplicateKeyUpdate1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:62 | `INSERT INTO 't_topic_auto' ('stars','title','create_time') VALUES (?,?,?) ON DUPLICATE KEY UPDATE 's…` |
 | InsertTest.java#insertDuplicateKeyUpdate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:67 | `INSERT INTO 't_topic_auto' ('stars','title','create_time') VALUES (?,?,?) ON DUPLICATE KEY UPDATE 's…` |
 | InsertTest.java#insertTestx | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:84 |  |
 | InsertTest1.java#inertTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:26 | `INSERT INTO 't_topic_abc' ('id','stars','title','create_time') VALUES (?,?,?,?) ON DUPLICATE KEY UPD…` |
-| QueryTest14.java#testxxxxx | 待做 |  | `MERGE INTO "t_topic" t1 USING (SELECT ? AS "id",? AS "stars",? AS "title",? AS "create_time" FROM DU…` |
+| QueryTest14.java#testxxxxx | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertOrUpdateTest.cs:35 | `MERGE INTO "t_topic" t1 USING (SELECT ? AS "id",? AS "stars",? AS "title",? AS "create_time" FROM DU…` |
 | pgsql/InsertTest.java#insertDuplicateKeyIgnore2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgInsertTest.cs:12 | `INSERT INTO "t_topic_auto" ("stars","title","create_time") VALUES (?,?,?) ON CONFLICT DO NOTHING` |
 | pgsql/InsertTest.java#insertDuplicateKeyUpdate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgInsertTest.cs:17 | `INSERT INTO "t_topic_auto" ("stars","title","create_time") VALUES (?,?,?) ON CONFLICT ("title") DO U…` |
 | pgsql/InsertTest.java#insertDuplicateKeyUpdate2_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgInsertTest.cs:22 | `INSERT INTO "t_topic_auto" ("stars","title","create_time") VALUES (?,?,?) ON CONFLICT ("title") DO N…` |

@@ -130,9 +130,11 @@ public class OracleDialect : SqlDialect
         if (item.Nulls is { } nulls) renderer.Append(nulls == NullsOrder.Last ? " NULLS LAST" : " NULLS FIRST");
     }
 
-    /// <summary>冲突处理要用 MERGE 改写整条语句，计划在 M6 方言铺开时实现；在此之前明确报错，避免生成错误的 SQL。</summary>
-    public override void WriteInsertConflict(Rendering.SqlRenderer renderer, InsertConflict conflict) =>
-        throw new NotSupportedException($"{Name} 的插入冲突处理（MERGE）尚未实现");
+    /// <inheritdoc />
+    public override bool InsertConflictUsesMerge => true;
+
+    /// <summary>Oracle 的 MERGE 来源查询从 DUAL 取值。</summary>
+    protected override string MergeSourceSuffix => " FROM DUAL ";
 
     /// <summary>Oracle 的类型转换（对应 Java 的 OracleCastSQLFunction）。</summary>
     public override string CastTemplate(Type targetType) => targetType switch

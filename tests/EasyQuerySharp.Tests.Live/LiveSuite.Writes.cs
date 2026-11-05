@@ -36,6 +36,19 @@ public abstract partial class LiveSuite
         Assert.Equal(CreatedAt, after.CreatedAt);
     }
 
+    // 按主键冲突：更新改写已有的行，忽略保留已有的行（SQL Server / Oracle 写成 MERGE）
+    [Fact]
+    public async Task UpsertsByPrimaryKey()
+    {
+        var db = await SeededAsync();
+        await db.Insert(new Setting { Code = "theme", Value = "dark" }).OnConflictUpdate().ExecuteAsync(Ct);
+        await db.Insert(new Setting { Code = "theme", Value = "light" }).OnConflictUpdate().ExecuteAsync(Ct);
+        Assert.Equal("light", (await db.Query<Setting>().Where(s => s.Code == "theme").SingleAsync(Ct)).Value);
+        await db.Insert(new Setting { Code = "theme", Value = "ignored" }).OnConflictIgnore().ExecuteAsync(Ct);
+        await db.Insert(new Setting { Code = "lang", Value = "zh" }).OnConflictIgnore().ExecuteAsync(Ct);
+        Assert.Equal(["light", "zh"], (await db.Query<Setting>().OrderByDescending(s => s.Code).Select(s => s.Value).ToListAsync(Ct)));
+    }
+
     [Fact]
     public async Task DeletesEverythingOnlyWithAll()
     {

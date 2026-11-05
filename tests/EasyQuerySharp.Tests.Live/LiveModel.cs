@@ -80,3 +80,13 @@ public class Comment
     [Navigate(RelationType.ManyToOne, SelfProperties = [nameof(PostId)])]
     public Post? Post { get; set; }
 }
+
+/// <summary>主键由调用方给出的配置项（不是自增键）：验证按主键冲突的 upsert。</summary>
+[Table("t_setting")]
+public class Setting
+{
+    [Column(PrimaryKey = true)]
+    public string Code { get; set; } = "";
+
+    public string? Value { get; set; }
+}

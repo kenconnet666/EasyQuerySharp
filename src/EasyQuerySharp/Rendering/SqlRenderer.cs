@@ -53,6 +53,11 @@ public sealed class SqlRenderer
     {
         insert.Table.Alias = null;
         var r = new SqlRenderer(dialect);
+        if (insert.Conflict is not null && dialect.InsertConflictUsesMerge)
+        {
+            dialect.WriteMerge(r, insert);
+            return r.Build();
+        }
         r.Append(dialect.InsertKeyword(insert)).WriteTableName(insert.Table).Append(" (");
         for (var i = 0; i < insert.Columns.Count; i++)
         {
@@ -258,7 +263,8 @@ public sealed class SqlRenderer
         return Append(" )");
     }
 
-    private SqlRenderer WriteTableName(EntityTableSource e) => Append(QualifiedName(e));
+    /// <summary>写实体表的完整表名（schema、换表名之后），不带别名。</summary>
+    public SqlRenderer WriteTableName(EntityTableSource e) => Append(QualifiedName(e));
 
     private string QualifiedName(EntityTableSource e) => Dialect.QualifiedName(e.Schema, e.TableName);
 
