@@ -108,7 +108,10 @@ internal sealed partial class ExpressionTranslator
                 return Translate(ColumnPath(StripConvert(call.Arguments[0]), ClientEvaluator.Evaluate(call.Arguments[1]) as string
                     ?? throw Unsupported(call, "Sql.Column 的属性路径必须是字符串")));
             case nameof(Sql.SubQuery):
-                return new SubQueryExpr(TranslateSubQuery(call.Arguments[0]).Query);
+            {
+                var state = ReplayQuery(call.Arguments[0]);
+                return new SubQueryExpr(Querying.QueryCompiler.CompileSelect(state, _scope, Context).Query) { ReserveExtraAlias = !SelectsBareCount(state) };
+            }
             case nameof(Sql.In) or nameof(Sql.NotIn) when IsQueryType(call.Arguments[1].Type):
             {
                 var operand = Translate(call.Arguments[0]);
@@ -222,4 +225,10 @@ internal sealed partial class ExpressionTranslator
     }
 
     private static bool IsQueryType(Type type) => typeof(Querying.IQueryStateAccessor).IsAssignableFrom(type);
+
+    // Java 的显式子查询：selectCount() 直接计数；selectColumn(…) 会多建一张匿名表，之后的表别名编号跳过一个
+    private static bool SelectsBareCount(Querying.QueryState state) =>
+        state.Selector?.Body is { } body
+        && StripConvert(body) is MethodCallExpression { Method.Name: nameof(Sql.Count), Arguments.Count: 0 } count
+        && count.Method.DeclaringType == typeof(Sql);
 }

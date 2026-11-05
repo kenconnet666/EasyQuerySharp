@@ -3,14 +3,14 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 985、偏离 123、不适用 20、骨架 15、待做 1261。
+合计：已移植 1003、偏离 124、不适用 20、骨架 15、待做 1242。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 210 | 28 | 4 | 0 | 193 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 214 | 28 | 4 | 0 | 189 |
 | 分页结果 | `query.page` | M1 | 22 | 13 | 2 | 0 | 0 | 7 |
 | 原生 SQL | `sql.native` | M1 | 50 | 24 | 6 | 1 | 0 | 19 |
 | 删除 | `write.delete` | M1 | 25 | 8 | 1 | 2 | 0 | 14 |
@@ -34,10 +34,10 @@
 | union / union all | `query.union` | M3 | 18 | 12 | 4 | 0 | 1 | 1 |
 | 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 2 | 0 | 0 | 1 | 33 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
-| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 15 | 0 | 2 | 0 | 39 |
-| 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 42 | 0 | 2 | 2 | 21 |
+| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 17 | 0 | 2 | 0 | 37 |
+| 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 48 | 1 | 2 | 2 | 14 |
 | include 带出导航 | `nav.include` | M4 | 37 | 7 | 0 | 0 | 0 | 30 |
-| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 79 | 1 | 0 | 0 | 62 |
+| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 85 | 1 | 0 | 0 | 56 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 0 | 0 | 0 | 0 | 25 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
 | 列加密 | `column.encryption` | M5 | 8 | 7 | 0 | 0 | 0 | 1 |
@@ -464,11 +464,11 @@
 | mysql8/M8BankTest.java#testFirst | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time',t3.'code' AS '__part__column1' FROM 't_sys_…` |
 | mysql8/M8BankTest.java#testFirst2 | 待做 |  | `SELECT t.'name' AS 'value1',t3.'code' AS 'value2' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'id',t1.'…` |
 | mysql8/M8BankTest.java#testFirstElementInnerJoin | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t INNER JOIN (SELECT t1.'…` |
-| mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest4 | 待做 |  | `SELECT t.'name' AS 'value1',t3.'code' AS 'value2',t4.'name' AS 'value3' FROM 't_sys_user' t LEFT JOI…` |
+| mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:115 | `SELECT t.'name' AS 'value1',t3.'code' AS 'value2',t4.'name' AS 'value3' FROM 't_sys_user' t LEFT JOI…` |
 | mysql8/M8BankTest.java#testUserAutoSubQueryToGroupJoin2 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
-| mysql8/M8BankTest.java#whereSubQuery6 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (SELECT COUNT(*) …` |
-| mysql8/M8BankTest.java#whereSubQuery6_1 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (SELECT COUNT(*) …` |
-| mysql8/M8BankTest.java#whereSubQuery7 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE ? = (SELECT COUNT…` |
+| mysql8/M8BankTest.java#whereSubQuery6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:196 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (SELECT COUNT(*) …` |
+| mysql8/M8BankTest.java#whereSubQuery6_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:196 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (SELECT COUNT(*) …` |
+| mysql8/M8BankTest.java#whereSubQuery7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:206 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE ? = (SELECT COUNT…` |
 | mysql8/M8Save2Test.java#testInsert | 待做 |  |  |
 | mysql8/M8Save3Test.java#testForeach | 待做 |  | `SELECT 'id','name' FROM 'm8_save_a' WHERE 'id' = ?` |
 | mysql8/M8SaveTest.java#testInsert | 待做 |  |  |
@@ -1570,8 +1570,8 @@
 | mysql8/M8BankTest.java#test7_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:86 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t1.'type' SEPARATOR ?) FROM 't_bank_card' t1 WHERE …` |
 | mysql8/M8BankTest.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:98 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t4.'type' SEPARATOR ?) FROM 't_bank_card' t4 WHERE …` |
 | mysql8/M8BankTest.java#testFlatTest | 待做 |  | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t LEFT JOIN (SELECT t1.'bank_id' AS '__group_ke…` |
-| mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest2 | 待做 |  | `SELECT t.'id',t.'name',t.'create_time',(NOT (EXISTS(SELECT 1 FROM (SELECT t1.'id',t1.'uid',t1.'code'…` |
-| mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest3 | 待做 |  | `SELECT t.'id',t.'name',t.'create_time',IFNULL(t4.'__none2__',?) AS '__part__column1' FROM 't_bank' t…` |
+| mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:93 | `SELECT t.'id',t.'name',t.'create_time',(NOT (EXISTS(SELECT 1 FROM (SELECT t1.'id',t1.'uid',t1.'code'…` |
+| mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:104 | `SELECT t.'id',t.'name',t.'create_time',IFNULL(t4.'__none2__',?) AS '__part__column1' FROM 't_bank' t…` |
 | mysql8/M8OrderTest.java#testSubQuery | 待做 |  | `SELECT t.'id',t.'no',t.'price',t.'create_time' FROM 't_order' t INNER JOIN (SELECT t1.'order_id' AS …` |
 | mysql8/M8OrderTest.java#testSubQuery3 | 待做 |  | `SELECT t.'id',t.'no',t.'price',t.'create_time' FROM 't_order' t INNER JOIN (SELECT t1.'order_id' AS …` |
 | mysql8/ManyJoinTest.java#testElement8 | 待做 |  | `SELECT t4.'__max2__' AS 'value1',t7.'type' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t3.'uid' …` |
@@ -1645,13 +1645,13 @@
 | QueryTest23.java#testMany2Many2_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest23.cs:148 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_user_account' t LEFT JOIN …` |
 | mysql8/M8BankTest.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:40 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
 | mysql8/M8BankTest.java#testExtraFilter5 | 待做 |  | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count2__',0) AS 'value2' FROM 't_bank' t LEFT JOIN (SELECT …` |
-| mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountToGroupTest | 待做 |  | `SELECT t.'id',t.'name',t.'create_time',IFNULL(t2.'__count2__',0) AS '__part__column1' FROM 't_bank' …` |
-| mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountToGroupTest1 | 待做 |  | `SELECT t.'id',t.'name',t.'create_time',IFNULL(t2.'__count2__',0) AS '__part__column1',IFNULL(t2.'__c…` |
-| mysql8/M8BankTest.java#whereSubQuery2 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
-| mysql8/M8BankTest.java#whereSubQuery2_1 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
-| mysql8/M8BankTest.java#whereSubQuery2_2 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
-| mysql8/M8BankTest.java#whereSubQuery3 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE EXISTS(SELECT 1 F…` |
-| mysql8/M8BankTest.java#whereSubQuery4 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
+| mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountToGroupTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:47 | `SELECT t.'id',t.'name',t.'create_time',IFNULL(t2.'__count2__',0) AS '__part__column1' FROM 't_bank' …` |
+| mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountToGroupTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:81 | `SELECT t.'id',t.'name',t.'create_time',IFNULL(t2.'__count2__',0) AS '__part__column1',IFNULL(t2.'__c…` |
+| mysql8/M8BankTest.java#whereSubQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:135 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
+| mysql8/M8BankTest.java#whereSubQuery2_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:145 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
+| mysql8/M8BankTest.java#whereSubQuery2_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:156 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
+| mysql8/M8BankTest.java#whereSubQuery3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:168：Java 把与导航同表的显式 EXISTS 也改写进分组合并；C# 只合并集合导航上的聚合，显式 Sql.Exists 照写成 EXISTS 子查询 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE EXISTS(SELECT 1 F…` |
+| mysql8/M8BankTest.java#whereSubQuery4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:178 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
 | mysql8/M8OrderTest.java#testSubQuery2 | 待做 |  | `SELECT t.'id',t.'no',t.'price',t.'create_time' FROM 't_order' t INNER JOIN (SELECT t1.'id',t1.'order…` |
 | mysql8/M8OrderTest.java#testSubQuery4 | 待做 |  |  |
 | mysql8/ManyJoinTest.java#manyJoinMany2Many10 | 待做 |  | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t1…` |
@@ -1821,14 +1821,14 @@
 | SubJoinTest.java#testSubJoinSumDistinct | 待做 |  | `SELECT IFNULL((SELECT SUM(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
 | SubJoinTest.java#testSubJoinSumDistinct2 | 待做 |  | `SELECT IFNULL((SELECT SUM(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
 | mysql8/M8BankTest.java#fromSubQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:136 | `SELECT t2.'vo1' AS 'vo1',t2.'vo2' AS 'vo2',t2.'vo3' AS 'vo3',t2.'bank_card_count' AS 'bank_card_coun…` |
-| mysql8/M8BankTest.java#testQueryBankAndCardExplicitCountTest | 待做 |  | `SELECT t.'id',t.'name',t.'create_time',(SELECT COUNT(t1.'id') FROM 't_bank_card' t1 WHERE t1.'bank_i…` |
-| mysql8/M8BankTest.java#testQueryBankAndCardExplicitCountTest1 | 待做 |  | `SELECT t.'id',t.'name',t.'create_time',(SELECT COUNT(t1.'id') FROM 't_bank_card' t1 WHERE t1.'bank_i…` |
-| mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest | 待做 |  | `SELECT t.'id',t.'name',t.'create_time',(SELECT COUNT(*) FROM 't_bank_card' t1 WHERE t1.'bank_id' = t…` |
-| mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest1 | 待做 |  | `SELECT t.'id',t.'name',t.'create_time',(SELECT COUNT(*) FROM 't_bank_card' t1 WHERE t1.'bank_id' = t…` |
+| mysql8/M8BankTest.java#testQueryBankAndCardExplicitCountTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:36 | `SELECT t.'id',t.'name',t.'create_time',(SELECT COUNT(t1.'id') FROM 't_bank_card' t1 WHERE t1.'bank_i…` |
+| mysql8/M8BankTest.java#testQueryBankAndCardExplicitCountTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:68 | `SELECT t.'id',t.'name',t.'create_time',(SELECT COUNT(t1.'id') FROM 't_bank_card' t1 WHERE t1.'bank_i…` |
+| mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:27 | `SELECT t.'id',t.'name',t.'create_time',(SELECT COUNT(*) FROM 't_bank_card' t1 WHERE t1.'bank_id' = t…` |
+| mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:57 | `SELECT t.'id',t.'name',t.'create_time',(SELECT COUNT(*) FROM 't_bank_card' t1 WHERE t1.'bank_id' = t…` |
 | mysql8/M8BankTest.java#testUserAutoSubQueryToGroupJoin | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time',IFNULL(t2.'__count2__',0) AS '__part__colum…` |
 | mysql8/M8BankTest.java#testUserAutoSubQueryToGroupJoin1 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time',t2.'__count2__' AS '__part__column1' FROM '…` |
-| mysql8/M8BankTest.java#whereSubQuery1 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE EXISTS(SELECT 1 F…` |
-| mysql8/M8BankTest.java#whereSubQuery5 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (SELECT COUNT(*) …` |
+| mysql8/M8BankTest.java#whereSubQuery1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:126 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE EXISTS(SELECT 1 F…` |
+| mysql8/M8BankTest.java#whereSubQuery5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:187 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (SELECT COUNT(*) …` |
 | mysql8/M8QueryTest.java#whereObject5 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
 | mysql8/M8Test1.java#testMany | 待做 |  |  |
 | mysql8/M8Test1.java#testRelationColumns | 待做 |  | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time',t.'book_ids' FROM 'm8_user_book_ids' t…` |

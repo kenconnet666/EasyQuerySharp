@@ -121,7 +121,10 @@ internal static class AliasAllocator
         switch (expr)
         {
             case ExistsExpr e: Collect(e.Query, tables); break;
-            case SubQueryExpr s: Collect(s.Query, tables); break;
+            case SubQueryExpr s:
+                Collect(s.Query, tables);
+                if (s.ReserveExtraAlias) tables.Add(Placeholder.Instance);
+                break;
             case InExpr { SubQuery: { } sub } i:
                 CollectExpr(i.Operand, tables);
                 Collect(sub, tables);

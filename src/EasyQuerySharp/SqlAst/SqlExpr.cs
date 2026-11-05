@@ -279,6 +279,9 @@ public sealed class SubQueryExpr(SelectQuery query) : SqlExpr
 {
     /// <summary>子查询。</summary>
     public SelectQuery Query { get; } = query;
+
+    /// <summary>子查询之后再占一个别名编号（Java 的显式子查询 selectColumn 会多建一张匿名表，之后的表编号跳过一个）。</summary>
+    public bool ReserveExtraAlias { get; init; }
 }
 
 /// <summary>

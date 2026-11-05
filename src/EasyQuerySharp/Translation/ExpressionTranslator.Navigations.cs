@@ -218,8 +218,9 @@ internal sealed partial class ExpressionTranslator
         var filter = filters.Count == 0 ? null : LogicalExpr.And(filters);
         return plan.Reference(kind, value, filter, distinct, string.Join(" && ", filterKeys), valueLambda is null ? "" : GroupJoinKey(valueLambda), separator);
 
-        void AddFilter(LambdaExpression predicate, bool negate)
+        void AddFilter(LambdaExpression original, bool negate)
         {
+            if (Filtering.ValueFilterRewriter.Apply(original, plan.ValueFilter) is not { } predicate) return;
             var sql = t.ElementPredicate(predicate, element);
             filters.Add(negate ? Negate(sql) : sql);
             filterKeys.Add((negate ? "!" : "") + GroupJoinKey(predicate));

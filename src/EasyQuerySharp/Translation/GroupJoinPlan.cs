@@ -68,6 +68,9 @@ internal sealed class GroupJoinPlan
     /// <summary>子查询里集合元素的绑定。</summary>
     public SourceBinding Element { get; }
 
+    /// <summary>GroupJoin(…, q =&gt; q.UseValueFilter(…)) 配的值过滤：只作用于这个导航聚合里的条件（主查询的值过滤管不到导航里）。</summary>
+    public Filtering.ValueFilter ValueFilter { get; set; }
+
     /// <summary>子查询的翻译上下文（条件里的隐式 JOIN 加到子查询上，同一导航只连一次）。</summary>
     public TranslationContext InnerContext { get; set; } = null!;
 
