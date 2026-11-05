@@ -43,3 +43,37 @@ public class SysUserSQLEncryption
 
     public DateTime? CreateTime { get; set; }
 }
+
+/// <summary>对应 Java：entity/SysUserEncrypt（两种库端加解密；Java 地址列的 Java 端加密策略这里用不到，省略）。</summary>
+[Table("sys_user_encrypt")]
+public class SysUserEncrypt
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    [Column(SqlConversion = typeof(MySqlAesEncryptConversion))]
+    public string? Phone { get; set; }
+
+    [Column(SqlConversion = typeof(MySqlAesEncrypt2Conversion))]
+    public string? Phone2 { get; set; }
+
+    [Column(DbType = "varchar(4000)")]
+    public string? Address { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+}
+
+/// <summary>对应 Java：entity/SysUserEncrypt2（库里没有这张表）。</summary>
+[Table("sys_user2")]
+public class SysUserEncrypt2
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    [Column(SqlConversion = typeof(MySqlAesEncrypt2Conversion))]
+    public string? Phone { get; set; }
+}

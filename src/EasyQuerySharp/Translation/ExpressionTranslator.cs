@@ -148,7 +148,11 @@ internal sealed partial class ExpressionTranslator
         if (m.Expression is not null && BindingOf(m.Expression) is EntityBinding entity && entity.Entity.FindColumn(m.Member.Name) is { Computed: { } computed })
             return TranslateComputed(computed, entity);
         if (m.Expression is not null && BindingOf(m.Expression) is { } binding and not GroupBinding and not TupleBinding)
-            return binding.Member(m.Member) ?? throw Unsupported(m, $"{m.Member.DeclaringType?.Name}.{m.Member.Name} 不是映射到列的成员");
+        {
+            var column = binding.Member(m.Member) ?? throw Unsupported(m, $"{m.Member.DeclaringType?.Name}.{m.Member.Name} 不是映射到列的成员");
+            // 实体表上声明了条件写法的 SQL 读写转换列（如条件里按解密后的值比较）：表达式里用转换后的写法
+            return binding is EntityBinding && column is ColumnExpr { Column.SqlConversion: { } conversion } plain ? conversion.ColumnOf(plain) ?? column : column;
+        }
 
         // 可空类型：x.Value 即 x，x.HasValue 即 x IS NOT NULL
         if (m.Expression is not null && Nullable.GetUnderlyingType(m.Expression.Type) is not null)
@@ -300,15 +304,24 @@ internal sealed partial class ExpressionTranslator
     }
 
     /// <summary>
-    /// 若 <paramref name="other"/> 是带转换器的列，把参数 <paramref name="value"/> 转成数据库值；列有 SQL 读写转换时值再套上写入模板
+    /// 若 <paramref name="other"/> 是带转换器的列，把参数 <paramref name="value"/> 转成数据库值；列有 SQL 读写转换时值再套上比较模板（<paramref name="write"/> 时套写入模板）
     /// （条件里与列比较、更新的 SET 值，与 Java 的 valueConvert 一致）。
     /// </summary>
-    internal static SqlExpr ApplyConverter(SqlExpr value, SqlExpr other)
+    internal static SqlExpr ApplyConverter(SqlExpr value, SqlExpr other, bool write = false)
     {
-        if (value is not ParameterExpr p || other is not ColumnExpr { Column: { } column }) return value;
+        if (value is not ParameterExpr p || ColumnOf(other) is not { } column) return value;
         SqlExpr converted = column.Converter is { } converter ? new ParameterExpr(converter.ToProvider(p.Value), converter.ProviderType) : p;
-        return column.SqlConversion?.WriteOf(converted) ?? converted;
+        if (column.SqlConversion is not { } conversion) return converted;
+        return write ? conversion.WriteOf(converted) : conversion.CompareOf(converted);
     }
+
+    /// <summary>表达式背后的实体列：列本身，或 SQL 读写转换套出来的列。</summary>
+    internal static ColumnMetadata? ColumnOf(SqlExpr sql) => sql switch
+    {
+        ColumnExpr c => c.Column,
+        FragmentExpr { ConvertedColumn: { } c } => c.Column,
+        _ => null,
+    };
 
     /// <summary>写入某列的值（插入、按实体更新、按列定位）：参数，列有 SQL 读写转换时套上写入模板。</summary>
     internal static SqlExpr WriteValue(ColumnMetadata column, object? providerValue)

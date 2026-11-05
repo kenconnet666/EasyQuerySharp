@@ -259,6 +259,9 @@ public sealed class FragmentExpr(string template, IReadOnlyList<SqlExpr> argumen
     /// <summary>片段本身是条件（<c>Sql.Raw&lt;bool&gt;</c>），用在 WHERE 里不再补 <c>= true</c>。</summary>
     public bool IsPredicate { get; } = isPredicate;
 
+    /// <summary>由列的 SQL 读写转换套出来的列（<see cref="Metadata.ColumnSqlConversion.Column"/>）时的原列，比较的值与投影据此找回列的元数据。</summary>
+    public ColumnExpr? ConvertedColumn { get; init; }
+
     /// <summary>只能用于这个方言（及其子类）的片段，如 <c>Sql.MySql.Json</c>；用在别的方言上时渲染期抛出异常。</summary>
     public Type? RequiredDialect { get; init; }
 

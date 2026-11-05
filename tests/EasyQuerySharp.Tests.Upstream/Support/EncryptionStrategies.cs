@@ -51,3 +51,17 @@ public sealed class MySqlAesEncryptConversion : Metadata.ColumnSqlConversion
 
     public override IReadOnlyList<object?> Arguments => [Secret];
 }
+
+/// <summary>对应 Java：conversion/MySQLAesEncrypt2ColumnValueSQLConverter（条件、排序里按解密后的明文比较，比较的值不加密）。</summary>
+public sealed class MySqlAesEncrypt2Conversion : Metadata.ColumnSqlConversion
+{
+    public override string Read => "AES_DECRYPT(from_base64({0}),{1})";
+
+    public override string Write => "to_base64(AES_ENCRYPT({0},{1}))";
+
+    public override string? Column => Read;
+
+    public override string? CompareValue => null;
+
+    public override IReadOnlyList<object?> Arguments => [MySqlAesEncryptConversion.Secret];
+}

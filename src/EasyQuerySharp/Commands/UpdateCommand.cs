@@ -268,7 +268,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         foreach (var set in _sets)
         {
             var column = scope.Table.Column(Entity.GetColumn(set.Member.Name));
-            var value = ExpressionTranslator.ApplyConverter(scope.Translate(set.Value, predicate: false), column);
+            var value = ExpressionTranslator.ApplyConverter(scope.Translate(set.Value, predicate: false), column, write: true);
             update.Sets.Add((column, set.Kind switch
             {
                 // 自增 / 自减不加括号：`star` = `star` + ?（Java 版的写法）

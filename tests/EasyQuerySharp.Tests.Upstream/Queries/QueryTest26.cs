@@ -280,4 +280,33 @@ public sealed class QueryTest26(MySqlFixture fixture) : MySqlTest(fixture)
                 .Where(b => Sql.LikeContains(b.User!.Name, "123")).ToStatement(),
             "SELECT t1.`uid` AS `uid`,t1.`count` AS `count` FROM (SELECT t.`uid` AS `uid`,COUNT(*) AS `count` FROM `t_bank_card` t GROUP BY t.`uid`) t1 LEFT JOIN `t_sys_user` t2 ON t2.`id` = t1.`uid` WHERE t2.`name` LIKE CONCAT('%',?,'%')",
             "123(String)");
+
+    // 按明文比较的加密列：条件与排序里列先解密，比较的值不加密；查询的列解密后别名仍是列名（sys_user2 不存在，取出错语句）
+    [Fact, Upstream("QueryTest26.java#testQuery")]
+    public async Task TestQuery()
+    {
+        var ex = await Assert.ThrowsAsync<EasyQueryException>(() => Db.Query<SysUserEncrypt2>().Where(t => t.Phone == "123").OrderBy(s => s.Phone).ToListAsync(Ct));
+        SqlOnly.AssertStatement(ex.Statement!,
+            "SELECT `id`,`name`,AES_DECRYPT(from_base64(`phone`),?) AS `phone` FROM `sys_user2` WHERE AES_DECRYPT(from_base64(`phone`),?) = ? ORDER BY AES_DECRYPT(from_base64(`phone`),?) ASC",
+            "1234567890123456(String),1234567890123456(String),123(String),1234567890123456(String)");
+    }
+
+    // 更新的值总是加密（两种转换相同）
+    [Fact, Upstream("QueryTest26.java#testQuery2")]
+    public async Task TestQuery2()
+    {
+        await Db.CodeFirst.CreateTablesAsync([typeof(SysUserEncrypt)], Ct);
+        using var listen = SqlCapture.Listen();
+        await Db.Update<SysUserEncrypt>().Set(s => s.Phone, "12333").Where(t => t.Id == "123eeddffrrttgga").ExecuteAsync(Ct);
+        listen.AssertSql("UPDATE `sys_user_encrypt` SET `phone` = to_base64(AES_ENCRYPT(?,?)) WHERE `id` = ?");
+        listen.AssertParams("12333(String),1234567890123456(String),123eeddffrrttgga(String)");
+    }
+
+    [Fact, Upstream("QueryTest26.java#testQuery3")]
+    public async Task TestQuery3()
+    {
+        var ex = await Assert.ThrowsAsync<EasyQueryException>(() => Db.Update<SysUserEncrypt2>().Set(s => s.Phone, "12333").Where(t => t.Id == "123eeddffrrttgga").ExecuteAsync(Ct));
+        SqlOnly.AssertStatement(ex.Statement!, "UPDATE `sys_user2` SET `phone` = to_base64(AES_ENCRYPT(?,?)) WHERE `id` = ?",
+            "12333(String),1234567890123456(String),123eeddffrrttgga(String)");
+    }
 }

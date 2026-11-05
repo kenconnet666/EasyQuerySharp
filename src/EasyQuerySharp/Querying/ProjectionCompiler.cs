@@ -422,6 +422,8 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     private Expression ShapeScalar(Expression body, MemberInfo? member, bool topLevel = false)
     {
         var sql = ExpressionTranslator.AsValue(translator.Translate(body));
+        // 条件写法套出来的列：投影里仍按读取模板写原列
+        if (sql is FragmentExpr { ConvertedColumn: { } original }) sql = original;
         var converter = (sql as ColumnExpr)?.Column?.Converter;
         // 实体表上有 SQL 读写转换的列：套上读取模板，没有别名时以列名为别名
         string? conversionAlias = null;

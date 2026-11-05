@@ -3,19 +3,19 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1610、偏离 195、不适用 73、骨架 7、待做 519。
+合计：已移植 1613、偏离 195、不适用 73、骨架 7、待做 516。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 344 | 43 | 32 | 0 | 16 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 345 | 43 | 32 | 0 | 15 |
 | 分页结果 | `query.page` | M1 | 22 | 18 | 2 | 0 | 0 | 2 |
 | 原生 SQL | `sql.native` | M1 | 50 | 38 | 7 | 1 | 0 | 4 |
 | 删除 | `write.delete` | M1 | 25 | 13 | 1 | 10 | 0 | 1 |
 | 插入 | `write.insert` | M1 | 50 | 39 | 0 | 0 | 1 | 10 |
-| 更新 | `write.update` | M1 | 59 | 44 | 5 | 8 | 0 | 2 |
+| 更新 | `write.update` | M1 | 59 | 46 | 5 | 8 | 0 | 0 |
 | CASE WHEN | `expr.case` | M2 | 27 | 19 | 6 | 0 | 0 | 2 |
 | 日期函数 | `func.date` | M2 | 101 | 77 | 13 | 7 | 0 | 4 |
 | 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 55 | 3 | 0 | 0 | 1 |
@@ -378,7 +378,7 @@
 | QueryTest26.java#test22 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:268 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
 | QueryTest26.java#testFindInSet | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:102 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
 | QueryTest26.java#testMaxInCaluse | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:195：Java 的 contains 在 Oracle 上写成 LIKE ('%'\|\|TO_CHAR(?)\|\|'%')，C# 的 string.Contains 写成 LIKE ?（值里带好 %） | `SELECT "id","stars","title","create_time" FROM "t_topic" WHERE ("id" IN (?,?,?,?,?,?,?,?,?,?) OR "id…` |
-| QueryTest26.java#testQuery | 待做 |  | `SELECT 'id','name',AES_DECRYPT(from_base64('phone'),?) AS 'phone' FROM 'sys_user2' WHERE AES_DECRYPT…` |
+| QueryTest26.java#testQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:285 | `SELECT 'id','name',AES_DECRYPT(from_base64('phone'),?) AS 'phone' FROM 'sys_user2' WHERE AES_DECRYPT…` |
 | QueryTest26.java#testSetConstant | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:122 |  |
 | QueryTest26.java#testaa1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:113 | `SELECT t.'id' AS 'title',t.'title' AS 'id' FROM 't_topic' t WHERE t.'id' IS NOT NULL` |
 | QueryTest27.java#selectAllMap | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest27.cs:204：C# 的 Sql.Columns 以列名作键，不写 AS；没有按属性名作键的模式 | `SELECT t.'id' AS 'id',t.'create_time' AS 'createTime',t.'update_time' AS 'updateTime',t.'create_by' …` |
@@ -698,8 +698,8 @@
 | QueryTest18.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:132 |  |
 | QueryTest21.java#TestReverse | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest21.cs:78 | `SELECT COUNT(*) FROM 't_topic' WHERE 'id' IS NOT NULL` |
 | QueryTest24.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:247 |  |
-| QueryTest26.java#testQuery2 | 待做 |  | `UPDATE 'sys_user_encrypt' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
-| QueryTest26.java#testQuery3 | 待做 |  | `UPDATE 'sys_user2' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
+| QueryTest26.java#testQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:295 | `UPDATE 'sys_user_encrypt' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
+| QueryTest26.java#testQuery3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:305 | `UPDATE 'sys_user2' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
 | QueryTest26.java#updateConcat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:240 |  |
 | QueryTest28.java#testIncrementNullZero | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest28.cs:72 | `UPDATE 't_topic' SET 'stars' = (IFNULL('stars',?) + ?) WHERE 'id' = ?` |
 | TestUpdateFlatAndPredicate.java#testExpressionKey | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/FlatAndPredicateTest.cs:12：测的是 Java 表达式树的内部结构（getFlatAndPredicates 提取主键值），C# 不暴露 SQL 表达式树 |  |
