@@ -50,22 +50,24 @@ public class PostgreSqlDialect : SqlDialect
     }
 
     /// <summary>
-    /// 值里含 % 或 _ 时，包含 / 开头 / 结尾写成 <c>LIKE CONCAT('%',(?)::TEXT,'%') ESCAPE '\'</c>，参数里的 \ % _ 先转义，
-    /// 值里的通配符按字面匹配（与 Java 版一致）。
+    /// 模式在 SQL 里拼（<c>Sql.LikeContains</c> 等）时值先转成 TEXT：<c>LIKE CONCAT('%',(?)::TEXT,'%')</c>；
+    /// 值里含 % 或 _ 时同样写成 CONCAT，参数里的 \ % _ 先转义并加 <c>ESCAPE '\'</c>，值里的通配符按字面匹配（与 Java 版一致）。
     /// </summary>
     public override void WriteLike(SqlRenderer renderer, LikeExpr predicate)
     {
-        if (!predicate.HasWildcardValue)
+        var wildcard = predicate.HasWildcardValue;
+        var concat = predicate is { Pattern: FunctionExpr { Name: SqlFunctionNames.Concat }, Value: not null };
+        if (!wildcard && !concat)
         {
             base.WriteLike(renderer, predicate);
             return;
         }
-        var value = predicate.Value is ParameterExpr { Value: string text } ? new ParameterExpr(EscapeLike(text), typeof(string)) : predicate.Value;
+        var value = wildcard && predicate.Value is ParameterExpr { Value: string text } ? new ParameterExpr(EscapeLike(text), typeof(string)) : predicate.Value!;
         renderer.Write(predicate.Operand).Append(predicate.Negated ? " NOT LIKE CONCAT(" : " LIKE CONCAT(");
         if (predicate.Mode != LikeMode.StartsWith) renderer.Append("'%',");
         renderer.Append("(").Write(value).Append(")::TEXT");
         if (predicate.Mode != LikeMode.EndsWith) renderer.Append(",'%'");
-        renderer.Append(") ESCAPE '\\'");
+        renderer.Append(wildcard ? ") ESCAPE '\\'" : ")");
     }
 
     /// <summary>PostgreSQL 的 <c>(x)::类型</c> 转换（对应 Java 的 PgSQLCastSQLFunction）。</summary>

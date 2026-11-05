@@ -29,6 +29,8 @@ public sealed class PgDeleteUpdateJoinTest(PgFixture fixture) : PgTest(fixture)
     [Fact, Upstream("pgsql/DeleteUpdateJoinTest.java#testUpdateJoin3")]
     public async Task TestUpdateJoin3()
     {
+        // 不提交：改动随事务回滚，不影响其他用例的种子数据
+        await using var tx = Db.BeginTransaction();
         Assert.Equal(0, await Db.Query<DocBankCard>().Where(c => c.Type == "小明姓名").CountAsync(Ct));
         var card = await Db.Query<DocBankCard>().Where(c => c.User!.Name!.Contains("小明姓名")).SingleAsync(Ct);
         Assert.Equal("储蓄卡", card.Type);
@@ -43,6 +45,7 @@ public sealed class PgDeleteUpdateJoinTest(PgFixture fixture) : PgTest(fixture)
     [Fact, Upstream("pgsql/DeleteUpdateJoinTest.java#testUpdateJoin4")]
     public async Task TestUpdateJoin4()
     {
+        await using var tx = Db.BeginTransaction();
         Assert.Equal(0, await Db.Query<DocBankCard>().Where(c => c.Type == "建设银行").CountAsync(Ct));
         var card = await Db.Query<DocBankCard>().Where(c => c.User!.Name!.Contains("小红姓名")).SingleAsync(Ct);
         Assert.Equal("储蓄卡", card.Type);

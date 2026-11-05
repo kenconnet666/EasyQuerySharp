@@ -3,23 +3,23 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1477、偏离 187、不适用 68、骨架 15、待做 657。
+合计：已移植 1488、偏离 190、不适用 68、骨架 15、待做 643。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 339 | 40 | 28 | 0 | 28 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 339 | 42 | 28 | 0 | 26 |
 | 分页结果 | `query.page` | M1 | 22 | 18 | 2 | 0 | 0 | 2 |
-| 原生 SQL | `sql.native` | M1 | 50 | 36 | 7 | 1 | 0 | 6 |
+| 原生 SQL | `sql.native` | M1 | 50 | 37 | 7 | 1 | 0 | 5 |
 | 删除 | `write.delete` | M1 | 25 | 9 | 1 | 10 | 0 | 5 |
 | 插入 | `write.insert` | M1 | 50 | 33 | 0 | 0 | 1 | 16 |
 | 更新 | `write.update` | M1 | 59 | 29 | 4 | 8 | 0 | 18 |
 | CASE WHEN | `expr.case` | M2 | 27 | 19 | 6 | 0 | 0 | 2 |
-| 日期函数 | `func.date` | M2 | 101 | 72 | 13 | 7 | 0 | 9 |
+| 日期函数 | `func.date` | M2 | 101 | 73 | 13 | 7 | 0 | 8 |
 | 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 49 | 3 | 0 | 0 | 7 |
-| 字符串聚合（joining） | `func.joining` | M2 | 29 | 18 | 2 | 0 | 5 | 4 |
+| 字符串聚合（joining） | `func.joining` | M2 | 29 | 21 | 3 | 0 | 5 | 0 |
 | JSON 函数 | `func.json` | M2 | 12 | 0 | 0 | 0 | 0 | 12 |
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
 | 字符串函数 | `func.string` | M2 | 131 | 118 | 5 | 3 | 1 | 4 |
@@ -30,13 +30,13 @@
 | 显式 join | `query.join` | M3 | 88 | 80 | 4 | 1 | 0 | 3 |
 | 无实体的 Map 查询、toMap | `query.map` | M3 | 11 | 10 | 1 | 0 | 0 | 0 |
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 1 | 0 | 0 | 0 | 1 |
-| 流式读取 | `query.stream` | M3 | 9 | 5 | 2 | 1 | 0 | 1 |
+| 流式读取 | `query.stream` | M3 | 9 | 6 | 2 | 1 | 0 | 0 |
 | union / union all | `query.union` | M3 | 18 | 13 | 4 | 0 | 1 | 0 |
 | 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 2 | 0 | 0 | 1 | 33 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 23 | 25 | 3 | 0 | 5 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 60 | 1 | 2 | 2 | 2 |
-| include 带出导航 | `nav.include` | M4 | 37 | 19 | 1 | 0 | 0 | 17 |
+| include 带出导航 | `nav.include` | M4 | 37 | 24 | 1 | 0 | 0 | 12 |
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 133 | 3 | 1 | 0 | 5 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 20 | 0 | 0 | 0 | 5 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
@@ -510,8 +510,8 @@
 | pgsql/QueryTest.java#query6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:58 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
 | pgsql/QueryTest.java#query8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:96 | `SELECT CONCAT(t."id",t."id") FROM "t_blog" t WHERE t."deleted" = ? AND t."id" = ?` |
 | pgsql/QueryTest.java#query9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:104 | `SELECT CONCAT(t."id",t."title") FROM "t_blog" t WHERE t."deleted" = ? AND t."id" = ?` |
-| pgsql/QueryTest19.java#testMapChain | 待做 |  | `SELECT t1."aaa" AS "aaa",t1."bbb" AS "bbb" FROM (SELECT t."score" AS "aaa",t."star" AS "bbb" FROM "t…` |
-| pgsql/QueryTest19.java#testMapChain2 | 待做 |  | `SELECT t1."aaa" AS "aaa",t1."bbb" AS "bbb" FROM (SELECT (t."score" * ?) AS "aaa",t."star" AS "bbb" F…` |
+| pgsql/QueryTest19.java#testMapChain | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:35：Java 的 Map 投影写成带 [Column] 的 DTO，SQL 相同；Map 的值是 Object，Java 的比较参数保持 Integer，C# 按 DTO 属性的 decimal 传参 | `SELECT t1."aaa" AS "aaa",t1."bbb" AS "bbb" FROM (SELECT t."score" AS "aaa",t."star" AS "bbb" FROM "t…` |
+| pgsql/QueryTest19.java#testMapChain2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:44：Java 的 Map 投影写成带 [Column] 的 DTO，SQL 相同；Map 的值是 Object，Java 的比较参数保持 Integer，C# 按 DTO 属性的 decimal 传参 | `SELECT t1."aaa" AS "aaa",t1."bbb" AS "bbb" FROM (SELECT (t."score" * ?) AS "aaa",t."star" AS "bbb" F…` |
 | sqlite/SQLiteTest.java#testQuery | 待做 |  |  |
 | sqlite/SQLiteTest.java#testQuery1 | 待做 |  |  |
 
@@ -595,7 +595,7 @@
 | QueryTestRelationTest.java#relation10 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTestRelationTest.cs:180：Java 的 sqlConversion 在计数子查询里写了 COUNT(t1.'id') AS 'id'；C# 的计算列是表达式，子查询的列不写别名（见 QueryTest15） | `SELECT (SELECT COUNT(t1.'id') AS 'id' FROM 'school_student' t1 WHERE t1.'class_id' = t.'id') AS 'val…` |
 | mysql8/MySQL8Test2.java#testGroupConcat2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:277 | `SELECT t.'id' AS 'value1',GROUP_CONCAT(DISTINCT t.'content' SEPARATOR ?) AS 'value2' FROM 't_blog' t…` |
 | mysql8/MySQL8Test4.java#testToResultSet | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:303 |  |
-| pgsql/QueryTest19.java#concat1 | 待做 |  | `select CONCAT('a', null , 'b') as "aa"` |
+| pgsql/QueryTest19.java#concat1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:54 | `select CONCAT('a', null , 'b') as "aa"` |
 
 ### 删除（`write.delete`，M1）
 
@@ -882,7 +882,7 @@
 | pgsql/QueryTest.java#query7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:70 |  |
 | pgsql/QueryTest.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:166 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
 | pgsql/QueryTest.java#testDuration | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:356 |  |
-| pgsql/QueryTest19.java#datetimeformat | 待做 |  | `SELECT t."create_time" AS "value1",TO_CHAR((t."create_time")::TIMESTAMP,'YYYY年MM-01 HH24:MI分SS秒') AS…` |
+| pgsql/QueryTest19.java#datetimeformat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:62 | `SELECT t."create_time" AS "value1",TO_CHAR((t."create_time")::TIMESTAMP,'YYYY年MM-01 HH24:MI分SS秒') AS…` |
 
 ### 通用函数（nullOrDefault、greatest、nullif、null-safe）（`func.general`，M2）
 
@@ -977,10 +977,10 @@
 | mysql8/MySQL8Test5.java#testManyLimit7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:57 | `SELECT t.'id' AS 'value1',t2.'__joining2__' AS 'value2' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'ui…` |
 | mysql8/MySQL8Test5.java#testToSelectPageResult2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:105：Java 的 eq(null) 写 = ?（参数 null）；C# 与值为 null 的变量比较按 C# 语义写 IS NULL | `SELECT t1.'id',t1.'name',t1.'create_time',t3.'__joining2__' AS '__part__column1' FROM (SELECT t.'id'…` |
 | mysql8/MySQL8Test5.java#testToSelectPageResult3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:117 | `SELECT t1.'id',t1.'name',t1.'create_time',t3.'__joining2__' AS '__part__column1' FROM (SELECT t.'id'…` |
-| pgsql/QueryTest19.java#testJoining | 待做 |  | `SELECT t."title" AS "value1",STRING_AGG((t."content")::TEXT, ?) AS "value2" FROM "t_blog" t WHERE t.…` |
-| pgsql/QueryTest19.java#testJoining2 | 待做 |  | `SELECT t."title" AS "value1",STRING_AGG((t."content")::TEXT, ?) AS "value2" FROM "t_blog" t WHERE t.…` |
-| pgsql/QueryTest19.java#testJoining3 | 待做 |  | `SELECT t."id",t."create_time",t."update_time",t."create_by",t."update_by",t."deleted",t."title",t."c…` |
-| pgsql/QueryTest19.java#testJoining4 | 待做 |  | `SELECT t."id",t."create_time",t."update_time",t."create_by",t."update_by",t."deleted",t."title",t."c…` |
+| pgsql/QueryTest19.java#testJoining | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:73 | `SELECT t."title" AS "value1",STRING_AGG((t."content")::TEXT, ?) AS "value2" FROM "t_blog" t WHERE t.…` |
+| pgsql/QueryTest19.java#testJoining2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:73 | `SELECT t."title" AS "value1",STRING_AGG((t."content")::TEXT, ?) AS "value2" FROM "t_blog" t WHERE t.…` |
+| pgsql/QueryTest19.java#testJoining3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:84 | `SELECT t."id",t."create_time",t."update_time",t."create_by",t."update_by",t."deleted",t."title",t."c…` |
+| pgsql/QueryTest19.java#testJoining4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:95：Java 的 Map 投影写成带 [Column] 的 DTO，SQL 相同 | `SELECT t."id",t."create_time",t."update_time",t."create_by",t."update_by",t."deleted",t."title",t."c…` |
 
 ### JSON 函数（`func.json`，M2）
 
@@ -1458,7 +1458,7 @@
 | QueryTest18.java#testStreamChunk1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.cs:166 |  |
 | QueryTest23.java#subquery | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest23.cs:206：Java 取 JDBC 流式结果的 ResultSetMetaData；C# 的流式读取（ToAsyncEnumerable）不暴露驱动的元数据 | `select * from t_blog where id <> ?` |
 | QueryTest25.java#test12 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:21：Java 按表名反查实体元数据（getEntityMetadataList）；C# 的元数据按类型取，这里核对表名 |  |
-| pgsql/QueryTest19.java#testChunk | 待做 |  |  |
+| pgsql/QueryTest19.java#testChunk | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:107 |  |
 
 ### union / union all（`query.union`，M3）
 
@@ -1702,11 +1702,11 @@
 | mysql8/MySQL8Test4.java#testIncludeIdOnly2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:291 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
 | mysql8/MySQL8Test5.java#selectJoinInclude | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:164 |  |
 | pgsql/QueryTest19.java#test | 待做 |  |  |
-| pgsql/QueryTest19.java#testAll | 待做 |  | `SELECT t."id",t."name",t."phone",t."age" FROM "doc_user" t WHERE NOT (EXISTS(SELECT 1 FROM "doc_bank…` |
-| pgsql/QueryTest19.java#testAll1 | 待做 |  | `SELECT t."id",t."name",t."phone",t."age" FROM "doc_user" t WHERE NOT (EXISTS(SELECT 1 FROM "doc_bank…` |
-| pgsql/QueryTest19.java#testAll2 | 待做 |  | `SELECT t."id",t."name",t."phone",t."age" FROM "doc_user" t WHERE NOT (EXISTS(SELECT 1 FROM "doc_bank…` |
-| pgsql/QueryTest19.java#testAllGroupJoin | 待做 |  | `SELECT t."id",t."name",t."phone",t."age" FROM "doc_user" t LEFT JOIN (SELECT t1."uid" AS "__group_ke…` |
-| pgsql/QueryTest19.java#testAllGroupJoin2 | 待做 |  | `SELECT t."id",t."name",t."phone",t."age" FROM "doc_user" t LEFT JOIN (SELECT t1."uid" AS "__group_ke…` |
+| pgsql/QueryTest19.java#testAll | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:114 | `SELECT t."id",t."name",t."phone",t."age" FROM "doc_user" t WHERE NOT (EXISTS(SELECT 1 FROM "doc_bank…` |
+| pgsql/QueryTest19.java#testAll1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:127 | `SELECT t."id",t."name",t."phone",t."age" FROM "doc_user" t WHERE NOT (EXISTS(SELECT 1 FROM "doc_bank…` |
+| pgsql/QueryTest19.java#testAll2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:140 | `SELECT t."id",t."name",t."phone",t."age" FROM "doc_user" t WHERE NOT (EXISTS(SELECT 1 FROM "doc_bank…` |
+| pgsql/QueryTest19.java#testAllGroupJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:152 | `SELECT t."id",t."name",t."phone",t."age" FROM "doc_user" t LEFT JOIN (SELECT t1."uid" AS "__group_ke…` |
+| pgsql/QueryTest19.java#testAllGroupJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:164 | `SELECT t."id",t."name",t."phone",t."age" FROM "doc_user" t LEFT JOIN (SELECT t1."uid" AS "__group_ke…` |
 
 ### 隐式子查询（any / none / count / sum …）（`nav.subquery`，M4）
 
@@ -2072,12 +2072,12 @@
 | UpdateDeleteJoinTest.java#testDeleteJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateDeleteJoinTest.cs:27 | `DELETE t FROM 'doc_bank_card' t INNER JOIN 'doc_user' t1 ON t1.'id' = t.'uid' WHERE t1.'name' LIKE ?` |
 | UpdateDeleteJoinTest.java#testUpdateJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateDeleteJoinTest.cs:9 | `UPDATE 'doc_bank_card' t INNER JOIN 'doc_user' t1 ON t1.'id' = t.'uid' SET t.'type' = t1.'name' WHER…` |
 | UpdateDeleteJoinTest.java#testUpdateJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateDeleteJoinTest.cs:18 | `UPDATE 'doc_bank_card' t INNER JOIN 'doc_bank' t1 ON t1.'id' = t.'bank_id' INNER JOIN 'doc_user' t2 …` |
-| pgsql/DeleteUpdateJoinTest.java#testDeleteJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgDeleteUpdateJoinTest.cs:57 | `DELETE FROM "doc_bank_card" t USING "doc_user" t1 WHERE t1."id" = t."uid" AND t1."name" LIKE ?` |
-| pgsql/DeleteUpdateJoinTest.java#testDeleteJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgDeleteUpdateJoinTest.cs:57 | `DELETE FROM "doc_bank_card" t USING "doc_user" t1 WHERE t1."id" = t."uid" AND t1."name" LIKE ?` |
+| pgsql/DeleteUpdateJoinTest.java#testDeleteJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgDeleteUpdateJoinTest.cs:60 | `DELETE FROM "doc_bank_card" t USING "doc_user" t1 WHERE t1."id" = t."uid" AND t1."name" LIKE ?` |
+| pgsql/DeleteUpdateJoinTest.java#testDeleteJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgDeleteUpdateJoinTest.cs:60 | `DELETE FROM "doc_bank_card" t USING "doc_user" t1 WHERE t1."id" = t."uid" AND t1."name" LIKE ?` |
 | pgsql/DeleteUpdateJoinTest.java#testUpdateJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgDeleteUpdateJoinTest.cs:9 | `UPDATE "doc_bank_card" t SET "type" = t1."name" FROM "doc_user" t1 WHERE t1."id" = t."uid" AND t1."n…` |
 | pgsql/DeleteUpdateJoinTest.java#testUpdateJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgDeleteUpdateJoinTest.cs:18 | `UPDATE "doc_bank_card" t SET "type" = t1."name" FROM "doc_bank" t1 , "doc_user" t2 WHERE t1."id" = t…` |
 | pgsql/DeleteUpdateJoinTest.java#testUpdateJoin3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgDeleteUpdateJoinTest.cs:29 |  |
-| pgsql/DeleteUpdateJoinTest.java#testUpdateJoin4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgDeleteUpdateJoinTest.cs:43 |  |
+| pgsql/DeleteUpdateJoinTest.java#testUpdateJoin4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgDeleteUpdateJoinTest.cs:45 |  |
 
 ### 写哪些列、批量执行（`write.strategy`，M5）
 
