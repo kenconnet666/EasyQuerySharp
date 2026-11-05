@@ -57,8 +57,11 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     /// <summary>
     /// 之后追加的 Where 按 <paramref name="filter"/> 跳过值为 null / 空白的比较条件（对应 Java 的 filterConfigure），
     /// 再次调用可以切换，<see cref="Filtering.ValueFilter.All"/> 恢复不过滤。
+    /// 默认只作用于这条查询自己的条件；<paramref name="includeNavigations"/> 为 true 时也作用于导航里的条件（<c>u.Cards.Any(c =&gt; …)</c>）
+    /// 和条件里的子查询（对应 Java 的 NotNullOrEmptyValueFilter.DEFAULT_PROPAGATION_SUPPORTS）。
     /// </summary>
-    public TSelf UseValueFilter(Filtering.ValueFilter filter) => With(State with { ValueFilter = filter });
+    public TSelf UseValueFilter(Filtering.ValueFilter filter, bool includeNavigations = false) =>
+        With(State with { ValueFilter = filter, NavigationValueFilter = includeNavigations ? filter : Filtering.ValueFilter.All });
 
     /// <summary><paramref name="condition"/> 为 true 时才 <see cref="FilterBy"/>（对应 Java 的 whereObject(bool, obj)）。</summary>
     public TSelf FilterByIf(bool condition, object? request) => condition ? FilterBy(request) : (TSelf)this;
@@ -305,8 +308,9 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         }
         var state = State.Distinct || State.Offset is not null || State.Limit is not null ? State.Wrap() : ForAggregate();
         var frame = QueryCompiler.Build(state with { OrderBys = [] });
-        // 排序里用到了导航时，Java 已为它建了表：计数去掉排序后主表仍带别名 t
-        frame.Query.ExplicitProjection |= State.OrderBys.Any(o => Translation.NavigationUsage.Count(o.Key.Body) > 0);
+        // 排序、投影里用到了导航时，Java 已为它建了表：计数去掉排序与投影后主表仍带别名 t
+        frame.Query.ExplicitProjection |= State.OrderBys.Any(o => Translation.NavigationUsage.Count(o.Key.Body) > 0)
+                                          || (state.Selector is null && State.Selector is { } dropped && Translation.NavigationUsage.Count(dropped.Body) > 0);
         frame.Query.Columns.Add(new SelectColumn(new FunctionExpr(SqlFunctionNames.Count, [LiteralExpr.Star]), null));
         return frame.Query;
     }

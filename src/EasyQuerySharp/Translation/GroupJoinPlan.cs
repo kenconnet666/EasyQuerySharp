@@ -95,16 +95,19 @@ internal sealed class GroupJoinPlan
     /// <summary>
     /// 登记一个聚合，返回外层引用它的表达式。<paramref name="filters"/> 是聚合的条件（按 AND 拆开的合取项及其结构键），
     /// <paramref name="valueKey"/> 是值的结构键：种类、条件、值、是否去重都相同时复用同一列。
+    /// <paramref name="conditional"/>：写过条件（可能被值过滤整个去掉了），没有值的计数计 1 而不是 *。
     /// </summary>
-    public SqlExpr Reference(GroupAggregate kind, SqlExpr? value, IReadOnlyList<GroupFilter> filters, bool distinct, string valueKey, SqlExpr? separator = null)
+    public SqlExpr Reference(GroupAggregate kind, SqlExpr? value, IReadOnlyList<GroupFilter> filters, bool distinct, string valueKey,
+        SqlExpr? separator = null, bool conditional = false)
     {
+        conditional |= filters.Count > 0;
         var filterKey = string.Join(" && ", filters.Select(f => f.Key));
-        var key = string.Join('\u0001', kind, filterKey, valueKey, distinct, separator is ParameterExpr p ? p.Value : null);
+        var key = string.Join('\u0001', kind, filterKey, valueKey, distinct, conditional, separator is ParameterExpr p ? p.Value : null);
         if (!_byKey.TryGetValue(key, out var entry))
         {
             // 编号接在分组键之后（单列键时从 2 开始）
             var alias = "__" + kind.ToString().ToLowerInvariant() + (_entries.Count + _keyColumns.Count + 1) + "__";
-            entry = new Entry(kind, value, filters, distinct, alias, separator);
+            entry = new Entry(kind, value, filters, conditional, distinct, alias, separator);
             _entries.Add(entry);
             _byKey[key] = entry;
         }
@@ -143,7 +146,7 @@ internal sealed class GroupJoinPlan
     {
         // 没有值的计数：无条件是 COUNT(*)，有条件时计 1（与 Java 一致）
         SqlExpr? value = e.Value;
-        if (value is null && e.Filters.Count > 0) value = new ParameterExpr(1, typeof(int));
+        if (value is null && e.Conditional) value = new ParameterExpr(1, typeof(int));
         if (remaining.Count > 0)
         {
             SqlExpr otherwise = e.Kind == GroupAggregate.Sum ? new ParameterExpr(0, typeof(int)) : LiteralExpr.Null;
@@ -163,5 +166,5 @@ internal sealed class GroupJoinPlan
         };
     }
 
-    private sealed record Entry(GroupAggregate Kind, SqlExpr? Value, IReadOnlyList<GroupFilter> Filters, bool Distinct, string Alias, SqlExpr? Separator);
+    private sealed record Entry(GroupAggregate Kind, SqlExpr? Value, IReadOnlyList<GroupFilter> Filters, bool Conditional, bool Distinct, string Alias, SqlExpr? Separator);
 }

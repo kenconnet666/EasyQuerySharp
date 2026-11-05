@@ -45,12 +45,17 @@ internal static class ValueFilterRewriter
                 return Rewrite(n.Operand, filter) is { } operand ? Expression.Not(operand) : null;
             case BinaryExpression { NodeType: ExpressionType.Equal or ExpressionType.NotEqual or ExpressionType.LessThan or ExpressionType.LessThanOrEqual
                 or ExpressionType.GreaterThan or ExpressionType.GreaterThanOrEqual } c:
+                // 与字面量 null 的相等比较是判空（Java 的 isNull / isNotNull），不是值，不过滤；变量的值为 null 才过滤
+                if (c.NodeType is ExpressionType.Equal or ExpressionType.NotEqual && (IsNullLiteral(c.Left) || IsNullLiteral(c.Right))) return e;
                 return Rejected(c.Left, filter) || Rejected(c.Right, filter) ? null : e;
             case MethodCallExpression range when Sql.RangeKind(range.Method) is var (lowerOpen, upperOpen):
                 return RewriteRange(range, lowerOpen, upperOpen, filter);
             case MethodCallExpression { Method.Name: nameof(string.Contains) or nameof(string.StartsWith) or nameof(string.EndsWith), Object: not null } m
                 when m.Method.DeclaringType == typeof(string):
                 return m.Arguments.Any(a => Rejected(a, filter)) ? null : e;
+            case MethodCallExpression { Method.Name: nameof(Sql.LikeContains) or nameof(Sql.LikeStartsWith) or nameof(Sql.LikeEndsWith) } like
+                when like.Method.DeclaringType == typeof(Sql):
+                return Rejected(like.Arguments[1], filter) ? null : e;
             default:
                 return e;
         }
@@ -79,6 +84,8 @@ internal static class ValueFilterRewriter
         var compare = Expression.Call(typeof(string).GetMethod(nameof(string.Compare), [typeof(string), typeof(string)])!, left, right);
         return Expression.MakeBinary(op, compare, Expression.Constant(0));
     }
+
+    private static bool IsNullLiteral(Expression e) => ExpressionTranslator.StripConvert(e) is ConstantExpression { Value: null };
 
     // 只看客户端一侧（不需要翻译成 SQL 的那一侧）的值
     private static bool Rejected(Expression side, ValueFilter filter)

@@ -60,7 +60,7 @@ public class SysUser
 
     public DateTime? CreateTime { get; set; }
 
-    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(SysBankCard.Uid)])]
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(SysBankCard.Uid)], PartitionOrder = PartitionOrder.None)]
     public List<SysBankCard>? BankCards { get; set; }
 
     /// <summary>默认合并成分组 JOIN 的银行卡（Java 的 subQueryToGroupJoin = true）。</summary>
@@ -72,8 +72,13 @@ public class SysUser
     public List<SysBankCard>? BankCards3 { get; set; }
 
 
-    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(SysUserBook.Uid)])]
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(SysUserBook.Uid)], PartitionOrder = PartitionOrder.None)]
     public List<SysUserBook>? UserBooks { get; set; }
+
+    /// <summary>按开户时间、卡号（NULL 在前）倒序排的银行卡（Java 的 orderByProps + PartitionOrderEnum.NAVIGATE）。</summary>
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(SysBankCard.Uid)],
+        OrderBy = "OpenTime, Code desc nulls first", PartitionOrder = PartitionOrder.Navigation)]
+    public List<SysBankCard>? BankCard4s { get; set; }
 }
 
 /// <summary>对应 Java：mysql8/entity/bank/SysUserBook。</summary>

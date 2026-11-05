@@ -303,7 +303,7 @@ public sealed class SqlRenderer
 
     private void WriteWindow(WindowExpr w)
     {
-        var separator = w.Compact ? "," : ", ";
+        var separator = w.Separator;
         if (!w.Compact) Append("(");
         Write(w.Function).Append(" OVER (");
         var any = false;

@@ -21,7 +21,7 @@ public sealed class Mysql8Fixture : IAsyncLifetime
         typeof(DocBankCard), typeof(DocBank), typeof(DocUser), typeof(DocUserBook),
         typeof(SchoolClass), typeof(SchoolTeacher), typeof(SchoolClassTeacher),
         typeof(M8User), typeof(M8Role), typeof(M8UserRole), typeof(M8User2), typeof(M8Role2), typeof(M8UserRole2),
-        typeof(M8UserBook), typeof(M8RoleMenu), typeof(M8Menu),
+        typeof(M8UserBook), typeof(M8RoleMenu), typeof(M8Menu), typeof(M8Province), typeof(M8City), typeof(M8Area),
     ];
 
     private EasyDb? _db;

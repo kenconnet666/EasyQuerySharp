@@ -49,6 +49,7 @@ internal static class QueryCompiler
                     GroupJoinSpecs = state.GroupJoins,
                     GroupJoinAll = state.GroupJoinAll || outerContext?.GroupJoinAll == true,
                     MergeGroupFilters = !state.GroupJoinNoMerge && outerContext?.MergeGroupFilters != false,
+                    NavigationValueFilter = state.NavigationValueFilter != Filtering.ValueFilter.All ? state.NavigationValueFilter : outerContext?.NavigationValueFilter ?? Filtering.ValueFilter.All,
                 };
                 continue;
             }
@@ -71,8 +72,11 @@ internal static class QueryCompiler
             query.Joins.Add(new JoinClause(source.Join!.Value, binding.Table, conditions.Count == 0 ? null : LogicalExpr.And(conditions)));
         }
 
-        foreach (var where in state.Wheres)
+        // 外层传播下来的值过滤也作用于子查询自己的条件（本查询的条件在 Where 时已按自己的值过滤处理过）
+        var propagated = outerContext?.NavigationValueFilter ?? Filtering.ValueFilter.All;
+        foreach (var original in state.Wheres)
         {
+            if (Filtering.ValueFilterRewriter.Apply(original, propagated) is not { } where) continue;
             translator.Bind(where, bindings);
             query!.Where.Add(translator.TranslatePredicate(where.Body));
         }
@@ -197,7 +201,8 @@ internal static class QueryCompiler
                 var table = new DerivedTableSource(inner)
                 {
                     ExplicitAlias = s.Alias,
-                    ReservedAliases = s.Join is not null && s.Inner.GroupKey is not null ? 1 : 0,
+                    // 投影过的查询作为 JOIN 来源：Java 内部多一层匿名表，别名跳过一个
+                    ReservedAliases = s.Join is not null && (s.Inner.GroupKey is not null || s.Inner is { HasSelector: true, ImplicitSelector: false }) ? 1 : 0,
                 };
                 return new DerivedBinding(table, projection.MemberColumns, projection.Entity, projection.AliasedMembers, projection.NestedEntities);
             }

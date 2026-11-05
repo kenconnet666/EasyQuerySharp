@@ -25,6 +25,32 @@ public sealed class NavigationMetadata
         _extraMappingFilter = extraMappingFilter;
         DirectPath = attribute.DirectMapping;
         GroupJoin = attribute.GroupJoin;
+        PartitionOrder = attribute.PartitionOrder;
+        DefaultOrder = ParseOrder(attribute.OrderBy, target.Type);
+    }
+
+    /// <summary>取元素、取一段行而链上没写排序时组内按什么排。</summary>
+    public PartitionOrder PartitionOrder { get; }
+
+    /// <summary>导航上声明的默认排序（<see cref="NavigateAttribute.OrderBy"/>）：参数为目标实体的键，NULL 的位置包成 Sql.NullsFirst / NullsLast。</summary>
+    public IReadOnlyList<(LambdaExpression Key, bool Descending)> DefaultOrder { get; }
+
+    // "OpenTime, Code desc nulls first" → [(x => x.OpenTime, false), (x => Sql.NullsFirst(x.Code), true)]
+    private static List<(LambdaExpression, bool)> ParseOrder(string? orderBy, Type target)
+    {
+        if (string.IsNullOrWhiteSpace(orderBy)) return [];
+        return orderBy.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(item =>
+        {
+            var words = item.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var parameter = Expression.Parameter(target, "x");
+            Expression key = Expression.Property(parameter, target.GetProperty(words[0])
+                ?? throw new InvalidOperationException($"导航排序 '{orderBy}' 里的 {words[0]} 不是 {target.Name} 的属性"));
+            var rest = string.Join(' ', words.Skip(1)).ToLowerInvariant();
+            var nulls = rest.EndsWith("nulls first", StringComparison.Ordinal) ? nameof(Sql.NullsFirst)
+                : rest.EndsWith("nulls last", StringComparison.Ordinal) ? nameof(Sql.NullsLast) : null;
+            if (nulls is not null) key = Expression.Call(typeof(Sql).GetMethod(nulls)!.MakeGenericMethod(key.Type), key);
+            return ((LambdaExpression)Expression.Lambda(key, parameter), rest.StartsWith("desc", StringComparison.Ordinal));
+        }).ToList();
     }
 
     /// <summary>集合导航上的聚合默认合并成分组 LEFT JOIN。</summary>

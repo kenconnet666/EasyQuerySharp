@@ -24,7 +24,10 @@ internal sealed class TranslationContext(
 
     /// <summary>为子查询派生上下文：共享元数据、过滤规则与分组合并开关，隐式 JOIN 加到 <paramref name="subQuery"/>。</summary>
     public TranslationContext ForSubQuery(SelectQuery subQuery, IReadOnlyList<GroupJoinSpec>? groupJoinSpecs = null) =>
-        new(metadata, tableFilters, subQuery, this) { Db = Db, GroupJoinAll = GroupJoinAll, MergeGroupFilters = MergeGroupFilters, GroupJoinSpecs = groupJoinSpecs ?? [] };
+        new(metadata, tableFilters, subQuery, this)
+        {
+            Db = Db, GroupJoinAll = GroupJoinAll, MergeGroupFilters = MergeGroupFilters, NavigationValueFilter = NavigationValueFilter, GroupJoinSpecs = groupJoinSpecs ?? [],
+        };
 
     /// <summary>所属的 EasyDb（分组合并的 Configure 要构造目标实体的查询状态）。</summary>
     public EasyDb? Db { get; init; }
@@ -34,6 +37,9 @@ internal sealed class TranslationContext(
 
     /// <summary>全部集合导航的聚合都合并成分组 JOIN（GroupJoinAll，对应 Java 的 ALL_SUB_QUERY_GROUP_JOIN），子查询里同样生效。</summary>
     public bool GroupJoinAll { get; init; }
+
+    /// <summary>传播到导航条件与子查询里的值过滤（UseValueFilter(…, includeNavigations: true)），子查询里同样生效。</summary>
+    public Filtering.ValueFilter NavigationValueFilter { get; init; }
 
     /// <summary>分组里各聚合共有的条件提到 WHERE（GroupJoinNoMerge 关闭，对应 Java 的 GROUP_JOIN_NOT_ALLOW_AUTO_MERGE）。</summary>
     public bool MergeGroupFilters { get; init; } = true;
@@ -46,7 +52,8 @@ internal sealed class TranslationContext(
     /// </summary>
     public GroupJoinPlan? GroupJoinFor(SourceBinding owner, NavigationMetadata navigation, GroupJoinWindow? window = null)
     {
-        if (owner is not EntityBinding entityOwner) return null;
+        // 所属方可以是实体表，也可以是投影了整个实体的派生表（如 Part 的 Entity）
+        if (owner.OwnerEntity is null) return null;
         if (parent is not null && !Owns(owner.Table)) return parent.GroupJoinFor(owner, navigation, window);
         var spec = GroupJoinSpecs.LastOrDefault(s => s.Member == navigation.Property.Name && s.OwnerType.IsAssignableFrom(navigation.Self.Type));
         if (spec is { Enabled: false } || (spec is null && !navigation.GroupJoin && !GroupJoinAll)) return null;
@@ -65,7 +72,7 @@ internal sealed class TranslationContext(
         // 多对多时 Java 多建了一张中间表的副本，派生表的别名再跳过一个
         plan.Table.ReservedAliases = navigation.Mapping is null ? 0 : 1;
         var keys = plan.KeyColumns
-            .Select((k, i) => (SqlExpr)new BinaryExpr(k, SqlBinaryOperator.Equal, entityOwner.OwnerColumn(navigation.SelfColumns[i])))
+            .Select((k, i) => (SqlExpr)new BinaryExpr(k, SqlBinaryOperator.Equal, owner.OwnerColumn(navigation.SelfColumns[i])))
             .ToList();
         query.Joins.Add(new JoinClause(navigation.Required ? JoinKind.Inner : JoinKind.Left, plan.Table, keys.Count == 1 ? keys[0] : LogicalExpr.Grouped(keys)) { Implicit = true });
         _groupJoins[key] = plan;
@@ -118,7 +125,7 @@ internal sealed class TranslationContext(
             translator.Bind(filter, [binding]);
             numbered.Where.Add(translator.TranslatePredicate(filter.Body));
         }
-        // 组内排序：链上写的优先，其次是 GroupJoin(…, q => q.OrderBy(…)) 配的，都没有时按主键
+        // 组内排序：链上写的优先，其次是 GroupJoin(…, q => q.OrderBy(…)) 配的，都没有时按导航的 PartitionOrder
         IEnumerable<(LambdaExpression Key, bool Descending)> orderKeys = window.Orders.Count > 0 || configured is null
             ? window.Orders
             : configured.OrderBys.Select(o => (o.Key, o.Descending));
@@ -127,12 +134,12 @@ internal sealed class TranslationContext(
             translator.Bind(o.Key, [binding]);
             return translator.OrderItem(o.Key.Body, o.Descending);
         }).ToList();
-        if (orders.Count == 0) orders.AddRange(navigation.Target.KeyColumns.Select(k => new OrderByItem(element.Column(k), false)));
+        if (orders.Count == 0) orders.AddRange(translator.DefaultPartitionOrder(navigation, element));
 
         var columns = navigation.Target.Columns.Where(c => c.AutoSelect).ToList();
         foreach (var c in columns) numbered.Columns.Add(new SelectColumn(element.Column(c), c.Name));
         numbered.Columns.Add(new SelectColumn(
-            new WindowExpr(new FragmentExpr("ROW_NUMBER()", []), navigation.TargetColumns.Select(c => (SqlExpr)element.Column(c)).ToList(), orders, null, compact: false), "__row__"));
+            WindowExpr.RowNumber(navigation.TargetColumns.Select(c => (SqlExpr)element.Column(c)).ToList(), orders), "__row__"));
 
         var numberedTable = new DerivedTableSource(numbered);
         var ranged = new SelectQuery(numberedTable);

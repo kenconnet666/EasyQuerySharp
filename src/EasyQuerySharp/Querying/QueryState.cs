@@ -125,6 +125,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>之后追加的 Where 适用的条件值过滤（UseValueFilter）。</summary>
     public Filtering.ValueFilter ValueFilter { get; init; }
 
+    /// <summary>传播到导航条件与子查询里的值过滤（UseValueFilter(…, includeNavigations: true)，对应 Java 的 DEFAULT_PROPAGATION_SUPPORTS）。</summary>
+    public Filtering.ValueFilter NavigationValueFilter { get; init; }
+
     /// <summary>追加一个 Where 条件：先按 <see cref="ValueFilter"/> 去掉值被拒绝的比较，全部去掉时不追加。</summary>
     public QueryState AddWhere(LambdaExpression predicate)
     {
@@ -135,7 +138,10 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     }
 
     /// <summary>投影之后再加条件、排序、连接时，把当前查询包成派生表，在外层继续（与 Java 版的 select 之后再 where 一致）。行锁跟到外层：锁只写在最外层查询上。</summary>
-    public QueryState Wrap() => new(Db, [new SubQuerySource(this with { Fills = [], Lock = RowLock.None })]) { ValueFilter = ValueFilter, Fills = Fills, Lock = Lock };
+    public QueryState Wrap() => new(Db, [new SubQuerySource(this with { Fills = [], Lock = RowLock.None })])
+    {
+        ValueFilter = ValueFilter, NavigationValueFilter = NavigationValueFilter, GroupJoinAll = GroupJoinAll, GroupJoinNoMerge = GroupJoinNoMerge, Fills = Fills, Lock = Lock,
+    };
 
     /// <summary>是否已经有投影（之后的条件要包一层）。</summary>
     public bool HasSelector => Selector is not null;

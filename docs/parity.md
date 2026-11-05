@@ -10,7 +10,7 @@
 
 | 能力 | key | 用例数 | C# 写法 | M |
 |---|---|---|---|---|
-| 基本查询：条件、排序、选列、分页 | `query.basic` | 402 | `db.Query<T>().Where(..).OrderBy(..).Select(..).Skip(n).Take(n).ToListAsync()`；`FirstAsync` / `SingleAsync` / `FindAsync(id)` / `AnyAsync` / `CountAsync`；`WhereIf` ；投影里读出后在客户端换算 `Sql.ClientSide(x, v => ..)`（对应 valueConvert）；IN 列表按 `EasyDbOptions.MaxInClauseSize` 拆成 OR 组 | M1 |
+| 基本查询：条件、排序、选列、分页 | `query.basic` | 402 | `db.Query<T>().Where(..).OrderBy(..).Select(..).Skip(n).Take(n).ToListAsync()`；`FirstAsync` / `SingleAsync` / `FindAsync(id)` / `AnyAsync` / `CountAsync`；`WhereIf` ；值过滤 `UseValueFilter(ValueFilter.NotNullOrBlank)`（对应 filterConfigure；`includeNavigations: true` 对应 DEFAULT_PROPAGATION_SUPPORTS，也作用于导航与子查询里的条件；与字面量 null 的 `==` / `!=` 是判空，不过滤）；投影里读出后在客户端换算 `Sql.ClientSide(x, v => ..)`（对应 valueConvert）；IN 列表按 `EasyDbOptions.MaxInClauseSize` 拆成 OR 组 | M1 |
 | 分页结果 | `query.page` | 22 | `ToPageAsync(page, size)` 返回 `Page<T> { Rows, Total, PageIndex, PageSize }`；最后一页只取剩余条数；`EasyDbOptions.ReverseOffsetThreshold` 开启深分页反向排序（偏移过半时反转 ORDER BY 取数再倒序），单条查询 `DisableReversePaging()` 关闭 | M1 |
 | 原生 SQL | `sql.native` | 50 | `db.SqlQueryAsync<T>($"...{param}")` / `db.ExecuteSqlAsync($"...")`，插值的值自动参数化，集合展开成 `?,?,?`（空集合报错），`Sql.Identifier("t_user")` 按方言加引号；行内片段用 `Sql.Raw<T>("... {0} ...", u.Col)`；自定义模板函数：静态方法标 `[SqlFunction("FIND_IN_SET({0},{1})")]`，在表达式里直接调用 | M1 |
 | 显式 join | `query.join` | 88 | `.LeftJoin<Post>((u, p) => p.UserId == u.Id)`，后续 lambda 依次收到各表 `(u, p)`；right join 之后，前面表的列按可空处理 | M3 |
@@ -25,7 +25,7 @@
 
 | 能力 | key | 用例数 | C# 写法 | M |
 |---|---|---|---|---|
-| 字符串函数 | `func.string` | 128 | 优先映射 BCL：`Contains` / `StartsWith` / `Trim` / `ToUpper` / `Substring` / `IndexOf` / `Length` / `Replace` / `PadLeft`；没有 BCL 对应的用扩展方法：`Like` / `NotLike` / `Concat` | M2 |
+| 字符串函数 | `func.string` | 128 | 优先映射 BCL：`Contains` / `StartsWith` / `Trim` / `ToUpper` / `Substring` / `IndexOf` / `Length` / `Replace` / `PadLeft`；没有 BCL 对应的用扩展方法：`Like` / `NotLike` / `Concat`；`Contains` 等对应 Java 的 like（`LIKE ?`，% 在参数里），`LikeContains` / `LikeStartsWith` / `LikeEndsWith` 对应 Java 的 contains / startsWith / endsWith（`LIKE CONCAT('%',?,'%')`） | M2 |
 | 日期函数 | `func.date` | 96 | `AddDays` / `AddMonths` / `.Year` / `.DayOfWeek` / `ToString("yyyy-MM")`（格式串按方言翻译）/ `Sql.Now()` / `Sql.DateDiff`；`DateTime` / `DateOnly` / `DateTimeOffset` | M2 |
 | 通用函数 | `func.general` | 53 | `??`（nullOrDefault）/ `Sql.Greatest` / `Sql.Least` / `Sql.NullIf` / `Sql.EqualsNullSafe` / `Sql.Random()`（RAND()、PG / SQLite 的 RANDOM()、Oracle 的 DBMS_RANDOM.VALUE()） | M2 |
 | 字符串聚合 | `func.joining` | 29 | `g.StringJoin(p => p.Name, ",")`，集合导航上同样可用：`u.Posts.StringJoin(...)` | M2 |
@@ -41,7 +41,7 @@
 |---|---|---|---|---|
 | 隐式子查询 any / none / count / sum … | `nav.subquery` | 142 | `u.Posts.Any(p => ..)` / `!u.Posts.Any(..)` / `u.Posts.Count(..)` / `u.Posts.Sum(p => p.Amount)` / `u.Posts.Where(..).Max(..)`；导航上的固定条件 `[Navigate(.., ExtraFilter = nameof(静态属性), ExtraMappingFilter = ..)]`（属性每次查询重新取值，返回 null 即不加），子查询里写成 `(关联 AND 固定条件)`；`u.Posts.DisableLogicDelete().Any(..)` 关闭这个子查询的逻辑删除 | M4 |
 | 子查询改成分组 join | `nav.groupJoin` | 67 | `Query.GroupJoin(u => u.Posts, q => …)` 或导航上 `[Navigate(GroupJoin = true)]`；`GroupJoinAll()` 对应 ALL_SUB_QUERY_GROUP_JOIN。同一导航上的多个聚合共用一次分组 join，各聚合共有的条件提到派生表的 WHERE（`GroupJoinNoMerge()` 关闭）；多对多、嵌套（`q => q.GroupJoin(r => r.Menus)`）、Required 导航（INNER JOIN、不包 IFNULL） | M4 |
-| 一对多展开 flatElement / elements | `nav.flat` | 56 | `flatElement()` 写成 `Any(..)`；`elements(i, j)` 写成 `OrderBy(..).Skip(i).Take(j - i + 1)`：聚合时 ORDER BY / LIMIT 留在子查询里，之后再加条件或 `Any` 时先把这段行包成派生表；分组合并（`GroupJoin`）时按 `ROW_NUMBER()` 编组内行号再取段，同样取法的聚合合并到同一张派生表。取第 i 个元素用 `ElementAt(i)` / `First()` | M4 |
+| 一对多展开 flatElement / elements | `nav.flat` | 56 | `flatElement()` 写成 `Any(..)`；`elements(i, j)` 写成 `OrderBy(..).Skip(i).Take(j - i + 1)`：聚合时 ORDER BY / LIMIT 留在子查询里，之后再加条件或 `Any` 时先把这段行包成派生表；分组合并（`GroupJoin`）时按 `ROW_NUMBER()` 编组内行号再取段，同样取法的聚合合并到同一张派生表。取第 i 个元素用 `ElementAt(i)` / `First()`（多对多经中间表编号）；链上没写排序时按导航的 `PartitionOrder`：主键（默认）、`None`（Java 的 IGNORE）、`Navigation`（按 `[Navigate(OrderBy = "OpenTime, Code desc nulls first")]`，Java 的 orderByProps + NAVIGATE） | M4 |
 | include | `nav.include` | 37 | `.Include(o => o.Lines, q => q.Where(..).Include(l => l.Product))` | M4 |
 | 按 DTO 结构自动带出 | `dto.autoInclude` | 35 | `[MapFrom<User>] partial record UserVo(..)` 加 `Select<UserVo>()`，编译期生成映射 | M4 |
 | 按键填充 fillMany / fillOne | `fill` | 4 | 投影里写 `db.Query<OrderLine>().Where(l => l.OrderNo == o.No).ToList()`（不是导航的关联），规划器把它拆成按键批量查询 | M4 |

@@ -78,9 +78,10 @@ internal sealed partial class ExpressionTranslator
         foreach (var op in chain.Take(chain.Count - 1)) scope.Apply(op);
 
         var terminal = chain[^1];
+        // All 的条件不做值过滤（去掉后"全部满足"没有意义）
         var predicate = terminal.Arguments.Count > 1 && terminal.Method.Name is nameof(Enumerable.Any) or nameof(Enumerable.All)
             or nameof(Enumerable.Count) or nameof(Enumerable.LongCount)
-            ? scope.Predicate(Lambda(terminal.Arguments[1]))
+            ? scope.Predicate(Lambda(terminal.Arguments[1]), filtered: terminal.Method.Name != nameof(Enumerable.All))
             : null;
         var (sub, t, element, selector, distinct) = (scope.Query, scope.Translator, scope.Element, scope.Selector, scope.Distinct);
         SqlExpr Value()
@@ -148,6 +149,8 @@ internal sealed partial class ExpressionTranslator
         var t = new ExpressionTranslator(new Dictionary<ParameterExpression, SourceBinding>(_scope)) { Context = plan.InnerContext };
         var element = plan.Element;
         var filters = new List<GroupFilter>();
+        // 写了条件但被值过滤整个去掉时，计数仍计 1（与 Java 一致：COUNT(?) 而不是 COUNT(*)）
+        var conditional = false;
         LambdaExpression? selector = null;
         var distinct = false;
         // string.Join 时链上全是中间操作，没有终结方法
@@ -214,11 +217,12 @@ internal sealed partial class ExpressionTranslator
             t.Bind(valueLambda, [element]);
             value = t.Translate(StripConvert(valueLambda.Body));
         }
-        return plan.Reference(kind, value, filters, distinct, valueLambda is null ? "" : GroupJoinKey(valueLambda), separator);
+        return plan.Reference(kind, value, filters, distinct, valueLambda is null ? "" : GroupJoinKey(valueLambda), separator, conditional);
 
         void AddFilter(LambdaExpression original, bool negate)
         {
-            if (Filtering.ValueFilterRewriter.Apply(original, plan.ValueFilter) is not { } predicate) return;
+            conditional = true;
+            if (NavigationPredicate(original, plan.ValueFilter) is not { } predicate) return;
             if (negate)
             {
                 filters.Add(new GroupFilter(Negate(t.ElementPredicate(predicate, element)), "!" + GroupJoinKey(predicate)));
@@ -363,7 +367,7 @@ internal sealed partial class ExpressionTranslator
                 switch (op.Method.Name)
                 {
                     case nameof(Enumerable.Where):
-                        inner.Where.Add(t.ElementPredicate(Lambda(op.Arguments[1]), binding));
+                        if (t.NavigationPredicate(Lambda(op.Arguments[1])) is { } where) inner.Where.Add(t.ElementPredicate(where, binding));
                         break;
                     case nameof(Enumerable.OrderBy) or nameof(Enumerable.ThenBy) or nameof(Enumerable.OrderByDescending) or nameof(Enumerable.ThenByDescending):
                         var keyLambda = Lambda(op.Arguments[1]);
@@ -374,13 +378,13 @@ internal sealed partial class ExpressionTranslator
                         throw Unsupported(op, "取第几行之前只支持 Where / OrderBy / ThenBy");
                 }
             }
-            if (predicate is not null) inner.Where.Add(t.ElementPredicate(predicate, binding));
-            if (orders.Count == 0) orders.AddRange(nav.Target.KeyColumns.Select(k => new OrderByItem(element.Column(k), false)));
+            if (predicate is not null && t.NavigationPredicate(predicate) is { } kept) inner.Where.Add(t.ElementPredicate(kept, binding));
+            if (orders.Count == 0) orders.AddRange(t.DefaultPartitionOrder(nav, element));
 
             if (link is not null) inner.Columns.AddRange(partition.Select(p => new SelectColumn(p.Item1, p.Item2)));
             var columns = nav.Target.Columns.Where(c => c.AutoSelect).ToList();
             foreach (var c in columns) inner.Columns.Add(new SelectColumn(element.Column(c), null));
-            var row = new WindowExpr(new FragmentExpr("ROW_NUMBER()", []), partition.Select(p => p.Item1).ToList(), orders, null, compact: false);
+            var row = WindowExpr.RowNumber(partition.Select(p => p.Item1).ToList(), orders);
             inner.Columns.Add(new SelectColumn(row, "__row__"));
             // Java 在这里多一层匿名表（多对多时还有中间表的副本），派生表的别名跳号
             var table = new DerivedTableSource(inner) { ReservedAliases = link is null ? 1 : 2 };
@@ -448,6 +452,28 @@ internal sealed partial class ExpressionTranslator
         else sub.Where.AddRange(relation);
         return new CollectionSubQuery(this, sub, translator, element);
     }
+
+    /// <summary>
+    /// 导航里的条件按传播下来的值过滤改写（UseValueFilter(…, includeNavigations: true)）；条件整个被去掉时返回 null。
+    /// <paramref name="own"/> 是这个导航自己配置的值过滤（GroupJoin(…, q =&gt; q.UseValueFilter(…))），优先。
+    /// </summary>
+    private LambdaExpression? NavigationPredicate(LambdaExpression predicate, Filtering.ValueFilter own = Filtering.ValueFilter.All) =>
+        Filtering.ValueFilterRewriter.Apply(predicate, own != Filtering.ValueFilter.All ? own : Context?.NavigationValueFilter ?? Filtering.ValueFilter.All);
+
+    /// <summary>
+    /// 取元素、取一段行而链上没写排序时组内的排序，按导航的 <see cref="NavigationMetadata.PartitionOrder"/>：
+    /// 主键升序（默认）、不排序、或导航上声明的 <see cref="NavigateAttribute.OrderBy"/>。
+    /// </summary>
+    internal IEnumerable<OrderByItem> DefaultPartitionOrder(NavigationMetadata nav, EntityTableSource element) => nav.PartitionOrder switch
+    {
+        PartitionOrder.None => [],
+        PartitionOrder.Navigation => nav.DefaultOrder.Select(o =>
+        {
+            Bind(o.Key, [new EntityBinding(element)]);
+            return OrderItem(o.Key.Body, o.Descending);
+        }).ToList(),
+        _ => nav.Target.KeyColumns.Select(k => new OrderByItem(element.Column(k), false)),
+    };
 
     private SqlExpr ElementPredicate(LambdaExpression lambda, SourceBinding element)
     {

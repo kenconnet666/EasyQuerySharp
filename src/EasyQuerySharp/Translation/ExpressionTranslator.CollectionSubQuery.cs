@@ -41,8 +41,7 @@ internal sealed partial class ExpressionTranslator
             {
                 case nameof(Enumerable.Where):
                     // 先求条件：取过一段行时它会把 Query 换成外面包的那层
-                    var condition = Predicate(Lambda(op.Arguments[1]));
-                    Query.Where.Add(condition);
+                    if (Predicate(Lambda(op.Arguments[1])) is { } condition) Query.Where.Add(condition);
                     break;
                 case nameof(Enumerable.Select):
                     Selector = Lambda(op.Arguments[1]);
@@ -69,11 +68,14 @@ internal sealed partial class ExpressionTranslator
             }
         }
 
-        /// <summary>元素上的条件；取过一段行时先包成派生表。</summary>
-        public SqlExpr Predicate(LambdaExpression lambda)
+        /// <summary>
+        /// 元素上的条件；取过一段行时先包成派生表。<paramref name="filtered"/> 时按传播下来的值过滤改写，整个去掉时返回 null。
+        /// </summary>
+        public SqlExpr? Predicate(LambdaExpression lambda, bool filtered = true)
         {
             if (_limited) WrapLimitedRows();
-            return Translator.ElementPredicate(lambda, Element);
+            var kept = filtered ? Translator.NavigationPredicate(lambda) : lambda;
+            return kept is null ? null : Translator.ElementPredicate(kept, Element);
         }
 
         // (SELECT 目标的列… FROM 目标 WHERE … ORDER BY … LIMIT n) tN：列不写 AS（与 Java 一致），外层按实体属性找列

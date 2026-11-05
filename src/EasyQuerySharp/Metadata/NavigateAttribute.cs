@@ -16,6 +16,19 @@ public enum RelationType
     ManyToMany,
 }
 
+/// <summary>集合导航取第几个元素、取一段行时，链上没写排序的话组内按什么排（对应 Java 的 PartitionOrderEnum）。</summary>
+public enum PartitionOrder
+{
+    /// <summary>按目标表主键升序（默认，对应 Java 的 KEY）。</summary>
+    Key,
+
+    /// <summary>不排序（对应 Java 的 IGNORE）：<c>ROW_NUMBER() OVER (PARTITION BY 外键)</c>。</summary>
+    None,
+
+    /// <summary>按导航上声明的 <see cref="NavigateAttribute.OrderBy"/>（对应 Java 的 NAVIGATE）。</summary>
+    Navigation,
+}
+
 /// <summary>
 /// 把属性声明为导航（对应 Java 的 @Navigate）。导航可以直接写在查询里：
 /// 对一导航 <c>card.User!.Name</c> 生成隐式 JOIN，集合导航 <c>user.BankCards.Any(c => …)</c> 生成隐式子查询。
@@ -76,4 +89,13 @@ public sealed class NavigateAttribute(RelationType relation) : Attribute
     /// （对应 Java 的 extraFilter 里的 getPredicateMappingClassFilterExpression）。两种条件的属性都可以按需返回 null，表示这次不加。
     /// </summary>
     public string? ExtraMappingFilter { get; init; }
+
+    /// <summary>
+    /// 集合导航的默认排序（对应 Java 的 orderByProps）：逗号分隔的"属性 [asc|desc] [nulls first|nulls last]"，
+    /// 如 <c>"OpenTime, Code desc nulls first"</c>。<see cref="PartitionOrder"/> 为 <see cref="Metadata.PartitionOrder.Navigation"/> 时取元素按它排。
+    /// </summary>
+    public string? OrderBy { get; init; }
+
+    /// <summary>取第几个元素、取一段行而链上没写排序时组内按什么排，默认按主键。</summary>
+    public PartitionOrder PartitionOrder { get; init; }
 }

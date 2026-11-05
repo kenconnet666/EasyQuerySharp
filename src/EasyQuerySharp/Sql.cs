@@ -29,6 +29,18 @@ public static partial class Sql
     public static bool NotLike(this string? value, string pattern) => throw OnlyInQuery();
 
     /// <summary>
+    /// 包含（对应 Java 的 contains）：值原样作参数，% 在 SQL 里拼：<c>LIKE CONCAT('%',?,'%')</c>。
+    /// 与 <see cref="string.Contains(string)"/>（参数里带 %：<c>LIKE ?</c>，对应 Java 的 like）结果相同，只是 SQL 写法不同。
+    /// </summary>
+    public static bool LikeContains(this string? value, string? part) => throw OnlyInQuery();
+
+    /// <summary>以 <paramref name="part"/> 开头（对应 Java 的 startsWith）：<c>LIKE CONCAT(?,'%')</c>。</summary>
+    public static bool LikeStartsWith(this string? value, string? part) => throw OnlyInQuery();
+
+    /// <summary>以 <paramref name="part"/> 结尾（对应 Java 的 endsWith）：<c>LIKE CONCAT('%',?)</c>。</summary>
+    public static bool LikeEndsWith(this string? value, string? part) => throw OnlyInQuery();
+
+    /// <summary>
     /// 原生 SQL 片段，<c>{0}</c>、<c>{1}</c>… 依次替换为参数（列或值，值会参数化）；对应 Java 的 sqlSegment。
     /// </summary>
     /// <example><code>.Select(b => Sql.Raw&lt;long&gt;("rank() over(order by {0} desc)", b.Stars))</code></example>

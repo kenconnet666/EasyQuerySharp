@@ -322,9 +322,17 @@ public sealed class BlankCheckExpr(SqlExpr operand, bool whitespace, bool negate
 /// <summary>
 /// 窗口函数 <c>f OVER (PARTITION BY … ORDER BY … frame)</c>。<see cref="Compact"/> 为 true 时（LAG / LEAD / FIRST_VALUE 等取值函数）
 /// 不加外层括号、列表用 "," 分隔；否则整体加括号、列表用 ", " 分隔（两种写法都与 Java 一致）。
+/// 集合导航取元素时编行号用 <see cref="RowNumber"/>：加括号、列表用 "," 分隔。
 /// </summary>
-public sealed class WindowExpr(SqlExpr function, IReadOnlyList<SqlExpr> partitions, IReadOnlyList<OrderByItem> orders, string? frame, bool compact) : SqlExpr
+public sealed class WindowExpr(SqlExpr function, IReadOnlyList<SqlExpr> partitions, IReadOnlyList<OrderByItem> orders, string? frame, bool compact, string? separator = null) : SqlExpr
 {
+    /// <summary>集合导航按所属行分区编行号：<c>(ROW_NUMBER() OVER (PARTITION BY … ORDER BY …))</c>。</summary>
+    public static WindowExpr RowNumber(IReadOnlyList<SqlExpr> partitions, IReadOnlyList<OrderByItem> orders) =>
+        new(new FragmentExpr("ROW_NUMBER()", []), partitions, orders, null, compact: false, separator: ",");
+
+    /// <summary>PARTITION BY / ORDER BY 列表的分隔符。</summary>
+    public string Separator { get; } = separator ?? (compact ? "," : ", ");
+
     /// <summary>OVER 之前的函数。</summary>
     public SqlExpr Function { get; } = function;
 

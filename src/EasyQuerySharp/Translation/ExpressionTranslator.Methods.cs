@@ -52,6 +52,12 @@ internal sealed partial class ExpressionTranslator
                 var (value, pattern) = TranslatePair(call.Arguments[0], call.Arguments[1]);
                 return new LikeExpr(value, pattern, call.Method.Name == nameof(Sql.NotLike));
             }
+            case nameof(Sql.LikeContains):
+                return LikeOf(call.Arguments[0], call.Arguments[1], LikeMode.Contains, concat: true);
+            case nameof(Sql.LikeStartsWith):
+                return LikeOf(call.Arguments[0], call.Arguments[1], LikeMode.StartsWith, concat: true);
+            case nameof(Sql.LikeEndsWith):
+                return LikeOf(call.Arguments[0], call.Arguments[1], LikeMode.EndsWith, concat: true);
             case nameof(Sql.Raw):
             {
                 var template = (string)ClientEvaluator.Evaluate(call.Arguments[0])!;
@@ -184,8 +190,9 @@ internal sealed partial class ExpressionTranslator
         }
     }
 
-    // Pattern 是拼好 % 的通用写法；同时带上原值与匹配方式，供方言改写（PG 的 ESCAPE、Oracle / SQLite 的 INSTR）
-    private LikeExpr LikeOf(Expression target, Expression valueExpr, LikeMode mode)
+    // Pattern 是拼好 % 的通用写法；同时带上原值与匹配方式，供方言改写（PG 的 ESCAPE、Oracle / SQLite 的 INSTR）。
+    // concat：值也在 SQL 里拼 %（Sql.LikeContains 等，对应 Java 的 contains）；否则值是参数时 % 拼进参数
+    private LikeExpr LikeOf(Expression target, Expression valueExpr, LikeMode mode, bool concat = false)
     {
         var column = Translate(target);
         var (prefix, suffix) = mode switch
@@ -194,9 +201,9 @@ internal sealed partial class ExpressionTranslator
             LikeMode.StartsWith => ("", "%"),
             _ => ("%", ""),
         };
-        if (ClientEvaluator.MustTranslate(valueExpr))
+        if (concat || ClientEvaluator.MustTranslate(valueExpr))
         {
-            // 模式本身是列：CONCAT('%',col,'%')
+            // 模式本身是列（或要求在 SQL 里拼）：CONCAT('%',col,'%')
             var value = Translate(valueExpr);
             var parts = new List<SqlExpr>();
             if (prefix.Length > 0) parts.Add(new LiteralExpr("'%'"));

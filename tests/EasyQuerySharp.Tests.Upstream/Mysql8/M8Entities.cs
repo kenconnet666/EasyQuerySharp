@@ -132,6 +132,49 @@ public class M8UserRole
     public string? RoleId { get; set; }
 }
 
+/// <summary>对应 Java：mysql8/entity/many/M8Province（省 → 市 → 区的三层一对多）。</summary>
+[Table("m8_province")]
+public class M8Province
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(M8City.Pid)])]
+    public List<M8City>? Cities { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/many/M8City。</summary>
+[Table("m8_city")]
+public class M8City
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Pid { get; set; }
+
+    public string? Name { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(M8Area.Cid)])]
+    public List<M8Area>? Areas { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(M8Area.Cid)])]
+    public List<M8Area>? Areas2 { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/many/M8Area。</summary>
+[Table("m8_area")]
+public class M8Area
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Cid { get; set; }
+
+    public string? Name { get; set; }
+}
+
 /// <summary>对应 Java：mysql8/entity/M8UserRole2。</summary>
 [Table("m8_user_role2")]
 public class M8UserRole2
