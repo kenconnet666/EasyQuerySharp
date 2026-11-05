@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1405、偏离 155、不适用 34、骨架 15、待做 795。
+合计：已移植 1421、偏离 155、不适用 34、骨架 15、待做 779。
 
 ## 按能力
 
@@ -64,7 +64,7 @@
 | search 扩展 | `search` | M7 | 45 | 0 | 0 | 0 | 0 | 45 |
 | 分库分表 | `sharding` | M7 | 48 | 0 | 0 | 0 | 0 | 48 |
 | 跨库链接（asTableLink） | `table.link` | M7 | 13 | 9 | 0 | 0 | 0 | 4 |
-| 换表名（asTable / 表名映射） | `table.rename` | M7 | 52 | 14 | 9 | 0 | 0 | 29 |
+| 换表名（asTable / 表名映射） | `table.rename` | M7 | 52 | 30 | 9 | 0 | 0 | 13 |
 | 换 schema（asSchema） | `table.schema` | M7 | 25 | 16 | 2 | 0 | 0 | 7 |
 
 ## 逐条
@@ -84,25 +84,25 @@
 | DateTimeFunctionsTest.java#dateTimePropMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:52 | `SELECT t.'create_time' AS 'value1',YEAR(t.'create_time') AS 'value2',MONTH(t.'create_time') AS 'valu…` |
 | DirectRelationTest.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:11 | `SELECT t.'c1',t.'c2',t.'c3',t.'c4',t.'c5' FROM 'direct1' t LEFT JOIN 'direct2' t1 ON t1.'c7' = t.'c1…` |
 | DirectRelationTest.java#testJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:17 | `SELECT t3.'c18' AS 'value1' FROM 'direct1' t LEFT JOIN 'direct2' t1 ON t1.'c7' = t.'c1' LEFT JOIN 'd…` |
-| EntityQueryAggregateTest1.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:53 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest1.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:72 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest1.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:91 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest1.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:110 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest1.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:129 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest1.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:148 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest1.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:167 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest1.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:186 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest1.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:205 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id'` |
-| EntityQueryAggregateTest3.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:53 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest3.java#test10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:224 | `SELECT SUM(t.'stars') FROM 't_topic' t` |
-| EntityQueryAggregateTest3.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:72 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest3.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:91 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest3.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:110 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest3.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:129 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest3.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:148 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest3.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:167 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest3.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:186 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest3.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:205 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id'` |
+| EntityQueryAggregateTest1.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:59 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest1.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:78 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest1.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:97 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest1.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:116 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest1.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:135 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest1.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:154 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest1.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:173 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest1.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:192 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest1.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:211 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id'` |
+| EntityQueryAggregateTest3.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:59 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest3.java#test10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:230 | `SELECT SUM(t.'stars') FROM 't_topic' t` |
+| EntityQueryAggregateTest3.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:78 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest3.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:97 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest3.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:116 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest3.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:135 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest3.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:154 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest3.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:173 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest3.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:192 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest3.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:211 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id'` |
 | EntityQueryAggregateTest4.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:11 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
 | EntityQueryAggregateTest4.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:22 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
 | EntityQueryAggregateTest4.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:33 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
@@ -1983,16 +1983,16 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| EntityQueryAggregateTest1.java#test10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:224 | `SELECT SUM(t.'stars') FROM 't_topic' t` |
-| EntityQueryAggregateTest6.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:53 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest6.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:72 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest6.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:91 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest6.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:110 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest6.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:129 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest6.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:148 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest6.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:167 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest6.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:186 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest6.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:205 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id'` |
+| EntityQueryAggregateTest1.java#test10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:230 | `SELECT SUM(t.'stars') FROM 't_topic' t` |
+| EntityQueryAggregateTest6.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:59 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest6.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:78 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest6.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:97 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest6.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:116 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest6.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:135 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest6.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:154 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest6.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:173 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest6.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:192 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest6.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:211 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id'` |
 | MyTest1.java#testSelect6_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:212 | `SELECT t.'id' AS 'id',COUNT(t1.'id') AS 'id_count' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'del…` |
 | MyTest2.java#testSelect6_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:212 | `SELECT t.'id' AS 'id',COUNT(t1.'id') AS 'id_count' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'del…` |
 | QueryTest.java#query14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.SubQueries.cs:122 |  |
@@ -2676,22 +2676,22 @@
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
 | InsertTest1.java#testColumnConfigure2 | 待做 |  | `INSERT INTO 'xxx' ('id','stars') VALUES (?,ifnull('stars',0)+?)` |
-| QueryAggregateTest1.java#test1 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
-| QueryAggregateTest1.java#test2 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
-| QueryAggregateTest1.java#test3 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
-| QueryAggregateTest1.java#test4 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
-| QueryAggregateTest1.java#test5 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
-| QueryAggregateTest1.java#test6 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
-| QueryAggregateTest1.java#test7 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
-| QueryAggregateTest1.java#test8 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 'abcv'…` |
-| QueryAggregateTest2.java#test1 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
-| QueryAggregateTest2.java#test2 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
-| QueryAggregateTest2.java#test3 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
-| QueryAggregateTest2.java#test4 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
-| QueryAggregateTest2.java#test5 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
-| QueryAggregateTest2.java#test6 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
-| QueryAggregateTest2.java#test7 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
-| QueryAggregateTest2.java#test8 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 'abcv'…` |
+| QueryAggregateTest1.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:250 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
+| QueryAggregateTest1.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:269 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
+| QueryAggregateTest1.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:288 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
+| QueryAggregateTest1.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:307 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
+| QueryAggregateTest1.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:326 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
+| QueryAggregateTest1.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:345 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
+| QueryAggregateTest1.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:364 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
+| QueryAggregateTest1.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:383 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 'abcv'…` |
+| QueryAggregateTest2.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:250 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
+| QueryAggregateTest2.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:269 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
+| QueryAggregateTest2.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:288 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
+| QueryAggregateTest2.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:307 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
+| QueryAggregateTest2.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:326 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
+| QueryAggregateTest2.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:345 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
+| QueryAggregateTest2.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:364 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
+| QueryAggregateTest2.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:383 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 'abcv'…` |
 | QueryTest.java#query24 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.SubQueries.cs:103 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest.java#query25 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.SubQueries.cs:108 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest.java#query81 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.SubQueries.cs:113 | `SELECT COUNT(*) FROM (SELECT DISTINCT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update…` |
