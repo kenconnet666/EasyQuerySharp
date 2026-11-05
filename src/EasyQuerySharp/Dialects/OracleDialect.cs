@@ -118,6 +118,7 @@ public class OracleDialect : SqlDialect
         f[SqlFunctionNames.PadRight] = Pad("RPAD", "' '");
         f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("LISTAGG(TO_CHAR(").Write(a[0]).Append("), ").Write(a[1]).Append(") WITHIN GROUP(ORDER BY 1)");
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("LISTAGG(DISTINCT TO_CHAR(").Write(a[0]).Append("), ").Write(a[1]).Append(") WITHIN GROUP(ORDER BY 1)");
+        f[SqlFunctionNames.DateFormat] = (r, a) => r.Append("TO_CHAR(").Write(a[0]).Append(",'").Append(OracleDateFormat(((LiteralExpr)a[1]).Sql)).Append("')");
         // 相差：两个日期相减得到天数，再拆成 DAY / HOUR / MINUTE / SECOND 累加（与 Java 一致）
         const string interval = "NUMTODSINTERVAL(({1}+0)-({0}+0),'DAY')";
         f[SqlFunctionNames.Now] = Template("SYSTIMESTAMP");
@@ -152,5 +153,28 @@ public class OracleDialect : SqlDialect
                 _ => "(EXTRACT(DAY FROM " + interval + ")*86400+EXTRACT(HOUR FROM " + interval + ")*3600+EXTRACT(MINUTE FROM " + interval + ")*60+EXTRACT(SECOND FROM " + interval + "))"
                      + (unit == DateUnit.Millisecond ? "*1000" : ""),
             });
+    }
+
+    // 与 Java 的 OracleDateTimeFormatSQLFunction.formatDefault 一致：格式记号与 :/-_ 空格原样转换，其余文字用双引号括起来
+    private static readonly System.Text.RegularExpressions.Regex DateFormatToken = new("yyyy|yy|MM|dd|HH|hh|mm|ss|[MdHhmsa:/_ -]");
+
+    /// <summary>C# 的日期格式（yyyy-MM-dd HH:mm:ss 一类）转成 Oracle TO_CHAR 的格式串（不含两侧引号，单引号已转义）。</summary>
+    private static string OracleDateFormat(string format)
+    {
+        var sb = new System.Text.StringBuilder();
+        var cursor = 0;
+        foreach (System.Text.RegularExpressions.Match m in DateFormatToken.Matches(format))
+        {
+            if (m.Index > cursor) sb.Append('"').Append(format, cursor, m.Index - cursor).Append('"');
+            sb.Append(m.Value switch
+            {
+                "M" => "FMMM", "d" => "FMDD", "HH" => "HH24", "H" => "FMHH24", "h" => "FMHH",
+                "mm" => "MI", "m" => "FMMI", "s" => "FMSS", "a" => "AM",
+                _ => m.Value.ToUpperInvariant(),
+            });
+            cursor = m.Index + m.Length;
+        }
+        if (cursor < format.Length) sb.Append('"').Append(format, cursor, format.Length - cursor).Append('"');
+        return sb.ToString().Replace("'", "''", StringComparison.Ordinal);
     }
 }
