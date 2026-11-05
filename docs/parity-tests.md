@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1488、偏离 190、不适用 68、骨架 15、待做 643。
+合计：已移植 1490、偏离 192、不适用 68、骨架 15、待做 639。
 
 ## 按能力
 
@@ -38,7 +38,7 @@
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 60 | 1 | 2 | 2 | 2 |
 | include 带出导航 | `nav.include` | M4 | 37 | 24 | 1 | 0 | 0 | 12 |
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 133 | 3 | 1 | 0 | 5 |
-| 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 20 | 0 | 0 | 0 | 5 |
+| 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 22 | 2 | 0 | 0 | 1 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
 | 列加密 | `column.encryption` | M5 | 8 | 7 | 0 | 0 | 0 | 1 |
 | 拦截器 | `interceptor` | M5 | 3 | 3 | 0 | 0 | 0 | 0 |
@@ -1872,17 +1872,17 @@
 | mysql8/MySQL8Test2.java#cteViewTree2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:394 |  |
 | mysql8/MySQL8Test3.java#testTree | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:238 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'parent_id',t1.'content',t1.'us…` |
 | mysql8/MySQL8Test3.java#testTree_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:258 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'parent_id',t1.'content',t1.'us…` |
-| pgsql/QueryTest19.java#cteViewTree1 | 待做 |  |  |
+| pgsql/QueryTest19.java#cteViewTree1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:383：PostgreSQL 版的同一用例（只执行不断言）；视图实体的表只建在 MySQL 夹具里，在这里一并验证 |  |
 | pgsql/QueryTest19.java#testToTreeList | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:21 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
 | pgsql/QueryTest19.java#testToTreeList2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:33 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
 | pgsql/QueryTest19.java#testToTreeList3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:43 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
-| pgsql/QueryTest19.java#testToTreeListDTO | 待做 |  | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
+| pgsql/QueryTest19.java#testToTreeListDTO | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:98 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
 | pgsql/QueryTest19.java#tree10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:68 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
 | pgsql/QueryTest19.java#tree10_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:77 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
 | pgsql/QueryTest19.java#tree11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:77 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
 | pgsql/QueryTest19.java#tree12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:87 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t2."id",t2."parent_id",t2."name" FROM "cat…` |
-| pgsql/QueryTest19.java#tree7_1 | 待做 |  | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "deep",t1."id",t1."parent_id",t1."name" FROM "categor…` |
-| pgsql/QueryTest19.java#tree7_2 | 待做 |  | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "deep1",t1."id",t1."parent_id",t1."name" FROM "catego…` |
+| pgsql/QueryTest19.java#tree7_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:115 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "deep",t1."id",t1."parent_id",t1."name" FROM "categor…` |
+| pgsql/QueryTest19.java#tree7_2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:115：Java 的 DTO 属性名与层级列同名时自动带上层级；C# 的投影里引用不到层级列，DTO 的 Deep1 不赋值，SQL 相同 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "deep1",t1."id",t1."parent_id",t1."name" FROM "catego…` |
 | pgsql/QueryTest19.java#tree9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:57 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
 
 ### 值转换、枚举、JSON 列（`column.converter`，M5）

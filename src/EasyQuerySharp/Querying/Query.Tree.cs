@@ -80,14 +80,16 @@ public sealed partial class Query<T>
         var entity = Db.Metadata.Get<T>();
         var nav = TreeNavigation(Db.Metadata, entity)
                   ?? throw new InvalidOperationException($"{typeof(T).Name} 上没有指向自身的集合导航（如 List<{typeof(T).Name}> Children），无法拼成树");
-        if (State is { HasSelector: false, Sources: [TreeCteSource tree] })
+        if (State.Sources is [TreeCteSource tree, ..])
         {
-            var compiled = QueryCompiler.Compile<T>(State);
+            var compiled = QueryCompiler.Compile<T>(State with { AppendTreeDeep = true });
             var statement = SqlRenderer.Render(Db.Options.Dialect, compiled.Sql);
             var deepOrdinal = compiled.Sql.Columns.Count - 1;
             var rows = await Db.Executor.QueryAsync(statement,
                 r => (Row: compiled.Shaper(r), Deep: Convert.ToInt64(r.GetValue(deepOrdinal), System.Globalization.CultureInfo.InvariantCulture)), cancellationToken).ConfigureAwait(false);
-            var nodes = rows.Select(x => new TreeNode(x.Row!, Key(tree.SelfColumns, x.Row!), Key(tree.ParentColumns, x.Row!), x.Deep)).ToList();
+            // 投影成 DTO 时按 DTO 上指向自身的导航取键；直接取实体时按树查询的键列
+            var (self, parent) = State.HasSelector ? (nav.SelfColumns, nav.TargetColumns) : (tree.SelfColumns, tree.ParentColumns);
+            var nodes = rows.Select(x => new TreeNode(x.Row!, Key(self, x.Row!), Key(parent, x.Row!), x.Deep)).ToList();
             return TreeAssembler.Assemble(nodes, nav, tree.Options.Up).Cast<T>().ToList();
         }
         var list = await ToListAsync(cancellationToken).ConfigureAwait(false);

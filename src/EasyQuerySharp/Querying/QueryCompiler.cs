@@ -239,8 +239,8 @@ internal static class QueryCompiler
         // 先登记列，再把列表交给 AST；读取函数由调用方按需编译
         projection.Prepare(selector.Body, frame.Bindings[0], relationKeys, state.Selector is null ? (IReadOnlyList<IncludeSpec>)state.Includes : null);
         frame.Query.Columns.AddRange(projection.Columns);
-        // 树查询不投影时，层级列跟在实体的列之后（与 Java 一致；拼树时按它分层）
-        if (state.Selector is null && state.Sources[0] is TreeCteSource treeSource)
+        // 树查询不投影（或要拼树）时，层级列跟在投影的列之后（与 Java 一致；拼树时按它分层）
+        if ((state.Selector is null || state.AppendTreeDeep) && state.Sources[0] is TreeCteSource treeSource)
             frame.Query.Columns.Add(new SelectColumn(new ColumnExpr(frame.Bindings[0].Table, treeSource.Options.DeepColumnName), null));
         // 分组合并的派生表要等整条查询（含投影）翻译完才知道全部聚合
         frame.Translator.Context?.CompleteGroupJoins();

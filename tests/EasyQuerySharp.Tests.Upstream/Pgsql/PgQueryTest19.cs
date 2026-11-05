@@ -93,4 +93,34 @@ public sealed class PgQueryTest19(PgFixture fixture) : PgTest(fixture)
         listen.AssertSql("WITH RECURSIVE \"as_tree_cte\" AS ( (SELECT 0 AS \"cte_deep\",t2.\"id\",t2.\"parent_id\",t2.\"name\" FROM \"category\" t2 WHERE t2.\"id\" = ?)  UNION ALL  (SELECT t3.\"cte_deep\" + 1 AS \"cte_deep\",t4.\"id\",t4.\"parent_id\",t4.\"name\" FROM \"as_tree_cte\" t3 INNER JOIN \"category\" t4 ON t4.\"parent_id\" = t3.\"id\") ) SELECT t.\"id\",t.\"create_time\",t.\"update_time\",t.\"create_by\",t.\"update_by\",t.\"deleted\",t.\"title\",t.\"content\",t.\"url\",t.\"star\",t.\"publish_time\",t.\"score\",t.\"status\",t.\"order\",t.\"is_top\",t.\"top\" FROM \"t_blog\" t WHERE t.\"deleted\" = ? AND t.\"id\" IN (SELECT t1.\"id\" FROM \"as_tree_cte\" t1)");
         listen.AssertParams("1(String),false(Boolean)");
     }
+
+    // 树结果投影成 DTO：DTO 上指向自身的导航决定父子，层级列跟在投影之后
+    [Fact, Upstream("pgsql/QueryTest19.java#testToTreeListDTO")]
+    public async Task TestToTreeListDTO()
+    {
+        using var listen = SqlCapture.Listen();
+        var tree = await Db.Query<MyCategory>().Where(m => m.Id == "1").AsTreeCte()
+            .Select(m => new MyCategoryDTO { Id = m.Id, ParentId = m.ParentId, Name = m.Name }).ToTreeAsync(Ct);
+        var root = Assert.Single(tree);
+        Assert.Equal("1", root.Id);
+        Assert.Equal(2, root.Children!.Count);
+        Assert.All(root.Children, c => Assert.Equal(c.Id == "3" ? 2 : 0, c.Children!.Count));
+        listen.AssertSql("WITH RECURSIVE \"as_tree_cte\" AS ( (SELECT 0 AS \"cte_deep\",t1.\"id\",t1.\"parent_id\",t1.\"name\" FROM \"category\" t1 WHERE t1.\"id\" = ?)  UNION ALL  (SELECT t2.\"cte_deep\" + 1 AS \"cte_deep\",t3.\"id\",t3.\"parent_id\",t3.\"name\" FROM \"as_tree_cte\" t2 INNER JOIN \"category\" t3 ON t3.\"parent_id\" = t2.\"id\") ) SELECT t.\"id\",t.\"parent_id\",t.\"name\",t.\"cte_deep\" FROM \"as_tree_cte\" t");
+        listen.AssertParams("1(String)");
+    }
+
+    private const string NoDeepInProjection = "Java 的 DTO 属性名与层级列同名时自动带上层级；C# 的投影里引用不到层级列，DTO 的 Deep1 不赋值，SQL 相同";
+
+    // 树结果再连接一张表，投影成 DTO 后拼树
+    [Fact, Upstream("pgsql/QueryTest19.java#tree7_1"), Upstream("pgsql/QueryTest19.java#tree7_2", Deviation = NoDeepInProjection)]
+    public async Task Tree7_1()
+    {
+        using var listen = SqlCapture.Listen();
+        var tree = await Db.Query<MyCategory>().Where(m => m.Id == "1").AsTreeCte(o => o.DeepColumnName = "deep")
+            .LeftJoin<MyCategory>((m, b2) => m.Id == b2.Id)
+            .Select((m1, m2) => new MyCategoryVO4 { Id = m1.Id, ParentId = m1.ParentId, Name = m1.Name, JoinName = m2.Name }).ToTreeAsync(Ct);
+        Assert.Single(tree);
+        listen.AssertSql("WITH RECURSIVE \"as_tree_cte\" AS ( (SELECT 0 AS \"deep\",t1.\"id\",t1.\"parent_id\",t1.\"name\" FROM \"category\" t1 WHERE t1.\"id\" = ?)  UNION ALL  (SELECT t2.\"deep\" + 1 AS \"deep\",t3.\"id\",t3.\"parent_id\",t3.\"name\" FROM \"as_tree_cte\" t2 INNER JOIN \"category\" t3 ON t3.\"parent_id\" = t2.\"id\") ) SELECT t.\"id\",t.\"parent_id\",t.\"name\",t6.\"name\" AS \"join_name\",t.\"deep\" FROM \"as_tree_cte\" t LEFT JOIN \"category\" t6 ON t.\"id\" = t6.\"id\"");
+        listen.AssertParams("1(String)");
+    }
 }

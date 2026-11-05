@@ -56,3 +56,33 @@ public class MyUnion
 {
     public string? TaskStatus { get; set; }
 }
+
+/// <summary>对应 Java：dto/MyCategoryDTO（DTO 上声明指向自身的导航，树结果投影成 DTO）。</summary>
+public class MyCategoryDTO
+{
+    public string? Id { get; set; }
+
+    public string? ParentId { get; set; }
+
+    public string? Name { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(ParentId)])]
+    public List<MyCategoryDTO>? Children { get; set; }
+}
+
+/// <summary>对应 Java：entity/vo/MyCategoryVO4（树结果连接另一张表后投影成 DTO）。</summary>
+public class MyCategoryVO4
+{
+    public string? Id { get; set; }
+
+    public string? ParentId { get; set; }
+
+    public string? Name { get; set; }
+
+    public string? JoinName { get; set; }
+
+    public long? Deep1 { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(ParentId)])]
+    public List<MyCategoryVO4>? Children { get; set; }
+}

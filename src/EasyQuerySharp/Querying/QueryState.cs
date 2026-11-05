@@ -100,6 +100,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>投影之后加的条件尽量推进派生表内层（见 <see cref="SmartPredicates"/>，对应 Java 的 SMART_PREDICATE）。</summary>
     public bool SmartPredicate { get; init; }
 
+    /// <summary>树查询（AsTreeCte）有自定义投影时也在最后带上层级列（ToTreeAsync 按层级配对父子）。</summary>
+    public bool AppendTreeDeep { get; init; }
+
     /// <summary>结果读出后依次执行的填充（FillMany / FillOne），参数是本次的结果行。</summary>
     public ImmutableArray<Func<System.Collections.IList, CancellationToken, Task>> Fills { get; init; } = [];
 

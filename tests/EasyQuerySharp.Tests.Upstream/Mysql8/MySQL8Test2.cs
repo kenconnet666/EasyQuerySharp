@@ -380,7 +380,7 @@ public sealed class MySQL8Test2(Mysql8Fixture fixture) : Mysql8Test(fixture)
     }
 
     // 视图实体上的树查询（Java 只执行不断言）
-    [Fact, Upstream("mysql8/MySQL8Test2.java#cteViewTree1")]
+    [Fact, Upstream("mysql8/MySQL8Test2.java#cteViewTree1"), Upstream("pgsql/QueryTest19.java#cteViewTree1", Deviation = "PostgreSQL 版的同一用例（只执行不断言）；视图实体的表只建在 MySQL 夹具里，在这里一并验证")]
     public async Task CteViewTree1()
     {
         using var listen = SqlCapture.Listen();
