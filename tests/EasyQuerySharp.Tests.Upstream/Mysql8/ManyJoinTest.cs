@@ -477,4 +477,27 @@ public sealed class ManyJoinTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
                 u.BankCards!.OrderByDescending(c => c.OpenTime).First().Bank!.Name))
             .ToListAsync(Ct);
     }
+
+    // 每个银行里持卡数排第 3 的用户：分组投影成 DTO，再加窗口列筛选，最后作为 IN 子查询（Java 用例没有断言）
+    [Fact, Upstream("mysql8/ManyJoinTest.java#test111")]
+    public async Task Test111()
+    {
+        var ranked = Db.Query<SysBankCard>().GroupBy(c => new { c.BankId, c.Uid })
+            .Select(g => new UserAndBankCount { BankId = g.Key.BankId, Uid = g.Key.Uid, BankCount = g.Count() })
+            .Select(o => new Part<UserAndBankCount, long>(o, Sql.Over.RowNumber(w => w.PartitionBy(o.BankId).OrderByDescending(o.BankCount))));
+        // 嵌着 DTO 的 Part 能整体读回
+        Assert.All(await ranked.ToListAsync(Ct), p => Assert.True(p.Value1 >= 1 && p.Entity.BankCount >= 1));
+        var userIds = ranked.Where(p => p.Value1 == 3L).Select(p => p.Entity.Uid);
+        await Db.Query<SysUser>().Where(u => u.Id.In(userIds)).OrderByDescending(u => u.CreateTime).ToListAsync(Ct);
+    }
+
+    /// <summary>对应 Java：mysql8/vo/UserAndBankCount。</summary>
+    public sealed class UserAndBankCount
+    {
+        public string? BankId { get; set; }
+
+        public string? Uid { get; set; }
+
+        public long BankCount { get; set; }
+    }
 }

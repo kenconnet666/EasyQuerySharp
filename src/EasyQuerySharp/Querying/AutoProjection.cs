@@ -28,7 +28,7 @@ internal static class AutoProjection
     /// <summary>按结构带出导航的自动映射（selectAutoInclude）：嵌套 DTO 沿同名导航递归映射；DTO 引用自身的集合（树）留给 ToTreeAsync 拼。</summary>
     public static LambdaExpression BuildWithIncludes(MetadataRegistry registry, EntityMetadata source, Type target) => Build(registry, source, target, null, [], root: true);
 
-    // registry 为 null 时只映射列。[MapExpression] 的列与 Java 一致：根查询放最前面（Java 先应用额外的 select），带出查询放最后面
+    // registry 为 null 时只映射列。[MapExpression] 与对一路径的 [MapPath] 列与 Java 一致：根查询放最前面（Java 先应用额外的 select），带出查询放最后面
     private static LambdaExpression Build(MetadataRegistry? registry, EntityMetadata source, Type target, IReadOnlySet<string>? excluded, HashSet<Type> visiting, bool root)
     {
         var parameter = Expression.Parameter(source.Type, "o");
@@ -42,8 +42,11 @@ internal static class AutoProjection
             var mapped = registry is null ? null : MappedExpression(source, parameter, property);
             var value = mapped ?? (registry is null ? ColumnValue(source, parameter, property) : Value(registry, source, parameter, property, visiting));
             if (value is null) continue;
+            // 沿对一导航 JOIN 平铺的列（Java 的 @NavigateJoin）与 [MapExpression] 一样算额外的列
+            var joined = property.IsDefined(typeof(MapPathAttribute)) && !(value is MethodCallExpression call && call.Method.DeclaringType == typeof(AutoIncludeMarkers));
+            var extra = mapped is not null || joined;
             if (value.Type != property.PropertyType) value = Expression.Convert(value, property.PropertyType);
-            (mapped is null ? bindings : expressions).Add(Expression.Bind(property, value));
+            (extra ? expressions : bindings).Add(Expression.Bind(property, value));
         }
         visiting.Remove(target);
         bindings = root ? [.. expressions, .. bindings] : [.. bindings, .. expressions];

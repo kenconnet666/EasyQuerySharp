@@ -99,15 +99,15 @@ internal sealed class DerivedBinding(
 {
     /// <summary>
     /// 内层投影里嵌着的整个实体（<c>new { b, Rn = … }</c> 的 <c>b</c>、<c>Part</c> 的 <c>Entity</c>）：外层 <c>x.b.Star</c> 经它找列。
-    /// 成员列以 <c>b.Star</c> 的形式登记；没有这个成员时返回 null。
+    /// 成员列以 <c>b.Star</c> 的形式登记；嵌着的是 DTO（如 <c>Part&lt;Dto, long&gt;</c>）时同样按前缀找列，只是没有实体元数据。
+    /// 没有这个成员时返回 null。
     /// </summary>
     public DerivedBinding? Nested(string memberName)
     {
-        if (nestedEntities?.GetValueOrDefault(memberName) is not { } nested) return null;
         var prefix = memberName + ".";
         var columns = memberColumns.Where(kv => kv.Key.StartsWith(prefix, StringComparison.Ordinal))
             .ToDictionary(kv => kv.Key[prefix.Length..], kv => kv.Value, StringComparer.Ordinal);
-        return new DerivedBinding(table, columns, nested);
+        return columns.Count == 0 ? null : new DerivedBinding(table, columns, nestedEntities?.GetValueOrDefault(memberName));
     }
 
     /// <summary>内层投影里嵌着的整个实体：成员名 → 实体元数据。</summary>

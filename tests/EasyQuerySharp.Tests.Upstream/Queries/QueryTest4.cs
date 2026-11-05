@@ -58,7 +58,25 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
         Assert.Equal(("12345", 45655), (read.Title2[1].Name, read.Title2[1].Age!.Value));
     }
 
-    [Fact, Upstream("QueryTest4.java#testSQLFunc1"), Upstream("QueryTest4.java#testSQLFunc2"), Upstream("QueryTest4.java#testSQLFunc2_2")]
+    [SqlFunction("FIND_IN_SET({0},{1})")]
+    private static bool FindInSet(string value, string? set) => throw new InvalidOperationException("只能在查询里使用");
+
+    // Java 的 MySQLProviderImpl.findInSet：C# 用 [SqlFunction] 声明同样的模板函数
+    [Fact, Upstream("QueryTest4.java#testSQLFuncExtension1")]
+    public void TestSQLFuncExtension1() =>
+        Assert.Equal("SELECT IFNULL(t.`id`,?) FROM `t_topic` t WHERE t.`id` = ? AND FIND_IN_SET(?,t.`id`)",
+            Db.Query<Topic>().Where(o => o.Id == "1" && FindInSet("1", o.Id)).Select(o => o.Id ?? "1").ToSql());
+
+    // 第二种写法是原生片段（Java 的 sqlNativeSegment）
+    [Fact, Upstream("QueryTest4.java#testSQLFuncExtension2")]
+    public void TestSQLFuncExtension2()
+    {
+        const string expected = "SELECT t.`id` FROM `t_topic` t WHERE t.`id` = ? AND FIND_IN_SET(?,t.`id`)";
+        Assert.Equal(expected, Db.Query<Topic>().Where(o => o.Id == "1" && FindInSet("1", o.Id)).Select(o => o.Id).ToSql());
+        Assert.Equal(expected, Db.Query<Topic>().Where(o => o.Id == "1" && Sql.Raw<bool>("FIND_IN_SET({0},{1})", "1", o.Id)).Select(o => o.Id).ToSql());
+    }
+
+    [Fact, Upstream("QueryTest4.java#testSQLFunc1"),Upstream("QueryTest4.java#testSQLFunc2"), Upstream("QueryTest4.java#testSQLFunc2_2")]
     public void TestSQLFunc1() =>
         Assert.Equal("SELECT IFNULL(t.`id`,?) FROM `t_topic` t WHERE t.`id` = ?", Db.Query<Topic>().Where(o => o.Id == "1").Select(o => o.Id ?? "1").ToSql());
 

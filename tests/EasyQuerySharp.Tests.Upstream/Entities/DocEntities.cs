@@ -119,3 +119,58 @@ public class UserBook
 
     public decimal? Price { get; set; }
 }
+
+/// <summary>对应 Java：doc/DocBlog（表 t_blog 的另一套列，与库里的表结构不一致，只为拿到出错的 SQL）。</summary>
+[Table("t_blog")]
+public class DocBlog
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Title { get; set; }
+
+    public string? Topic { get; set; }
+
+    public string? Url { get; set; }
+
+    public int? Star { get; set; }
+
+    public DateTime? PublishTime { get; set; }
+
+    public decimal? Score { get; set; }
+
+    public int? Status { get; set; }
+}
+
+/// <summary>对应 Java：doc/TestSelf（自关联的上级，库里没有这张表）。</summary>
+[Table("test_self")]
+public class TestSelf
+{
+    public string? Id { get; set; }
+
+    public string? Pid { get; set; }
+
+    public string? Uid { get; set; }
+
+    public string? Name { get; set; }
+
+    [Navigate(RelationType.ManyToOne, SelfProperties = [nameof(Pid)], TargetProperties = [nameof(Id)])]
+    public TestSelf? Parent { get; set; }
+
+    [Navigate(RelationType.ManyToOne, SelfProperties = [nameof(Uid)])]
+    public MyUser? MyUser { get; set; }
+}
+
+/// <summary>对应 Java：doc/TopicSelfVO（两列沿导航平铺，Java 的 @NavigateJoin 写成 JOIN）。</summary>
+public class TopicSelfVO
+{
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    [MapPath("MyUser.Name")]
+    public string? Uname1 { get; set; }
+
+    [MapPath("Parent.MyUser.Name")]
+    public string? Uname2 { get; set; }
+}

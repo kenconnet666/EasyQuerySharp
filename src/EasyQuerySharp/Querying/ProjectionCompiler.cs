@@ -88,7 +88,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     private Expression Shape(Expression body, MemberInfo? member, bool topLevel)
     {
         if (translator.BindingOf(body) is { } binding)
-            return binding is DerivedBinding { Entity: null } dto ? ShapeDerivedDto(dto, body.Type, topLevel) : ShapeEntity(binding, body.Type, topLevel, member);
+            return binding is DerivedBinding { Entity: null } dto ? ShapeDerivedDto(dto, body.Type, topLevel, member) : ShapeEntity(binding, body.Type, topLevel, member);
 
         switch (body)
         {
@@ -298,12 +298,14 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     /// <summary>
     /// 派生表里的 DTO 整体再投影（投影之后再排序 / 计数时外层的 SELECT）：每个成员一列，内层写了别名的成员外层也写
     /// （Java 版的写法 <c>t1.`id` AS `id`</c>）；按无参构造 + 属性赋值，或按参数名匹配的构造函数（record / 匿名类型）重建。
+    /// 嵌在外层 DTO 里时（<c>new Part&lt;Dto, long&gt;(o, …)</c> 的 <c>o</c>），成员列以 <c>成员.列</c> 登记，外层仍能经 <c>p.Entity.X</c> 找列。
     /// </summary>
-    private Expression ShapeDerivedDto(DerivedBinding binding, Type type, bool topLevel)
+    private Expression ShapeDerivedDto(DerivedBinding binding, Type type, bool topLevel, MemberInfo? member = null)
     {
         var ordinals = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var (memberName, column) in binding.MemberColumns)
-            ordinals[memberName] = AddColumn(new ColumnExpr(binding.Table, column), column, topLevel ? memberName : null, forceAlias: binding.AliasedMembers.Contains(memberName));
+            ordinals[memberName] = AddColumn(new ColumnExpr(binding.Table, column), column,
+                topLevel ? memberName : member is null ? null : member.Name + "." + memberName, forceAlias: binding.AliasedMembers.Contains(memberName));
         if (topLevel)
             foreach (var (name, nested) in binding.NestedEntities) NestedEntities[name] = nested;
         // 内层投影是一个值：直接读这一列
@@ -313,8 +315,14 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
 
         Expression Read(string memberName, Type valueType) =>
             binding.NestedEntities.TryGetValue(memberName, out var nested) ? ReadNested(memberName, nested, valueType)
-            : Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(valueType), _reader,
-                Expression.Constant(ordinals[memberName]), Expression.Constant(null, typeof(IValueConverter)));
+            : ordinals.TryGetValue(memberName, out var ordinal)
+                ? Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(valueType), _reader, Expression.Constant(ordinal), Expression.Constant(null, typeof(IValueConverter)))
+                : Construct(valueType, memberName + ".");
+
+        // 成员是否有值：本身一列、嵌着的实体，或嵌着的 DTO（以 成员. 开头的列）
+        bool Has(string memberName, string prefix) =>
+            ordinals.ContainsKey(prefix + memberName) || binding.NestedEntities.ContainsKey(prefix + memberName)
+            || ordinals.Keys.Any(k => k.StartsWith(prefix + memberName + ".", StringComparison.OrdinalIgnoreCase));
 
         // 嵌着的实体：它的列登记顺序与元数据一致且连续，从第一列开始整体物化
         Expression ReadNested(string memberName, EntityMetadata nested, Type valueType)
@@ -332,16 +340,22 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
             return Expression.ListInit(Expression.New(type),
                 binding.MemberColumns.Keys.Select(k => Expression.ElementInit(type.GetMethod("Add")!, Expression.Constant(k), Read(k, typeof(object)))));
 
-        var ctor = type.GetConstructor(Type.EmptyTypes);
-        if (ctor is not null)
+        return Construct(type, "");
+
+        // 按 prefix 下的成员重建 DTO：无参构造 + 属性赋值，或按参数名匹配的构造函数
+        Expression Construct(Type target, string prefix)
         {
-            var bindings = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(p => p.CanWrite && (ordinals.ContainsKey(p.Name) || binding.NestedEntities.ContainsKey(p.Name)))
-                .Select(p => (MemberBinding)Expression.Bind(p, Read(p.Name, p.PropertyType)));
-            return Expression.MemberInit(Expression.New(ctor), bindings);
+            var ctor = target.GetConstructor(Type.EmptyTypes);
+            if (ctor is not null)
+            {
+                var bindings = target.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(p => p.CanWrite && Has(p.Name, prefix))
+                    .Select(p => (MemberBinding)Expression.Bind(p, Read(prefix + p.Name, p.PropertyType)));
+                return Expression.MemberInit(Expression.New(ctor), bindings);
+            }
+            var parameterized = target.GetConstructors().OrderByDescending(c => c.GetParameters().Length).First();
+            return Expression.New(parameterized, parameterized.GetParameters().Select(p => Read(prefix + p.Name!, p.ParameterType)));
         }
-        var parameterized = type.GetConstructors().OrderByDescending(c => c.GetParameters().Length).First();
-        return Expression.New(parameterized, parameterized.GetParameters().Select(p => Read(p.Name!, p.ParameterType)));
     }
 
     private static readonly MethodInfo ReadMapMethod = typeof(EntityMaterializer).GetMethod(nameof(EntityMaterializer.ReadDictionary), [typeof(DbDataReader)])!;
