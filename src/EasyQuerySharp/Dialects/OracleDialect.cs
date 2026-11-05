@@ -32,6 +32,17 @@ public class OracleDialect : SqlDialect
     /// <inheritdoc />
     public override string ParameterPlaceholder(int index) => ":p" + index;
 
+    /// <summary>自增键用 <c>RETURNING "id" INTO :p</c> 写进输出参数（Oracle 的 RETURNING 必须带 INTO）。</summary>
+    public override void WriteInsertReturning(SqlRenderer renderer, IReadOnlyList<SqlExpr> returning)
+    {
+        renderer.Append(" RETURNING ").WriteList(returning, ",").Append(" INTO ");
+        for (var i = 0; i < returning.Count; i++)
+        {
+            if (i > 0) renderer.Append(",");
+            renderer.WriteOutputParameter(((ColumnExpr)returning[i]).Column?.ClrType ?? typeof(long));
+        }
+    }
+
     /// <inheritdoc />
     public override string RecursiveWith => "WITH ";
 

@@ -100,6 +100,14 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
         object? value = null;
         await RunAsync(statement, async command =>
         {
+            // 带输出参数的语句（Oracle 的 RETURNING … INTO）：执行后读输出参数
+            var output = statement.Parameters.ToList().FindIndex(p => p.IsOutput);
+            if (output >= 0)
+            {
+                var rows = await command.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+                value = command.Parameters[output].Value;
+                return rows;
+            }
             value = await command.ExecuteScalarAsync(ct).ConfigureAwait(false);
             return value is null ? 0 : 1;
         }).ConfigureAwait(false);
@@ -182,6 +190,16 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
             throw new InvalidOperationException($"FOR UPDATE 查询需要在事务里执行，请先调用 db.BeginTransaction()：{statement.Text}");
     }
 
+    // 输出参数的驱动类型：只用于读回生成的键
+    private static System.Data.DbType OutputDbType(Type clrType) => (Nullable.GetUnderlyingType(clrType) ?? clrType) switch
+    {
+        var t when t == typeof(int) => System.Data.DbType.Int32,
+        var t when t == typeof(long) => System.Data.DbType.Int64,
+        var t when t == typeof(decimal) => System.Data.DbType.Decimal,
+        var t when t == typeof(Guid) => System.Data.DbType.Guid,
+        _ => System.Data.DbType.String,
+    };
+
     private DbCommand CreateCommand(SqlStatement statement)
     {
         var command = connection.CreateCommand();
@@ -191,7 +209,13 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
         {
             var p = command.CreateParameter();
             p.ParameterName = db.Options.Dialect.ParameterName(i);
-            p.Value = statement.Parameters[i].Value ?? DBNull.Value;
+            var parameter = statement.Parameters[i];
+            if (parameter.IsOutput)
+            {
+                p.Direction = System.Data.ParameterDirection.Output;
+                p.DbType = OutputDbType(parameter.ClrType);
+            }
+            else p.Value = parameter.Value ?? DBNull.Value;
             command.Parameters.Add(p);
         }
         return command;

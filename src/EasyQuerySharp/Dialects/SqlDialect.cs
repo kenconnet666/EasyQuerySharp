@@ -92,6 +92,15 @@ public abstract class SqlDialect
     /// </summary>
     public virtual (string Before, string After)? ParameterWrap(string? columnDbType) => null;
 
+    /// <summary>插入后读回生成列：写在列清单与 VALUES 之间的部分（SQL Server 的 <c>OUTPUT INSERTED.[id]</c>）；默认不写。</summary>
+    public virtual void WriteInsertOutput(SqlRenderer renderer, IReadOnlyList<SqlExpr> returning)
+    {
+    }
+
+    /// <summary>插入后读回生成列：写在语句末尾的部分，默认 <c>RETURNING a,b</c>（PG、SQLite）。</summary>
+    public virtual void WriteInsertReturning(SqlRenderer renderer, IReadOnlyList<SqlExpr> returning) =>
+        renderer.Append(" RETURNING ").WriteList(returning, ",");
+
     /// <summary>写 GROUP BY 之后的键。默认是标准写法 <c>ROLLUP(a,b)</c> / <c>CUBE(a,b)</c>；不支持的方言覆盖成抛出 <see cref="NotSupportedException"/>。</summary>
     public virtual void WriteGroupBy(SqlRenderer renderer, IReadOnlyList<SqlExpr> keys, GroupByMode mode)
     {

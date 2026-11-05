@@ -2,7 +2,8 @@
 # 而 require-dbs 列出的数据库连不上时判失败，防止服务容器没起来时测试被静默跳过。
 #
 # 分工（见 docs/decisions/0003-testing-and-parity.md）：
-#   core      SQLite + MySQL 8.4 + PostgreSQL 17：本地也必测的三个库，跑整个解决方案（L1–L4 全部测试）
+#   core      SQLite + MySQL 8.4 + PostgreSQL 17：本地也必测的三个库，按测试项目 / 命名空间拆成并行的几片
+#   checks    对照表与文档卡片快照，不连库
 #   其余任务  只跑实库测试项目，每个任务一种数据库；本地按需用 infra/dev 的 profile 复现
 # 镜像版本与 digest 和 infra/dev/compose.yaml 保持一致。密码只用于 CI 里的临时容器。
 name: CI
@@ -29,10 +30,24 @@ env:
   LIVE_TESTS: tests/EasyQuerySharp.Tests.Live
 
 jobs:
+  # 本地也必测的三个库（SQLite、MySQL 8.4、PG 17）：用例最多的 Upstream 项目按命名空间拆成两片并行，其余测试项目一个任务
   core:
-    name: core (SQLite, MySQL 8.4, PG 17)
+    name: core ${{ matrix.shard.name }} (SQLite, MySQL 8.4, PG 17)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - name: live + generator
+            project: tests/EasyQuerySharp.Tests.Live tests/EasyQuerySharp.Tests.Generator
+            filter: ''
+          - name: upstream queries
+            project: tests/EasyQuerySharp.Tests.Upstream
+            filter: --filter-namespace "EasyQuerySharp.Tests.Upstream.Queries"
+          - name: upstream rest
+            project: tests/EasyQuerySharp.Tests.Upstream
+            filter: --filter-not-namespace "EasyQuerySharp.Tests.Upstream.Queries"
     services:
       mysql:
         image: mysql:8.4.11@sha256:1f8411cc085d2f2f92060fca926746cbf97f87b76c3008e9741ad62e604c4ffa
@@ -60,7 +75,22 @@ jobs:
       - uses: ./.github/actions/dotnet-test
         with:
           require-dbs: sqlite,mysql,pg
-          report-name: test-results-core
+          project: ${{ matrix.shard.project }}
+          filter: ${{ matrix.shard.filter }}
+          report-name: test-results-core-${{ strategy.job-index }}
+
+  # 不连库的检查：对照表与文档卡片
+  checks:
+    name: checks (parity, docs examples)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Build
+        run: dotnet build -c Release
       # 对照表必须是最新的，[Upstream] 不能引用不存在或重复的 Java 用例（CI 上没有 Java 仓库，读提交的用例快照）
       - name: Parity check
         run: dotnet run --project tools/ParityTests -c Release --no-build -- --check

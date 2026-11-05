@@ -29,6 +29,8 @@ public static class ValueReader
         var target = Nullable.GetUnderlyingType(type) ?? type;
         if (target.IsInstanceOfType(value)) return value;
         var ci = CultureInfo.InvariantCulture;
+        // 驱动自己的数值类型（如 ODP.NET 输出参数的 OracleDecimal）没有实现 IConvertible：先转成不变区域的文本
+        if ((target.IsPrimitive || target == typeof(decimal)) && value is not IConvertible) value = Convert.ToString(value, ci)!;
 
         if (target.IsEnum)
             return value is string s ? Enum.Parse(target, s, ignoreCase: true) : Enum.ToObject(target, Convert.ToInt64(value, ci));

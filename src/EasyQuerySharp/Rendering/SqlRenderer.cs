@@ -55,14 +55,16 @@ public sealed class SqlRenderer
             if (i > 0) r.Append(",");
             r.Append(dialect.QuoteIdentifier(insert.Columns[i].Name));
         }
-        r.Append(") VALUES ");
+        r.Append(")");
+        if (insert.Returning.Count > 0) dialect.WriteInsertOutput(r, insert.Returning);
+        r.Append(" VALUES ");
         for (var row = 0; row < insert.Rows.Count; row++)
         {
             if (row > 0) r.Append(",");
             r.Append("(").WriteList(insert.Rows[row], ",").Append(")");
         }
         if (insert.Conflict is { } conflict) dialect.WriteInsertConflict(r, conflict);
-        if (insert.Returning.Count > 0) r.Append(" RETURNING ").WriteList(insert.Returning, ",");
+        if (insert.Returning.Count > 0) dialect.WriteInsertReturning(r, insert.Returning);
         return r.Build();
     }
 
@@ -254,6 +256,16 @@ public sealed class SqlRenderer
     private SqlRenderer WriteTableName(EntityTableSource e) => Append(QualifiedName(e));
 
     private string QualifiedName(EntityTableSource e) => Dialect.QualifiedName(e.Schema, e.TableName);
+
+    /// <summary>写一个输出参数的占位（执行后读回，如 Oracle 的 <c>RETURNING id INTO :p</c>）。</summary>
+    public SqlRenderer WriteOutputParameter(Type clrType)
+    {
+        var index = _parameters.Count;
+        _parameters.Add(new SqlParameterValue(null, clrType) { IsOutput = true });
+        _command.Append(Dialect.ParameterPlaceholder(index));
+        _text.Append('?');
+        return this;
+    }
 
     private void WriteParameter(ParameterExpr p)
     {

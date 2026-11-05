@@ -22,8 +22,23 @@ public class SqlServerDialect : SqlDialect
     /// <inheritdoc />
     public override string RecursiveWith => "WITH ";
 
+    /// <summary>
+    /// 自增键用 <c>OUTPUT INSERTED.[id]</c> 随插入一起返回（单独再查 <c>SCOPE_IDENTITY()</c> 不在同一个作用域，拿到的是 NULL）。
+    /// </summary>
+    public override void WriteInsertOutput(SqlRenderer renderer, IReadOnlyList<SqlExpr> returning)
+    {
+        renderer.Append(" OUTPUT ");
+        for (var i = 0; i < returning.Count; i++)
+        {
+            if (i > 0) renderer.Append(",");
+            renderer.Append("INSERTED." + QuoteIdentifier(((ColumnExpr)returning[i]).Name));
+        }
+    }
+
     /// <inheritdoc />
-    public override string? LastInsertIdQuery => "SELECT SCOPE_IDENTITY()";
+    public override void WriteInsertReturning(SqlRenderer renderer, IReadOnlyList<SqlExpr> returning)
+    {
+    }
 
     /// <summary>没有 <c>CREATE TABLE IF NOT EXISTS</c>，用 <c>IF OBJECT_ID(…) IS NULL</c> 判断。</summary>
     protected override string CreateTableStatement(Metadata.EntityMetadata entity, string body) =>
