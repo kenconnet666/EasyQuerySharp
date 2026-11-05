@@ -17,7 +17,7 @@ namespace EasyQuerySharp.Querying;
 /// </list>
 /// 列别名规则与 Java 版的 DTO 映射一致：别名是成员名按命名约定转换后的列名，与源列同名时省略 AS。
 /// </summary>
-internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameConversion naming, bool alwaysAlias = false, bool neverAlias = false, bool aliasScalar = false)
+internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameConversion naming, bool alwaysAlias = false, bool neverAlias = false, bool aliasScalar = false, bool uniqueNames = false)
 {
     private readonly ParameterExpression _reader = Expression.Parameter(typeof(DbDataReader), "reader");
     private readonly List<SelectColumn> _columns = [];
@@ -447,11 +447,20 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         var columnName = (sql as ColumnExpr)?.Name;
         forceAlias |= sql is ColumnExpr { KeepAlias: true };
         if (neverAlias || (alias == columnName && !forceAlias && (!alwaysAlias || plainColumn))) alias = null;
+        // 要包成派生表时输出列名不能重复（外层按名字取列）：重名的改用 名字1、名字2 …
+        if (uniqueNames && (alias ?? columnName) is { } name && _columns.Any(c => OutputName(c) == name))
+        {
+            var n = 1;
+            while (_columns.Any(c => OutputName(c) == name + n)) n++;
+            alias = name + n;
+        }
         _columns.Add(new SelectColumn(sql, alias));
         if (memberName is not null && (alias ?? columnName) is { } output) MemberColumns.TryAdd(memberName, output);
         if (memberName is not null && alias is not null) AliasedMembers.Add(memberName);
         return _columns.Count - 1;
     }
+
+    private static string? OutputName(SelectColumn column) => column.Alias ?? (column.Expr as ColumnExpr)?.Name;
 
     // new 表达式各参数对应的目标成员：匿名类型直接给出；record 主构造函数按参数名找同名属性（忽略大小写）
     private static MemberInfo?[] TargetMembers(NewExpression n)

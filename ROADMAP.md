@@ -156,7 +156,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [x] 3.4 `Union` / `UnionAll`，CTE：`AsCte(name)`，递归 CTE（树查询 `AsTreeCte`）。
 - [x] 3.5 流式读取 `ToAsyncEnumerable()`，无实体查询 `db.SqlQueryAsync<Dictionary<..>>`、`QuerySql<Dictionary<..>>(sql, params)` 与 `ToDictionariesAsync`。
   - [x] Java 的 Map 查询构造器（`mapQueryable()` / `queryable(Map.class).asTable(..)` / `queryable("表名")`）：`db.Table(..)` + `DynamicRow.Get<T>(..)`，复用同一条查询管线。
-- [ ] 3.6 LINQ 查询语法（`from … join … group … select`）的支持测试。
+- [x] 3.6 LINQ 查询语法（`from … where … orderby … join … group … select`）：与方法链生成同样的 SQL（`Extras/QuerySyntaxTest`）；`join … equals …` 支持单值与匿名类型复合键，连续多个 join 的透明标识符不支持（用 `InnerJoin`）。
 
 ## M4 导航与对象树（[0002](docs/decisions/0002-object-tree-and-dto.md)）
 

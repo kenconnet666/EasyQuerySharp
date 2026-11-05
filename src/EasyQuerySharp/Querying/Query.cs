@@ -216,6 +216,24 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     /// <summary>RIGHT JOIN 实体 <typeparamref name="T2"/>。</summary>
     public Query<T, T2> RightJoin<T2>(Expression<Func<T, T2, bool>> on) => Join<T2>(JoinKind.Right, new EntitySource(typeof(T2)), on);
 
+    /// <summary>
+    /// LINQ 查询语法的 <c>join … in … on … equals …</c>：INNER JOIN 后投影。两边的键可以是单个值，或成员一一对应的匿名类型（复合键）。
+    /// 一般写法用 <see cref="InnerJoin{T2}(Expression{Func{T, T2, bool}})"/> 更直接；连续多个 join 的查询语法（透明标识符）不支持。
+    /// </summary>
+    public Query<TResult> Join<TInner, TKey, TResult>(Query<TInner> inner, Expression<Func<T, TKey>> outerKey, Expression<Func<TInner, TKey>> innerKey,
+        Expression<Func<T, TInner, TResult>> resultSelector)
+    {
+        var outer = outerKey.Parameters[0];
+        var innerParameter = innerKey.Parameters[0];
+        var left = outerKey.Body;
+        var right = innerKey.Body;
+        // 复合键：new { a, b } equals new { c, d } 按成员逐一相等
+        var equal = left is NewExpression { Arguments: var ls } && right is NewExpression { Arguments: var rs } && ls.Count == rs.Count
+            ? ls.Select((l, i) => (Expression)Expression.Equal(l, rs[i])).Aggregate(Expression.AndAlso)
+            : Expression.Equal(left, right);
+        return InnerJoin(inner, Expression.Lambda<Func<T, TInner, bool>>(equal, outer, innerParameter)).Select(resultSelector);
+    }
+
     /// <summary>CROSS JOIN 实体 <typeparamref name="T2"/>，带 ON 条件（对应 Java 的 crossJoin；MySQL 上等同 INNER JOIN）。</summary>
     public Query<T, T2> CrossJoin<T2>(Expression<Func<T, T2, bool>> on) => Join<T2>(JoinKind.Cross, new EntitySource(typeof(T2)), on);
 

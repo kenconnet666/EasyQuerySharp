@@ -106,6 +106,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>投影是单个非列的值（如 <c>Sql.Max(..)</c>）时写别名 <c>value</c>：<c>AsSubQuery()</c> 包成派生表后外层要按名字引用。</summary>
     public bool AliasScalar { get; init; }
 
+    /// <summary>投影会被包成派生表、外层按列名引用（<see cref="Wrap"/> 设置）：列名重复时（如 <c>new { t, b }</c> 两个实体都有 id）后出现的写别名。</summary>
+    public bool UniqueColumnNames { get; init; }
+
     /// <summary>投影之后加的条件尽量推进派生表内层（见 <see cref="SmartPredicates"/>，对应 Java 的 SMART_PREDICATE）。</summary>
     public bool SmartPredicate { get; init; }
 
@@ -176,7 +179,7 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
             : GroupJoinAll || member.GetCustomAttributes(typeof(Metadata.NavigateAttribute), true) is [Metadata.NavigateAttribute { GroupJoin: true }];
 
     /// <summary>投影之后再加条件、排序、连接时，把当前查询包成派生表，在外层继续（与 Java 版的 select 之后再 where 一致）。行锁跟到外层：锁只写在最外层查询上。</summary>
-    public QueryState Wrap() => new(Db, [new SubQuerySource(this with { Fills = [], Lock = RowLock.None })])
+    public QueryState Wrap() => new(Db, [new SubQuerySource(this with { Fills = [], Lock = RowLock.None, UniqueColumnNames = true })])
     {
         ValueFilter = ValueFilter, NavigationValueFilter = NavigationValueFilter, Fills = Fills, Lock = Lock,
         // 分组合并的设置跟到外层：投影包一层后，外层投影里的导航仍按同样的方式合并
