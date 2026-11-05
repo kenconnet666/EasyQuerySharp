@@ -39,3 +39,15 @@ public sealed class DefaultSafeAesEasyEncryptionStrategy : AesBase64EncryptionSt
 
     protected override bool SupportEmoji => true;
 }
+
+/// <summary>对应 Java：conversion/MySQLAesEncryptColumnValueSQLConverter（库端 AES 加解密，密钥作为参数）。</summary>
+public sealed class MySqlAesEncryptConversion : Metadata.ColumnSqlConversion
+{
+    public const string Secret = "1234567890123456";
+
+    public override string Read => "AES_DECRYPT(from_base64({0}),{1})";
+
+    public override string Write => "to_base64(AES_ENCRYPT({0},{1}))";
+
+    public override IReadOnlyList<object?> Arguments => [Secret];
+}

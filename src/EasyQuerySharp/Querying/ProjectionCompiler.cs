@@ -282,6 +282,12 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
                 continue;
             }
             var sql = binding is DerivedBinding db ? new ColumnExpr(db.Table, db.MemberColumns[c.PropertyName], c) : ((EntityBinding)binding).EntityTable.Column(c);
+            // 列有 SQL 读写转换：查询时套上读取模板，别名仍是列名（Java 的 selectColumnConvert）
+            if (binding is EntityBinding && c.SqlConversion is { } conversion)
+            {
+                AddColumn(conversion.ReadOf(sql), c.Name, topLevel ? c.PropertyName : member is null ? null : member.Name + "." + c.PropertyName, forceAlias: true);
+                continue;
+            }
             // 派生表里写了别名的列（如带出分区取段后的派生表）外层照写 AS（与 Java 一致）
             var keepAlias = binding is DerivedBinding { AliasedMembers: var aliased } && aliased.Contains(c.PropertyName);
             AddColumn(sql, keepAlias ? ((ColumnExpr)sql).Name : null, topLevel ? c.PropertyName : member is null ? null : member.Name + "." + c.PropertyName, forceAlias: keepAlias);
@@ -417,10 +423,17 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     {
         var sql = ExpressionTranslator.AsValue(translator.Translate(body));
         var converter = (sql as ColumnExpr)?.Column?.Converter;
+        // 实体表上有 SQL 读写转换的列：套上读取模板，没有别名时以列名为别名
+        string? conversionAlias = null;
+        if (sql is ColumnExpr { Table: EntityTableSource, Column.SqlConversion: { } conversion } converted)
+        {
+            conversionAlias = converted.Name;
+            sql = conversion.ReadOf(sql);
+        }
         // 分组投影里的组内列（g.Column(..)）按普通列处理：同名不写 AS（Java 的 groupTable() 列）
         var groupColumn = ExpressionTranslator.StripConvert(body) is MethodCallExpression { Method.Name: nameof(IGroup<object, object>.Column) } call
                           && ExpressionTranslator.IsGroupType(call.Method.DeclaringType!);
-        var ordinal = AddColumn(sql, member is null ? null : ColumnName(member), member?.Name ?? (topLevel ? ScalarMember : null), plainColumn: groupColumn);
+        var ordinal = AddColumn(sql, member is null ? conversionAlias : ColumnName(member), member?.Name ?? (topLevel ? ScalarMember : null), plainColumn: groupColumn);
         return Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(body.Type), _reader, Expression.Constant(ordinal),
             Expression.Constant(converter, typeof(IValueConverter)));
     }

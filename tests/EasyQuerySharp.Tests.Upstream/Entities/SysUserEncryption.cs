@@ -24,3 +24,22 @@ public class SysUserEncryption
     [Encryption(typeof(MyEncryptionStrategy), SupportQueryLike = true)]
     public string? AddressSupportLike { get; set; }
 }
+
+/// <summary>对应 Java：entity/SysUserSQLEncryption（手机号在库端加解密）。</summary>
+[Table("t_sys_user_sql_encryption")]
+public class SysUserSQLEncryption
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Username { get; set; }
+
+    [Column(SqlConversion = typeof(MySqlAesEncryptConversion))]
+    public string? Phone { get; set; }
+
+    public string? IdCard { get; set; }
+
+    public string? Address { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+}

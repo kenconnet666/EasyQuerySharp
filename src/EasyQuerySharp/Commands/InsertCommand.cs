@@ -140,7 +140,7 @@ public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> wh
             if (_strategy == ColumnStrategy.OnlyNotNull && value is null) continue;
             if (_strategy == ColumnStrategy.OnlyNull && value is not null) continue;
             var target = table.Column(column);
-            SqlExpr parameter = ExpressionTranslator.Parameter(column, value);
+            var parameter = ExpressionTranslator.WriteValue(column, value);
             if (_columnSql.TryGetValue(column.PropertyName, out var template)) parameter = new FragmentExpr(template, [target, parameter]);
             written.Add(column);
             columns.Add(target);

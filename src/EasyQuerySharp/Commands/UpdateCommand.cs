@@ -219,7 +219,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
             if (_strategy == ColumnStrategy.OnlyNotNull && value is null) continue;
             if (_strategy == ColumnStrategy.OnlyNull && value is not null) continue;
             var target = table.Column(column);
-            SqlExpr parameter = ExpressionTranslator.Parameter(column, value);
+            var parameter = ExpressionTranslator.WriteValue(column, value);
             if (_columnSql.TryGetValue(column.PropertyName, out var template)) parameter = new FragmentExpr(template, [target, parameter]);
             update.Sets.Add((target, parameter));
         }
@@ -241,7 +241,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
             var value = tracked is not null ? tracked.Original[c] : c.GetProviderValue(entity);
             return value is null
                 ? (SqlExpr)new IsNullExpr(table.Column(c), false)
-                : new BinaryExpr(table.Column(c), SqlBinaryOperator.Equal, ExpressionTranslator.Parameter(c, value));
+                : new BinaryExpr(table.Column(c), SqlBinaryOperator.Equal, ExpressionTranslator.WriteValue(c, value));
         }).ToList();
     }
 

@@ -57,6 +57,9 @@ public sealed class ColumnMetadata
     /// <summary>值转换器；没有时为 null。</summary>
     public IValueConverter? Converter { get; internal init; }
 
+    /// <summary>列在 SQL 里的读写转换；没有时为 null。见 <see cref="ColumnSqlConversion"/>。</summary>
+    public ColumnSqlConversion? SqlConversion { get; internal init; }
+
     /// <summary>code-first 用的数据库类型（显式声明时）。</summary>
     public string? DbType { get; internal init; }
 

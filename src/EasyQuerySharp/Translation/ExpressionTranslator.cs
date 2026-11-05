@@ -299,11 +299,23 @@ internal sealed partial class ExpressionTranslator
         return (ApplyConverter(left, right), ApplyConverter(right, left));
     }
 
-    /// <summary>若 <paramref name="other"/> 是带转换器的列，把参数 <paramref name="value"/> 转成数据库值。</summary>
-    internal static SqlExpr ApplyConverter(SqlExpr value, SqlExpr other) =>
-        value is ParameterExpr p && other is ColumnExpr { Column.Converter: { } converter }
-            ? new ParameterExpr(converter.ToProvider(p.Value), converter.ProviderType)
-            : value;
+    /// <summary>
+    /// 若 <paramref name="other"/> 是带转换器的列，把参数 <paramref name="value"/> 转成数据库值；列有 SQL 读写转换时值再套上写入模板
+    /// （条件里与列比较、更新的 SET 值，与 Java 的 valueConvert 一致）。
+    /// </summary>
+    internal static SqlExpr ApplyConverter(SqlExpr value, SqlExpr other)
+    {
+        if (value is not ParameterExpr p || other is not ColumnExpr { Column: { } column }) return value;
+        SqlExpr converted = column.Converter is { } converter ? new ParameterExpr(converter.ToProvider(p.Value), converter.ProviderType) : p;
+        return column.SqlConversion?.WriteOf(converted) ?? converted;
+    }
+
+    /// <summary>写入某列的值（插入、按实体更新、按列定位）：参数，列有 SQL 读写转换时套上写入模板。</summary>
+    internal static SqlExpr WriteValue(ColumnMetadata column, object? providerValue)
+    {
+        var parameter = Parameter(column, providerValue);
+        return column.SqlConversion?.WriteOf(parameter) ?? parameter;
+    }
 
     private static bool IsNullValue(Expression e) =>
         (!e.Type.IsValueType || Nullable.GetUnderlyingType(e.Type) is not null)

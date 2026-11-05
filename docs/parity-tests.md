@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1600、偏离 194、不适用 73、骨架 7、待做 530。
+合计：已移植 1607、偏离 194、不适用 73、骨架 7、待做 523。
 
 ## 按能力
 
@@ -14,8 +14,8 @@
 | 分页结果 | `query.page` | M1 | 22 | 18 | 2 | 0 | 0 | 2 |
 | 原生 SQL | `sql.native` | M1 | 50 | 38 | 7 | 1 | 0 | 4 |
 | 删除 | `write.delete` | M1 | 25 | 13 | 1 | 10 | 0 | 1 |
-| 插入 | `write.insert` | M1 | 50 | 36 | 0 | 0 | 1 | 13 |
-| 更新 | `write.update` | M1 | 59 | 38 | 4 | 8 | 0 | 9 |
+| 插入 | `write.insert` | M1 | 50 | 39 | 0 | 0 | 1 | 10 |
+| 更新 | `write.update` | M1 | 59 | 42 | 4 | 8 | 0 | 5 |
 | CASE WHEN | `expr.case` | M2 | 27 | 19 | 6 | 0 | 0 | 2 |
 | 日期函数 | `func.date` | M2 | 101 | 77 | 13 | 7 | 0 | 4 |
 | 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 55 | 3 | 0 | 0 | 1 |
@@ -644,9 +644,9 @@
 | InsertTest.java#incrementTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:123 | `INSERT INTO 'custom_increment' ('id','name','address') VALUES (mysqlNextId(),?,?)` |
 | InsertTest.java#insertCustom | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:113 | `INSERT INTO 'xxxxx' ('stars') VALUES (?)` |
 | InsertTest.java#insertCustom1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:118 | `INSERT INTO 'xxxxx' ('id','stars') VALUES (sde.next_rowid('sde',?),?)` |
-| InsertTest.java#insertSQLConvert1 | 待做 |  | `INSERT INTO 'xxxxx' ('id','username','phone','id_card','address','create_time') VALUES (?,?,to_base6…` |
-| InsertTest.java#insertSQLConvert2 | 待做 |  |  |
-| InsertTest.java#insertSQLConvert3 | 待做 |  |  |
+| InsertTest.java#insertSQLConvert1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:17 | `INSERT INTO 'xxxxx' ('id','username','phone','id_card','address','create_time') VALUES (?,?,to_base6…` |
+| InsertTest.java#insertSQLConvert2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:23 |  |
+| InsertTest.java#insertSQLConvert3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:32 |  |
 | InsertTest.java#insertTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:21 |  |
 | InsertTest1.java#inertTest1 | 待做 |  | `INSERT INTO 't_topic_abc' ('id','stars','title','create_time') VALUES (?,?,?,?)` |
 | MyTest1.java#testDraft11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:123 | `SELECT timestampdiff(DAY, t.'create_time', t.'update_time') AS 'value1',timestampdiff(HOUR, t.'creat…` |
@@ -728,10 +728,10 @@
 | UpdateTest.java#updateTest19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:176 | `UPDATE 'xxxxx' SET 'stars' = ifnull('stars',0)+?,'title' = ?,'create_time' = ? WHERE 'id' = ?` |
 | UpdateTest.java#updateTest19_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:176 | `UPDATE 'xxxxx' SET 'stars' = ifnull('stars',0)+?,'title' = ?,'create_time' = ? WHERE 'id' = ?` |
 | UpdateTest.java#updateTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:34 |  |
-| UpdateTest.java#updateTest25 | 待做 |  | `UPDATE 'xxxxx' SET 'username' = ?,'phone' = to_base64(AES_ENCRYPT(?,?)),'id_card' = ?,'address' = ?,…` |
-| UpdateTest.java#updateTest25_1 | 待做 |  | `UPDATE 'xxxxx' SET 'username' = ?,'phone' = to_base64(AES_ENCRYPT(?,?)),'id_card' = ?,'address' = ?,…` |
-| UpdateTest.java#updateTest27 | 待做 |  | `UPDATE 'x123' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
-| UpdateTest.java#updateTest27_1 | 待做 |  | `UPDATE 'x123' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
+| UpdateTest.java#updateTest25 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:53 | `UPDATE 'xxxxx' SET 'username' = ?,'phone' = to_base64(AES_ENCRYPT(?,?)),'id_card' = ?,'address' = ?,…` |
+| UpdateTest.java#updateTest25_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:53 | `UPDATE 'xxxxx' SET 'username' = ?,'phone' = to_base64(AES_ENCRYPT(?,?)),'id_card' = ?,'address' = ?,…` |
+| UpdateTest.java#updateTest27 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:58 | `UPDATE 'x123' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
+| UpdateTest.java#updateTest27_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:58 | `UPDATE 'x123' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
 | UpdateTest.java#updateTest29 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:239 | `UPDATE 't_topic' SET 'stars' = ?,'create_time' = ? WHERE 'id' = ?` |
 | UpdateTest.java#updateTest29_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:239 | `UPDATE 't_topic' SET 'stars' = ?,'create_time' = ? WHERE 'id' = ?` |
 | UpdateTest.java#updateTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:38 |  |

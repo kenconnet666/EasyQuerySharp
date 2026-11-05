@@ -109,6 +109,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
                 Computed = computed,
                 UpdateWhenTrackedChanged = property.GetCustomAttribute<UpdateIgnoreAttribute>()?.WhenTrackedChanged ?? false,
                 Converter = CreateConverter(type, property, attr?.Converter),
+                SqlConversion = attr?.SqlConversion is { } conversion ? CreateSqlConversion(conversion, property) : null,
                 DbType = attr?.DbType,
                 Comment = attr?.Comment,
             };
@@ -174,6 +175,11 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
         typeof(IKeyGenerator).IsAssignableFrom(generatorType)
             ? (IKeyGenerator)(Activator.CreateInstance(generatorType) ?? throw new InvalidOperationException($"无法创建主键生成器 {generatorType.Name}"))
             : throw new InvalidOperationException($"{property.DeclaringType?.Name}.{property.Name} 的主键生成器 {generatorType.Name} 没有实现 IKeyGenerator");
+
+    private static ColumnSqlConversion CreateSqlConversion(Type conversionType, PropertyInfo property) =>
+        typeof(ColumnSqlConversion).IsAssignableFrom(conversionType) && Activator.CreateInstance(conversionType) is ColumnSqlConversion conversion
+            ? conversion
+            : throw new InvalidOperationException($"{property.DeclaringType?.Name}.{property.Name} 的 SqlConversion {conversionType.Name} 要继承 ColumnSqlConversion 并有无参构造函数");
 
     // 列的值转换：[Column(Converter = …)] 或 [Encryption(…)]（加密也是一种转换），两者不能同时用
     private static IValueConverter? CreateConverter(Type entityType, PropertyInfo property, Type? converterType)
