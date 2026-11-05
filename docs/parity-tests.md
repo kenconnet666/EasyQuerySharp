@@ -3,14 +3,14 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1339、偏离 155、不适用 34、骨架 15、待做 861。
+合计：已移植 1405、偏离 155、不适用 34、骨架 15、待做 795。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 303 | 33 | 13 | 0 | 86 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 341 | 33 | 13 | 0 | 48 |
 | 分页结果 | `query.page` | M1 | 22 | 17 | 2 | 0 | 0 | 3 |
 | 原生 SQL | `sql.native` | M1 | 50 | 33 | 6 | 1 | 0 | 10 |
 | 删除 | `write.delete` | M1 | 25 | 9 | 1 | 2 | 0 | 13 |
@@ -26,7 +26,7 @@
 | 行锁 | `lock` | M2 | 28 | 21 | 1 | 0 | 0 | 6 |
 | 窗口函数 | `window` | M2 | 44 | 32 | 1 | 1 | 0 | 10 |
 | CTE | `query.cte` | M3 | 11 | 4 | 3 | 0 | 0 | 4 |
-| 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 59 | 2 | 1 | 2 | 19 |
+| 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 68 | 2 | 1 | 2 | 10 |
 | 显式 join | `query.join` | M3 | 88 | 67 | 4 | 1 | 0 | 16 |
 | 无实体的 Map 查询、toMap | `query.map` | M3 | 11 | 2 | 0 | 0 | 0 | 9 |
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 1 | 0 | 0 | 0 | 1 |
@@ -44,7 +44,7 @@
 | 拦截器 | `interceptor` | M5 | 3 | 3 | 0 | 0 | 0 | 0 |
 | 逻辑删除 | `logicDelete` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
 | 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 0 | 0 | 0 | 0 | 39 |
-| 追踪与差异更新 | `tracking` | M5 | 62 | 31 | 15 | 0 | 0 | 16 |
+| 追踪与差异更新 | `tracking` | M5 | 62 | 41 | 15 | 0 | 0 | 6 |
 | 乐观锁版本 | `version` | M5 | 13 | 13 | 0 | 0 | 0 | 0 |
 | UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
 | 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 12 | 6 | 0 | 0 | 8 |
@@ -63,7 +63,7 @@
 | 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 75 | 17 | 0 | 0 | 9 |
 | search 扩展 | `search` | M7 | 45 | 0 | 0 | 0 | 0 | 45 |
 | 分库分表 | `sharding` | M7 | 48 | 0 | 0 | 0 | 0 | 48 |
-| 跨库链接（asTableLink） | `table.link` | M7 | 13 | 0 | 0 | 0 | 0 | 13 |
+| 跨库链接（asTableLink） | `table.link` | M7 | 13 | 9 | 0 | 0 | 0 | 4 |
 | 换表名（asTable / 表名映射） | `table.rename` | M7 | 52 | 14 | 9 | 0 | 0 | 29 |
 | 换 schema（asSchema） | `table.schema` | M7 | 25 | 16 | 2 | 0 | 0 | 7 |
 
@@ -84,44 +84,44 @@
 | DateTimeFunctionsTest.java#dateTimePropMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:52 | `SELECT t.'create_time' AS 'value1',YEAR(t.'create_time') AS 'value2',MONTH(t.'create_time') AS 'valu…` |
 | DirectRelationTest.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:11 | `SELECT t.'c1',t.'c2',t.'c3',t.'c4',t.'c5' FROM 'direct1' t LEFT JOIN 'direct2' t1 ON t1.'c7' = t.'c1…` |
 | DirectRelationTest.java#testJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:17 | `SELECT t3.'c18' AS 'value1' FROM 'direct1' t LEFT JOIN 'direct2' t1 ON t1.'c7' = t.'c1' LEFT JOIN 'd…` |
-| EntityQueryAggregateTest1.java#test1 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest1.java#test2 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest1.java#test3 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest1.java#test4 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest1.java#test5 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest1.java#test6 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest1.java#test7 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest1.java#test8 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest1.java#test9 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id'` |
-| EntityQueryAggregateTest3.java#test1 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest3.java#test10 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t` |
-| EntityQueryAggregateTest3.java#test2 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest3.java#test3 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest3.java#test4 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest3.java#test5 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest3.java#test6 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest3.java#test7 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest3.java#test8 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest3.java#test9 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id'` |
-| EntityQueryAggregateTest4.java#test1 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest4.java#test2 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest4.java#test3 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest4.java#test4 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest4.java#test5 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest4.java#test6 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest4.java#test7 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest4.java#test8 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest4.java#test9 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest7.java#test1 | 待做 |  | `SELECT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' t LEFT JO…` |
-| EntityQueryAggregateTest7.java#test10 | 待做 |  | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
-| EntityQueryAggregateTest7.java#test2 | 待做 |  | `SELECT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' t LEFT JO…` |
-| EntityQueryAggregateTest7.java#test3 | 待做 |  | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
-| EntityQueryAggregateTest7.java#test4 | 待做 |  | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
-| EntityQueryAggregateTest7.java#test5 | 待做 |  | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
-| EntityQueryAggregateTest7.java#test6 | 待做 |  | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
-| EntityQueryAggregateTest7.java#test7 | 待做 |  | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
-| EntityQueryAggregateTest7.java#test8 | 待做 |  | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
-| EntityQueryAggregateTest7.java#test9 | 待做 |  | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
+| EntityQueryAggregateTest1.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:53 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest1.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:72 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest1.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:91 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest1.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:110 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest1.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:129 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest1.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:148 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest1.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:167 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest1.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:186 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest1.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:205 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id'` |
+| EntityQueryAggregateTest3.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:53 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest3.java#test10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:224 | `SELECT SUM(t.'stars') FROM 't_topic' t` |
+| EntityQueryAggregateTest3.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:72 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest3.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:91 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest3.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:110 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest3.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:129 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest3.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:148 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest3.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:167 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest3.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:186 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest3.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:205 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id'` |
+| EntityQueryAggregateTest4.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:11 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest4.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:22 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest4.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:33 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest4.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:44 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest4.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:55 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest4.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:66 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest4.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:77 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest4.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:88 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest4.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:99 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest7.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:110 | `SELECT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' t LEFT JO…` |
+| EntityQueryAggregateTest7.java#test10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:205 | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
+| EntityQueryAggregateTest7.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:119 | `SELECT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' t LEFT JO…` |
+| EntityQueryAggregateTest7.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:128 | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
+| EntityQueryAggregateTest7.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:139 | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
+| EntityQueryAggregateTest7.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:150 | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
+| EntityQueryAggregateTest7.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:161 | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
+| EntityQueryAggregateTest7.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:172 | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
+| EntityQueryAggregateTest7.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:183 | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
+| EntityQueryAggregateTest7.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:194 | `SELECT DISTINCT t.'id' AS 'value1',t.'stars' AS 'value2',t.'create_time' AS 'value3' FROM 't_topic' …` |
 | GeneralFunctionsTest.java#likeOracle | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:68 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?,1,1) > 0` |
 | GeneralFunctionsTest.java#likeOracle2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:76 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?,1,1) = 1` |
 | GeneralFunctionsTest.java#likeOracle3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:84 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?,1,1) = (LENGTH("…` |
@@ -1246,15 +1246,15 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| EntityQueryAggregateTest5.java#test1 | 待做 |  | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest5.java#test2 | 待做 |  | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest5.java#test3 | 待做 |  | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest5.java#test4 | 待做 |  | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest5.java#test5 | 待做 |  | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest5.java#test6 | 待做 |  | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest5.java#test7 | 待做 |  | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest5.java#test8 | 待做 |  | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest5.java#test9 | 待做 |  | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' GROUP BY t.'id',t1…` |
+| EntityQueryAggregateTest5.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:216 | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest5.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:234 | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest5.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:252 | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest5.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:270 | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest5.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:288 | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest5.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:306 | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest5.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:324 | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest5.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:342 | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest5.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:360 | `SELECT t.'id',t1.'id' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' GROUP BY t.'id',t1…` |
 | GeneralFunctionsTest.java#limitOrderTest1 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:228 | `SELECT t1."value1" AS "value1",t1."value2" AS "value2" FROM (SELECT rt1.* FROM (SELECT rt.*, ROWNUM …` |
 | GeneralFunctionsTest.java#limitOrderTest2 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:266 | `SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS "__rownum__" FROM (SELECT t1."value1" AS "value1",t1."valu…` |
 | QueryTest.java#query16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.cs:589 | `SELECT COUNT(1) FROM (SELECT t1.'id' AS 'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN …` |
@@ -1983,16 +1983,16 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| EntityQueryAggregateTest1.java#test10 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t` |
-| EntityQueryAggregateTest6.java#test1 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest6.java#test2 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest6.java#test3 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest6.java#test4 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest6.java#test5 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest6.java#test6 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest6.java#test7 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest6.java#test8 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| EntityQueryAggregateTest6.java#test9 | 待做 |  | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id'` |
+| EntityQueryAggregateTest1.java#test10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:224 | `SELECT SUM(t.'stars') FROM 't_topic' t` |
+| EntityQueryAggregateTest6.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:53 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest6.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:72 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest6.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:91 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest6.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:110 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest6.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:129 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest6.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:148 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest6.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:167 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest6.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:186 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| EntityQueryAggregateTest6.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:205 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id'` |
 | MyTest1.java#testSelect6_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:212 | `SELECT t.'id' AS 'id',COUNT(t1.'id') AS 'id_count' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'del…` |
 | MyTest2.java#testSelect6_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:212 | `SELECT t.'id' AS 'id',COUNT(t1.'id') AS 'id_count' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'del…` |
 | QueryTest.java#query14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.SubQueries.cs:122 |  |
@@ -2657,15 +2657,15 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| EntityQueryAggregateTest2.java#test1 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest2.java#test2 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest2.java#test3 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest2.java#test4 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest2.java#test5 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest2.java#test6 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest2.java#test7 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest2.java#test8 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| EntityQueryAggregateTest2.java#test9 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest2.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:11 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest2.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:22 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest2.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:33 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest2.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:44 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest2.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:55 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest2.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:66 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest2.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:77 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest2.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:88 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| EntityQueryAggregateTest2.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryJoinChainTest.cs:99 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
 | InsertTest.java#insertTableLinkTest1 | 待做 |  | `INSERT INTO 1't_topic_auto' ('stars','title','create_time') VALUES (?,?,?) ON DUPLICATE KEY UPDATE '…` |
 | QueryTest14.java#test2 | 待做 |  | `SELECT rt.* FROM (SELECT t."title" AS "title",COUNT(t."id") AS "star" FROM "t_blog" t WHERE t."delet…` |
 | QueryTest14.java#test3 | 待做 |  | `UPDATE "t_blog" SET "deleted" = ? WHERE "t_blog"."deleted" = ? AND EXISTS(SELECT 1 FROM "t_blog" t1 …` |
