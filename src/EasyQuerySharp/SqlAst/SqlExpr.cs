@@ -258,6 +258,12 @@ public sealed class FragmentExpr(string template, IReadOnlyList<SqlExpr> argumen
 
     /// <summary>片段本身是条件（<c>Sql.Raw&lt;bool&gt;</c>），用在 WHERE 里不再补 <c>= true</c>。</summary>
     public bool IsPredicate { get; } = isPredicate;
+
+    /// <summary>只能用于这个方言（及其子类）的片段，如 <c>Sql.MySql.Json</c>；用在别的方言上时渲染期抛出异常。</summary>
+    public Type? RequiredDialect { get; init; }
+
+    /// <summary>报错时说明的入口名（如 <c>Sql.MySql.Json</c>）。</summary>
+    public string? EntryName { get; init; }
 }
 
 /// <summary><c>CASE WHEN … THEN … ELSE … END</c>。</summary>

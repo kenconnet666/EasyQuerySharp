@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1578、偏离 194、不适用 73、骨架 7、待做 552。
+合计：已移植 1600、偏离 194、不适用 73、骨架 7、待做 530。
 
 ## 按能力
 
@@ -52,7 +52,7 @@
 | ClickHouse 方言 | `dialect.clickhouse` | M6 | 4 | 0 | 0 | 0 | 0 | 4 |
 | 达梦方言 | `dialect.dameng` | M6 | 51 | 0 | 0 | 0 | 0 | 51 |
 | DuckDB 方言 | `dialect.duckdb` | M6 | 16 | 0 | 0 | 0 | 0 | 16 |
-| 方言静态入口与专属函数 | `dialect.functions` | M6 | 25 | 0 | 0 | 0 | 0 | 25 |
+| 方言静态入口与专属函数 | `dialect.functions` | M6 | 25 | 22 | 0 | 0 | 0 | 3 |
 | H2 方言 | `dialect.h2` | M6 | 74 | 0 | 0 | 0 | 0 | 74 |
 | SAP HANA 方言 | `dialect.hana` | M6 | 18 | 0 | 0 | 0 | 0 | 18 |
 | 人大金仓方言 | `dialect.kingbase` | M6 | 2 | 0 | 0 | 0 | 0 | 2 |
@@ -2218,31 +2218,31 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| fork/dialect/DialectEntrySqlTest.java#mysqlFullTextAgainstAndScore | 待做 |  | `SELECT t.'id' AS 'value1',MATCH(t.'name') AGAINST(? IN NATURAL LANGUAGE MODE) AS 'value2' FROM 't_fo…` |
-| fork/dialect/DialectEntrySqlTest.java#mysqlJsonPredicatesInWhere | 待做 |  | `SELECT {…} FROM 't_fork_user' WHERE JSON_CONTAINS('attrs',?,?) AND ? MEMBER OF(JSON_EXTRACT('attrs',…` |
-| fork/dialect/DialectEntrySqlTest.java#mysqlPredicateInsideImplicitSubquery | 待做 |  | `SELECT t.{…} FROM 't_fork_user' t WHERE EXISTS(SELECT 1 FROM 't_fork_post' t1 WHERE t1.'user_id' = t…` |
-| fork/dialect/DialectEntrySqlTest.java#mysqlPredicateRespectsOrGroup | 待做 |  | `SELECT {…} FROM 't_fork_user' WHERE 'name' = ? AND (JSON_CONTAINS('attrs',?) OR 'age' > ?)` |
-| fork/dialect/DialectEntrySqlTest.java#pgJsonbPredicates | 待做 |  | `SELECT "id","name","age","company_id","attrs","created_at" FROM "t_fork_user" WHERE ("attrs")::jsonb…` |
-| fork/dialect/DialectEntrySqlTest.java#userDefinedFunctionHasTheSameShape | 待做 |  | `SELECT t.{…} FROM 't_fork_user' t WHERE EXISTS(SELECT 1 FROM 't_fork_post' t1 WHERE t1.'user_id' = t…` |
-| fork/dialect/DialectEntrySqlTest.java#userDefinedValueFunctionChainsLikeBuiltIns | 待做 |  | `SELECT {…} FROM 't_fork_user' WHERE CHAR_LENGTH('name') > ? ORDER BY CHAR_LENGTH('name') DESC` |
-| fork/dialect/DialectEntrySqlTest.java#wrongDialectFailsWhenTheExpressionIsBuilt | 待做 |  |  |
+| fork/dialect/DialectEntrySqlTest.java#mysqlFullTextAgainstAndScore | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:40 | `SELECT t.'id' AS 'value1',MATCH(t.'name') AGAINST(? IN NATURAL LANGUAGE MODE) AS 'value2' FROM 't_fo…` |
+| fork/dialect/DialectEntrySqlTest.java#mysqlJsonPredicatesInWhere | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:23 | `SELECT {…} FROM 't_fork_user' WHERE JSON_CONTAINS('attrs',?,?) AND ? MEMBER OF(JSON_EXTRACT('attrs',…` |
+| fork/dialect/DialectEntrySqlTest.java#mysqlPredicateInsideImplicitSubquery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:35 | `SELECT t.{…} FROM 't_fork_user' t WHERE EXISTS(SELECT 1 FROM 't_fork_post' t1 WHERE t1.'user_id' = t…` |
+| fork/dialect/DialectEntrySqlTest.java#mysqlPredicateRespectsOrGroup | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:30 | `SELECT {…} FROM 't_fork_user' WHERE 'name' = ? AND (JSON_CONTAINS('attrs',?) OR 'age' > ?)` |
+| fork/dialect/DialectEntrySqlTest.java#pgJsonbPredicates | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:49 | `SELECT "id","name","age","company_id","attrs","created_at" FROM "t_fork_user" WHERE ("attrs")::jsonb…` |
+| fork/dialect/DialectEntrySqlTest.java#userDefinedFunctionHasTheSameShape | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:68 | `SELECT t.{…} FROM 't_fork_user' t WHERE EXISTS(SELECT 1 FROM 't_fork_post' t1 WHERE t1.'user_id' = t…` |
+| fork/dialect/DialectEntrySqlTest.java#userDefinedValueFunctionChainsLikeBuiltIns | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:63 | `SELECT {…} FROM 't_fork_user' WHERE CHAR_LENGTH('name') > ? ORDER BY CHAR_LENGTH('name') DESC` |
+| fork/dialect/DialectEntrySqlTest.java#wrongDialectFailsWhenTheExpressionIsBuilt | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:56 |  |
 | fork/dialect/HanaTextSqlTest.java#containsAndFuzzy | 待做 |  |  |
 | fork/dialect/HanaTextSqlTest.java#wrongDialectAndBadThreshold | 待做 |  |  |
-| fork/dialect/MySQLJsonSqlTest.java#containsPath | 待做 |  | `SELECT 'id','name','age','company_id','attrs','created_at' FROM 't_fork_user' WHERE JSON_CONTAINS_PA…` |
-| fork/dialect/MySQLJsonSqlTest.java#modificationsChainIntoUpdate | 待做 |  | `UPDATE 't_fork_user' SET 'attrs' = JSON_REMOVE(JSON_SET('attrs',?,?),?,?) WHERE 'id' = ?` |
-| fork/dialect/PgSQLM4SqlTest.java#arrayAndFullText | 待做 |  |  |
-| fork/dialect/PgSQLM4SqlTest.java#jsonbEdit | 待做 |  | `UPDATE "t_fork_user" SET "attrs" = (jsonb_set(("attrs")::jsonb,(?)::text[],(?)::jsonb,true) #- (?)::…` |
+| fork/dialect/MySQLJsonSqlTest.java#containsPath | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:73 | `SELECT 'id','name','age','company_id','attrs','created_at' FROM 't_fork_user' WHERE JSON_CONTAINS_PA…` |
+| fork/dialect/MySQLJsonSqlTest.java#modificationsChainIntoUpdate | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:82 | `UPDATE 't_fork_user' SET 'attrs' = JSON_REMOVE(JSON_SET('attrs',?,?),?,?) WHERE 'id' = ?` |
+| fork/dialect/PgSQLM4SqlTest.java#arrayAndFullText | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:94 |  |
+| fork/dialect/PgSQLM4SqlTest.java#jsonbEdit | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:88 | `UPDATE "t_fork_user" SET "attrs" = (jsonb_set(("attrs")::jsonb,(?)::text[],(?)::jsonb,true) #- (?)::…` |
 | fork/live/HanaTextLiveTest.java#containsFuzzyAndScore | 待做 |  | `DROP TABLE "t_fork_post"` |
-| fork/live/MySQLDialectEntryLiveTest.java#fullTextAgainstAndScore | 待做 |  |  |
-| fork/live/MySQLDialectEntryLiveTest.java#insideImplicitSubquery | 待做 |  |  |
-| fork/live/MySQLDialectEntryLiveTest.java#jsonContainsWithPath | 待做 |  |  |
-| fork/live/MySQLDialectEntryLiveTest.java#memberOfAndOverlaps | 待做 |  |  |
-| fork/live/MySQLJsonLiveTest.java#pathPredicatesAndUpdates | 待做 |  | `DROP TABLE IF EXISTS t_fork_user` |
-| fork/live/PgSQLDialectEntryLiveTest.java#containsAndContainedBy | 待做 |  |  |
-| fork/live/PgSQLDialectEntryLiveTest.java#insideImplicitSubquery | 待做 |  |  |
-| fork/live/PgSQLDialectEntryLiveTest.java#keyExistence | 待做 |  |  |
-| fork/live/PgSQLM4LiveTest.java#arrayPredicatesAndFullText | 待做 |  | `DROP TABLE "t_fork_post"` |
-| fork/live/PgSQLM4LiveTest.java#jsonbEditRoundTrip | 待做 |  | `DROP TABLE "t_fork_user"` |
+| fork/live/MySQLDialectEntryLiveTest.java#fullTextAgainstAndScore | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntryLiveTest.cs:75 |  |
+| fork/live/MySQLDialectEntryLiveTest.java#insideImplicitSubquery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntryLiveTest.cs:68 |  |
+| fork/live/MySQLDialectEntryLiveTest.java#jsonContainsWithPath | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntryLiveTest.cs:53 |  |
+| fork/live/MySQLDialectEntryLiveTest.java#memberOfAndOverlaps | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntryLiveTest.cs:60 |  |
+| fork/live/MySQLJsonLiveTest.java#pathPredicatesAndUpdates | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntryLiveTest.cs:85 | `DROP TABLE IF EXISTS t_fork_user` |
+| fork/live/PgSQLDialectEntryLiveTest.java#containsAndContainedBy | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntryLiveTest.cs:103 |  |
+| fork/live/PgSQLDialectEntryLiveTest.java#insideImplicitSubquery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntryLiveTest.cs:120 |  |
+| fork/live/PgSQLDialectEntryLiveTest.java#keyExistence | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntryLiveTest.cs:111 |  |
+| fork/live/PgSQLM4LiveTest.java#arrayPredicatesAndFullText | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntryLiveTest.cs:142 | `DROP TABLE "t_fork_post"` |
+| fork/live/PgSQLM4LiveTest.java#jsonbEditRoundTrip | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntryLiveTest.cs:127 | `DROP TABLE "t_fork_user"` |
 
 ### H2 方言（`dialect.h2`，M6）
 

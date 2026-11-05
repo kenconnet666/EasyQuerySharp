@@ -13,6 +13,7 @@ internal sealed partial class ExpressionTranslator
         if (method.DeclaringType == typeof(JsonNode) || (method.DeclaringType == typeof(Sql) && method.Name == nameof(Sql.Json))) return TranslateJson(call);
         if (method.DeclaringType == typeof(Sql)) return TranslateSqlMarker(call);
         if (method.DeclaringType == typeof(Sql.Over)) return TranslateWindow(call);
+        if (method.DeclaringType is { } entry && IsDialectEntry(entry)) return TranslateDialectEntry(call);
         if (method.DeclaringType is { } declaring && IsGroupType(declaring)) return TranslateGroupAggregate(call);
         // 用户声明的模板函数：[SqlFunction("…{0}…")]
         if (System.Reflection.CustomAttributeExtensions.GetCustomAttribute<SqlFunctionAttribute>(method) is { } userFunction)

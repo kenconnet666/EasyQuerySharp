@@ -16,7 +16,7 @@ public class ForkPost
     public decimal? Amount { get; set; }
 }
 
-/// <summary>对应 Java fork：entity/ForkUser（只用到列，导航随用到的用例再补）。</summary>
+/// <summary>对应 Java fork：entity/ForkUser（公司导航随用到的用例再补）。</summary>
 [Table("t_fork_user")]
 public class ForkUser
 {
@@ -32,4 +32,7 @@ public class ForkUser
     public string? Attrs { get; set; }
 
     public DateTime? CreatedAt { get; set; }
+
+    [Navigate(RelationType.OneToMany, TargetProperties = [nameof(ForkPost.UserId)])]
+    public List<ForkPost>? Posts { get; set; }
 }

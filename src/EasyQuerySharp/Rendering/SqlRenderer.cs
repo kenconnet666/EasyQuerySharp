@@ -384,6 +384,8 @@ public sealed class SqlRenderer
 
     private void WriteFragment(FragmentExpr f)
     {
+        if (f.RequiredDialect is { } required && !required.IsInstanceOfType(Dialect))
+            throw new NotSupportedException($"{f.EntryName} 只能用于 {required.Name}，当前方言是 {Dialect.Name}");
         var t = f.Template;
         var start = 0;
         for (var i = 0; i < t.Length; i++)

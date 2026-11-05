@@ -135,11 +135,11 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
   - `[SqlFunction]` 扩展方法；
   - BCL 方法映射：`string`、`Math`、`DateTime` / `DateOnly` / `DateTimeOffset`；
   - 用户的自定义函数和内置函数写法一样。
-- [x] 2.2 字符串、数学、通用函数：`Sql.Greatest` / `Least` / `NullIf` / `EqualsNullSafe`。
-- [~] 2.3 日期函数：格式串按方言翻译，加减、取部分、`DateDiff`、`DateTrunc`。
+- [x] 2.2 字符串、数学、通用函数：`NullIf` / `EqualsNullSafe`（null 安全相等，按方言写 `<=>` / `IS NOT DISTINCT FROM` / `IS`）。Java 的 maxColumns / minColumns（GREATEST / LEAST）没有用例覆盖，有需求再加。
+- [~] 2.3 日期函数：格式串按方言翻译，加减、取部分、`DateDiff`、`Sql.DateTrunc`（MySQL / PG；其余方言随 M6）。
 - [~] 2.4 `Sql.Case`，以及带过滤的聚合，例如 `g.Count(p => p.Paid)`。
 - [~] 2.5 窗口函数：`Sql.Over.*` 系列，包括 frame、`Ntile` / `PercentRank` / `CumeDist`（API、渲染与 `Part<T,…>` 投影已完成；取值函数省略排序时沿用查询的 ORDER BY 待做）。
-- [~] 2.6 字符串聚合 `StringJoin`，以及 JSON 取值。
+- [x] 2.6 字符串聚合 `StringJoin`，以及 JSON 取值 `Sql.Json(列).Get / Text / Value<T> / Length / ContainsKey`（MySQL、PG、SQLite；PG 的 json / jsonb 列写入时参数加类型转换）。
 - [x] 2.7 行锁：`ForUpdate` / `ForUpdateNoWait` / `ForUpdateSkipLocked`（Java 没有 FOR SHARE，不做）。H2、达梦、DB2、ClickHouse、DuckDB 的冒烟用例随 M6 方言一起移植。
 - [~] 2.8 SQL Server 和 Oracle 方言的**渲染部分**，只做 SQL 比对：Java 的三组函数测试（约 100 个用例）在 MySQL、MSSQL、PG、Oracle 上各有一份。实库验证放到 M6。
 - [x] 2.9 分析器首版（`src/EasyQuerySharp.Generator`，测试在 `tests/EasyQuerySharp.Tests.Generator`，说明见 [analyzers.md](docs/design/analyzers.md)；打进核心包随 M10 做）：
@@ -151,7 +151,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 覆盖能力：`query.join` 88、`query.group` 78、`query.union` 18、`query.cte` 11、`query.map` 11、`query.stream` 9、`query.reuse` 2，加上 fork 的 rollup / cube / grouping。
 
 - [x] 3.1 显式 join：`IQuery<T1..T8>` 由仓库内的生成器产出；right join 之后，前面表的列按可空处理。
-- [~] 3.2 `GroupBy` / `Having` / 投影里的 `g.Key`，以及 `Rollup` / `Cube` / `Grouping`。
+- [x] 3.2 `GroupBy` / `Having` / 投影里的 `g.Key`，以及 `Rollup()` / `Cube()` / `g.Grouping(键)`（MySQL 写 WITH ROLLUP、没有 CUBE；SQLite 都不支持）。
 - [x] 3.3 子查询：`In(subQuery)`、`Exists`、派生表 `AsSubQuery()`。
 - [x] 3.4 `Union` / `UnionAll`，CTE：`AsCte(name)`，递归 CTE（树查询 `AsTreeCte`）。
 - [x] 3.5 流式读取 `ToAsyncEnumerable()`，无实体查询 `db.SqlQueryAsync<Dictionary<..>>`、`QuerySql<Dictionary<..>>(sql, params)` 与 `ToDictionariesAsync`。
@@ -205,11 +205,11 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [ ] 6.5 openGauss 和人大金仓 PG 模式：与 PG 共用方言。
 - [ ] 6.6 DuckDB（进程内，本地也可以跑）、ClickHouse、Db2、TDengine。
 - [ ] 6.7 SAP HANA：HANA Express 压低内存进 CI；驱动或镜像拿不到时退回本地验证。
-- [ ] 6.8 方言静态入口：
-  - `MySql.Json*` / `MySql.Match`；
-  - `Pg.Jsonb*` / `Pg.Array` / `Pg.FullText`；
+- [~] 6.8 方言静态入口（嵌套在 `Sql` 下，避免与驱动的命名空间 `MySql.*` 冲突）：
+  - [x] `Sql.MySql.Json(列).Contains / HasMember / Overlaps / ContainsPath / Edit(..)`、`Sql.MySql.Match(..).Against / Score`；
+  - [x] `Sql.Pg.Jsonb(列).Contains / ContainedBy / HasKey / HasAnyKey / HasAllKeys / Edit(..)`、`Sql.Pg.Array`、`Sql.Pg.FullText`；
   - `Hana.Text`；
-  - 用错方言时在渲染期报错。
+  - [x] 用错方言时在渲染期报错；用户自己的方言函数用 `[SqlFunction]`，写法与内置入口一致。
 - [ ] 6.9 `Returning()`，用于 PG 的 UPDATE / DELETE。
 - [ ] 6.10 H2 的 74 个用例：和方言无关的改在 SQLite 上移植，标为偏离；只测 H2 方言本身的标为不适用。
 - [ ] 6.11 L3 共用套件在每个方言上全部通过；`LiveSuiteOptions` 按方言裁剪能力。
