@@ -79,3 +79,48 @@ public class SchoolStudentAddress
     [Navigate(RelationType.ManyToOne, SelfProperties = [nameof(StudentId)], TargetProperties = [nameof(SchoolStudent.Id)])]
     public SchoolStudent? SchoolStudent { get; set; }
 }
+
+/// <summary>对应 Java：entity/school/MySchoolClass（班级一对多学生，导航用默认的自身主键）。</summary>
+[Table("my_school_class")]
+public class MySchoolClass
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    [Navigate(RelationType.OneToMany, TargetProperties = [nameof(MySchoolStudent.ClassId)])]
+    public List<MySchoolStudent>? SchoolStudents { get; set; }
+}
+
+/// <summary>对应 Java：entity/school/MySchoolStudent。</summary>
+[Table("my_school_student")]
+public class MySchoolStudent
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? ClassId { get; set; }
+
+    public string? Name { get; set; }
+
+    [Navigate(RelationType.ManyToOne, SelfProperties = [nameof(ClassId)], TargetProperties = [nameof(MySchoolClass.Id)])]
+    public MySchoolClass? SchoolClass { get; set; }
+
+    [Navigate(RelationType.OneToOne, TargetProperties = [nameof(MySchoolStudentAddress.StudentId)])]
+    public MySchoolStudentAddress? SchoolStudentAddress { get; set; }
+}
+
+/// <summary>对应 Java：entity/school/MySchoolStudentAddress（与 SchoolStudentAddress 同表）。</summary>
+[Table("school_student_address")]
+public class MySchoolStudentAddress
+{
+    public string? Id { get; set; }
+
+    public string? StudentId { get; set; }
+
+    public string? Address { get; set; }
+
+    [Navigate(RelationType.ManyToOne, SelfProperties = [nameof(StudentId)], TargetProperties = [nameof(MySchoolStudent.Id)])]
+    public MySchoolStudent? SchoolStudent { get; set; }
+}

@@ -3,14 +3,14 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1327、偏离 155、不适用 34、骨架 15、待做 873。
+合计：已移植 1339、偏离 155、不适用 34、骨架 15、待做 861。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 296 | 33 | 13 | 0 | 93 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 303 | 33 | 13 | 0 | 86 |
 | 分页结果 | `query.page` | M1 | 22 | 17 | 2 | 0 | 0 | 3 |
 | 原生 SQL | `sql.native` | M1 | 50 | 33 | 6 | 1 | 0 | 10 |
 | 删除 | `write.delete` | M1 | 25 | 9 | 1 | 2 | 0 | 13 |
@@ -37,7 +37,7 @@
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 36 | 7 | 3 | 0 | 10 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 59 | 1 | 2 | 2 | 3 |
 | include 带出导航 | `nav.include` | M4 | 37 | 14 | 0 | 0 | 0 | 23 |
-| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 124 | 2 | 1 | 0 | 15 |
+| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 129 | 2 | 1 | 0 | 10 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 0 | 0 | 0 | 0 | 25 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
 | 列加密 | `column.encryption` | M5 | 8 | 7 | 0 | 0 | 0 | 1 |
@@ -428,13 +428,13 @@
 | QueryTestRelationTest.java#testDirectWhere1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTestRelationTest.cs:148 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
 | QueryTestRelationTest.java#testDirectWhere2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTestRelationTest.cs:148 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
 | QueryTestRelationTest.java#testDirectWhere3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTestRelationTest.cs:159 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
-| Relation2Test.java#test | 待做 |  | `SELECT t.'id',t.'class_id',t.'name' FROM 'my_school_student' t LEFT JOIN 'school_student_address' t1…` |
-| Relation2Test.java#test1 | 待做 |  | `SELECT t.'id',t.'class_id',t.'name' FROM 'my_school_student' t LEFT JOIN 'school_student_address' t1…` |
-| Relation2Test.java#test2 | 待做 |  | `SELECT t.'id',t.'class_id',t.'name' FROM 'my_school_student' t LEFT JOIN 'school_student_address' t1…` |
-| Relation2Test.java#test3 | 待做 |  | `SELECT t.'id',t.'class_id',t.'name' FROM 'my_school_student' t LEFT JOIN 'my_school_class' t1 ON t1.…` |
-| Relation2Test.java#test7 | 待做 |  | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE IFNULL((SELECT SUM(CAST(t1.'name' AS SIGNED)) …` |
-| Relation2Test.java#test9 | 待做 |  | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE IFNULL((SELECT SUM(CAST(t1.'name' AS DECIMAL(3…` |
-| Relation2Test.java#test9_1 | 待做 |  | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE IFNULL((SELECT SUM(CAST(t1.'name' AS DECIMAL(3…` |
+| Relation2Test.java#test | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/Relation2Test.cs:17 | `SELECT t.'id',t.'class_id',t.'name' FROM 'my_school_student' t LEFT JOIN 'school_student_address' t1…` |
+| Relation2Test.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/Relation2Test.cs:21 | `SELECT t.'id',t.'class_id',t.'name' FROM 'my_school_student' t LEFT JOIN 'school_student_address' t1…` |
+| Relation2Test.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/Relation2Test.cs:25 | `SELECT t.'id',t.'class_id',t.'name' FROM 'my_school_student' t LEFT JOIN 'school_student_address' t1…` |
+| Relation2Test.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/Relation2Test.cs:30 | `SELECT t.'id',t.'class_id',t.'name' FROM 'my_school_student' t LEFT JOIN 'my_school_class' t1 ON t1.…` |
+| Relation2Test.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/Relation2Test.cs:42 | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE IFNULL((SELECT SUM(CAST(t1.'name' AS SIGNED)) …` |
+| Relation2Test.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/Relation2Test.cs:52 | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE IFNULL((SELECT SUM(CAST(t1.'name' AS DECIMAL(3…` |
+| Relation2Test.java#test9_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/Relation2Test.cs:52 | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE IFNULL((SELECT SUM(CAST(t1.'name' AS DECIMAL(3…` |
 | RelationTest.java#schoolTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:118 | `SELECT t.'id',t.'class_id',t.'name' FROM 'school_student' t LEFT JOIN 'school_class' t1 ON t1.'id' =…` |
 | RelationTest.java#testSub | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:190 | `SELECT t1.'id',t1.'name' FROM 'school_student' t LEFT JOIN 'school_class' t1 ON t1.'id' = t.'class_i…` |
 | RelationTest.java#testSub1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:199 | `SELECT t1.'name' FROM 'school_student' t LEFT JOIN 'school_class' t1 ON t1.'id' = t.'class_id' WHERE…` |
@@ -1795,11 +1795,11 @@
 | QueryTest5.java#joinTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:88 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
 | QueryTest5.java#joinTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:99 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
 | QueryTest5.java#joinTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:109 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
-| Relation2Test.java#test10 | 待做 |  | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE (SELECT MAX(t1.'name') FROM 'my_school_student…` |
-| Relation2Test.java#test10_1 | 待做 |  | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE (SELECT MAX(t1.'name') FROM 'my_school_student…` |
-| Relation2Test.java#test5 | 待做 |  | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE (SELECT COUNT(*) FROM 'my_school_student' t1 W…` |
-| Relation2Test.java#test6 | 待做 |  | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE EXISTS(SELECT 1 FROM 'my_school_student' t1 WH…` |
-| Relation2Test.java#test8 | 待做 |  | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE IFNULL((SELECT AVG(CAST(t1.'name' AS DECIMAL(3…` |
+| Relation2Test.java#test10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/Relation2Test.cs:57 | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE (SELECT MAX(t1.'name') FROM 'my_school_student…` |
+| Relation2Test.java#test10_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/Relation2Test.cs:57 | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE (SELECT MAX(t1.'name') FROM 'my_school_student…` |
+| Relation2Test.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/Relation2Test.cs:34 | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE (SELECT COUNT(*) FROM 'my_school_student' t1 W…` |
+| Relation2Test.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/Relation2Test.cs:38 | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE EXISTS(SELECT 1 FROM 'my_school_student' t1 WH…` |
+| Relation2Test.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/Relation2Test.cs:47 | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE IFNULL((SELECT AVG(CAST(t1.'name' AS DECIMAL(3…` |
 | RelationTest.java#schoolTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:106 | `SELECT t.'id',t.'name' FROM 'school_class' t WHERE EXISTS(SELECT 1 FROM 'school_student' t1 WHERE t1…` |
 | RelationTest.java#schoolTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:127 | `SELECT t.'id',t.'name' FROM 'school_class' t WHERE EXISTS(SELECT 1 FROM 'school_student' t1 LEFT JOI…` |
 | RelationTest.java#schoolTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:137 | `SELECT t.'id',t.'name' FROM 'school_class' t WHERE EXISTS(SELECT 1 FROM 'school_student' t1 LEFT JOI…` |
