@@ -279,8 +279,8 @@ public sealed class QueryTest15(MySqlFixture fixture) : MySqlTest(fixture)
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<Topic>()
-            .Where(t => t.Id == "6261" && t.CreateTime!.Value.ToString("yyyy-MM").CompareTo(Sql.Now().AddMonths(-3).ToString("yyyy-MM")) >= 0
-                        && t.CreateTime!.Value.ToString("yyyy-MM").CompareTo(Sql.Now().AddMonths(-1).ToString("yyyy-MM")) <= 0)
+            .Where(t => t.Id == "6261" && string.Compare(t.CreateTime!.Value.ToString("yyyy-MM"), Sql.Now().AddMonths(-3).ToString("yyyy-MM")) >= 0
+                        && string.Compare(t.CreateTime!.Value.ToString("yyyy-MM"), Sql.Now().AddMonths(-1).ToString("yyyy-MM")) <= 0)
             .Select(t => t.CreateTime).ToListAsync(Ct);
         listen.AssertSql("SELECT t.`create_time` FROM `t_topic` t WHERE t.`id` = ? AND DATE_FORMAT(t.`create_time`,'%Y-%m') >= DATE_FORMAT(date_add(NOW(), interval (?) month),'%Y-%m') AND DATE_FORMAT(t.`create_time`,'%Y-%m') <= DATE_FORMAT(date_add(NOW(), interval (?) month),'%Y-%m')");
         listen.AssertParams("6261(String),-3(Long),-1(Long)");
@@ -291,8 +291,8 @@ public sealed class QueryTest15(MySqlFixture fixture) : MySqlTest(fixture)
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<Topic>()
-            .Where(t => t.Id == "6261" && t.CreateTime!.Value.ToString("yyyy-MM").CompareTo(Sql.Now().AddMonths(-3).ToString("yyyy-MM")) >= 0
-                        && t.CreateTime!.Value.ToString("yyyy-MM").CompareTo(Sql.Now().AddMonths(-1).ToString("yyyy-MM")) <= 0)
+            .Where(t => t.Id == "6261" && string.Compare(t.CreateTime!.Value.ToString("yyyy-MM"), Sql.Now().AddMonths(-3).ToString("yyyy-MM")) >= 0
+                        && string.Compare(t.CreateTime!.Value.ToString("yyyy-MM"), Sql.Now().AddMonths(-1).ToString("yyyy-MM")) <= 0)
             .Select(t => new Topic { Id = t.Id, CreateTime = t.CreateTime, Title = t.Title }).ToListAsync(Ct);
         listen.AssertSql("SELECT t.`id`,t.`create_time`,t.`title` FROM `t_topic` t WHERE t.`id` = ? AND DATE_FORMAT(t.`create_time`,'%Y-%m') >= DATE_FORMAT(date_add(NOW(), interval (?) month),'%Y-%m') AND DATE_FORMAT(t.`create_time`,'%Y-%m') <= DATE_FORMAT(date_add(NOW(), interval (?) month),'%Y-%m')");
         listen.AssertParams("6261(String),-3(Long),-1(Long)");
@@ -303,8 +303,8 @@ public sealed class QueryTest15(MySqlFixture fixture) : MySqlTest(fixture)
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<Topic>()
-            .Where(t => t.Id == "6261" && t.CreateTime!.Value.ToString("yyyy-MM").CompareTo(Sql.Now().AddMonths(-3).ToString("yyyy-MM")) >= 0
-                        && t.CreateTime!.Value.ToString("yyyy-MM").CompareTo(Sql.Now().AddMonths(-1).ToString("yyyy-MM")) <= 0)
+            .Where(t => t.Id == "6261" && string.Compare(t.CreateTime!.Value.ToString("yyyy-MM"), Sql.Now().AddMonths(-3).ToString("yyyy-MM")) >= 0
+                        && string.Compare(t.CreateTime!.Value.ToString("yyyy-MM"), Sql.Now().AddMonths(-1).ToString("yyyy-MM")) <= 0)
             .GroupBy(t => t.CreateTime!.Value.ToString("yyyy-MM"))
             .Select(g => new Draft<string, long>(g.Key, g.Count())).ToListAsync(Ct);
         listen.AssertSql("SELECT DATE_FORMAT(t.`create_time`,'%Y-%m') AS `value1`,COUNT(*) AS `value2` FROM `t_topic` t WHERE t.`id` = ? AND DATE_FORMAT(t.`create_time`,'%Y-%m') >= DATE_FORMAT(date_add(NOW(), interval (?) month),'%Y-%m') AND DATE_FORMAT(t.`create_time`,'%Y-%m') <= DATE_FORMAT(date_add(NOW(), interval (?) month),'%Y-%m') GROUP BY DATE_FORMAT(t.`create_time`,'%Y-%m')");

@@ -1,3 +1,5 @@
+// 条件在数据库里执行：字符串比较不涉及区域性，不适用 CA1309 / CA1310
+#pragma warning disable CA1309, CA1310
 // 条件在数据库里执行：大小写转换后比较是要翻译的写法本身，不适用 CA1862
 #pragma warning disable CA1862
 
@@ -74,7 +76,7 @@ public sealed class QueryTest17(MySqlFixture fixture) : MySqlTest(fixture)
     }
 
     // 各字符串函数（Java 的 subString / concat / toUpper / trim / replace / leftPad / length / compareTo）
-    [Fact, Upstream("QueryTest17.java#test1", Deviation = StrCmp), Upstream("QueryTest17.java#test3", Deviation = StrCmp)]
+    [Fact, Upstream("QueryTest17.java#test1"), Upstream("QueryTest17.java#test3", Deviation = "Java 用动态 API（fx.subString(\"id\", …)）写同样的条件；C# 只有表达式写法，SQL 相同")]
     public async Task Test1()
     {
         using var listen = SqlCapture.Listen();
@@ -90,13 +92,10 @@ public sealed class QueryTest17(MySqlFixture fixture) : MySqlTest(fixture)
                                                 && b.Content!.PadLeft(2, 'a') == "aa"
                                                 && b.Content!.PadRight(2, 'a') == "aa"
                                                 && b.Content!.Length == 1
-                                                && string.Compare(b.Content, "aaaa") >= 0).ToListAsync(Ct);
-        // Java 的 compareTo(…).ge(0) 写成 STRCMP(…) >= ?；C# 的 string.Compare(a, b) >= 0 直接写成 a >= b
-        listen.AssertSql("SELECT `id`,`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`title`,`content`,`url`,`star`,`publish_time`,`score`,`status`,`order`,`is_top`,`top` FROM `t_blog` WHERE `deleted` = ? AND IFNULL(`id`,?) = ? AND SUBSTR(`id`,2,20) = ? AND CONCAT(`content`,?,`id`) = ? AND UPPER(`content`) = ? AND LOWER(`content`) = ? AND TRIM(`content`) = ? AND LTRIM(`content`) = ? AND RTRIM(`content`) = ? AND REPLACE(`content`,?,?) = ? AND LPAD(`content`, 2, ?) = ? AND RPAD(`content`, 2, ?) = ? AND CHAR_LENGTH(`content`) = ? AND STRCMP(`content`,?) >= ?".Replace("STRCMP(`content`,?) >= ?", "`content` >= ?", StringComparison.Ordinal));
-        listen.AssertParams("false(Boolean),123(String),123(String),456(String),123(String),789(String),abc(String),def(String),a(String),b(String),c(String),123(String),456(String),aaa(String),a(String),aa(String),a(String),aa(String),1(Integer),aaaa(String),0(Integer)".Replace(",0(Integer)", "", StringComparison.Ordinal));
+                                                && b.Content!.CompareTo("aaaa") >= 0).ToListAsync(Ct);
+        listen.AssertSql("SELECT `id`,`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`title`,`content`,`url`,`star`,`publish_time`,`score`,`status`,`order`,`is_top`,`top` FROM `t_blog` WHERE `deleted` = ? AND IFNULL(`id`,?) = ? AND SUBSTR(`id`,2,20) = ? AND CONCAT(`content`,?,`id`) = ? AND UPPER(`content`) = ? AND LOWER(`content`) = ? AND TRIM(`content`) = ? AND LTRIM(`content`) = ? AND RTRIM(`content`) = ? AND REPLACE(`content`,?,?) = ? AND LPAD(`content`, 2, ?) = ? AND RPAD(`content`, 2, ?) = ? AND CHAR_LENGTH(`content`) = ? AND STRCMP(`content`,?) >= ?");
+        listen.AssertParams("false(Boolean),123(String),123(String),456(String),123(String),789(String),abc(String),def(String),a(String),b(String),c(String),123(String),456(String),aaa(String),a(String),aa(String),a(String),aa(String),1(Integer),aaaa(String),0(Integer)");
     }
-
-    private const string StrCmp = "Java 的 compareTo(\"aaaa\").ge(0) 写成 STRCMP(…) >= ?；C# 的 string.Compare(a, b) >= 0 化简成 a >= b（字符串比大小在 C# 只能这样写）。test3 是同样条件的动态 API 写法";
 
     /// <summary>Java 的 ProvinceVO。</summary>
     public sealed class ProvinceVO

@@ -225,7 +225,8 @@ internal sealed partial class ExpressionTranslator
         if (op == SqlBinaryOperator.Add && b.Type == typeof(string))
             return new FunctionExpr(SqlFunctionNames.Concat, [.. Flatten(b, ExpressionType.Add).Select(Translate)]);
 
-        // string.Compare(a, b) > 0 / a.CompareTo(b) <= 0 … → a > b（C# 里字符串只能这样比大小；与 1 / -1 比较时仍按函数翻译）
+        // string.Compare(a, b) > 0 … → a > b（C# 里字符串只能这样比大小，对应 Java 的 gt / le…；与 1 / -1 比较时仍按函数翻译）。
+        // 实例方法 a.CompareTo(b) 总是写成比较函数（对应 Java 的 compareTo(b)，MySQL 的 STRCMP）
         if (op is SqlBinaryOperator.LessThan or SqlBinaryOperator.LessThanOrEqual or SqlBinaryOperator.GreaterThan or SqlBinaryOperator.GreaterThanOrEqual
             && StringComparison(b.Left) is var (x, y) && IsZero(b.Right))
         {
@@ -251,11 +252,10 @@ internal sealed partial class ExpressionTranslator
         return new CaseExpr(branches, StripConvert(otherwise) is ConstantExpression { Value: null } ? LiteralExpr.Null : Translate(otherwise));
     }
 
-    // string.Compare(a, b) 或 a.CompareTo(b) 的两个操作数
+    // string.Compare(a, b) 的两个操作数
     private static (Expression, Expression)? StringComparison(Expression e) => StripConvert(e) switch
     {
         MethodCallExpression { Method.Name: nameof(string.Compare), Object: null, Arguments: [var a, var b] } c when c.Method.DeclaringType == typeof(string) => (a, b),
-        MethodCallExpression { Method.Name: nameof(string.CompareTo), Object: { } a, Arguments: [var b] } c when c.Method.DeclaringType == typeof(string) => (a, b),
         _ => null,
     };
 
