@@ -28,7 +28,7 @@
 | 字符串函数 | `func.string` | 128 | 优先映射 BCL：`Contains` / `StartsWith` / `Trim` / `ToUpper` / `Substring` / `IndexOf` / `Length` / `Replace` / `PadLeft`；没有 BCL 对应的用扩展方法：`Like` / `NotLike` / `Concat`；`Contains` 等对应 Java 的 like（`LIKE ?`，% 在参数里），`LikeContains` / `LikeStartsWith` / `LikeEndsWith` 对应 Java 的 contains / startsWith / endsWith（`LIKE CONCAT('%',?,'%')`） | M2 |
 | 日期函数 | `func.date` | 96 | `AddDays` / `AddMonths` / `.Year` / `.DayOfWeek` / `ToString("yyyy-MM")`（格式串按方言翻译）/ `Sql.Now()` / `Sql.DateDiff`；`DateTime` / `DateOnly` / `DateTimeOffset` | M2 |
 | 通用函数 | `func.general` | 53 | `??`（nullOrDefault）/ `Sql.Greatest` / `Sql.Least` / `Sql.NullIf` / `Sql.EqualsNullSafe` / `Sql.Random()`（RAND()、PG / SQLite 的 RANDOM()、Oracle 的 DBMS_RANDOM.VALUE()） | M2 |
-| 字符串聚合 | `func.joining` | 29 | `g.StringJoin(p => p.Name, ",")`，集合导航上同样可用：`u.Posts.StringJoin(...)` | M2 |
+| 字符串聚合 | `func.joining` | 29 | `g.StringJoin(p => p.Name, ",")`，集合导航上写 `string.Join(",", u.Posts.Select(p => p.Name))`；链上的 `OrderBy` / `ThenBy` 在分组合并时写进聚合（MySQL 的 `GROUP_CONCAT(x ORDER BY … SEPARATOR ?)`，PG 的 `STRING_AGG(x, ? ORDER BY …)`） | M2 |
 | JSON 函数 | `func.json` | 12 | `Sql.Json(u.Attrs).Value<string>("$.a")`；方言专属的放在 `MySql.Json*` / `Pg.Jsonb*` 下 | M2 |
 | 数学函数 | `func.math` | 4 | 映射 `Math.Abs` / `Round` / `Floor` / `Ceiling` / `Pow` / `Sqrt` / `Sign` / `Log` / `Exp` / `Truncate` | M2 |
 | CASE WHEN | `expr.case` | 27 | 三元表达式；多分支用 `Sql.Case().When(..).Then(..).Else(..)`；聚合加过滤：`g.Count(p => p.Paid)` | M2 |
@@ -64,7 +64,7 @@
 
 | 能力 | key | 用例数 | C# 写法 | M |
 |---|---|---|---|---|
-| 拦截器 | `interceptor` | 3 | `QueryFilter<T>`（查询、更新、删除自动加条件，返回 null 这次不加）/ `EntityInterceptor<T>`（`BeforeInsert` / `BeforeUpdate` 改实体，`BeforeConditionUpdate` 给按条件更新追加 SET，用户已 Set 的列跳过）；`T` 可以是基类或接口；单条语句上 `.DisableInterceptor("名字")` / `.EnableInterceptor("名字")`，同名的拦截器一起开关；按实体更新限定了列时 `BeforeEntityUpdateColumns` 可以补列 | M5 |
+| 拦截器 | `interceptor` | 3 | `QueryFilter<T>`（查询、更新、删除自动加条件，返回 null 这次不加）/ `EntityInterceptor<T>`（`BeforeInsert` / `BeforeUpdate` 改实体，`BeforeConditionUpdate` 给按条件更新追加 SET，用户已 Set 的列跳过）；`T` 可以是基类或接口；单条语句上 `.DisableInterceptor("名字")` / `.EnableInterceptor("名字")`（重写 `IsProtected => true` 的拦截器 `DisableInterceptors()` 关不掉，只能按名字关，对应 Java 的 ProtectedInterceptor），同名的拦截器一起开关；按实体更新限定了列时 `BeforeEntityUpdateColumns` 可以补列 | M5 |
 | 逻辑删除 | `logicDelete` | 10 | `[LogicDelete(LogicDeleteStrategy.Boolean)]` / `DeletedTime`；自定义策略实现 `ILogicDeleteStrategy`（未删除条件 + 删除时写的列），`o.AddLogicDeleteStrategy("名字", 策略)` 注册后写 `[LogicDelete(LogicDeleteStrategy.Custom, StrategyName = "名字")]`。查询自动加条件，删除自动改成更新，按实体更新不写生效的逻辑删除列 | M5 |
 | 乐观锁 | `version` | 13 | `[Version]`（整数列 +1；`[Version(VersionStrategy.NewGuid)]` 写新 Guid）。条件里加 `version = 当前版本`、SET 末尾写下一个版本；按实体写入取实体上的值并在成功后写回，按条件写入必须 `.WithVersion(v)` 或 `.IgnoreVersion()`。冲突时影响 0 行，用 `ExecuteAsync(1, "msg")` 抛 `ConcurrencyException`（与 Java 一样不自动抛） | M5 |
 | 列加密 | `column.encryption` | 8 | `[Encryption(typeof(AesEncryption), SupportLike = true)]`，与 Java 版的密文兼容 | M5 |

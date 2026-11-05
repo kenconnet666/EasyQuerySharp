@@ -99,6 +99,28 @@ public abstract class SqlDialect
         if (!item.Raw) renderer.Append(item.Descending ? " DESC" : " ASC");
     }
 
+    /// <summary>
+    /// 带组内排序的字符串聚合。默认是 PostgreSQL / SQLite 的写法：<c>STRING_AGG(x, ? ORDER BY …)</c>；
+    /// MySQL 写成 <c>GROUP_CONCAT(x ORDER BY … SEPARATOR ?)</c>，SQL Server / Oracle 写成 <c>WITHIN GROUP (ORDER BY …)</c>。
+    /// </summary>
+    public virtual void WriteOrderedStringJoin(SqlRenderer renderer, OrderedStringJoinExpr join)
+    {
+        renderer.Append(join.Distinct ? "STRING_AGG(DISTINCT " : "STRING_AGG(").Write(join.Value).Append(", ").Write(join.Separator).Append(" ");
+        WriteOrderBy(renderer, join.Orders);
+        renderer.Append(")");
+    }
+
+    /// <summary>写 <c>ORDER BY a ASC,b DESC</c>（项之间不加空格，与 Java 一致）。</summary>
+    protected void WriteOrderBy(SqlRenderer renderer, IReadOnlyList<OrderByItem> orders)
+    {
+        renderer.Append("ORDER BY ");
+        for (var i = 0; i < orders.Count; i++)
+        {
+            if (i > 0) renderer.Append(",");
+            WriteOrderByItem(renderer, orders[i]);
+        }
+    }
+
     // ---------- 插入冲突（upsert）----------
 
     /// <summary>INSERT 的开头关键字；MySQL 忽略冲突时是 <c>INSERT IGNORE INTO </c>。</summary>

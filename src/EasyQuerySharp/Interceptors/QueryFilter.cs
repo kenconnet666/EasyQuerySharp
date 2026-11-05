@@ -23,6 +23,9 @@ public abstract class QueryFilter<TEntity> : IQueryFilterInterceptor
     /// <inheritdoc />
     public virtual bool EnabledByDefault => true;
 
+    /// <inheritdoc />
+    public virtual bool IsProtected => false;
+
     /// <summary>这次执行要追加的条件；返回 null 表示这次不加。</summary>
     public abstract Expression<Func<TEntity, bool>>? Filter();
 

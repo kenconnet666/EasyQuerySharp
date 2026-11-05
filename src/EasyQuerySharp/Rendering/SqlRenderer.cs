@@ -132,6 +132,7 @@ public sealed class SqlRenderer
             case FunctionExpr f: Dialect.WriteFunction(this, f); break;
             case FragmentExpr f: WriteFragment(f); break;
             case WindowExpr w: WriteWindow(w); break;
+            case OrderedStringJoinExpr j: Dialect.WriteOrderedStringJoin(this, j); break;
             case CastExpr c: WriteFragment(new FragmentExpr(Dialect.CastTemplate(c.TargetType), [c.Operand])); break;
             case BlankCheckExpr b: WriteBlankCheck(b); break;
             case CaseExpr c: WriteCase(c); break;

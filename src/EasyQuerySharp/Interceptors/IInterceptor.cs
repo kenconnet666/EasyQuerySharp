@@ -17,6 +17,9 @@ public interface IInterceptor
 
     /// <summary>默认是否生效（对应 Java 的 enable()）；为 false 时只在 <c>EnableInterceptor(name)</c> 的那条语句上生效。</summary>
     bool EnabledByDefault => true;
+
+    /// <summary>受保护（对应 Java 的 ProtectedInterceptor）：<c>DisableInterceptors()</c> 关不掉，只能按名字 <c>DisableInterceptor(name)</c> 关闭。</summary>
+    bool IsProtected => false;
 }
 
 /// <summary>非泛型的查询过滤入口，供注册表调用。</summary>

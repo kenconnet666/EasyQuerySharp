@@ -20,6 +20,8 @@ internal sealed partial class ExpressionTranslator
         var conditional = false;
         LambdaExpression? selector = null;
         var distinct = false;
+        // 组内排序只对字符串聚合有意义（GROUP_CONCAT(x ORDER BY …)），其余聚合忽略
+        var orders = new List<(LambdaExpression Key, bool Descending)>();
         // string.Join 时链上全是中间操作，没有终结方法
         foreach (var op in separator is null ? chain.Take(chain.Count - 1) : chain)
         {
@@ -33,6 +35,9 @@ internal sealed partial class ExpressionTranslator
                     break;
                 case nameof(Enumerable.Distinct):
                     distinct = true;
+                    break;
+                case nameof(Enumerable.OrderBy) or nameof(Enumerable.ThenBy) or nameof(Enumerable.OrderByDescending) or nameof(Enumerable.ThenByDescending):
+                    orders.Add((Lambda(op.Arguments[1]), op.Method.Name.EndsWith("Descending", System.StringComparison.Ordinal)));
                     break;
                 default:
                     throw Unsupported(op, "分组合并的集合导航上不支持这个方法");
@@ -84,7 +89,24 @@ internal sealed partial class ExpressionTranslator
             t.Bind(valueLambda, [element]);
             value = t.Translate(StripConvert(valueLambda.Body));
         }
-        return plan.Reference(kind, value, filters, distinct, valueLambda is null ? "" : GroupJoinKey(valueLambda), separator, conditional);
+        var request = new GroupAggregateRequest(kind, value, filters, distinct, valueLambda is null ? "" : GroupJoinKey(valueLambda))
+        {
+            Separator = separator,
+            Conditional = conditional,
+        };
+        if (kind == GroupAggregate.Joining && orders.Count > 0)
+        {
+            request = request with
+            {
+                Orders = orders.Select(o =>
+                {
+                    t.Bind(o.Key, [element]);
+                    return t.OrderItem(o.Key.Body, o.Descending);
+                }).ToList(),
+                OrderKey = string.Join(",", orders.Select(o => (o.Descending ? "-" : "+") + GroupJoinKey(o.Key))),
+            };
+        }
+        return plan.Reference(request);
 
         void AddFilter(LambdaExpression original, bool negate)
         {

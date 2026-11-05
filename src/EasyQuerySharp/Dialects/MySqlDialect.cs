@@ -21,6 +21,14 @@ public class MySqlDialect : SqlDialect
     /// <inheritdoc />
     public override string? LastInsertIdQuery => "SELECT LAST_INSERT_ID()";
 
+    /// <inheritdoc />
+    public override void WriteOrderedStringJoin(SqlRenderer renderer, OrderedStringJoinExpr join)
+    {
+        renderer.Append(join.Distinct ? "GROUP_CONCAT(DISTINCT " : "GROUP_CONCAT(").Write(join.Value).Append(" ");
+        WriteOrderBy(renderer, join.Orders);
+        renderer.Append(" SEPARATOR ").Write(join.Separator).Append(")");
+    }
+
     /// <summary><c>UPDATE `a` t INNER JOIN `b` t1 ON … SET t.`c` = t1.`d` WHERE …</c>（与 Java 逐字一致）。</summary>
     public override void WriteJoinedUpdate(SqlRenderer renderer, UpdateStatement update)
     {
@@ -82,7 +90,8 @@ public class MySqlDialect : SqlDialect
             sb.Append(QuoteIdentifier(c.Name)).Append(' ').Append(ColumnType(c)).Append(IsNullable(c) ? " NULL " : " NOT NULL ");
             if (c.IsGenerated) sb.Append("AUTO_INCREMENT ");
             if (c.Comment is not null) sb.Append(" COMMENT '").Append(c.Comment.Replace("'", "''")).Append('\'');
-            sb.Append(i == entity.Columns.Count - 1 ? ", \n" : ",\n");
+            // 最后一列之后是主键约束；没有主键的表不加逗号
+            sb.Append(i < entity.Columns.Count - 1 ? ",\n" : entity.KeyColumns.Count > 0 ? ", \n" : "\n");
         }
         if (entity.KeyColumns.Count > 0)
             sb.Append(" PRIMARY KEY (").Append(string.Join(",", entity.KeyColumns.Select(k => QuoteIdentifier(k.Name)))).Append(")\n");

@@ -180,7 +180,7 @@ internal sealed partial class ExpressionTranslator
     private SqlExpr? TryTranslateCollectionCount(MemberExpression m)
     {
         if (m.Member.Name != "Count" || m.Expression is null || CollectionNavigation(m.Expression) is not var (owner, nav)) return null;
-        if (Context?.GroupJoinFor(owner, nav) is { } plan) return plan.Reference(GroupAggregate.Count, null, [], false, "");
+        if (Context?.GroupJoinFor(owner, nav) is { } plan) return plan.Reference(new GroupAggregateRequest(GroupAggregate.Count, null, [], false, ""));
         var sub = NewCollectionSubQuery(owner, nav).Query;
         sub.Columns.Add(new SelectColumn(new FunctionExpr(SqlFunctionNames.Count, [LiteralExpr.Star]), null));
         return new SubQueryExpr(sub);

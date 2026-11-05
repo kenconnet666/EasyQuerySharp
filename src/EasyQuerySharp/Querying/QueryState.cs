@@ -146,7 +146,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>投影之后再加条件、排序、连接时，把当前查询包成派生表，在外层继续（与 Java 版的 select 之后再 where 一致）。行锁跟到外层：锁只写在最外层查询上。</summary>
     public QueryState Wrap() => new(Db, [new SubQuerySource(this with { Fills = [], Lock = RowLock.None })])
     {
-        ValueFilter = ValueFilter, NavigationValueFilter = NavigationValueFilter, GroupJoinAll = GroupJoinAll, GroupJoinNoMerge = GroupJoinNoMerge, Fills = Fills, Lock = Lock,
+        ValueFilter = ValueFilter, NavigationValueFilter = NavigationValueFilter, Fills = Fills, Lock = Lock,
+        // 分组合并的设置跟到外层：投影包一层后，外层投影里的导航仍按同样的方式合并
+        GroupJoins = GroupJoins, GroupJoinAll = GroupJoinAll, GroupJoinNoMerge = GroupJoinNoMerge,
     };
 
     /// <summary>是否已经有投影（之后的条件要包一层）。</summary>

@@ -256,3 +256,40 @@ public class M8UserRole2
 
     public string? RoleId { get; set; }
 }
+
+/// <summary>对应 Java：mysql8/entity/TableNoKey（没有主键的表）。</summary>
+[Table("no_key_table")]
+public class TableNoKey
+{
+    public string? Column1 { get; set; }
+
+    public string? Column2 { get; set; }
+
+    public string? Column3 { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/OffsetChunkTest（按偏移分批读取的数据）。</summary>
+[Table("offset_chunk_test")]
+public class OffsetChunkTest
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public int? Seq { get; set; }
+
+    public string? Status { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/M8UserProtect（与 M8User 同表，受保护的查询过滤只作用于它）。</summary>
+[Table("m8_user")]
+public class M8UserProtect
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    public int? Age { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+}

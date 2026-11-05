@@ -93,27 +93,24 @@ internal sealed class GroupJoinPlan
     public void AddBaseWhere(SqlExpr predicate) => _baseWhere.Add(predicate);
 
     /// <summary>
-    /// 登记一个聚合，返回外层引用它的表达式。<paramref name="filters"/> 是聚合的条件（按 AND 拆开的合取项及其结构键），
-    /// <paramref name="valueKey"/> 是值的结构键：种类、条件、值、是否去重都相同时复用同一列。
-    /// <paramref name="conditional"/>：写过条件（可能被值过滤整个去掉了），没有值的计数计 1 而不是 *。
+    /// 登记一个聚合，返回外层引用它的表达式。种类、条件、值、是否去重（字符串聚合还有分隔符、组内排序）都相同时复用同一列。
     /// </summary>
-    public SqlExpr Reference(GroupAggregate kind, SqlExpr? value, IReadOnlyList<GroupFilter> filters, bool distinct, string valueKey,
-        SqlExpr? separator = null, bool conditional = false)
+    public SqlExpr Reference(GroupAggregateRequest request)
     {
-        conditional |= filters.Count > 0;
-        var filterKey = string.Join(" && ", filters.Select(f => f.Key));
-        var key = string.Join('\u0001', kind, filterKey, valueKey, distinct, conditional, separator is ParameterExpr p ? p.Value : null);
+        var conditional = request.Conditional || request.Filters.Count > 0;
+        var key = string.Join('\u0001', request.Kind, string.Join(" && ", request.Filters.Select(f => f.Key)), request.ValueKey, request.Distinct, conditional,
+            request.Separator is ParameterExpr p ? p.Value : null, request.OrderKey);
         if (!_byKey.TryGetValue(key, out var entry))
         {
             // 编号接在分组键之后（单列键时从 2 开始）
-            var alias = "__" + kind.ToString().ToLowerInvariant() + (_entries.Count + _keyColumns.Count + 1) + "__";
-            entry = new Entry(kind, value, filters, conditional, distinct, alias, separator);
+            var alias = "__" + request.Kind.ToString().ToLowerInvariant() + (_entries.Count + _keyColumns.Count + 1) + "__";
+            entry = new Entry(request with { Conditional = conditional }, alias);
             _entries.Add(entry);
             _byKey[key] = entry;
         }
         var column = new ColumnExpr(Table, entry.Alias);
         if (Required) return column;
-        return kind switch
+        return request.Kind switch
         {
             GroupAggregate.Count or GroupAggregate.Sum or GroupAggregate.Avg => new FunctionExpr(SqlFunctionNames.NullOrDefault, [column, new LiteralExpr("0")]),
             GroupAggregate.Any => new FunctionExpr(SqlFunctionNames.NullOrDefault, [column, new ParameterExpr(false, typeof(bool))]),
@@ -178,37 +175,56 @@ internal sealed class GroupJoinPlan
         Inner.Where.AddRange(_baseWhere);
         foreach (var (column, alias) in _keyColumns) Inner.Columns.Add(new SelectColumn(column, alias));
 
-        var shared = MergeFilters && _entries.Count > 0 && _entries.All(e => e.Filters.Count > 0)
-            ? _entries[0].Filters.Select(f => f.Key).Where(k => _entries.All(e => e.Filters.Any(f => f.Key == k))).ToHashSet(StringComparer.Ordinal)
+        var shared = MergeFilters && _entries.Count > 0 && _entries.All(e => e.Request.Filters.Count > 0)
+            ? _entries[0].Request.Filters.Select(f => f.Key).Where(k => _entries.All(e => e.Request.Filters.Any(f => f.Key == k))).ToHashSet(StringComparer.Ordinal)
             : [];
-        Inner.Where.AddRange(_entries.Count == 0 ? [] : _entries[0].Filters.Where(f => shared.Contains(f.Key)).Select(f => f.Sql));
-        foreach (var e in _entries) Inner.Columns.Add(new SelectColumn(Aggregate(e, e.Filters.Where(f => !shared.Contains(f.Key)).Select(f => f.Sql).ToList()), e.Alias));
+        Inner.Where.AddRange(_entries.Count == 0 ? [] : _entries[0].Request.Filters.Where(f => shared.Contains(f.Key)).Select(f => f.Sql));
+        foreach (var e in _entries) Inner.Columns.Add(new SelectColumn(Aggregate(e, e.Request.Filters.Where(f => !shared.Contains(f.Key)).Select(f => f.Sql).ToList()), e.Alias));
     }
 
     // remaining：提到 WHERE 之后还要写进 CASE 的条件
     private static SqlExpr Aggregate(Entry e, List<SqlExpr> remaining)
     {
         // 没有值的计数：无条件是 COUNT(*)，有条件时计 1（与 Java 一致）
-        SqlExpr? value = e.Value;
-        if (value is null && e.Conditional) value = new ParameterExpr(1, typeof(int));
+        SqlExpr? value = e.Request.Value;
+        if (value is null && e.Request.Conditional) value = new ParameterExpr(1, typeof(int));
         if (remaining.Count > 0)
         {
-            SqlExpr otherwise = e.Kind == GroupAggregate.Sum ? new ParameterExpr(0, typeof(int)) : LiteralExpr.Null;
+            SqlExpr otherwise = e.Request.Kind == GroupAggregate.Sum ? new ParameterExpr(0, typeof(int)) : LiteralExpr.Null;
             value = new CaseExpr([(LogicalExpr.And(remaining), value!)], otherwise);
         }
         var argument = value ?? LiteralExpr.Star;
-        return e.Kind switch
+        return e.Request.Kind switch
         {
-            GroupAggregate.Count => new FunctionExpr(e.Distinct ? SqlFunctionNames.CountDistinct : SqlFunctionNames.Count, [argument]),
-            GroupAggregate.Sum => new FunctionExpr(e.Distinct ? SqlFunctionNames.SumDistinct : SqlFunctionNames.Sum, [argument]),
+            GroupAggregate.Count => new FunctionExpr(e.Request.Distinct ? SqlFunctionNames.CountDistinct : SqlFunctionNames.Count, [argument]),
+            GroupAggregate.Sum => new FunctionExpr(e.Request.Distinct ? SqlFunctionNames.SumDistinct : SqlFunctionNames.Sum, [argument]),
             GroupAggregate.Max => new FunctionExpr(SqlFunctionNames.Max, [argument]),
             GroupAggregate.Min => new FunctionExpr(SqlFunctionNames.Min, [argument]),
-            GroupAggregate.Avg => new FunctionExpr(e.Distinct ? SqlFunctionNames.AvgDistinct : SqlFunctionNames.Avg, [argument]),
+            GroupAggregate.Avg => new FunctionExpr(e.Request.Distinct ? SqlFunctionNames.AvgDistinct : SqlFunctionNames.Avg, [argument]),
             GroupAggregate.Any => new FragmentExpr("(COUNT({0}) > 0)", [argument]),
             GroupAggregate.None => new FragmentExpr("(COUNT({0}) <= 0)", [argument]),
-            _ => new FunctionExpr(e.Distinct ? SqlFunctionNames.StringJoinDistinct : SqlFunctionNames.StringJoin, [argument, e.Separator!]),
+            GroupAggregate.Joining when e.Request.Orders.Count > 0 => new OrderedStringJoinExpr(argument, e.Request.Separator!, e.Request.Distinct, e.Request.Orders),
+            _ => new FunctionExpr(e.Request.Distinct ? SqlFunctionNames.StringJoinDistinct : SqlFunctionNames.StringJoin, [argument, e.Request.Separator!]),
         };
     }
 
-    private sealed record Entry(GroupAggregate Kind, SqlExpr? Value, IReadOnlyList<GroupFilter> Filters, bool Conditional, bool Distinct, string Alias, SqlExpr? Separator);
+    private sealed record Entry(GroupAggregateRequest Request, string Alias);
+}
+
+/// <summary>
+/// 要登记到分组合并上的一个聚合：种类、值、条件（按 AND 拆开的合取项）、是否去重；<paramref name="ValueKey"/> 是值的结构键（去重复用）。
+/// </summary>
+internal sealed record GroupAggregateRequest(GroupAggregate Kind, SqlExpr? Value, IReadOnlyList<GroupFilter> Filters, bool Distinct, string ValueKey)
+{
+    /// <summary>字符串聚合的分隔符。</summary>
+    public SqlExpr? Separator { get; init; }
+
+    /// <summary>写过条件（可能被值过滤整个去掉了）：没有值的计数计 1 而不是 *。</summary>
+    public bool Conditional { get; init; }
+
+    /// <summary>字符串聚合的组内排序（<c>GROUP_CONCAT(x ORDER BY …)</c>）。</summary>
+    public IReadOnlyList<OrderByItem> Orders { get; init; } = [];
+
+    /// <summary>组内排序的结构键（去重复用）。</summary>
+    public string OrderKey { get; init; } = "";
 }

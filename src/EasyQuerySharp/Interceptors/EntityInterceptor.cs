@@ -15,6 +15,9 @@ public abstract class EntityInterceptor<TEntity> : IEntityWriteInterceptor
     /// <inheritdoc />
     public virtual bool EnabledByDefault => true;
 
+    /// <inheritdoc />
+    public virtual bool IsProtected => false;
+
     /// <summary>插入前调用。</summary>
     public virtual void BeforeInsert(TEntity entity)
     {

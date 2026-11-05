@@ -348,3 +348,22 @@ public sealed class WindowExpr(SqlExpr function, IReadOnlyList<SqlExpr> partitio
     /// <summary>取值函数的紧凑写法。</summary>
     public bool Compact { get; } = compact;
 }
+
+/// <summary>
+/// 带组内排序的字符串聚合（Java 的 orderBy(…).joining(…)）：MySQL 的 <c>GROUP_CONCAT(x ORDER BY … SEPARATOR ?)</c>，
+/// PG 的 <c>STRING_AGG(x, ? ORDER BY …)</c>。写法由方言决定（见 <see cref="Dialects.SqlDialect.WriteOrderedStringJoin"/>）。
+/// </summary>
+public sealed class OrderedStringJoinExpr(SqlExpr value, SqlExpr separator, bool distinct, IReadOnlyList<OrderByItem> orders) : SqlExpr
+{
+    /// <summary>被拼接的值。</summary>
+    public SqlExpr Value { get; } = value;
+
+    /// <summary>分隔符。</summary>
+    public SqlExpr Separator { get; } = separator;
+
+    /// <summary>去重拼接。</summary>
+    public bool Distinct { get; } = distinct;
+
+    /// <summary>组内排序，至少一项。</summary>
+    public IReadOnlyList<OrderByItem> Orders { get; } = orders;
+}

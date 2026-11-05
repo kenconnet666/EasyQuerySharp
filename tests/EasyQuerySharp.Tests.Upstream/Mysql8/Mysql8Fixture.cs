@@ -23,6 +23,7 @@ public sealed class Mysql8Fixture : IAsyncLifetime
         typeof(M8User), typeof(M8Role), typeof(M8UserRole), typeof(M8User2), typeof(M8Role2), typeof(M8UserRole2),
         typeof(M8UserBook), typeof(M8RoleMenu), typeof(M8Menu), typeof(M8Province), typeof(M8City), typeof(M8Area),
         typeof(M8AreaBuild), typeof(M8Parent), typeof(M8Child), typeof(M8ParentChild), typeof(BatchInsert),
+        typeof(TableNoKey), typeof(OffsetChunkTest),
     ];
 
     private EasyDb? _db;
@@ -53,7 +54,8 @@ public sealed class Mysql8Fixture : IAsyncLifetime
             await SqlScript.ExecuteAsync(server, $"DROP DATABASE IF EXISTS `{Database}`; CREATE DATABASE `{Database}` CHARACTER SET utf8mb4;");
         }
 
-        _db = new EasyDb(o => o.UseMySql(new MySqlDataSource(TestDatabases.MySql.TryConnectionString(Database)!)).AddListener(SqlCapture.Instance));
+        _db = new EasyDb(o => o.UseMySql(new MySqlDataSource(TestDatabases.MySql.TryConnectionString(Database)!)).AddListener(SqlCapture.Instance)
+            .AddInterceptor(new MyProtectInterceptor()));
         await _db.CodeFirst.CreateTablesAsync(Tables);
         await SeedAsync(_db);
     }
@@ -119,6 +121,9 @@ public sealed class Mysql8Fixture : IAsyncLifetime
             new M8AreaBuild { Id = "b2", Aid = "a1", Name = "创新楼" },
             new M8AreaBuild { Id = "b3", Aid = "a2", Name = "创业楼" },
         }).ExecuteAsync();
+
+        // 与 Java 相同的 1000 行按偏移分批读取的数据
+        await db.Insert(Enumerable.Range(0, 1000).Select(i => new OffsetChunkTest { Id = i.ToString(System.Globalization.CultureInfo.InvariantCulture), Seq = i }).ToList()).ExecuteAsync();
     }
 }
 
@@ -130,4 +135,17 @@ public abstract class Mysql8Test(Mysql8Fixture fixture)
 
     /// <summary>当前测试的取消令牌。</summary>
     protected static CancellationToken Ct => TestContext.Current.CancellationToken;
+}
+
+/// <summary>对应 Java：common/MyProtectInterceptor：受保护的查询过滤（DisableInterceptors() 关不掉），只作用于 M8UserProtect，条件是 1=1。</summary>
+public sealed class MyProtectInterceptor : EasyQuerySharp.Interceptors.QueryFilter<M8UserProtect>
+{
+    /// <inheritdoc />
+    public override string Name => nameof(MyProtectInterceptor);
+
+    /// <inheritdoc />
+    public override bool IsProtected => true;
+
+    /// <inheritdoc />
+    public override System.Linq.Expressions.Expression<Func<M8UserProtect, bool>> Filter() => _ => Sql.Raw<bool>("1=1");
 }

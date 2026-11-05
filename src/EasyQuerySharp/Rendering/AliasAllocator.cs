@@ -145,6 +145,10 @@ internal static class AliasAllocator
             case LikeExpr l: CollectExpr(l.Operand, tables); CollectExpr(l.Pattern, tables); break;
             case FunctionExpr f: foreach (var a in f.Arguments) CollectExpr(a, tables); break;
             case FragmentExpr f: foreach (var a in f.Arguments) CollectExpr(a, tables); break;
+            case OrderedStringJoinExpr j:
+                CollectExpr(j.Value, tables);
+                foreach (var o in j.Orders) CollectExpr(o.Expr, tables);
+                break;
             case CastExpr c: CollectExpr(c.Operand, tables); break;
             case BlankCheckExpr b: CollectExpr(b.Operand, tables); break;
             case CaseExpr c:
