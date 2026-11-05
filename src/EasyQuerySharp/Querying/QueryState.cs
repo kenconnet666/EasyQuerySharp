@@ -92,6 +92,12 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>第一个表来源上要合并成分组 LEFT JOIN 的集合导航（GroupJoin / GroupJoinIf）。</summary>
     public ImmutableArray<Translation.GroupJoinSpec> GroupJoins { get; init; } = [];
 
+    /// <summary>全部集合导航都合并成分组 JOIN（GroupJoinAll）。</summary>
+    public bool GroupJoinAll { get; init; }
+
+    /// <summary>分组合并时不提取共有条件（GroupJoinNoMerge）。</summary>
+    public bool GroupJoinNoMerge { get; init; }
+
     /// <summary>实体查询上的导航带出（Include）；有投影时不生效。</summary>
     public ImmutableArray<IncludeSpec> Includes { get; init; } = [];
 

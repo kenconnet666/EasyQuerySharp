@@ -54,7 +54,7 @@ internal sealed partial class ExpressionTranslator
                     if (_limited) throw Unsupported(op, "取了一段行之后不能再排序");
                     var key = Lambda(op.Arguments[1]);
                     Translator.Bind(key, [Element]);
-                    Query.OrderBy.Add(new OrderByItem(Translator.Translate(key.Body), op.Method.Name.EndsWith("Descending", System.StringComparison.Ordinal)));
+                    Query.OrderBy.Add(Translator.OrderItem(key.Body, op.Method.Name.EndsWith("Descending", System.StringComparison.Ordinal)));
                     break;
                 case nameof(Enumerable.Skip):
                     Query.Offset = Count(op);

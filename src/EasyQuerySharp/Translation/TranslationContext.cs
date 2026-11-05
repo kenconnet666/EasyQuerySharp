@@ -22,8 +22,9 @@ internal sealed class TranslationContext(
     /// <summary>某张实体表自带的过滤条件（逻辑删除、查询过滤拦截器）；<paramref name="logicDelete"/> 为 false 时不带逻辑删除（导航上的 DisableLogicDelete()）。</summary>
     public IEnumerable<SqlExpr> TableFilters(EntityTableSource table, bool logicDelete = true) => tableFilters(table, logicDelete);
 
-    /// <summary>为子查询派生上下文：共享元数据与过滤规则，隐式 JOIN 加到 <paramref name="subQuery"/>。</summary>
-    public TranslationContext ForSubQuery(SelectQuery subQuery) => new(metadata, tableFilters, subQuery, this) { Db = Db };
+    /// <summary>为子查询派生上下文：共享元数据、过滤规则与分组合并开关，隐式 JOIN 加到 <paramref name="subQuery"/>。</summary>
+    public TranslationContext ForSubQuery(SelectQuery subQuery, IReadOnlyList<GroupJoinSpec>? groupJoinSpecs = null) =>
+        new(metadata, tableFilters, subQuery, this) { Db = Db, GroupJoinAll = GroupJoinAll, MergeGroupFilters = MergeGroupFilters, GroupJoinSpecs = groupJoinSpecs ?? [] };
 
     /// <summary>所属的 EasyDb（分组合并的 Configure 要构造目标实体的查询状态）。</summary>
     public EasyDb? Db { get; init; }
@@ -31,10 +32,16 @@ internal sealed class TranslationContext(
     /// <summary>本查询第一个表来源上显式声明的分组合并（Query.GroupJoin / GroupJoinIf）。</summary>
     public IReadOnlyList<GroupJoinSpec> GroupJoinSpecs { get; init; } = [];
 
+    /// <summary>全部集合导航的聚合都合并成分组 JOIN（GroupJoinAll，对应 Java 的 ALL_SUB_QUERY_GROUP_JOIN），子查询里同样生效。</summary>
+    public bool GroupJoinAll { get; init; }
+
+    /// <summary>分组里各聚合共有的条件提到 WHERE（GroupJoinNoMerge 关闭，对应 Java 的 GROUP_JOIN_NOT_ALLOW_AUTO_MERGE）。</summary>
+    public bool MergeGroupFilters { get; init; } = true;
+
     private readonly Dictionary<(TableSource, string), GroupJoinPlan> _groupJoins = [];
 
     /// <summary>
-    /// 这个集合导航是否合并成分组 LEFT JOIN：第一个表来源上用 GroupJoin 声明的、或导航上标了 GroupJoin 的（GroupJoinIf(false) 可关闭）。
+    /// 这个集合导航是否合并成分组 LEFT JOIN：第一个表来源上用 GroupJoin 声明的、导航上标了 GroupJoin 的、或开了 GroupJoinAll（GroupJoinIf(false) 可关闭）。
     /// 是的话返回（必要时创建）它的合并计划，派生表 JOIN 到所属表所在的查询。
     /// </summary>
     public GroupJoinPlan? GroupJoinFor(SourceBinding owner, NavigationMetadata navigation, GroupJoinWindow? window = null)
@@ -42,18 +49,21 @@ internal sealed class TranslationContext(
         if (owner is not EntityBinding entityOwner) return null;
         if (parent is not null && !Owns(owner.Table)) return parent.GroupJoinFor(owner, navigation, window);
         var spec = GroupJoinSpecs.LastOrDefault(s => s.Member == navigation.Property.Name && s.OwnerType.IsAssignableFrom(navigation.Self.Type));
-        if (spec is { Enabled: false } || (spec is null && !navigation.GroupJoin)) return null;
+        if (spec is { Enabled: false } || (spec is null && !navigation.GroupJoin && !GroupJoinAll)) return null;
         // 同一导航上不同的取行方式各是一张派生表
         var key = (owner.Table, navigation.Property.Name + "|" + window?.Key);
         if (_groupJoins.TryGetValue(key, out var existing)) return existing;
-        var plan = window is null ? WholePlan(navigation, spec) : WindowedPlan(navigation, spec, window);
+        var configured = spec?.Configure is { } configure && Db is not null
+            ? configure(new Querying.QueryState(Db, [new Querying.EntitySource(navigation.Target.Type)]))
+            : null;
+        var plan = window is null ? WholePlan(navigation, configured) : WindowedPlan(navigation, configured, window);
         plan.Required = navigation.Required;
-        if (spec?.Configure is { } configure && Db is not null)
-            plan.ValueFilter = configure(new Querying.QueryState(Db, [new Querying.EntitySource(navigation.Target.Type)])).ValueFilter;
+        plan.MergeFilters = MergeGroupFilters;
+        if (configured is not null) plan.ValueFilter = configured.ValueFilter;
         // 派生表在 Java 里此时创建，别名排在已有的 JOIN（Configure 条件里的导航）之后、之后才加的表之前
         plan.Table.AliasAfterJoins = plan.Inner.Joins.Count;
         // 多对多时 Java 多建了一张中间表的副本，派生表的别名再跳过一个
-        plan.Table.ReserveExtraAlias = navigation.Mapping is not null;
+        plan.Table.ReservedAliases = navigation.Mapping is null ? 0 : 1;
         var keys = plan.KeyColumns
             .Select((k, i) => (SqlExpr)new BinaryExpr(k, SqlBinaryOperator.Equal, entityOwner.OwnerColumn(navigation.SelfColumns[i])))
             .ToList();
@@ -63,27 +73,30 @@ internal sealed class TranslationContext(
     }
 
     // 整个集合分组：FROM 目标表（多对多时 INNER JOIN 中间表）GROUP BY 关联键
-    private GroupJoinPlan WholePlan(NavigationMetadata navigation, GroupJoinSpec? spec)
+    private GroupJoinPlan WholePlan(NavigationMetadata navigation, Querying.QueryState? configured)
     {
         var element = new EntityTableSource(navigation.Target);
         var inner = new SelectQuery(element);
-        IReadOnlyList<ColumnExpr> groupKeys;
-        if (navigation.Mapping is { } mapping)
-        {
-            // 多对多：目标表 INNER JOIN 中间表，按中间表里对应所属表的列分组（与 Java 一致，ON 里目标列在前）
-            var link = new EntityTableSource(mapping);
-            var on = navigation.TargetColumns
-                .Select((c, i) => (SqlExpr)new BinaryExpr(element.Column(c), SqlBinaryOperator.Equal, link.Column(navigation.TargetMappingColumns[i])))
-                .ToList();
-            if (navigation.ExtraMappingFilter is { } mappingFilter) on.Add(PredicateOn(mappingFilter, link));
-            inner.Joins.Add(new JoinClause(JoinKind.Inner, link, on.Count == 1 ? on[0] : LogicalExpr.Grouped(on)) { Implicit = true });
-            groupKeys = navigation.SelfMappingColumns.Select(link.Column).ToList();
-        }
-        else groupKeys = navigation.TargetColumns.Select(element.Column).ToList();
+        var groupKeys = navigation.Mapping is { } mapping
+            ? navigation.SelfMappingColumns.Select(JoinMapping(inner, element, navigation, mapping).Column).ToList()
+            : navigation.TargetColumns.Select(element.Column).ToList();
         var plan = new GroupJoinPlan(inner, new EntityBinding(element), groupKeys);
-        plan.InnerContext = ForSubQuery(plan.Inner);
-        foreach (var filter in TargetFilters(navigation, spec, element, plan.InnerContext)) plan.AddBaseWhere(filter);
+        // 配置里再声明的 GroupJoin（嵌套导航）只在这个分组子查询里生效
+        plan.InnerContext = ForSubQuery(plan.Inner, configured?.GroupJoins);
+        foreach (var filter in TargetFilters(navigation, configured, element, plan.InnerContext)) plan.AddBaseWhere(filter);
         return plan;
+    }
+
+    /// <summary>多对多：<paramref name="inner"/> 里目标表 INNER JOIN 中间表（与 Java 一致，ON 里目标列在前），返回中间表。</summary>
+    public EntityTableSource JoinMapping(SelectQuery inner, EntityTableSource element, NavigationMetadata navigation, EntityMetadata mapping)
+    {
+        var link = new EntityTableSource(mapping);
+        var on = navigation.TargetColumns
+            .Select((c, i) => (SqlExpr)new BinaryExpr(element.Column(c), SqlBinaryOperator.Equal, link.Column(navigation.TargetMappingColumns[i])))
+            .ToList();
+        if (navigation.ExtraMappingFilter is { } mappingFilter) on.Add(PredicateOn(mappingFilter, link));
+        inner.Joins.Add(new JoinClause(JoinKind.Inner, link, on.Count == 1 ? on[0] : LogicalExpr.Grouped(on)) { Implicit = true });
+        return link;
     }
 
     /// <summary>
@@ -91,13 +104,13 @@ internal sealed class TranslationContext(
     /// <c>FROM (SELECT t2.列 AS 列,…,t2.__row__ AS __row__ FROM (SELECT t1.列 AS 列,…,(ROW_NUMBER() OVER (PARTITION BY 外键 ORDER BY …)) AS __row__
     /// FROM 目标 t1 WHERE …) t2 WHERE t2.__row__ &gt;= ? AND t2.__row__ &lt;= ?) t3</c>。
     /// </summary>
-    private GroupJoinPlan WindowedPlan(NavigationMetadata navigation, GroupJoinSpec? spec, GroupJoinWindow window)
+    private GroupJoinPlan WindowedPlan(NavigationMetadata navigation, Querying.QueryState? configured, GroupJoinWindow window)
     {
         if (navigation.Mapping is not null) throw new NotSupportedException($"{navigation} 是多对多导航，分组合并时不支持先取一段行");
         var element = new EntityTableSource(navigation.Target);
         var numbered = new SelectQuery(element);
         var context = ForSubQuery(numbered);
-        numbered.Where.AddRange(TargetFilters(navigation, spec, element, context));
+        numbered.Where.AddRange(TargetFilters(navigation, configured, element, context));
         var translator = new ExpressionTranslator([]) { Context = context };
         var binding = new EntityBinding(element);
         foreach (var filter in window.Filters)
@@ -106,13 +119,13 @@ internal sealed class TranslationContext(
             numbered.Where.Add(translator.TranslatePredicate(filter.Body));
         }
         // 组内排序：链上写的优先，其次是 GroupJoin(…, q => q.OrderBy(…)) 配的，都没有时按主键
-        IEnumerable<(System.Linq.Expressions.LambdaExpression Key, bool Descending)> orderKeys = window.Orders.Count > 0 || spec?.Configure is null || Db is null
+        IEnumerable<(LambdaExpression Key, bool Descending)> orderKeys = window.Orders.Count > 0 || configured is null
             ? window.Orders
-            : spec.Configure(new Querying.QueryState(Db, [new Querying.EntitySource(navigation.Target.Type)])).OrderBys.Select(o => (o.Key, o.Descending));
+            : configured.OrderBys.Select(o => (o.Key, o.Descending));
         var orders = orderKeys.Select(o =>
         {
             translator.Bind(o.Key, [binding]);
-            return new OrderByItem(translator.Translate(ExpressionTranslator.StripConvert(o.Key.Body)), o.Descending);
+            return translator.OrderItem(o.Key.Body, o.Descending);
         }).ToList();
         if (orders.Count == 0) orders.AddRange(navigation.Target.KeyColumns.Select(k => new OrderByItem(element.Column(k), false)));
 
@@ -133,17 +146,16 @@ internal sealed class TranslationContext(
         var plan = new GroupJoinPlan(new SelectQuery(rangedTable),
             new DerivedBinding(rangedTable, columns.ToDictionary(c => c.PropertyName, c => c.Name, StringComparer.Ordinal), navigation.Target),
             navigation.TargetColumns.Select(c => new ColumnExpr(rangedTable, c.Name, c)).ToList());
-        plan.InnerContext = ForSubQuery(plan.Inner);
+        plan.InnerContext = ForSubQuery(plan.Inner, configured?.GroupJoins);
         return plan;
     }
 
     // 目标表自带的过滤（逻辑删除、拦截器）、导航的固定条件、GroupJoin(…, q => q.Where(…)) 加的条件
-    private List<SqlExpr> TargetFilters(NavigationMetadata navigation, GroupJoinSpec? spec, EntityTableSource element, TranslationContext context)
+    private List<SqlExpr> TargetFilters(NavigationMetadata navigation, Querying.QueryState? configured, EntityTableSource element, TranslationContext context)
     {
         var filters = TableFilters(element).ToList();
         if (navigation.ExtraFilter is { } extraFilter) filters.Add(context.PredicateOn(extraFilter, element));
-        if (spec?.Configure is not { } configure || Db is null) return filters;
-        var configured = configure(new Querying.QueryState(Db, [new Querying.EntitySource(navigation.Target.Type)]));
+        if (configured is null) return filters;
         var translator = new ExpressionTranslator([]) { Context = context };
         foreach (var where in configured.Wheres)
         {
@@ -173,7 +185,12 @@ internal sealed class TranslationContext(
     /// <summary>整条查询翻译完后调用：按登记的聚合生成各分组派生表的列。</summary>
     public void CompleteGroupJoins()
     {
-        foreach (var plan in _groupJoins.Values) plan.Complete();
+        foreach (var plan in _groupJoins.Values)
+        {
+            // 嵌套的分组合并（分组子查询里再合并的导航）先收尾
+            plan.InnerContext.CompleteGroupJoins();
+            plan.Complete();
+        }
     }
 
     /// <summary>

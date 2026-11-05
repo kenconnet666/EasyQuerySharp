@@ -147,8 +147,7 @@ internal sealed partial class ExpressionTranslator
     {
         var t = new ExpressionTranslator(new Dictionary<ParameterExpression, SourceBinding>(_scope)) { Context = plan.InnerContext };
         var element = plan.Element;
-        var filters = new List<SqlExpr>();
-        var filterKeys = new List<string>();
+        var filters = new List<GroupFilter>();
         LambdaExpression? selector = null;
         var distinct = false;
         // string.Join 时链上全是中间操作，没有终结方法
@@ -215,17 +214,27 @@ internal sealed partial class ExpressionTranslator
             t.Bind(valueLambda, [element]);
             value = t.Translate(StripConvert(valueLambda.Body));
         }
-        var filter = filters.Count == 0 ? null : LogicalExpr.And(filters);
-        return plan.Reference(kind, value, filter, distinct, string.Join(" && ", filterKeys), valueLambda is null ? "" : GroupJoinKey(valueLambda), separator);
+        return plan.Reference(kind, value, filters, distinct, valueLambda is null ? "" : GroupJoinKey(valueLambda), separator);
 
         void AddFilter(LambdaExpression original, bool negate)
         {
             if (Filtering.ValueFilterRewriter.Apply(original, plan.ValueFilter) is not { } predicate) return;
-            var sql = t.ElementPredicate(predicate, element);
-            filters.Add(negate ? Negate(sql) : sql);
-            filterKeys.Add((negate ? "!" : "") + GroupJoinKey(predicate));
+            if (negate)
+            {
+                filters.Add(new GroupFilter(Negate(t.ElementPredicate(predicate, element)), "!" + GroupJoinKey(predicate)));
+                return;
+            }
+            // 按 AND 拆成合取项：几个聚合共有的合取项可以提到派生表的 WHERE
+            foreach (var conjunct in Conjuncts(predicate.Body))
+            {
+                var part = Expression.Lambda(conjunct, predicate.Parameters);
+                filters.Add(new GroupFilter(t.ElementPredicate(part, element), GroupJoinKey(part)));
+            }
         }
     }
+
+    private static IEnumerable<Expression> Conjuncts(Expression body) =>
+        body is BinaryExpression { NodeType: ExpressionType.AndAlso } and ? Conjuncts(and.Left).Concat(Conjuncts(and.Right)) : [body];
 
     /// <summary>
     /// 分组合并时链上的"取一段行"：最后一个 Skip / Take 及其之前的 Where（取行前的条件）、OrderBy / ThenBy（组内排序）。
@@ -330,7 +339,6 @@ internal sealed partial class ExpressionTranslator
             current = mc.Arguments[0];
         }
         if (CollectionNavigation(current) is not var (owner, nav)) return null;
-        if (nav.Mapping is not null) throw Unsupported(call, "多对多导航不支持取第几行");
         chain.Reverse();
         var elementAt = call.Method.Name.StartsWith(nameof(Enumerable.ElementAt), System.StringComparison.Ordinal);
         var index = elementAt ? Convert.ToInt32(ClientEvaluator.Evaluate(call.Arguments[1]), System.Globalization.CultureInfo.InvariantCulture) : 0;
@@ -341,6 +349,11 @@ internal sealed partial class ExpressionTranslator
         {
             var element = new EntityTableSource(nav.Target);
             var inner = new SelectQuery(element);
+            // 多对多：经中间表连目标表，按中间表里对应所属表的列分区，这些列以 __列名__ 选出供外层 ON 用（与 Java 一致）
+            var link = nav.Mapping is { } mapping ? context.JoinMapping(inner, element, nav, mapping) : null;
+            var partition = link is null
+                ? nav.TargetColumns.Select(c => ((SqlExpr)element.Column(c), c.Name)).ToList()
+                : nav.SelfMappingColumns.Select(c => ((SqlExpr)link.Column(c), "__" + c.Name + "__")).ToList();
             var t = new ExpressionTranslator(new Dictionary<ParameterExpression, SourceBinding>(_scope)) { Context = context.ForSubQuery(inner) };
             var binding = new EntityBinding(element);
             inner.Where.AddRange(context.TableFilters(element));
@@ -355,7 +368,7 @@ internal sealed partial class ExpressionTranslator
                     case nameof(Enumerable.OrderBy) or nameof(Enumerable.ThenBy) or nameof(Enumerable.OrderByDescending) or nameof(Enumerable.ThenByDescending):
                         var keyLambda = Lambda(op.Arguments[1]);
                         t.Bind(keyLambda, [binding]);
-                        orders.Add(new OrderByItem(t.Translate(StripConvert(keyLambda.Body)), op.Method.Name.EndsWith("Descending", System.StringComparison.Ordinal)));
+                        orders.Add(t.OrderItem(keyLambda.Body, op.Method.Name.EndsWith("Descending", System.StringComparison.Ordinal)));
                         break;
                     default:
                         throw Unsupported(op, "取第几行之前只支持 Where / OrderBy / ThenBy");
@@ -364,14 +377,15 @@ internal sealed partial class ExpressionTranslator
             if (predicate is not null) inner.Where.Add(t.ElementPredicate(predicate, binding));
             if (orders.Count == 0) orders.AddRange(nav.Target.KeyColumns.Select(k => new OrderByItem(element.Column(k), false)));
 
+            if (link is not null) inner.Columns.AddRange(partition.Select(p => new SelectColumn(p.Item1, p.Item2)));
             var columns = nav.Target.Columns.Where(c => c.AutoSelect).ToList();
             foreach (var c in columns) inner.Columns.Add(new SelectColumn(element.Column(c), null));
-            var row = new WindowExpr(new FragmentExpr("ROW_NUMBER()", []), nav.TargetColumns.Select(c => (SqlExpr)element.Column(c)).ToList(), orders, null, compact: false);
+            var row = new WindowExpr(new FragmentExpr("ROW_NUMBER()", []), partition.Select(p => p.Item1).ToList(), orders, null, compact: false);
             inner.Columns.Add(new SelectColumn(row, "__row__"));
-            // Java 在这里多一层匿名表，派生表的别名跳过一个编号
-            var table = new DerivedTableSource(inner) { ReserveExtraAlias = true };
-            var on = nav.TargetColumns
-                .Select((target, i) => (SqlExpr)new BinaryExpr(new ColumnExpr(table, target.Name, target), SqlBinaryOperator.Equal, owner.OwnerColumn(nav.SelfColumns[i])))
+            // Java 在这里多一层匿名表（多对多时还有中间表的副本），派生表的别名跳号
+            var table = new DerivedTableSource(inner) { ReservedAliases = link is null ? 1 : 2 };
+            var on = partition
+                .Select((p, i) => (SqlExpr)new BinaryExpr(new ColumnExpr(table, p.Item2), SqlBinaryOperator.Equal, owner.OwnerColumn(nav.SelfColumns[i])))
                 .Append(new BinaryExpr(new ColumnExpr(table, "__row__"), SqlBinaryOperator.Equal, new ParameterExpr(index + 1, typeof(int))))
                 .ToList();
             return (table, LogicalExpr.Grouped(on), new DerivedBinding(table, columns.ToDictionary(c => c.PropertyName, c => c.Name), nav.Target));
@@ -382,7 +396,7 @@ internal sealed partial class ExpressionTranslator
     private SqlExpr? TryTranslateCollectionCount(MemberExpression m)
     {
         if (m.Member.Name != "Count" || m.Expression is null || CollectionNavigation(m.Expression) is not var (owner, nav)) return null;
-        if (Context?.GroupJoinFor(owner, nav) is { } plan) return plan.Reference(GroupAggregate.Count, null, null, false, "", "");
+        if (Context?.GroupJoinFor(owner, nav) is { } plan) return plan.Reference(GroupAggregate.Count, null, [], false, "");
         var sub = NewCollectionSubQuery(owner, nav).Query;
         sub.Columns.Add(new SelectColumn(new FunctionExpr(SqlFunctionNames.Count, [LiteralExpr.Star]), null));
         return new SubQueryExpr(sub);

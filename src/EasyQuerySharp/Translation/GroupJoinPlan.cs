@@ -21,6 +21,9 @@ internal sealed record GroupJoinWindow(
     long? Take,
     string Key);
 
+/// <summary>分组聚合的一个条件（按 AND 拆开的合取项）；<paramref name="Key"/> 是结构键，用来判断几个聚合是否共有这个条件。</summary>
+internal sealed record GroupFilter(SqlExpr Sql, string Key);
+
 /// <summary>分组合并里的一种聚合。</summary>
 internal enum GroupAggregate
 {
@@ -37,7 +40,7 @@ internal enum GroupAggregate
 /// <summary>
 /// 一处集合导航合并成的 <c>LEFT JOIN (SELECT 关联键 AS __group_key1__, 聚合… FROM 目标 GROUP BY 关联键) tN ON …</c>（与 Java 一致）：
 /// 导航上的每个不同聚合（按种类、条件、值去重）是派生表的一列，依次编号 <c>__sum2__</c>、<c>__count3__</c>…；
-/// 各聚合的 Where 条件写成 <c>CASE WHEN 条件 THEN 值 ELSE … END</c>；全部聚合的条件都相同时，条件提到派生表的 WHERE。
+/// 各聚合的 Where 条件写成 <c>CASE WHEN 条件 THEN 值 ELSE … END</c>；全部聚合共有的条件提到派生表的 WHERE。
 /// 外层引用：计数、求和写成 <c>IFNULL(tN.__sum2__,0)</c>，Any / None 写成 <c>IFNULL(tN.__any2__,false / true)</c>。
 /// 聚合在整条查询翻译完之后才知道全部，派生表的列由 <see cref="Complete"/> 生成。
 /// </summary>
@@ -68,6 +71,9 @@ internal sealed class GroupJoinPlan
     /// <summary>子查询里集合元素的绑定。</summary>
     public SourceBinding Element { get; }
 
+    /// <summary>各聚合共有的条件是否提到 WHERE（默认是；Java 的 GROUP_JOIN_NOT_ALLOW_AUTO_MERGE 对应 false）。</summary>
+    public bool MergeFilters { get; set; } = true;
+
     /// <summary>必有的导航（INNER JOIN）：每行都连得上，外层引用聚合时不包 IFNULL。</summary>
     public bool Required { get; set; }
 
@@ -87,17 +93,18 @@ internal sealed class GroupJoinPlan
     public void AddBaseWhere(SqlExpr predicate) => _baseWhere.Add(predicate);
 
     /// <summary>
-    /// 登记一个聚合，返回外层引用它的表达式。<paramref name="filterKey"/> / <paramref name="valueKey"/> 是条件、值的结构键：
-    /// 种类、条件、值、是否去重都相同时复用同一列。
+    /// 登记一个聚合，返回外层引用它的表达式。<paramref name="filters"/> 是聚合的条件（按 AND 拆开的合取项及其结构键），
+    /// <paramref name="valueKey"/> 是值的结构键：种类、条件、值、是否去重都相同时复用同一列。
     /// </summary>
-    public SqlExpr Reference(GroupAggregate kind, SqlExpr? value, SqlExpr? filter, bool distinct, string filterKey, string valueKey, SqlExpr? separator = null)
+    public SqlExpr Reference(GroupAggregate kind, SqlExpr? value, IReadOnlyList<GroupFilter> filters, bool distinct, string valueKey, SqlExpr? separator = null)
     {
+        var filterKey = string.Join(" && ", filters.Select(f => f.Key));
         var key = string.Join('\u0001', kind, filterKey, valueKey, distinct, separator is ParameterExpr p ? p.Value : null);
         if (!_byKey.TryGetValue(key, out var entry))
         {
             // 编号接在分组键之后（单列键时从 2 开始）
             var alias = "__" + kind.ToString().ToLowerInvariant() + (_entries.Count + _keyColumns.Count + 1) + "__";
-            entry = new Entry(kind, value, filter, distinct, alias, filterKey, separator);
+            entry = new Entry(kind, value, filters, distinct, alias, separator);
             _entries.Add(entry);
             _byKey[key] = entry;
         }
@@ -112,7 +119,11 @@ internal sealed class GroupJoinPlan
         };
     }
 
-    /// <summary>按已登记的聚合生成子查询的 SELECT 与 WHERE；可重复调用（以最后一次为准）。</summary>
+    /// <summary>
+    /// 按已登记的聚合生成子查询的 SELECT 与 WHERE；可重复调用（以最后一次为准）。
+    /// 全部聚合都有条件时，它们共有的合取项（按第一个聚合里的顺序）提到 WHERE，各聚合的 CASE 里只留其余部分（与 Java 一致）；
+    /// <see cref="MergeFilters"/> 为 false 时不提。
+    /// </summary>
     public void Complete()
     {
         Inner.Columns.Clear();
@@ -120,21 +131,23 @@ internal sealed class GroupJoinPlan
         Inner.Where.AddRange(_baseWhere);
         foreach (var (column, alias) in _keyColumns) Inner.Columns.Add(new SelectColumn(column, alias));
 
-        // 全部聚合都有条件且条件相同：条件提到 WHERE，聚合里不再写 CASE
-        var hoist = _entries.Count > 0 && _entries.All(e => e.Filter is not null) && _entries.Select(e => e.FilterKey).Distinct().Count() == 1;
-        if (hoist) Inner.Where.Add(_entries[0].Filter!);
-        foreach (var e in _entries) Inner.Columns.Add(new SelectColumn(Aggregate(e, hoist), e.Alias));
+        var shared = MergeFilters && _entries.Count > 0 && _entries.All(e => e.Filters.Count > 0)
+            ? _entries[0].Filters.Select(f => f.Key).Where(k => _entries.All(e => e.Filters.Any(f => f.Key == k))).ToHashSet(StringComparer.Ordinal)
+            : [];
+        Inner.Where.AddRange(_entries.Count == 0 ? [] : _entries[0].Filters.Where(f => shared.Contains(f.Key)).Select(f => f.Sql));
+        foreach (var e in _entries) Inner.Columns.Add(new SelectColumn(Aggregate(e, e.Filters.Where(f => !shared.Contains(f.Key)).Select(f => f.Sql).ToList()), e.Alias));
     }
 
-    private static SqlExpr Aggregate(Entry e, bool hoisted)
+    // remaining：提到 WHERE 之后还要写进 CASE 的条件
+    private static SqlExpr Aggregate(Entry e, List<SqlExpr> remaining)
     {
         // 没有值的计数：无条件是 COUNT(*)，有条件时计 1（与 Java 一致）
         SqlExpr? value = e.Value;
-        if (value is null && e.Filter is not null) value = new ParameterExpr(1, typeof(int));
-        if (e.Filter is not null && !hoisted)
+        if (value is null && e.Filters.Count > 0) value = new ParameterExpr(1, typeof(int));
+        if (remaining.Count > 0)
         {
             SqlExpr otherwise = e.Kind == GroupAggregate.Sum ? new ParameterExpr(0, typeof(int)) : LiteralExpr.Null;
-            value = new CaseExpr([(e.Filter, value!)], otherwise);
+            value = new CaseExpr([(LogicalExpr.And(remaining), value!)], otherwise);
         }
         var argument = value ?? LiteralExpr.Star;
         return e.Kind switch
@@ -150,5 +163,5 @@ internal sealed class GroupJoinPlan
         };
     }
 
-    private sealed record Entry(GroupAggregate Kind, SqlExpr? Value, SqlExpr? Filter, bool Distinct, string Alias, string FilterKey, SqlExpr? Separator);
+    private sealed record Entry(GroupAggregate Kind, SqlExpr? Value, IReadOnlyList<GroupFilter> Filters, bool Distinct, string Alias, SqlExpr? Separator);
 }

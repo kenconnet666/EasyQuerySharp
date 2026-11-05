@@ -104,6 +104,17 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     public TSelf DisableReversePaging() => With(State with { NoReversePaging = true });
 
     /// <summary>
+    /// 这条查询（含其中的子查询）里所有集合导航上的聚合都合并成分组 LEFT JOIN，不用逐个 GroupJoin（对应 Java 的 ALL_SUB_QUERY_GROUP_JOIN）。
+    /// 单个导航仍可用 GroupJoinIf(false, …) 关闭。
+    /// </summary>
+    public TSelf GroupJoinAll() => With(State with { GroupJoinAll = true });
+
+    /// <summary>
+    /// 分组合并时不把各聚合共有的条件提到派生表的 WHERE，每个聚合都写成 CASE WHEN（对应 Java 的 GROUP_JOIN_NOT_ALLOW_AUTO_MERGE）。
+    /// </summary>
+    public TSelf GroupJoinNoMerge() => With(State with { GroupJoinNoMerge = true });
+
+    /// <summary>
     /// 行锁 <c>FOR UPDATE</c>（对应 Java 的 forUpdate）：锁住查到的行直到事务结束。只能在事务里、对单表查询调用一次；
     /// 锁只写在最外层，计数、Any、分页的语句同样带上。SQL Server、SQLite 不支持，渲染时抛出 <see cref="NotSupportedException"/>。
     /// </summary>
@@ -294,6 +305,8 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         }
         var state = State.Distinct || State.Offset is not null || State.Limit is not null ? State.Wrap() : ForAggregate();
         var frame = QueryCompiler.Build(state with { OrderBys = [] });
+        // 排序里用到了导航时，Java 已为它建了表：计数去掉排序后主表仍带别名 t
+        frame.Query.ExplicitProjection |= State.OrderBys.Any(o => Translation.NavigationUsage.Count(o.Key.Body) > 0);
         frame.Query.Columns.Add(new SelectColumn(new FunctionExpr(SqlFunctionNames.Count, [LiteralExpr.Star]), null));
         return frame.Query;
     }

@@ -15,6 +15,7 @@ public abstract class WriteCommandBase<TSelf, T> : EntityCommandBase<TSelf, T>
 {
     private readonly List<LambdaExpression> _wheres = [];
     private bool _ignoreVersion;
+    private bool _groupJoinAll;
     private object? _version;
 
     private protected WriteCommandBase(EasyDb db, IReadOnlyList<T>? entities) : base(db) => Entities = entities;
@@ -53,6 +54,13 @@ public abstract class WriteCommandBase<TSelf, T> : EntityCommandBase<TSelf, T>
     public TSelf DisableLogicDelete()
     {
         LogicDeleteDisabled = true;
+        return Self;
+    }
+
+    /// <summary>条件里集合导航上的聚合都合并成分组 LEFT JOIN（对应 Java 的 ALL_SUB_QUERY_GROUP_JOIN），见查询的 GroupJoinAll。</summary>
+    public TSelf GroupJoinAll()
+    {
+        _groupJoinAll = true;
         return Self;
     }
 
@@ -137,5 +145,5 @@ public abstract class WriteCommandBase<TSelf, T> : EntityCommandBase<TSelf, T>
     }
 
     /// <summary>新建一条写入语句的翻译作用域。</summary>
-    private protected WriteScope NewScope() => new(Db, NewTable(), Interceptors);
+    private protected WriteScope NewScope() => new(Db, NewTable(), Interceptors, _groupJoinAll);
 }

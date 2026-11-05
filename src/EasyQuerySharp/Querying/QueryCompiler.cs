@@ -47,6 +47,8 @@ internal static class QueryCompiler
                 {
                     Db = db,
                     GroupJoinSpecs = state.GroupJoins,
+                    GroupJoinAll = state.GroupJoinAll || outerContext?.GroupJoinAll == true,
+                    MergeGroupFilters = !state.GroupJoinNoMerge && outerContext?.MergeGroupFilters != false,
                 };
                 continue;
             }
@@ -78,12 +80,7 @@ internal static class QueryCompiler
         foreach (var order in state.OrderBys)
         {
             translator.Bind(order.Key, bindings);
-            // Sql.NullsFirst / NullsLast 只标记 NULL 的位置，排序的是里面的值
-            var (key, nulls) = ExpressionTranslator.StripConvert(order.Key.Body) is MethodCallExpression { Method.Name: nameof(Sql.NullsFirst) or nameof(Sql.NullsLast) } mark
-                               && mark.Method.DeclaringType == typeof(Sql)
-                ? (mark.Arguments[0], mark.Method.Name == nameof(Sql.NullsLast) ? NullsOrder.Last : NullsOrder.First)
-                : (order.Key.Body, (NullsOrder?)null);
-            query!.OrderBy.Add(new OrderByItem(translator.Translate(key), order.Descending, order.Raw, nulls));
+            query!.OrderBy.Add(translator.OrderItem(order.Key.Body, order.Descending, order.Raw));
         }
         query!.Distinct = state.Distinct;
         query.Offset = state.Offset;
@@ -200,7 +197,7 @@ internal static class QueryCompiler
                 var table = new DerivedTableSource(inner)
                 {
                     ExplicitAlias = s.Alias,
-                    ReserveExtraAlias = s.Join is not null && s.Inner.GroupKey is not null,
+                    ReservedAliases = s.Join is not null && s.Inner.GroupKey is not null ? 1 : 0,
                 };
                 return new DerivedBinding(table, projection.MemberColumns, projection.Entity, projection.AliasedMembers, projection.NestedEntities);
             }

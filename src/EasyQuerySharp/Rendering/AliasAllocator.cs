@@ -78,7 +78,7 @@ internal static class AliasAllocator
         if (table is DerivedTableSource derived)
         {
             Collect(derived.Query, tables, derived.AliasAfterJoins is null ? null : derived);
-            if (derived.ReserveExtraAlias && derived.AliasAfterJoins is null) tables.Add(Placeholder.Instance);
+            if (derived.AliasAfterJoins is null) Reserve(derived.ReservedAliases, tables);
         }
         // CTE：定义只编号一次（第一次引用时），之后的引用只编自己
         if (table is CteTableSource cte && !tables.OfType<CteTableSource>().Any(c => c.Name == cte.Name))
@@ -105,8 +105,13 @@ internal static class AliasAllocator
     // 按创建顺序编号的派生表：需要跳号时先占一个空位
     private static void AddOwner(DerivedTableSource owner, List<TableSource> tables)
     {
-        if (owner.ReserveExtraAlias) tables.Add(Placeholder.Instance);
+        Reserve(owner.ReservedAliases, tables);
         tables.Add(owner);
+    }
+
+    private static void Reserve(int count, List<TableSource> tables)
+    {
+        for (var i = 0; i < count; i++) tables.Add(Placeholder.Instance);
     }
 
     // 只占编号、不渲染的表来源

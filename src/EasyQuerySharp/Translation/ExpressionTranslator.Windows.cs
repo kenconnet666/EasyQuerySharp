@@ -45,7 +45,7 @@ internal sealed partial class ExpressionTranslator
                     break;
                 case nameof(Window.OrderBy):
                 case nameof(Window.OrderByDescending):
-                    orders.Add(WindowOrder(step.Arguments[0], step.Method.Name == nameof(Window.OrderByDescending)));
+                    orders.Add(OrderItem(step.Arguments[0], step.Method.Name == nameof(Window.OrderByDescending)));
                     break;
                 case nameof(Window.Rows):
                 case nameof(Window.Range):
@@ -77,13 +77,16 @@ internal sealed partial class ExpressionTranslator
         return steps;
     }
 
-    // 窗口里的排序项：Sql.NullsFirst / NullsLast 标记 NULL 的位置
-    private OrderByItem WindowOrder(Expression key, bool descending)
+    /// <summary>
+    /// 一个排序项（查询、窗口、集合导航里的排序共用）：<c>Sql.NullsFirst</c> / <c>Sql.NullsLast</c> 只标记 NULL 的位置，排序的是里面的值。
+    /// 键里的参数要先绑定好。
+    /// </summary>
+    internal OrderByItem OrderItem(Expression key, bool descending, bool raw = false)
     {
         var stripped = StripConvert(key);
         if (stripped is MethodCallExpression { Method.Name: nameof(Sql.NullsFirst) or nameof(Sql.NullsLast) } mark && mark.Method.DeclaringType == typeof(Sql))
-            return new OrderByItem(Translate(StripConvert(mark.Arguments[0])), descending, nulls: mark.Method.Name == nameof(Sql.NullsLast) ? NullsOrder.Last : NullsOrder.First);
-        return new OrderByItem(Translate(stripped), descending);
+            return new OrderByItem(Translate(StripConvert(mark.Arguments[0])), descending, raw, mark.Method.Name == nameof(Sql.NullsLast) ? NullsOrder.Last : NullsOrder.First);
+        return new OrderByItem(Translate(stripped), descending, raw);
     }
 
     private static string IntLiteral(Expression e) =>

@@ -15,20 +15,30 @@ internal sealed class WriteScope
     private readonly SelectQuery _scratch;
     private readonly TranslationContext _context;
 
-    public WriteScope(EasyDb db, EntityTableSource table, InterceptorSelection interceptors)
+    public WriteScope(EasyDb db, EntityTableSource table, InterceptorSelection interceptors, bool groupJoinAll = false)
     {
         Table = table;
         _scratch = new SelectQuery(table);
         _context = new TranslationContext(db.Metadata,
             (t, logicDelete) => QueryCompiler.TableFilters(db, t, logicDelete, interceptors),
-            _scratch) { Db = db };
+            _scratch) { Db = db, GroupJoinAll = groupJoinAll };
     }
 
     /// <summary>写入的目标表。</summary>
     public EntityTableSource Table { get; }
 
-    /// <summary>对一导航连接的表；写入里都是 INNER JOIN（与 Java 一致）。</summary>
-    public IEnumerable<JoinClause> Joins => _scratch.Joins.Select(j => new JoinClause(JoinKind.Inner, j.Table, j.On));
+    /// <summary>
+    /// 翻译中连接的表：对一导航在写入里都是 INNER JOIN（与 Java 一致），集合导航合并成的分组表保持 LEFT JOIN。
+    /// 在全部 SET / 条件翻译完之后取（分组表的列此时才确定）。
+    /// </summary>
+    public IEnumerable<JoinClause> Joins
+    {
+        get
+        {
+            _context.CompleteGroupJoins();
+            return _scratch.Joins.Select(j => j.Table is DerivedTableSource ? j : new JoinClause(JoinKind.Inner, j.Table, j.On));
+        }
+    }
 
     /// <summary>翻译参数为目标实体的 lambda（条件或值）。</summary>
     public SqlExpr Translate(LambdaExpression lambda, bool predicate)

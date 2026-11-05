@@ -47,10 +47,10 @@ public sealed class DerivedTableSource(SelectQuery query) : TableSource
     public SelectQuery Query { get; } = query;
 
     /// <summary>
-    /// 分配别名前先多占一个编号。Java 版把"分组后投影"的查询作为 JOIN 来源时，内部多一层匿名表，
-    /// 外层看到的派生表别名因此跳过一个（如 t3 而不是 t2）；为了 SQL 逐字一致在这里复现。
+    /// 分配别名前先多占几个编号。Java 版在一些地方多建匿名表（"分组后投影"的查询作为 JOIN 来源、取集合导航的某一行等），
+    /// 外层看到的派生表别名因此跳号（如 t3 而不是 t2）；为了 SQL 逐字一致在这里复现。
     /// </summary>
-    public bool ReserveExtraAlias { get; set; }
+    public int ReservedAliases { get; set; }
 
     /// <summary>
     /// 别名按创建顺序编号：先编内部 FROM 和前 N 个 JOIN，再编派生表自己，最后才是内部之后加上的 JOIN 与子查询。
@@ -100,6 +100,6 @@ public sealed class CteTableSource(string name, SelectQuery query) : TableSource
     /// <summary>CTE 的定义。</summary>
     public SelectQuery Query { get; } = query;
 
-    /// <summary>编号时在定义之后多占一个编号（分组后投影的查询作为 JOIN 来源时，与派生表的 <see cref="DerivedTableSource.ReserveExtraAlias"/> 相同）。</summary>
+    /// <summary>编号时在定义之后多占一个编号（分组后投影的查询作为 JOIN 来源时，与派生表的 <see cref="DerivedTableSource.ReservedAliases"/> 相同）。</summary>
     public bool ReserveExtraAlias { get; init; }
 }

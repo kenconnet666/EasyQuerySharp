@@ -14,7 +14,15 @@ public sealed class Mysql8Fixture : IAsyncLifetime
     /// <summary>本固件使用的库名。</summary>
     public const string Database = "easy-query-test-mysql8";
 
-    private static readonly Type[] Tables = [typeof(SysUser), typeof(SysBank), typeof(SysBankCard), typeof(SysUserBook)];
+    // M8MenuOwner 与 M8Menu 同表，只建一次
+    private static readonly Type[] Tables =
+    [
+        typeof(SysUser), typeof(SysBank), typeof(SysBankCard), typeof(SysUserBook),
+        typeof(DocBankCard), typeof(DocBank), typeof(DocUser), typeof(DocUserBook),
+        typeof(SchoolClass), typeof(SchoolTeacher), typeof(SchoolClassTeacher),
+        typeof(M8User), typeof(M8Role), typeof(M8UserRole), typeof(M8User2), typeof(M8Role2), typeof(M8UserRole2),
+        typeof(M8UserBook), typeof(M8RoleMenu), typeof(M8Menu),
+    ];
 
     private EasyDb? _db;
     private string? _skipReason;
@@ -80,6 +88,15 @@ public sealed class Mysql8Fixture : IAsyncLifetime
             new SysUserBook { Id = "b2", Name = "b2book", Uid = "u1", Price = 11m },
             new SysUserBook { Id = "b3", Name = "b3book", Uid = "u2", Price = 9.9m },
         }).ExecuteAsync();
+
+        // 与 Java mysql8/ManyJoinTest 的 before() 相同的用户、角色、菜单
+        await db.Insert(new M8User2 { UserId = "123", UserAge = 123, UserName = "123", CreateTime = new DateTime(2020, 1, 1, 1, 1, 0) }).ExecuteAsync();
+        await db.Insert(new M8UserRole2 { UserRoleId = "1", UserId = "123", RoleId = "456" }).ExecuteAsync();
+        await db.Insert(new M8Role2 { RoleId = "456", RoleName = "456role" }).ExecuteAsync();
+        await db.Insert(new M8Role { Id = "r123", Name = "测试角色", CreateTime = new DateTime(2020, 1, 1) }).ExecuteAsync();
+        await db.Insert(new M8RoleMenu { Id = "rm123", RoleId = "r123", MenuId = "m123" }).ExecuteAsync();
+        await db.Insert(new M8Menu { Id = "m123", Name = "测试菜单", Path = "/admin", OwnerId = "o123" }).ExecuteAsync();
+        await db.Insert(new M8MenuOwner { Id = "o123", Name = "测试所属菜单" }).ExecuteAsync();
     }
 }
 

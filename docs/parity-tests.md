@@ -3,22 +3,22 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1013、偏离 125、不适用 20、骨架 15、待做 1231。
+合计：已移植 1055、偏离 126、不适用 20、骨架 15、待做 1188。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 219 | 28 | 4 | 0 | 184 |
-| 分页结果 | `query.page` | M1 | 22 | 13 | 2 | 0 | 0 | 7 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 224 | 28 | 4 | 0 | 179 |
+| 分页结果 | `query.page` | M1 | 22 | 14 | 2 | 0 | 0 | 6 |
 | 原生 SQL | `sql.native` | M1 | 50 | 24 | 6 | 1 | 0 | 19 |
 | 删除 | `write.delete` | M1 | 25 | 8 | 1 | 2 | 0 | 14 |
 | 插入 | `write.insert` | M1 | 50 | 28 | 0 | 0 | 1 | 21 |
-| 更新 | `write.update` | M1 | 59 | 25 | 4 | 0 | 0 | 30 |
+| 更新 | `write.update` | M1 | 59 | 26 | 4 | 0 | 0 | 29 |
 | CASE WHEN | `expr.case` | M2 | 27 | 13 | 6 | 0 | 0 | 8 |
 | 日期函数 | `func.date` | M2 | 101 | 46 | 7 | 5 | 0 | 43 |
-| 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 40 | 2 | 0 | 0 | 17 |
+| 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 43 | 2 | 0 | 0 | 14 |
 | 字符串聚合（joining） | `func.joining` | M2 | 29 | 7 | 1 | 0 | 5 | 16 |
 | JSON 函数 | `func.json` | M2 | 12 | 0 | 0 | 0 | 0 | 12 |
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
@@ -34,17 +34,17 @@
 | union / union all | `query.union` | M3 | 18 | 12 | 4 | 0 | 1 | 1 |
 | 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 2 | 0 | 0 | 1 | 33 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
-| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 17 | 1 | 2 | 0 | 36 |
-| 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 48 | 1 | 2 | 2 | 14 |
+| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 22 | 1 | 2 | 0 | 31 |
+| 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 58 | 1 | 2 | 2 | 4 |
 | include 带出导航 | `nav.include` | M4 | 37 | 7 | 0 | 0 | 0 | 30 |
-| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 85 | 1 | 0 | 0 | 56 |
+| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 101 | 2 | 0 | 0 | 39 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 0 | 0 | 0 | 0 | 25 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
 | 列加密 | `column.encryption` | M5 | 8 | 7 | 0 | 0 | 0 | 1 |
 | 拦截器 | `interceptor` | M5 | 3 | 3 | 0 | 0 | 0 | 0 |
 | 逻辑删除 | `logicDelete` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
 | 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 0 | 0 | 0 | 0 | 39 |
-| 追踪与差异更新 | `tracking` | M5 | 62 | 26 | 15 | 0 | 0 | 21 |
+| 追踪与差异更新 | `tracking` | M5 | 62 | 27 | 15 | 0 | 0 | 20 |
 | 乐观锁版本 | `version` | M5 | 13 | 13 | 0 | 0 | 0 | 0 |
 | UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
 | 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 11 | 6 | 0 | 0 | 9 |
@@ -475,11 +475,11 @@
 | mysql8/M8Test1.java#testQuery | 待做 |  | `SELECT t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time',t1.'name' AS '__part__column1' FROM 't_ba…` |
 | mysql8/M8Test1.java#testQuery2 | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time',t1.'name' AS '__part__column1' FRO…` |
 | mysql8/M8Test1.java#userTest | 待做 |  | `SELECT 'id','sex','age','user_name' FROM 'm8_user_test' WHERE 'id' >= ? AND ('sex' = ? OR 'sex' = ?)…` |
-| mysql8/ManyJoinTest.java#manyJoinMany2Many9 | 待做 |  | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t1…` |
-| mysql8/ManyJoinTest.java#partitionByFirst | 待做 |  | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/ManyJoinTest.java#partitionByFirst2 | 待做 |  | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/ManyJoinTest.java#testElement4 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'co…` |
-| mysql8/ManyJoinTest.java#testLastCard | 待做 |  |  |
+| mysql8/ManyJoinTest.java#manyJoinMany2Many9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:160 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t1…` |
+| mysql8/ManyJoinTest.java#partitionByFirst | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:256 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#partitionByFirst2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:265 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#testElement4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:20 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'co…` |
+| mysql8/ManyJoinTest.java#testLastCard | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:469 |  |
 | mysql8/MySQL8Test2.java#testJoin | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
 | mysql8/MySQL8Test2.java#testOrderCaseWhen1 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
 | mysql8/MySQL8Test2.java#testOrderCaseWhen2 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
@@ -539,7 +539,7 @@
 | QueryTest3.java#nativePage4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.Part2.cs:211：过滤值按 C# 种子数据的 content 调整（Java 依赖被其它用例改过的数据） | `select * from t_blog where id = ?` |
 | QueryTest3.java#testGenericKey2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.Part2.cs:177 |  |
 | doc/DocTest.java#testTopic | 待做 |  | `SELECT COUNT(*) FROM 't_topic' WHERE 'title' LIKE ? AND 'create_time' <= ?` |
-| mysql8/ManyJoinTest.java#test16GroupJoinCombinePage | 待做 |  | `SELECT COUNT(*) FROM 't_sys_user' t` |
+| mysql8/ManyJoinTest.java#test16GroupJoinCombinePage | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:457 | `SELECT COUNT(*) FROM 't_sys_user' t` |
 | mysql8/MySQL8Test3.java#thisConfigureTest | 待做 |  | `SELECT COUNT(*) FROM 't_sys_user' t` |
 
 ### 原生 SQL（`sql.native`，M1）
@@ -744,7 +744,7 @@
 | UpdateTest2.java#testUpdateValueTest | 待做 |  | `UPDATE "t_topic" SET "title" = ? WHERE "stars" = ?` |
 | UpdateTest2.java#update1 | 待做 |  |  |
 | mysql8/M8BankTest.java#testaa1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:124 |  |
-| mysql8/ManyJoinTest.java#test2GroupJoinCombine | 待做 |  | `UPDATE 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',(COUNT(?) > 0) AS '__any2__' FR…` |
+| mysql8/ManyJoinTest.java#test2GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:286 | `UPDATE 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',(COUNT(?) > 0) AS '__any2__' FR…` |
 
 ### CASE WHEN（`expr.case`，M2）
 
@@ -942,9 +942,9 @@
 | fork/functions/SmallFixesSqlTest.java#jsonArraySize | 待做 |  | `SELECT 'id','name','age','company_id','attrs','created_at' FROM 't_fork_user' WHERE JSON_LENGTH('att…` |
 | fork/functions/SmallFixesSqlTest.java#offsetWindowHasSpaceBeforeOrderBy | 待做 |  |  |
 | fork/live/NullSafeLiveTest.java#nullMatchesNullAndEmptyBecomesNull | 待做 |  | `DROP TABLE {…}t_fork_user` |
-| mysql8/ManyJoinTest.java#testElement5 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'co…` |
-| mysql8/ManyJoinTest.java#testElement6 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'co…` |
-| mysql8/ManyJoinTest.java#testElement7 | 待做 |  | `SELECT t3.'type' AS 'value1',t3.'code' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'u…` |
+| mysql8/ManyJoinTest.java#testElement5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:33 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'co…` |
+| mysql8/ManyJoinTest.java#testElement6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:43 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'co…` |
+| mysql8/ManyJoinTest.java#testElement7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:55 | `SELECT t3.'type' AS 'value1',t3.'code' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'u…` |
 | pgsql/QueryTest.java#query10 | 待做 |  | `SELECT COALESCE(t."id",?) FROM "t_blog" t WHERE t."deleted" = ? AND t."id" = ?` |
 | pgsql/QueryTest.java#testNullDefault | 待做 |  | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
 
@@ -1574,11 +1574,11 @@
 | mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:104 | `SELECT t.'id',t.'name',t.'create_time',IFNULL(t4.'__none2__',?) AS '__part__column1' FROM 't_bank' t…` |
 | mysql8/M8OrderTest.java#testSubQuery | 待做 |  | `SELECT t.'id',t.'no',t.'price',t.'create_time' FROM 't_order' t INNER JOIN (SELECT t1.'order_id' AS …` |
 | mysql8/M8OrderTest.java#testSubQuery3 | 待做 |  | `SELECT t.'id',t.'no',t.'price',t.'create_time' FROM 't_order' t INNER JOIN (SELECT t1.'order_id' AS …` |
-| mysql8/ManyJoinTest.java#testElement8 | 待做 |  | `SELECT t4.'__max2__' AS 'value1',t7.'type' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t3.'uid' …` |
-| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin2 | 待做 |  | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin24 | 待做 |  | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin4 | 待做 |  | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin5 | 待做 |  | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#testElement8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:85 | `SELECT t4.'__max2__' AS 'value1',t7.'type' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t3.'uid' …` |
+| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:207 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin24 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:216 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:235 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:244 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
 | mysql8/MySQL8Test3.java#testFlatElement | 待做 |  | `SELECT t.'id',t.'name' FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',(COUNT(?)…` |
 | mysql8/MySQL8Test3.java#testFlatElement1 | 待做 |  | `SELECT t.'id',t.'name' FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',(COUNT(?)…` |
 | mysql8/MySQL8Test3.java#testFlatElement2 | 待做 |  | `SELECT t.'id',t.'name' FROM 'm8_province' t WHERE EXISTS(SELECT 1 FROM 'm8_city' t1 WHERE t1.'pid' =…` |
@@ -1654,16 +1654,16 @@
 | mysql8/M8BankTest.java#whereSubQuery4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:178 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
 | mysql8/M8OrderTest.java#testSubQuery2 | 待做 |  | `SELECT t.'id',t.'no',t.'price',t.'create_time' FROM 't_order' t INNER JOIN (SELECT t1.'id',t1.'order…` |
 | mysql8/M8OrderTest.java#testSubQuery4 | 待做 |  |  |
-| mysql8/ManyJoinTest.java#manyJoinMany2Many10 | 待做 |  | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t1…` |
-| mysql8/ManyJoinTest.java#manyJoinMany2Many2 | 待做 |  | `SELECT t.'id',t.'name' FROM 'school_class' t LEFT JOIN (SELECT t2.'class_id' AS '__class_id__',t1.'i…` |
-| mysql8/ManyJoinTest.java#manyJoinMany2Many3 | 待做 |  | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/ManyJoinTest.java#manyJoinMany2Many3_1 | 待做 |  | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t2…` |
-| mysql8/ManyJoinTest.java#manyJoinMany2Many3_2 | 待做 |  | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t2…` |
-| mysql8/ManyJoinTest.java#manyJoinMany2Many4 | 待做 |  | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/ManyJoinTest.java#manyJoinMany2Many4_1 | 待做 |  | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t2…` |
-| mysql8/ManyJoinTest.java#testElement3 | 待做 |  | `SELECT t2.'__max2__' AS 'value1',t5.'type' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' …` |
-| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin | 待做 |  | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/ManyJoinTest.java#testManyJoinGroup | 待做 |  |  |
+| mysql8/ManyJoinTest.java#manyJoinMany2Many10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:170 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t1…` |
+| mysql8/ManyJoinTest.java#manyJoinMany2Many2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:99 | `SELECT t.'id',t.'name' FROM 'school_class' t LEFT JOIN (SELECT t2.'class_id' AS '__class_id__',t1.'i…` |
+| mysql8/ManyJoinTest.java#manyJoinMany2Many3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:110 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#manyJoinMany2Many3_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:119 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t2…` |
+| mysql8/ManyJoinTest.java#manyJoinMany2Many3_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:129 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t2…` |
+| mysql8/ManyJoinTest.java#manyJoinMany2Many4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:139 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#manyJoinMany2Many4_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:149 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t2…` |
+| mysql8/ManyJoinTest.java#testElement3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:71 | `SELECT t2.'__max2__' AS 'value1',t5.'type' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' …` |
+| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:195 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#testManyJoinGroup | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:180 |  |
 | mysql8/MySQL8Test2.java#testPageSelectSubQueryCount | 待做 |  | `SELECT COUNT(*) FROM 't_bank' t` |
 
 ### include 带出导航（`nav.include`，M4）
@@ -1832,23 +1832,23 @@
 | mysql8/M8QueryTest.java#whereObject5 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
 | mysql8/M8Test1.java#testMany | 待做 |  |  |
 | mysql8/M8Test1.java#testRelationColumns | 待做 |  | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time',t.'book_ids' FROM 'm8_user_book_ids' t…` |
-| mysql8/ManyJoinTest.java#manyGroupTest1 | 待做 |  |  |
-| mysql8/ManyJoinTest.java#test10GroupJoinCombine | 待做 |  | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test11GroupJoinCombine | 待做 |  | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test12GroupJoinCombine | 待做 |  | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test13GroupJoinCombine | 待做 |  | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test14GroupJoinCombine | 待做 |  | `SELECT t.'name' AS 'value1' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',COUNT…` |
-| mysql8/ManyJoinTest.java#test15GroupJoinCombine | 待做 |  | `SELECT t.'name' AS 'value1' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',MAX(t…` |
-| mysql8/ManyJoinTest.java#test16GroupJoinCombine | 待做 |  | `SELECT t.'name' AS 'value1' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',MAX((…` |
-| mysql8/ManyJoinTest.java#test3GroupJoinCombine | 待做 |  | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test4GroupJoinCombine | 待做 |  | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test5GroupJoinCombine | 待做 |  | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test6GroupJoinCombine | 待做 |  | `SELECT t.'name' AS 'value1',IFNULL(t3.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test7GroupJoinCombine | 待做 |  | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test8GroupJoinCombine | 待做 |  | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test9GroupJoinCombine | 待做 |  | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#testGroupJoinCombine | 待做 |  | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin3 | 待做 |  | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#manyGroupTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:13 |  |
+| mysql8/ManyJoinTest.java#test10GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:371 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test11GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:383 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test12GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:398 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test13GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:410 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test14GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:423 | `SELECT t.'name' AS 'value1' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',COUNT…` |
+| mysql8/ManyJoinTest.java#test15GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:435 | `SELECT t.'name' AS 'value1' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',MAX(t…` |
+| mysql8/ManyJoinTest.java#test16GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:446 | `SELECT t.'name' AS 'value1' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',MAX((…` |
+| mysql8/ManyJoinTest.java#test3GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:296 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test4GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:309 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test5GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:321 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test6GroupJoinCombine | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:334：Java 在条件里写 bankCards().filter(…) 给导航加固定条件；C# 写成 GroupJoin(导航, q => q.Where(…)) | `SELECT t.'name' AS 'value1',IFNULL(t3.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test7GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:346 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test8GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:359 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test9GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:359 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#testGroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:275 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:226 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
 | mysql8/MySQL8Test2.java#testAA | 待做 |  |  |
 | mysql8/MySQL8Test3.java#testDTO1 | 待做 |  |  |
 | mysql8/MySQL8Test4.java#testPartition2 | 待做 |  | `SELECT t.'id' AS 'id',t.'name' AS 'name',t5.'type' AS 'third_card_type',t5.'code' AS 'third_card_cod…` |
@@ -2044,7 +2044,7 @@
 | UpdateTest.java#updateTrackParameterTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:371 | `UPDATE 'aaaxxx' SET 'stars' = ?,'create_time' = ? WHERE 'id' = ? AND 'title' = ?` |
 | UpdateTest1.java#updateTest51 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest1.cs:75 |  |
 | UpdateTest1.java#updateTestUpdate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest1.cs:108 | `UPDATE 't_topic' SET 'title' = ?,'create_time' = ? WHERE 'id' = ?` |
-| mysql8/ManyJoinTest.java#testManyJoinGroup1 | 待做 |  |  |
+| mysql8/ManyJoinTest.java#testManyJoinGroup1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:186 |  |
 
 ### 乐观锁版本（`version`，M5）
 
