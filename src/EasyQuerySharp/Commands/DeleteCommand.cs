@@ -31,7 +31,10 @@ public sealed class DeleteCommand<T> : WriteCommandBase<DeleteCommand<T>, T> whe
     }
 
     /// <summary>渲染第一条语句，不执行；没有实体时返回 null。</summary>
-    public string? ToSql() => Statements().FirstOrDefault()?.Text;
+    public string? ToSql() => ToStatement()?.Text;
+
+    /// <summary>同 <see cref="ToSql"/>，连同参数。</summary>
+    public SqlStatement? ToStatement() => Statements().FirstOrDefault();
 
     /// <inheritdoc />
     public override async Task<long> ExecuteAsync(CancellationToken cancellationToken = default) =>

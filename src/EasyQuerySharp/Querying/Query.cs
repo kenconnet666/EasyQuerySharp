@@ -162,6 +162,12 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     /// <example><code>db.Query&lt;Blog&gt;().WhereById("1").SelectRaw("1 as id")</code></example>
     public Query<T> SelectRaw(string selectSql) => new(Open with { RawSelect = selectSql });
 
+    /// <summary>
+    /// 把当前查询包成派生表，之后的条件、排序、投影都作用在外层（对应 Java 的 select("*") 再接查询）：
+    /// 如 MySQL 不允许 UPDATE 的子查询直接引用目标表，<c>t.Id.In(db.Query&lt;Topic&gt;().Select(x =&gt; Sql.Max(x.Id)).AsSubQuery())</c> 包一层即可。
+    /// </summary>
+    public Query<T> AsSubQuery() => new((State with { AliasScalar = true }).Wrap());
+
     /// <summary>给最近一个表来源指定别名（对应 Java 的 asAlias）。</summary>
     public Query<T> AsAlias(string alias) => new(QueryStates.WithLast(State, s => s with { Alias = alias }));
 

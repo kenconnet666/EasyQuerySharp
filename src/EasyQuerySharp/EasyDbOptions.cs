@@ -35,6 +35,18 @@ public sealed class EasyDbOptions
     public long ReverseOffsetThreshold { get; set; }
 
     /// <summary>
+    /// 按实体更新时默认写哪些列（对应 Java 的 updateStrategy）：默认全部列；设成 <see cref="Commands.ColumnStrategy.OnlyNotNull"/> 时只写非 null 的列。
+    /// 命令上的 <c>Columns(..)</c> 与追踪的差异更新优先于它。
+    /// </summary>
+    public Commands.ColumnStrategy UpdateStrategy { get; set; } = Commands.ColumnStrategy.All;
+
+    /// <summary>
+    /// 查询默认的条件值过滤（对应 Java 的 ValueFilterFactory.getQueryValueFilter）：如设成 <see cref="Filtering.ValueFilter.NotNullOrBlank"/>，
+    /// 所有查询的 Where 里值为 null / 空白的比较条件都跳过；更新、删除不受影响。单条查询可用 <c>UseValueFilter(..)</c> 改。
+    /// </summary>
+    public Filtering.ValueFilter QueryValueFilter { get; set; } = Filtering.ValueFilter.All;
+
+    /// <summary>
     /// IN 值列表的上限（对应 Java 的 maxInClauseSize）：超过时按上限拆成多个 IN 用 OR 连接；0（默认）表示不拆。
     /// Oracle 单个 IN 最多 1000 个值，需要时设成 1000。
     /// </summary>

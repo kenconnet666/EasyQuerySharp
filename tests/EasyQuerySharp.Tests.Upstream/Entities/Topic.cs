@@ -184,3 +184,28 @@ public class TopicFile
 
     public DateTime? CreateTime { get; set; }
 }
+
+/// <summary>对应 Java：entity/Topic2（标题列名是 abc）。</summary>
+[Table("t_topic")]
+public class Topic2
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    [Column("abc")]
+    public string? Title { get; set; }
+
+    [ColumnIgnore]
+    public string? Title1 { get; set; }
+}
+
+/// <summary>对应 Java：vo/Topic2DTO。</summary>
+public class Topic2DTO
+{
+    public string? Id { get; set; }
+
+    public string? Title { get; set; }
+
+    [ColumnIgnore]
+    public string? Title1 { get; set; }
+}

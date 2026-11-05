@@ -140,8 +140,11 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     }
 
     /// <summary>渲染第一条语句（按实体更新时是第一个实体的语句），不执行；没有要写的列时抛出异常。</summary>
-    public string ToSql() => (Statements().FirstOrDefault()
-        ?? throw new InvalidOperationException($"{typeof(T).Name} 的更新没有要写的列")).Statement.Text;
+    public string ToSql() => ToStatement().Text;
+
+    /// <summary>同 <see cref="ToSql"/>，连同参数。</summary>
+    public SqlStatement ToStatement() => (Statements().FirstOrDefault()
+        ?? throw new InvalidOperationException($"{typeof(T).Name} 的更新没有要写的列")).Statement;
 
     /// <summary>执行，返回受影响的总行数。追踪的实体没有变化时不发语句。</summary>
     public override async Task<long> ExecuteAsync(CancellationToken cancellationToken = default)
@@ -206,6 +209,8 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         var changed = _strategy is null && _onlyColumns is null && tracked is not null ? tracked.ChangedColumns().ToHashSet() : null;
         // 定位列不写进 SET；差异更新时定位列取原始值，改过的定位列照常写；显式指定的列照常写（与 Java 一致）
         if (_whereColumns is not null && changed is null && _onlyColumns is null) skipped.UnionWith(_whereColumns.Select(c => c.PropertyName));
+        // 没有显式策略、也不是差异更新时用全局的默认策略（Java 的 updateStrategy）
+        var strategy = _strategy ?? (changed is null && _onlyColumns is null ? Db.Options.UpdateStrategy : ColumnStrategy.All);
         foreach (var column in CandidateColumns())
         {
             if (column.IsPrimaryKey || column.IsGenerated || skipped.Contains(column.PropertyName)) continue;
@@ -216,8 +221,8 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
             // 忽略更新的列；标了 WhenTrackedChanged 的在差异更新里照常写
             if (column.UpdateIgnore && !(changed is not null && column.UpdateWhenTrackedChanged)) continue;
             var value = column.GetProviderValue(entity);
-            if (_strategy == ColumnStrategy.OnlyNotNull && value is null) continue;
-            if (_strategy == ColumnStrategy.OnlyNull && value is not null) continue;
+            if (strategy == ColumnStrategy.OnlyNotNull && value is null) continue;
+            if (strategy == ColumnStrategy.OnlyNull && value is not null) continue;
             var target = table.Column(column);
             var parameter = ExpressionTranslator.WriteValue(column, value);
             if (_columnSql.TryGetValue(column.PropertyName, out var template)) parameter = new FragmentExpr(template, [target, parameter]);

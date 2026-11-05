@@ -17,7 +17,7 @@ namespace EasyQuerySharp.Querying;
 /// </list>
 /// 列别名规则与 Java 版的 DTO 映射一致：别名是成员名按命名约定转换后的列名，与源列同名时省略 AS。
 /// </summary>
-internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameConversion naming, bool alwaysAlias = false, bool neverAlias = false)
+internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameConversion naming, bool alwaysAlias = false, bool neverAlias = false, bool aliasScalar = false)
 {
     private readonly ParameterExpression _reader = Expression.Parameter(typeof(DbDataReader), "reader");
     private readonly List<SelectColumn> _columns = [];
@@ -433,6 +433,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         // 分组投影里的组内列（g.Column(..)）按普通列处理：同名不写 AS（Java 的 groupTable() 列）
         var groupColumn = ExpressionTranslator.StripConvert(body) is MethodCallExpression { Method.Name: nameof(IGroup<object, object>.Column) } call
                           && ExpressionTranslator.IsGroupType(call.Method.DeclaringType!);
+        if (aliasScalar && topLevel && member is null && sql is not ColumnExpr) conversionAlias = "value";
         var ordinal = AddColumn(sql, member is null ? conversionAlias : ColumnName(member), member?.Name ?? (topLevel ? ScalarMember : null), plainColumn: groupColumn);
         return Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(body.Type), _reader, Expression.Constant(ordinal),
             Expression.Constant(converter, typeof(IValueConverter)));

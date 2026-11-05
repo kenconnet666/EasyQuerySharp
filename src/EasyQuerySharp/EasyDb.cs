@@ -50,7 +50,7 @@ public sealed class EasyDb
     internal SqlExecutor Executor { get; }
 
     /// <summary>从实体 <typeparamref name="T"/> 开始一条查询。</summary>
-    public Query<T> Query<T>() => new(new QueryState(this, [new EntitySource(typeof(T))]));
+    public Query<T> Query<T>() => new(new QueryState(this, [new EntitySource(typeof(T))]) { ValueFilter = Options.QueryValueFilter });
 
     /// <summary>
     /// 给已经查出来的实体再带出导航（对应 Java 的 loadInclude），与查询时 Include 相同：一条 <c>WHERE 键 IN (…)</c> 查询，挂到导航属性上。

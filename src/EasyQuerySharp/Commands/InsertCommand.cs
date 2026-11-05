@@ -72,7 +72,10 @@ public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> wh
     }
 
     /// <summary>渲染第一个实体的语句，不执行（不调用拦截器）。</summary>
-    public string ToSql() => Render(_entities.Count > 0 ? _entities[0] : throw new InvalidOperationException("没有要插入的实体")).Statement.Text;
+    public string ToSql() => ToStatement().Text;
+
+    /// <summary>同 <see cref="ToSql"/>，连同参数。</summary>
+    public SqlStatement ToStatement() => Render(_entities.Count > 0 ? _entities[0] : throw new InvalidOperationException("没有要插入的实体")).Statement;
 
     /// <summary>执行，返回受影响的行数（冲突更新时 MySQL 对更新的行计 2，与驱动的返回值一致）。</summary>
     public async Task<long> ExecuteAsync(CancellationToken cancellationToken = default)

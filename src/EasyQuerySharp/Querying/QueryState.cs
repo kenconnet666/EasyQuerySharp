@@ -103,6 +103,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>单表时也写别名 t（带出的子查询在 Java 版里总带别名）。</summary>
     public bool ForceAlias { get; init; }
 
+    /// <summary>投影是单个非列的值（如 <c>Sql.Max(..)</c>）时写别名 <c>value</c>：<c>AsSubQuery()</c> 包成派生表后外层要按名字引用。</summary>
+    public bool AliasScalar { get; init; }
+
     /// <summary>投影之后加的条件尽量推进派生表内层（见 <see cref="SmartPredicates"/>，对应 Java 的 SMART_PREDICATE）。</summary>
     public bool SmartPredicate { get; init; }
 

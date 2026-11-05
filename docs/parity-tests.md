@@ -3,19 +3,19 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1607、偏离 194、不适用 73、骨架 7、待做 523。
+合计：已移植 1610、偏离 195、不适用 73、骨架 7、待做 519。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 343 | 43 | 32 | 0 | 17 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 344 | 43 | 32 | 0 | 16 |
 | 分页结果 | `query.page` | M1 | 22 | 18 | 2 | 0 | 0 | 2 |
 | 原生 SQL | `sql.native` | M1 | 50 | 38 | 7 | 1 | 0 | 4 |
 | 删除 | `write.delete` | M1 | 25 | 13 | 1 | 10 | 0 | 1 |
 | 插入 | `write.insert` | M1 | 50 | 39 | 0 | 0 | 1 | 10 |
-| 更新 | `write.update` | M1 | 59 | 42 | 4 | 8 | 0 | 5 |
+| 更新 | `write.update` | M1 | 59 | 44 | 5 | 8 | 0 | 2 |
 | CASE WHEN | `expr.case` | M2 | 27 | 19 | 6 | 0 | 0 | 2 |
 | 日期函数 | `func.date` | M2 | 101 | 77 | 13 | 7 | 0 | 4 |
 | 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 55 | 3 | 0 | 0 | 1 |
@@ -444,7 +444,7 @@
 | SubJoinTest.java#testSubJoinSumBigDecimal2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:34 | `SELECT IFNULL((SELECT SUM(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id…` |
 | SubJoinTest.java#testSubJoinSumBigDecimalDistinct | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:37 | `SELECT IFNULL((SELECT SUM(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
 | SubJoinTest.java#testSubJoinSumBigDecimalDistinct2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:37 | `SELECT IFNULL((SELECT SUM(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
-| UpdateTest2.java#test11 | 待做 |  | `SELECT t."id",t."abc" AS "title" FROM "t_topic" t WHERE t."abc" = ?` |
+| UpdateTest2.java#test11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest2.cs:21 | `SELECT t."id",t."abc" AS "title" FROM "t_topic" t WHERE t."abc" = ?` |
 | doc/DocTest.java#testDoc3x | 待做 |  |  |
 | doc/DocTest1.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DocTest1.cs:14 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | doc/DocTest1.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DocTest1.cs:25 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
@@ -740,9 +740,9 @@
 | UpdateTest1.java#updateTestUpdate | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest1.cs:87 |  |
 | UpdateTest1.java#updateTestUpdate1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest1.cs:98 | `UPDATE 't_topic' SET 'stars' = ?,'title' = ?,'create_time' = ? WHERE 'id' = ?` |
 | UpdateTest1.java#updateTestUpdate3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest1.cs:124 | `UPDATE 't_topic' SET 'title' = ?,'create_time' = ? WHERE 'id' = ?` |
-| UpdateTest2.java#testUpdateNull | 待做 |  | `UPDATE "t_topic" SET "title" = ? WHERE "id" = ?` |
-| UpdateTest2.java#testUpdateValueTest | 待做 |  | `UPDATE "t_topic" SET "title" = ? WHERE "stars" = ?` |
-| UpdateTest2.java#update1 | 待做 |  |  |
+| UpdateTest2.java#testUpdateNull | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest2.cs:27 | `UPDATE "t_topic" SET "title" = ? WHERE "id" = ?` |
+| UpdateTest2.java#testUpdateValueTest | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest2.cs:38：C# 的 == null 按 C# 语义翻译成 IS NULL（Java 的 eq(null) 写成 = ? 并传 null，永远不成立）；值过滤只作用于查询这一点相同 | `UPDATE "t_topic" SET "title" = ? WHERE "stars" = ?` |
+| UpdateTest2.java#update1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest2.cs:53 |  |
 | mysql8/M8BankTest.java#testaa1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:124 |  |
 | mysql8/ManyJoinTest.java#test2GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:286 | `UPDATE 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',(COUNT(?) > 0) AS '__any2__' FR…` |
 
