@@ -11,6 +11,15 @@ public abstract class NameConversion
     /// <summary>名字原样使用。</summary>
     public static NameConversion AsIs { get; } = new AsIsNameConversion();
 
+    /// <summary>首字母小写：<c>NameConversion</c> → <c>nameConversion</c>（对应 Java 的 LowerCamelCaseNameConversion）。</summary>
+    public static NameConversion LowerCamelCase { get; } = new DelegateNameConversion(name => name.Length == 0 ? name : char.ToLowerInvariant(name[0]) + name[1..]);
+
+    /// <summary>首字母大写：<c>nameConversion</c> → <c>NameConversion</c>（对应 Java 的 UpperCamelCaseNameConversion）。</summary>
+    public static NameConversion UpperCamelCase { get; } = new DelegateNameConversion(name => name.Length == 0 ? name : char.ToUpperInvariant(name[0]) + name[1..]);
+
+    /// <summary>驼峰转下划线大写：<c>CreateTime</c> → <c>CREATE_TIME</c>（对应 Java 的 UpperUnderlinedNameConversion）。</summary>
+    public static NameConversion UpperUnderlined { get; } = new DelegateNameConversion(name => Underlined.Convert(name).ToUpperInvariant());
+
     /// <summary>把一个 C# 名字转成数据库名字。</summary>
     public abstract string Convert(string name);
 
@@ -36,5 +45,10 @@ public abstract class NameConversion
     private sealed class AsIsNameConversion : NameConversion
     {
         public override string Convert(string name) => name;
+    }
+
+    private sealed class DelegateNameConversion(Func<string, string> convert) : NameConversion
+    {
+        public override string Convert(string name) => convert(name);
     }
 }

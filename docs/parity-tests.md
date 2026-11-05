@@ -3,26 +3,26 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1171、偏离 134、不适用 21、骨架 15、待做 1063。
+合计：已移植 1197、偏离 134、不适用 27、骨架 15、待做 1031。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 249 | 30 | 4 | 0 | 152 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 272 | 30 | 9 | 0 | 124 |
 | 分页结果 | `query.page` | M1 | 22 | 15 | 2 | 0 | 0 | 5 |
 | 原生 SQL | `sql.native` | M1 | 50 | 25 | 6 | 1 | 0 | 18 |
 | 删除 | `write.delete` | M1 | 25 | 9 | 1 | 2 | 0 | 13 |
 | 插入 | `write.insert` | M1 | 50 | 31 | 0 | 0 | 1 | 18 |
 | 更新 | `write.update` | M1 | 59 | 26 | 4 | 0 | 0 | 29 |
 | CASE WHEN | `expr.case` | M2 | 27 | 14 | 6 | 0 | 0 | 7 |
-| 日期函数 | `func.date` | M2 | 101 | 49 | 7 | 5 | 0 | 40 |
+| 日期函数 | `func.date` | M2 | 101 | 49 | 7 | 6 | 0 | 39 |
 | 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 45 | 2 | 0 | 0 | 12 |
 | 字符串聚合（joining） | `func.joining` | M2 | 29 | 13 | 3 | 0 | 5 | 8 |
 | JSON 函数 | `func.json` | M2 | 12 | 0 | 0 | 0 | 0 | 12 |
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
-| 字符串函数 | `func.string` | M2 | 131 | 111 | 2 | 0 | 1 | 17 |
+| 字符串函数 | `func.string` | M2 | 131 | 114 | 2 | 0 | 1 | 14 |
 | 行锁 | `lock` | M2 | 28 | 21 | 1 | 0 | 0 | 6 |
 | 窗口函数 | `window` | M2 | 44 | 32 | 1 | 1 | 0 | 10 |
 | CTE | `query.cte` | M3 | 11 | 4 | 3 | 0 | 0 | 4 |
@@ -131,34 +131,34 @@
 | GeneralFunctionsTest.java#likeSQLite | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:116 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?) > 0` |
 | GeneralFunctionsTest.java#likeSQLite2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:124 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?) = 1` |
 | GeneralFunctionsTest.java#likeSQLite3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:132 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE INSTR("type",?) = (LENGTH("type…` |
-| GenericTest2.java#EnumValueTest1 | 待做 |  |  |
-| GenericTest2.java#EnumValueTest2 | 待做 |  |  |
-| GenericTest2.java#SqlRangeTest1 | 待做 |  |  |
-| GenericTest2.java#StringCharSegmentSm4Test | 待做 |  |  |
-| GenericTest2.java#StringCharSegmentSm4Test1 | 待做 |  |  |
-| GenericTest2.java#StringCharSegmentTest1 | 待做 |  |  |
-| GenericTest2.java#StringCharSegmentTest10 | 待做 |  |  |
-| GenericTest2.java#StringCharSegmentTest2 | 待做 |  |  |
-| GenericTest2.java#StringCharSegmentTest3 | 待做 |  |  |
-| GenericTest2.java#StringCharSegmentTest4 | 待做 |  |  |
-| GenericTest2.java#StringCharSegmentTest5 | 待做 |  |  |
-| GenericTest2.java#StringCharSegmentTest6 | 待做 |  |  |
-| GenericTest2.java#StringCharSegmentTest7 | 待做 |  |  |
-| GenericTest2.java#StringCharSegmentTest8 | 待做 |  |  |
-| GenericTest2.java#aesTest2 | 待做 |  |  |
-| GenericTest2.java#base64Test | 待做 |  |  |
-| GenericTest2.java#behavior | 待做 |  |  |
-| GenericTest2.java#check | 待做 |  |  |
-| GenericTest2.java#createTest1 | 待做 |  |  |
-| GenericTest2.java#easyEncryptionTest | 待做 |  |  |
-| GenericTest2.java#easyEncryptionTest1 | 待做 |  |  |
-| GenericTest2.java#executeMethodBehaviorTest1 | 待做 |  |  |
-| GenericTest2.java#linkedCaseInsensitiveMapTest1 | 待做 |  |  |
-| GenericTest2.java#nameConversionTest1 | 待做 |  |  |
-| GenericTest2.java#sm4StandardVectorTest | 待做 |  |  |
-| GenericTest2.java#test1 | 待做 |  |  |
-| GenericTest2.java#testAgroalGetUrl | 待做 |  |  |
-| GenericTest2.java#testLinkedCaseInsensitiveMap1 | 待做 |  |  |
+| GenericTest2.java#EnumValueTest1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:36：测的是 Java 测试工程自己的枚举反序列化工具；C# 的枚举按名字 / 数值的转换由 EnumNameConverter 等覆盖 |  |
+| GenericTest2.java#EnumValueTest2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:37：同 EnumValueTest1 |  |
+| GenericTest2.java#SqlRangeTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:16 |  |
+| GenericTest2.java#StringCharSegmentSm4Test | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:32 |  |
+| GenericTest2.java#StringCharSegmentSm4Test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:33 |  |
+| GenericTest2.java#StringCharSegmentTest1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:24：测的是 Java 的 EasyStringUtil 分段工具；C# 的分段是加密策略的内部实现，由往返用例覆盖 |  |
+| GenericTest2.java#StringCharSegmentTest10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:111 |  |
+| GenericTest2.java#StringCharSegmentTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:86 |  |
+| GenericTest2.java#StringCharSegmentTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:86 |  |
+| GenericTest2.java#StringCharSegmentTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:103 |  |
+| GenericTest2.java#StringCharSegmentTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:103 |  |
+| GenericTest2.java#StringCharSegmentTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:111 |  |
+| GenericTest2.java#StringCharSegmentTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:94 |  |
+| GenericTest2.java#StringCharSegmentTest8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:111 |  |
+| GenericTest2.java#aesTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:18 |  |
+| GenericTest2.java#base64Test | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:17 |  |
+| GenericTest2.java#behavior | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:19 |  |
+| GenericTest2.java#check | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:25 |  |
+| GenericTest2.java#createTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:23 |  |
+| GenericTest2.java#easyEncryptionTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:56 |  |
+| GenericTest2.java#easyEncryptionTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:65 |  |
+| GenericTest2.java#executeMethodBehaviorTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:20 |  |
+| GenericTest2.java#linkedCaseInsensitiveMapTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:21 |  |
+| GenericTest2.java#nameConversionTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:41 |  |
+| GenericTest2.java#sm4StandardVectorTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:30 |  |
+| GenericTest2.java#test1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:27：测的是 Java 的 Introspector 反射 |  |
+| GenericTest2.java#testAgroalGetUrl | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:29：测的是 Agroal 数据源 |  |
+| GenericTest2.java#testLinkedCaseInsensitiveMap1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:21 |  |
 | GenericWithDatabaseTest.java#queryLargeColumnTest1 | 待做 |  | `SELECT 'id','name','content' FROM 'query_large_column_test'` |
 | GenericWithDatabaseTest.java#repeatApply1 | 待做 |  |  |
 | GenericWithDatabaseTest.java#testPrintSQL1 | 待做 |  |  |
@@ -787,7 +787,7 @@
 | DateTimeFunctionsTest.java#durationMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:70 | `SELECT t.'create_time' AS 'value1',timestampdiff(DAY, t.'create_time', ?) AS 'value2',timestampdiff(…` |
 | DateTimeFunctionsTest.java#formatMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:10 | `SELECT t.'create_time' AS 'value1',DATE_FORMAT(t.'create_time','%Y年%m-01 %H:%i分%s秒') AS 'value2',DAT…` |
 | DateTimeFunctionsTest.java#testConstant | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:101 | `SELECT NOW() AS 'value1',UTC_TIMESTAMP() AS 'value2' FROM 't_blog' t WHERE t.'deleted' = ?` |
-| GenericTest2.java#sqlFormat | 待做 |  | `SELECT IFNULL(t2.'__sum2__',0) AS 'value1',IFNULL(t2.'__sum3__',0) AS 'value2' FROM 'm8_province' t …` |
+| GenericTest2.java#sqlFormat | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:28：测的是 druid 的 SQL 格式化工具 | `SELECT IFNULL(t2.'__sum2__',0) AS 'value1',IFNULL(t2.'__sum3__',0) AS 'value2' FROM 'm8_province' t …` |
 | MyTest1.java#testDraft4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:59 | `SELECT date_add(t.'create_time', interval (?) month) AS 'value1' FROM 't_blog' t WHERE t.'deleted' =…` |
 | MyTest1.java#testDraft5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:59 | `SELECT date_add(date_add(t.'create_time', interval (?) month), interval (?) day) AS 'value1' FROM 't…` |
 | MyTest1.java#testExists | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:138 | `SELECT t.'id' AS 'value1',t.'title' AS 'value2',t.'create_time' AS 'value3',(SELECT t2.'title' FROM …` |
@@ -1013,9 +1013,9 @@
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
 | GeneralFunctionsTest.java#testDoubleConcat | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:304 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
-| GenericTest2.java#StringCharSegmentSm4Test2 | 待做 |  |  |
-| GenericTest2.java#easySm4EncryptionIdCardTest | 待做 |  |  |
-| GenericTest2.java#easySm4EncryptionTest | 待做 |  |  |
+| GenericTest2.java#StringCharSegmentSm4Test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:34 |  |
+| GenericTest2.java#easySm4EncryptionIdCardTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:35 |  |
+| GenericTest2.java#easySm4EncryptionTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:31 |  |
 | InsertTest.java#insertTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:13 |  |
 | MathQueryTest.java#testPropertyMath | 待做 |  | `SELECT t.'test_value' AS 'test_value',ABS(t.'test_value') AS 'test_abs',SIGN(t.'test_value') AS 'tes…` |
 | MathQueryTest.java#testPropertyMath2 | 待做 |  | `SELECT t.'test_value' AS 'test_value',ABS(t.'test_value') AS 'test_abs',SIGN(t.'test_value') AS 'tes…` |

@@ -29,3 +29,13 @@ public sealed class DefaultAesEasyEncryptionStrategy : AesBase64EncryptionStrate
 
     protected override string Key => "abcdef1234567890";
 }
+
+/// <summary>对应 Java：encryption/DefaultSafeAesEasyEncryptionStrategy（按完整字符分段，emoji 不被切开）。</summary>
+public sealed class DefaultSafeAesEasyEncryptionStrategy : AesBase64EncryptionStrategy
+{
+    protected override string Iv => "A-16-Byte-String";
+
+    protected override string Key => "abcdef1234567890";
+
+    protected override bool SupportEmoji => true;
+}
