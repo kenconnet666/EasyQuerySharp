@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <!--
-      L2：逐条移植 easy-query（Java）的用例。目录与类名照搬 Java 的 sql-test / sql-fork-test，每个测试用 [Upstream] 标出对应的 Java 用例。
+      L2：逐条移植 easy-query（Java）的用例，一个 Java 测试文件对应一个 C# 文件，每个测试用 [Upstream] 标出对应的 Java 用例。
+      目录只有一层：用例按主题放（Queries、Write、Functions、Features、Dialects、Fork、Mysql8、Pgsql、Extras），
+      Entities / Dto 是实体与 DTO，Support 是共用的夹具、测试用策略与拦截器；某个库专用的实体与夹具放在该库的目录里。
       Resources/ 下的建表脚本复制自 Java 仓库 sql-test/src/main/resources（只补了 mysql-init 里 INSERT t_user 缺的分号）。见 docs/decisions/0003-testing-and-parity.md。
     -->
 
@@ -16,6 +18,9 @@
     <ItemGroup>
         <Using Include="EasyQuerySharp.TestKit" />
         <Using Include="EasyQuerySharp.Querying" />
+        <Using Include="EasyQuerySharp.Tests.Upstream.Entities" />
+        <Using Include="EasyQuerySharp.Tests.Upstream.Dto" />
+        <Using Include="EasyQuerySharp.Tests.Upstream.Support" />
         <None Update="Resources\**\*" CopyToOutputDirectory="PreserveNewest" />
         <None Update="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>

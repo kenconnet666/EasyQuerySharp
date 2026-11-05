@@ -78,7 +78,7 @@ public class LogicDelTopicCustom
 
     public string? Title { get; set; }
 
-    [LogicDelete(LogicDeleteStrategy.Custom, StrategyName = nameof(LogicDelete.MyLogicDelStrategy))]
+    [LogicDelete(LogicDeleteStrategy.Custom, StrategyName = nameof(MyLogicDelStrategy))]
     public DateTime? DeletedAt { get; set; }
 
     public string? DeletedUser { get; set; }

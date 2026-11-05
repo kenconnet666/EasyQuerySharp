@@ -1,11 +1,8 @@
-using EasyQuerySharp.Tests.Upstream.Entities;
-using EasyQuerySharp.Tests.Upstream.Infrastructure;
-
-namespace EasyQuerySharp.Tests.Upstream;
+namespace EasyQuerySharp.Tests.Upstream.Write;
 
 /// <summary>
 /// 对应 Java：UpdateTest1.java。换 schema / 表名后执行失败（库里没有 <c>_abc</c>），比对异常与监听器里的 SQL；
-/// 以及 <see cref="Interceptors.TopicUpdateInterceptor"/> 在各种更新里补 <c>create_time</c>。
+/// 以及 <see cref="TopicUpdateInterceptor"/> 在各种更新里补 <c>create_time</c>。
 /// </summary>
 public sealed class UpdateTest1(MySqlFixture fixture) : MySqlTest(fixture)
 {

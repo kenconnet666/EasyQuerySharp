@@ -1,6 +1,3 @@
-using EasyQuerySharp.Tests.Upstream.Doc.Entities;
-using EasyQuerySharp.Tests.Upstream.Infrastructure;
-
 namespace EasyQuerySharp.Tests.Upstream.Dialects;
 
 /// <summary>

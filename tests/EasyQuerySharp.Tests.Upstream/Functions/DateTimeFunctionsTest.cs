@@ -1,7 +1,4 @@
-using EasyQuerySharp.Tests.Upstream.Entities;
-using EasyQuerySharp.Tests.Upstream.Infrastructure;
-
-namespace EasyQuerySharp.Tests.Upstream;
+namespace EasyQuerySharp.Tests.Upstream.Functions;
 
 /// <summary>
 /// 对应 Java：DateTimeFunctionsTest.java（MySQL 实库）。日期函数直接写 BCL 成员：

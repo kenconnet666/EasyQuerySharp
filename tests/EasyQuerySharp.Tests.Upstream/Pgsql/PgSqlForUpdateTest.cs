@@ -1,6 +1,3 @@
-using EasyQuerySharp.Tests.Upstream.Doc.Entities;
-using EasyQuerySharp.Tests.Upstream.Infrastructure;
-
 namespace EasyQuerySharp.Tests.Upstream.Pgsql;
 
 /// <summary>对应 Java：pgsql/PgSQLForUpdateTest.java，与 mysql8/ForUpdateTest 相同的用例跑在 PostgreSQL 上。</summary>

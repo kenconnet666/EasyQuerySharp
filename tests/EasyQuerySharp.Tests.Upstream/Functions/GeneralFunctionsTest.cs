@@ -1,7 +1,4 @@
-using EasyQuerySharp.Tests.Upstream.Doc.Entities;
-using EasyQuerySharp.Tests.Upstream.Entities;
-
-namespace EasyQuerySharp.Tests.Upstream;
+namespace EasyQuerySharp.Tests.Upstream.Functions;
 
 /// <summary>
 /// 对应 Java：GeneralFunctionsTest.java。按方言的用例写成 Theory，每种方言一行数据；只生成 SQL、不连库。

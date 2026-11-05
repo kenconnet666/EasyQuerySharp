@@ -1,5 +1,4 @@
 using EasyQuerySharp.Filtering;
-using EasyQuerySharp.Tests.Upstream.Mysql8.Entities.Bank;
 
 namespace EasyQuerySharp.Tests.Upstream.Mysql8;
 

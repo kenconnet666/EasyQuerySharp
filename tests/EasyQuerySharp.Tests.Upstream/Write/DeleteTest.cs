@@ -1,6 +1,3 @@
-using EasyQuerySharp.Tests.Upstream.Entities;
-using EasyQuerySharp.Tests.Upstream.Infrastructure;
-
 namespace EasyQuerySharp.Tests.Upstream.Write;
 
 /// <summary>对应 Java：DeleteTest.java（按条件、按实体删除，逻辑删除改写成 UPDATE）。</summary>

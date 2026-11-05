@@ -1,7 +1,4 @@
-using EasyQuerySharp.Tests.Upstream.Doc.Entities;
-using EasyQuerySharp.Tests.Upstream.Entities;
-
-namespace EasyQuerySharp.Tests.Upstream;
+namespace EasyQuerySharp.Tests.Upstream.Functions;
 
 /// <summary>
 /// 对应 Java：StringFunctionsTest.java。Java 按方言各写一个用例（xxxMySQL / xxxMSSQL / xxxPGSQL / xxxORACLE），

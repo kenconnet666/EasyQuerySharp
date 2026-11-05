@@ -1,22 +1,7 @@
-using EasyQuerySharp.Metadata;
 using EasyQuerySharp.Tests.Upstream.Mysql8;
 using EasyQuerySharp.Tests.Upstream.Pgsql;
 
 namespace EasyQuerySharp.Tests.Upstream.Fork;
-
-/// <summary>对应 Java fork：entity/ForkPost（只用到这几列）。</summary>
-[Table("t_fork_post")]
-public class ForkPost
-{
-    [Column(PrimaryKey = true)]
-    public string? Id { get; set; }
-
-    public string? UserId { get; set; }
-
-    public string? Title { get; set; }
-
-    public decimal? Amount { get; set; }
-}
 
 /// <summary>
 /// 对应 Java fork：live/LockWaitLiveTest.java。一个事务锁住 p1 时，另一个事务 NOWAIT 立即报锁冲突、SKIP LOCKED 只拿到其余的行。

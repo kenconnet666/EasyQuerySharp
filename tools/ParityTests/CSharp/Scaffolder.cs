@@ -19,7 +19,7 @@ internal static class Scaffolder
         var path = Path.Combine(upstreamProjectDir, folder.Replace('/', Path.DirectorySeparatorChar), className + ".cs");
         if (File.Exists(path)) return null;
 
-        var ns = "EasyQuerySharp.Tests.Upstream" + string.Concat(folder.Split('/', StringSplitOptions.RemoveEmptyEntries).Select(p => "." + Pascal(p)));
+        var ns = "EasyQuerySharp.Tests.Upstream." + folder;
         var sb = new StringBuilder();
         sb.AppendLine($"namespace {ns};");
         sb.AppendLine();
@@ -48,11 +48,18 @@ internal static class Scaffolder
         return path;
     }
 
+    // 测试项目的目录只有一层：Java 子包取第一段（mysql8 → Mysql8、fork/live → Fork）；
+    // 根包按文件名分到 Write（增删改、版本）或 Queries，其它主题的文件生成后再手动挪到 Features 等目录
     private static (string Folder, string ClassName) Split(string javaFile)
     {
         var slash = javaFile.LastIndexOf('/');
-        var folder = slash < 0 ? "" : javaFile[..slash];
         var name = Path.GetFileNameWithoutExtension(javaFile[(slash + 1)..]);
+        var folder = slash >= 0
+            ? Pascal(javaFile[..javaFile.IndexOf('/')])
+            : name.StartsWith("Insert", StringComparison.Ordinal) || name.StartsWith("Update", StringComparison.Ordinal)
+              || name.StartsWith("Delete", StringComparison.Ordinal) || name.StartsWith("Version", StringComparison.Ordinal)
+                ? "Write"
+                : "Queries";
         return (folder, Pascal(name));
     }
 

@@ -1,6 +1,5 @@
 using EasyQuerySharp.Encryption;
 using EasyQuerySharp.Metadata;
-using EasyQuerySharp.Tests.Upstream.Encryption;
 
 namespace EasyQuerySharp.Tests.Upstream.Entities;
 

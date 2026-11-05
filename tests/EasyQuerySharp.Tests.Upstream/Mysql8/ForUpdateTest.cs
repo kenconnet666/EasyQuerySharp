@@ -1,6 +1,3 @@
-using EasyQuerySharp.Tests.Upstream.Infrastructure;
-using EasyQuerySharp.Tests.Upstream.Mysql8.Entities.Bank;
-
 namespace EasyQuerySharp.Tests.Upstream.Mysql8;
 
 /// <summary>对应 Java：mysql8/ForUpdateTest.java。行锁只能在事务里、对单表调用一次，只写在最外层查询上。</summary>

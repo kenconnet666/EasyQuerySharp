@@ -1,5 +1,4 @@
 using EasyQuerySharp.TestKit.Databases;
-using EasyQuerySharp.Tests.Upstream.Mysql8.Entities.Bank;
 using MySqlConnector;
 
 [assembly: AssemblyFixture(typeof(EasyQuerySharp.Tests.Upstream.Mysql8.Mysql8Fixture))]

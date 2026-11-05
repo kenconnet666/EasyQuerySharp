@@ -1,6 +1,4 @@
-using EasyQuerySharp.Tests.Upstream.Entities;
-
-namespace EasyQuerySharp.Tests.Upstream;
+namespace EasyQuerySharp.Tests.Upstream.Pgsql;
 
 /// <summary>
 /// 对应 Java：pgsql/PartitionByTest.java。窗口函数投影成 <see cref="Part{TEntity,T1,T2}"/>，再按计算列过滤、再投影；

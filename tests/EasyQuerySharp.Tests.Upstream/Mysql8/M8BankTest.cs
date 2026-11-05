@@ -1,5 +1,3 @@
-using EasyQuerySharp.Tests.Upstream.Mysql8.Entities.Bank;
-
 namespace EasyQuerySharp.Tests.Upstream.Mysql8;
 
 /// <summary>对应 Java：mysql8/M8BankTest.java（银行、银行卡、用户的导航用例）。</summary>

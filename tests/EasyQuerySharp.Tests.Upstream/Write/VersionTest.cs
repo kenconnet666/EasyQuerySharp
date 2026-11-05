@@ -1,7 +1,4 @@
-using EasyQuerySharp.Tests.Upstream.Entities;
-using EasyQuerySharp.Tests.Upstream.Infrastructure;
-
-namespace EasyQuerySharp.Tests.Upstream;
+namespace EasyQuerySharp.Tests.Upstream.Write;
 
 /// <summary>
 /// 对应 Java：VersionTest.java（乐观锁版本列）。条件顺序是 逻辑删除、版本、主键；SET 末尾写下一个版本。

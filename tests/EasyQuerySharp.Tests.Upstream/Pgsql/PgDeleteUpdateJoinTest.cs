@@ -1,5 +1,3 @@
-using EasyQuerySharp.Tests.Upstream.Doc.Entities;
-
 namespace EasyQuerySharp.Tests.Upstream.Pgsql;
 
 /// <summary>

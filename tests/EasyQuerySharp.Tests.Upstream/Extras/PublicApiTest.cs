@@ -1,6 +1,3 @@
-using EasyQuerySharp.Tests.Upstream.Entities;
-using EasyQuerySharp.Tests.Upstream.Infrastructure;
-
 namespace EasyQuerySharp.Tests.Upstream.Extras;
 
 /// <summary>
@@ -19,37 +16,38 @@ public sealed class PublicApiTest(MySqlFixture fixture) : MySqlTest(fixture)
         Assert.Null(await Db.Query<Topic>().FindAsync("no-such-id", Ct));
     }
 
+    // 用版本表（只有 VersionTest 按固定 id 读写）做实验，不改动别的用例会计数的表
     [Fact]
     public async Task TransactionAsyncCommitsOrRollsBack()
     {
         const string committed = "tx-commit", rolledBack = "tx-rollback";
-        await Db.Delete<Topic>().WhereByIds(new[] { committed, rolledBack }).ExecuteAsync(Ct);
+        SysUserVersionLong User(string id) => new() { Id = id, Version = 1L, CreateTime = DateTime.Now };
+        await Db.Delete<SysUserVersionLong>().WhereByIds(new[] { committed, rolledBack }).IgnoreVersion().ExecuteAsync(Ct);
 
-        await Db.TransactionAsync(() => Db.Insert(new Topic { Id = committed, Stars = 1, Title = "t", CreateTime = DateTime.Now }).ExecuteAsync(Ct), cancellationToken: Ct);
+        await Db.TransactionAsync(() => Db.Insert(User(committed)).ExecuteAsync(Ct), cancellationToken: Ct);
         await Assert.ThrowsAsync<InvalidOperationException>(() => Db.TransactionAsync(async () =>
         {
-            await Db.Insert(new Topic { Id = rolledBack, Stars = 1, Title = "t", CreateTime = DateTime.Now }).ExecuteAsync(Ct);
+            await Db.Insert(User(rolledBack)).ExecuteAsync(Ct);
             throw new InvalidOperationException("中途失败");
         }, cancellationToken: Ct));
 
-        Assert.NotNull(await Db.Query<Topic>().FindAsync(committed, Ct));
-        Assert.Null(await Db.Query<Topic>().FindAsync(rolledBack, Ct));
-        await Db.Delete<Topic>().WhereById(committed).ExecuteAsync(Ct);
+        Assert.NotNull(await Db.Query<SysUserVersionLong>().FindAsync(committed, Ct));
+        Assert.Null(await Db.Query<SysUserVersionLong>().FindAsync(rolledBack, Ct));
+        await Db.Delete<SysUserVersionLong>().WhereById(committed).IgnoreVersion().ExecuteAsync(Ct);
     }
 
-    // 不再追踪后按实体更新写全部列，而不是只写变化的列
+    // 追踪的实体没有变化时不写；不再追踪后按实体更新写全部列。只渲染不执行，不改动共用的数据
     [Fact]
     public async Task RemoveTrackingFallsBackToFullUpdate()
     {
-        using var listen = SqlCapture.Listen();
         using (Db.BeginTracking())
         {
             var topic = await Db.Query<Topic>().FirstAsync(Ct);
+            Assert.Throws<InvalidOperationException>(() => Db.Update(topic).ToSql());
             Assert.True(Db.RemoveTracking(topic));
             Assert.False(Db.RemoveTracking(topic));
-            await Db.Update(topic).ExecuteAsync(Ct);
+            Assert.Equal("UPDATE `t_topic` SET `stars` = ?,`title` = ?,`create_time` = ? WHERE `id` = ?", Db.Update(topic).ToSql());
         }
-        listen.AssertSql("UPDATE `t_topic` SET `stars` = ?,`title` = ?,`create_time` = ? WHERE `id` = ?");
     }
 
     [Fact]

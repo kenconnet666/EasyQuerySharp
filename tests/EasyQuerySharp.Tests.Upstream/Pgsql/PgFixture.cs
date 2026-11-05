@@ -1,6 +1,4 @@
 using EasyQuerySharp.TestKit.Databases;
-using EasyQuerySharp.Tests.Upstream.Doc.Entities;
-using EasyQuerySharp.Tests.Upstream.Entities;
 using Npgsql;
 
 [assembly: AssemblyFixture(typeof(EasyQuerySharp.Tests.Upstream.Pgsql.PgFixture))]

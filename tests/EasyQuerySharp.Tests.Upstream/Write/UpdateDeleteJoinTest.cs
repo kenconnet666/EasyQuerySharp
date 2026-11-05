@@ -1,7 +1,4 @@
-using EasyQuerySharp.Tests.Upstream.Doc.Entities;
-using EasyQuerySharp.Tests.Upstream.Infrastructure;
-
-namespace EasyQuerySharp.Tests.Upstream;
+namespace EasyQuerySharp.Tests.Upstream.Write;
 
 /// <summary>
 /// 对应 Java：UpdateDeleteJoinTest.java。SET 或条件里用到对一导航时，MySQL 写成 <c>UPDATE t INNER JOIN … SET</c> /
