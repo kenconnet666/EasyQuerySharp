@@ -148,7 +148,8 @@ public class MySqlDialect : SqlDialect
         f[SqlFunctionNames.CompareTo] = Call("STRCMP");
         f[SqlFunctionNames.IndexOf] = Reordered("LOCATE", 1, 0);
         f[SqlFunctionNames.Ceiling] = Call("CEILING");
-        f[SqlFunctionNames.Truncate] = Call("TRUNCATE");
+        f[SqlFunctionNames.Truncate] = TruncateTo("TRUNCATE");
+        f[SqlFunctionNames.Power] = Call("POW");
         // MySQL 的 LOG(x) 是自然对数（Java 版也这样写）
         f[SqlFunctionNames.Ln] = Call("LOG");
         f[SqlFunctionNames.DateFormat] = DateFormat("DATE_FORMAT({0},{1})", ("yyyy", "%Y"), ("MM", "%m"), ("dd", "%d"), ("HH", "%H"), ("mm", "%i"), ("ss", "%s"));

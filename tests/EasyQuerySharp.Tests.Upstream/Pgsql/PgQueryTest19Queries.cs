@@ -172,4 +172,43 @@ public sealed class PgQueryTest19Queries(PgFixture fixture) : PgTest(fixture)
         listen.AssertParams(0, "1(Integer),储蓄卡(String),33123(String),45678(String),true(Boolean),true(Boolean)");
         listen.AssertSql(1, "SELECT t.\"id\",t.\"uid\",t.\"code\",t.\"type\",t.\"bank_id\" FROM \"doc_bank_card\" t WHERE t.\"uid\" IN (?,?,?)");
     }
+
+    // 同一个 UUID 存进原生 uuid 列与文本列，读回相等
+    [Fact, Upstream("pgsql/QueryTest19.java#testUUId")]
+    public async Task TestUUId()
+    {
+        await Db.CodeFirst.DropTablesIfExistsAsync([typeof(UUIDEntity)], Ct);
+        await Db.CodeFirst.CreateTablesAsync([typeof(UUIDEntity)], Ct);
+        var uuid = Guid.NewGuid();
+        await Db.Insert(new UUIDEntity { Id1 = uuid, Id2 = uuid }).ExecuteAsync(Ct);
+        var read = await Db.Query<UUIDEntity>().FirstAsync(Ct);
+        Assert.Equal((uuid, uuid), (read.Id1, read.Id2));
+    }
+
+    /// <summary>对应 Java：pgsql/MyClass（分组结果按别名映射）。</summary>
+    private sealed class MyClass
+    {
+        public string? Type1 { get; set; }
+
+        public decimal? Result { get; set; }
+    }
+
+    // Java 用例没有断言：分组的求和做四则运算后取 3 位小数；第二种写法是原生 SQL 片段
+    [Fact, Upstream("pgsql/QueryTest19.java#testItem")]
+    public async Task TestItem()
+    {
+        await Db.CodeFirst.CreateTablesAsync([typeof(PgItem)], Ct);
+        await Db.Query<PgItem>().GroupBy(p => p.Type)
+            .Select(g => new Draft<string?, decimal>(g.Key,
+                Math.Round(100m - (decimal)((g.Sum(o => o.Column2) + g.Sum(o => o.Column3)) * 100m / g.Sum(o => o.Column4 == 0m ? null : o.Column4))!, 3)))
+            .ToListAsync(Ct);
+        await Db.Query<PgItem>().GroupBy(p => p.Type)
+            .Select(g => new MyClass
+            {
+                Type1 = g.Key,
+                Result = Sql.Raw<decimal?>("round(100 - (sum({0}) + sum({1})) * 100.0 / nullif(sum({2}), 0)::numeric, 3)",
+                    g.Column(o => o.Column2), g.Column(o => o.Column3), g.Column(o => o.Column4)),
+            })
+            .ToListAsync(Ct);
+    }
 }

@@ -302,7 +302,7 @@ public abstract class SqlDialect
         f[SqlFunctionNames.IndexOf] = Call("INSTR");
         f[SqlFunctionNames.Ceiling] = Call("CEIL");
         f[SqlFunctionNames.Ln] = Call("LN");
-        f[SqlFunctionNames.Truncate] = Call("TRUNC");
+        f[SqlFunctionNames.Truncate] = TruncateTo("TRUNC");
         f[SqlFunctionNames.CountDistinct] = Distinct("COUNT");
         f[SqlFunctionNames.SumDistinct] = Distinct("SUM");
         f[SqlFunctionNames.AvgDistinct] = Distinct("AVG");
@@ -368,6 +368,15 @@ public abstract class SqlDialect
 
     /// <summary>小写的单位 / 部分名，用于拼模板（<c>day</c>、<c>hour</c>）。</summary>
     protected static string Lower<TEnum>(TEnum value) where TEnum : struct, Enum => value.ToString().ToLowerInvariant();
+
+    /// <summary>截断小数：<c>NAME(x,n)</c>，没给位数时截到整数 <c>NAME(x,0)</c>（与 Java 一致）。</summary>
+    protected static FunctionWriter TruncateTo(string name) => (r, a) =>
+    {
+        r.Append(name + "(").Write(a[0]).Append(",");
+        if (a.Count > 1) r.Write(a[1]);
+        else r.Append("0");
+        r.Append(")");
+    };
 
     /// <summary>按模板输出：<c>{n}</c> 处写第 n 个参数，其余原样。</summary>
     protected static FunctionWriter Template(string template) => (r, a) =>

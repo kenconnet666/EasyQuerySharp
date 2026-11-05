@@ -229,3 +229,94 @@ public class TopicJson2VO
     [Column(Converter = typeof(JsonValueConverter<List<TopicExtraJson>>))]
     public List<TopicExtraJson>? ExtraJsonArray { get; set; }
 }
+
+/// <summary>UUID 存成 36 位文本（Java 的 jdbcType VARCHAR / CHAR）。</summary>
+public sealed class GuidStringConverter : ValueConverter<Guid?, string?>
+{
+    protected override string? ToProvider(Guid? value) => value?.ToString();
+
+    protected override Guid? FromProvider(string? value) => value is null ? null : Guid.Parse(value);
+}
+
+/// <summary>UUID 按 36 位文本的字节存进 BINARY(36)（Java 的 jdbcType BINARY）。</summary>
+public sealed class GuidUtf8BytesConverter : ValueConverter<Guid?, byte[]?>
+{
+    protected override byte[]? ToProvider(Guid? value) => value is null ? null : System.Text.Encoding.ASCII.GetBytes(value.Value.ToString());
+
+    protected override Guid? FromProvider(byte[]? value) => value is null ? null : Guid.Parse(System.Text.Encoding.ASCII.GetString(value));
+}
+
+/// <summary>对应 Java：entity/UUIDEntity2（MySQL：同一个 UUID 存成 BINARY(36)、VARCHAR、CHAR）。</summary>
+[Table("t_uuid2")]
+public class UUIDEntity2
+{
+    [Column(DbType = "BINARY(36)", Converter = typeof(GuidUtf8BytesConverter))]
+    public Guid? Id1 { get; set; }
+
+    [Column(DbType = "varchar(36)", Converter = typeof(GuidStringConverter))]
+    public Guid? Id2 { get; set; }
+
+    [Column(DbType = "CHAR(36)", Converter = typeof(GuidStringConverter))]
+    public Guid? Id3 { get; set; }
+}
+
+/// <summary>对应 Java：entity/UUIDEntity（PG：原生 UUID 列与文本列）。</summary>
+[Table("t_uuid")]
+public class UUIDEntity
+{
+    [Column(DbType = "UUID")]
+    public Guid? Id1 { get; set; }
+
+    [Column(DbType = "varchar(36)", Converter = typeof(GuidStringConverter))]
+    public Guid? Id2 { get; set; }
+}
+
+/// <summary>对应 Java：pgsql/PgItem。</summary>
+[Table("pg_item")]
+public class PgItem
+{
+    public string? Type { get; set; }
+
+    public decimal? Column2 { get; set; }
+
+    public decimal? Column3 { get; set; }
+
+    public decimal? Column4 { get; set; }
+
+    public decimal? Column5 { get; set; }
+}
+
+/// <summary>对应 Java：entity/MathTest。</summary>
+[Table("t_math_test")]
+public class MathTest
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    [Column(Comment = "值", DbType = "decimal(18,6)")]
+    public decimal? TestValue { get; set; }
+}
+
+/// <summary>对应 Java：vo/MathTestDTO（数学函数的各个结果）。</summary>
+public class MathTestDTO
+{
+    public decimal? TestValue { get; set; }
+    public decimal? TestAbs { get; set; }
+    public int? TestSignum { get; set; }
+    public decimal? TestFloor { get; set; }
+    public decimal? TestCeiling { get; set; }
+    public decimal? TestRound1 { get; set; }
+    public decimal? TestRound2 { get; set; }
+    public decimal? TestLog { get; set; }
+    public decimal? TestLog10 { get; set; }
+    public decimal? TestPow { get; set; }
+    public decimal? TestSqrt { get; set; }
+    public decimal? TestCos { get; set; }
+    public decimal? TestSin { get; set; }
+    public decimal? TestTan { get; set; }
+    public decimal? TestAcos { get; set; }
+    public decimal? TestAsin { get; set; }
+    public decimal? TestAtan { get; set; }
+    public decimal? TestAtan2 { get; set; }
+    public decimal? TestTruncate { get; set; }
+}

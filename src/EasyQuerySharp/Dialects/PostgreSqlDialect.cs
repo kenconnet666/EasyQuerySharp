@@ -100,6 +100,8 @@ public class PostgreSqlDialect : SqlDialect
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("STRING_AGG(DISTINCT (").Write(a[0]).Append(")::TEXT, ").Write(a[1]).Append(")");
         // 与 Java 的 PgSQLDateTimeFormatSQLFunction 一致：先转成 TIMESTAMP 再格式化
         f[SqlFunctionNames.NullSafeEquals] = Template("({0} IS NOT DISTINCT FROM {1})");
+        f[SqlFunctionNames.Power] = Call("POW");
+        f[SqlFunctionNames.Ceiling] = Call("CEILING");
         // JSON：列须是 json / jsonb（与 Java 的 PgSQLJSON*SQLFunction 一致）
         f[SqlFunctionNames.JsonGet] = Template("({0} -> '{1}')");
         f[SqlFunctionNames.JsonGetIndex] = Template("({0} -> {1})");

@@ -270,4 +270,16 @@ public sealed class QueryTest27(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertSql("SELECT t2.`score` AS `score`,t2.`status1` AS `status1`,t2.`order` AS `order`,t2.`is_top` AS `is_top`,t2.`top` AS `top` FROM (SELECT t.`score` AS `score`,t1.`status` AS `status1`,t.`order` AS `order`,t.`is_top` AS `is_top`,t.`top` AS `top` FROM `t_blog` t LEFT JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` WHERE t.`deleted` = ?) t2 WHERE (t2.`status1` = ? OR t2.`order` = ?)");
         listen.AssertParams("false(Boolean),false(Boolean),0(Integer),1(BigDecimal)");
     }
+
+    // 同一个 UUID 存成 BINARY(36)、VARCHAR、CHAR 三种列，读回相等（C# 用值转换器按 36 位文本存）
+    [Fact, Upstream("QueryTest27.java#testUUId")]
+    public async Task TestUUId()
+    {
+        await Db.CodeFirst.DropTablesIfExistsAsync([typeof(UUIDEntity2)], Ct);
+        await Db.CodeFirst.CreateTablesAsync([typeof(UUIDEntity2)], Ct);
+        var uuid = Guid.NewGuid();
+        await Db.Insert(new UUIDEntity2 { Id1 = uuid, Id2 = uuid, Id3 = uuid }).ExecuteAsync(Ct);
+        var read = await Db.Query<UUIDEntity2>().FirstAsync(Ct);
+        Assert.Equal((uuid, uuid, uuid), (read.Id1, read.Id2, read.Id3));
+    }
 }
