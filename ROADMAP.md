@@ -38,8 +38,16 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 | E M6 | 各方言实库验证与新方言、方言专属函数、RETURNING、H2 用例改到 SQLite |
 | F M7 | 表名映射、分库分表、search、按对象筛选剩余、code-first、二级缓存、依赖注入 |
 
+用例按"做完哪一步才能过"归到阶段，不按能力标签：
+- B 先做 5.7 的按列写入策略（M1 写入用例依赖它），JSON 函数连同 6.8 的 MySQL / PG 方言入口一起做；
+- `M8Save*`、`NamedEnumTest`、fork 的 InsertSelect 归 D，行锁方言冒烟归 E，`IncludeConditionTest` 归 C。
+
 已定的取舍：
 - **M8 文档站暂不做**；卡片与 SQL 快照照常随功能补。
+- 聚合根保存（5.11）、分库分表（7.3 / 7.4）先写决策文档 0004 / 0005 再实现。
+- SM4 在核心包里自己实现，不引第三方库；用国标测试向量和 Java 密文校验。
+- 驱动拿不到的方言（HANA、达梦等）退回本地验证或标 `[!]`，不阻塞后续。
+- 元数据与物化器的 Source Generator（1.1）放在 F 之后，与 AOT 验证（10.3）一起做。
 - **SAP HANA 也进 CI**：用 HANA Express 容器并压低内存（`--agree-to-sap-license`，限制 `global_allocation_limit`、关闭不需要的服务），跑不起来时再退回只在本地验证。
 - 生成器项目引用 Microsoft.CodeAnalysis、依赖注入与缓存包引用 Microsoft.Extensions 的抽象包：都只在各自的包里，核心包仍零依赖。
 - M10 不发 NuGet；基准对比、AOT 验证、README 可以做。
@@ -166,7 +174,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [~] 4.8 `Include(nav, q => …)` 可以嵌套；ExtraFilter 的分析器 EQ0004（Include、嵌套、多对多经中间表、ExtraFilter / ExtraMappingFilter、子数据 Take 按父对象分段（`IncludeLimitMode` 分区 / UNION ALL）、`LoadIncludeAsync` 已完成；分析器待做）。
 - [~] 4.9 填充：投影里写非导航的关联查询，规划器按键批量执行（`FillMany` / `FillOne` 已完成，带 Take 时按键 UNION ALL）。
 - [~] 4.10 树：`AsTreeCte`（递归 CTE，上下两个方向、层级上限、子节点条件）、`ToTreeAsync`、树结果投影到 DTO（手写投影或 `SelectAutoInclude`；DTO 自带或沿用实体的自关联导航）已完成；递归 DTO 由生成器诊断。
-- [ ] 4.11 `ToAsyncEnumerable(batchSize)` 按批流式读取对象树；`.AsSnapshot()` 保证多次查询的一致性。
+- [ ] 4.11 `ToAsyncEnumerable(batchSize)` 按批流式读取对象树；`.AsSnapshot()` 保证多次查询的一致性。没有对应的 Java 用例，挪到 BACKLOG。
 
 ## M5 写入进阶与列规则
 
@@ -196,7 +204,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [ ] 6.4 MariaDB：MySQL 方言的变体。
 - [ ] 6.5 openGauss 和人大金仓 PG 模式：与 PG 共用方言。
 - [ ] 6.6 DuckDB（进程内，本地也可以跑）、ClickHouse、Db2、TDengine。
-- [ ] 6.7 SAP HANA：只在本地验证。
+- [ ] 6.7 SAP HANA：HANA Express 压低内存进 CI；驱动或镜像拿不到时退回本地验证。
 - [ ] 6.8 方言静态入口：
   - `MySql.Json*` / `MySql.Match`；
   - `Pg.Jsonb*` / `Pg.Array` / `Pg.FullText`；

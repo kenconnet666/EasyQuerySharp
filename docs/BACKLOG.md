@@ -9,3 +9,4 @@
 - 方言能力做进类型系统（参考 TS 的 `Adapter<C>`）：先用运行时检查加分析器。
 - 一条 SQL 用 JSON 聚合出整棵对象树：不做，理由见 [0002](decisions/0002-object-tree-and-dto.md)。
 - 标量投影之后再聚合（`q.Select(x => x.Score ?? 0m).SumAsync(v => v)`）：选择器参数绑定到单列派生表还不支持，多表时直接用 `SumAsync((a, b) => …)`；有真实需求时再补。
+- 对象树按批流式读取（`ToAsyncEnumerable(batchSize)`）与 `.AsSnapshot()`（ROADMAP 4.11）：没有对应的 Java 用例，有真实需求时再做。
