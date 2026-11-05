@@ -325,7 +325,7 @@ internal sealed partial class ExpressionTranslator
     {
         BinaryExpr b => b.IsComparison,
         LogicalExpr or NotExpr or IsNullExpr or InExpr or LikeExpr or ExistsExpr or BlankCheckExpr => true,
-        FragmentExpr { IsPredicate: true } => true,
+        FragmentExpr { IsPredicate: true } or FunctionExpr { IsPredicate: true } => true,
         LiteralExpr l => l.Sql is "1 = 1" or "1 = 2",
         _ => false,
     };

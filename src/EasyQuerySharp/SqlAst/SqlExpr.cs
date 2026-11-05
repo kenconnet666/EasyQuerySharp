@@ -232,6 +232,9 @@ public sealed class LikeExpr(SqlExpr operand, SqlExpr pattern, bool negated, Lik
 /// </summary>
 public sealed class FunctionExpr(string name, IReadOnlyList<SqlExpr> arguments) : SqlExpr
 {
+    /// <summary>是否本身就是条件（如 null 安全相等）；是时用在 WHERE 里不再补 <c>= true</c>。</summary>
+    public bool IsPredicate { get; init; }
+
     /// <summary>函数名。</summary>
     public string Name { get; } = name;
 

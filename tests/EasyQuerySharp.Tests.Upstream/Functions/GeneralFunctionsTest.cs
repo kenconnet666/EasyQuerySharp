@@ -224,81 +224,21 @@ public sealed class GeneralFunctionsTest
         return Task.CompletedTask;
     }
 
-    [Fact(Skip = "待移植")]
-    [Upstream("GeneralFunctionsTest.java#limitOrderTest1", Pending = true)]
-    public Task LimitOrderTest1()
-    {
-        // 期望 SQL：SELECT t1."value1" AS "value1",t1."value2" AS "value2" FROM (SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS "__rownum__" FROM (SELECT t."id" AS "value1",COUNT(*) AS "value2" FROM "doc_bank_card" t WHERE t."type" = ? GROUP BY t."id") rt WHERE ROWNUM < 6) rt1 WHERE rt1."__rownum__" > 2) t1 ORDER BY t1."value2" ASC
-        // 期望参数：123(String)
-        // Java 原文：
-        // ListenerContextManager listenerContextManager = new ListenerContextManager();
-        // EasyEntityQuery easyEntityQuery = create(listenerContextManager, new OracleDatabaseConfiguration());
-        // listenerContextManager.startCreateListen();
-        // 
-        // 
-        // try {
-        // 
-        //     List<Draft2<String, Long>> list = easyEntityQuery.queryable(DocBankCard.class)
-        //             .where(bank_card -> {
-        //                 bank_card.type().eq("123");
-        //             }).groupBy(bank_card -> GroupKeys.of(bank_card.id()))
-        //             .select(group -> Select.DRAFT.of(
-        //                     group.key1(),
-        //                     group.count()
-        //             ))
-        //             .limit(2, 3)
-        //             .orderBy(draft2 -> draft2.value2().asc())
-        //             .toList();
-        // } catch (Exception ignored) {
-        // 
-        // }
-        // ListenerContext listenerContext = listenerContextManager.getListenContext();
-        // listenerContextManager.clear();
-        // 
-        // Assert.assertNotNull(listenerContext.getJdbcExecuteAfterArg());
-        // JdbcExecuteAfterArg jdbcExecuteAfterArg = listenerContext.getJdbcExecuteAfterArg();
-        // Assert.assertEquals("SELECT t1.\"value1\" AS \"value1\",t1.\"value2\" AS \"value2\" FROM (SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS \"__rownum__\" FROM (SELECT t.\"id\" AS \"value1\",COUNT(*) AS \"value2\" FROM \"doc_bank_card\" t WHERE t.\"type\" = ? GROUP BY t.\"id\") rt WHERE ROWNUM < 6) rt1 WHERE rt1.\"__rownum__\" > 2) t1 ORDER BY t1.\"value2\" ASC", jdbcExecuteAfterArg.getBeforeArg().getSql());
-        // Assert.assertEquals("123(String)", EasySQLUtil.sqlParameterToString(jdbcExecuteAfterArg.getBeforeArg().getSqlParameters().get(0)));
-        return Task.CompletedTask;
-    }
+    // 先分页再按投影排序：分页的分组查询包成派生表，排序在外层（Oracle 用 ROWNUM 分页）
+    [Fact, Upstream("GeneralFunctionsTest.java#limitOrderTest1")]
+    public void LimitOrderTest1() =>
+        SqlOnly.AssertStatement(SqlOnly.Db("oracle").Query<DocBankCard>().Where(c => c.Type == "123").GroupBy(c => c.Id)
+                .Select(g => new Draft<string?, long>(g.Key, g.Count())).Limit(2, 3).OrderBy(d => d.Value2).ToStatement(),
+            "SELECT t1.\"value1\" AS \"value1\",t1.\"value2\" AS \"value2\" FROM (SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS \"__rownum__\" FROM (SELECT t.\"id\" AS \"value1\",COUNT(*) AS \"value2\" FROM \"doc_bank_card\" t WHERE t.\"type\" = ? GROUP BY t.\"id\") rt WHERE ROWNUM < 6) rt1 WHERE rt1.\"__rownum__\" > 2) t1 ORDER BY t1.\"value2\" ASC",
+            "123(String)");
 
-    [Fact(Skip = "待移植")]
-    [Upstream("GeneralFunctionsTest.java#limitOrderTest2", Pending = true)]
-    public Task LimitOrderTest2()
-    {
-        // 期望 SQL：SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS "__rownum__" FROM (SELECT t1."value1" AS "value1",t1."value2" AS "value2" FROM (SELECT t."id" AS "value1",COUNT(*) AS "value2" FROM "doc_bank_card" t WHERE t."type" = ? GROUP BY t."id") t1 ORDER BY t1."value2" ASC) rt WHERE ROWNUM < 6) rt1 WHERE rt1."__rownum__" > 2
-        // 期望参数：123(String)
-        // Java 原文：
-        // ListenerContextManager listenerContextManager = new ListenerContextManager();
-        // EasyEntityQuery easyEntityQuery = create(listenerContextManager, new OracleDatabaseConfiguration());
-        // listenerContextManager.startCreateListen();
-        // 
-        // 
-        // try {
-        // 
-        //     List<Draft2<String, Long>> list = easyEntityQuery.queryable(DocBankCard.class)
-        //             .where(bank_card -> {
-        //                 bank_card.type().eq("123");
-        //             }).groupBy(bank_card -> GroupKeys.of(bank_card.id()))
-        //             .select(group -> Select.DRAFT.of(
-        //                     group.key1(),
-        //                     group.count()
-        //             ))
-        //             .orderBy(draft2 -> draft2.value2().asc())
-        //             .limit(2, 3)
-        //             .toList();
-        // } catch (Exception ignored) {
-        // 
-        // }
-        // ListenerContext listenerContext = listenerContextManager.getListenContext();
-        // listenerContextManager.clear();
-        // 
-        // Assert.assertNotNull(listenerContext.getJdbcExecuteAfterArg());
-        // JdbcExecuteAfterArg jdbcExecuteAfterArg = listenerContext.getJdbcExecuteAfterArg();
-        // Assert.assertEquals("SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS \"__rownum__\" FROM (SELECT t1.\"value1\" AS \"value1\",t1.\"value2\" AS \"value2\" FROM (SELECT t.\"id\" AS \"value1\",COUNT(*) AS \"value2\" FROM \"doc_bank_card\" t WHERE t.\"type\" = ? GROUP BY t.\"id\") t1 ORDER BY t1.\"value2\" ASC) rt WHERE ROWNUM < 6) rt1 WHERE rt1.\"__rownum__\" > 2", jdbcExecuteAfterArg.getBeforeArg().getSql());
-        // Assert.assertEquals("123(String)", EasySQLUtil.sqlParameterToString(jdbcExecuteAfterArg.getBeforeArg().getSqlParameters().get(0)));
-        return Task.CompletedTask;
-    }
+    // 先按投影排序再分页：排序包一层，分页在最外层
+    [Fact, Upstream("GeneralFunctionsTest.java#limitOrderTest2")]
+    public void LimitOrderTest2() =>
+        SqlOnly.AssertStatement(SqlOnly.Db("oracle").Query<DocBankCard>().Where(c => c.Type == "123").GroupBy(c => c.Id)
+                .Select(g => new Draft<string?, long>(g.Key, g.Count())).OrderBy(d => d.Value2).Limit(2, 3).ToStatement(),
+            "SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS \"__rownum__\" FROM (SELECT t1.\"value1\" AS \"value1\",t1.\"value2\" AS \"value2\" FROM (SELECT t.\"id\" AS \"value1\",COUNT(*) AS \"value2\" FROM \"doc_bank_card\" t WHERE t.\"type\" = ? GROUP BY t.\"id\") t1 ORDER BY t1.\"value2\" ASC) rt WHERE ROWNUM < 6) rt1 WHERE rt1.\"__rownum__\" > 2",
+            "123(String)");
 
     [Fact(Skip = "待移植")]
     [Upstream("GeneralFunctionsTest.java#testDoubleConcat", Pending = true)]
@@ -362,31 +302,14 @@ public sealed class GeneralFunctionsTest
         return Task.CompletedTask;
     }
 
-    [Fact(Skip = "待移植")]
-    [Upstream("GeneralFunctionsTest.java#unionSQLite", Pending = true)]
-    public Task UnionSQLite()
+    [Fact, Upstream("GeneralFunctionsTest.java#unionSQLite")]
+    public void UnionSQLite()
     {
-        // 期望 SQL：SELECT t3."id",t3."stars",t3."title",t3."create_time" FROM ( SELECT t."id",t."stars",t."title",t."create_time" FROM "t_topic" t WHERE t."id" IS NOT NULL UNION SELECT t1."id",t1."stars",t1."title",t1."create_time" FROM "t_topic" t1 WHERE t1."id" IS NULL UNION SELECT t2."id",t2."stars",t2."title",t2."create_time" FROM "t_topic" t2 WHERE t2."id" = ? ) t3
-        // Java 原文：
-        // ListenerContextManager listenerContextManager = new ListenerContextManager();
-        // EasyEntityQuery easyEntityQuery = create(listenerContextManager, new SQLiteDatabaseConfiguration());
-        // 
-        // 
-        // EasyQueryClient easyQueryClient = easyEntityQuery.getEasyQueryClient();
-        // 
-        // ClientQueryable<Topic> q1 = easyQueryClient
-        //         .queryable(Topic.class)
-        //         .where(o -> o.isNotNull("id"));
-        // ClientQueryable<Topic> q2 = easyQueryClient
-        //         .queryable(Topic.class)
-        //         .where(o -> o.isNull("id"));
-        // ClientQueryable<Topic> q3 = easyQueryClient
-        //         .queryable(Topic.class)
-        //         .where(o -> o.eq("id", "123"));
-        // 
-        // String sql = q1.union(q2, q3).toSQL();
-        // System.out.println(sql);
-        // Assert.assertEquals("SELECT t3.\"id\",t3.\"stars\",t3.\"title\",t3.\"create_time\" FROM ( SELECT t.\"id\",t.\"stars\",t.\"title\",t.\"create_time\" FROM \"t_topic\" t WHERE t.\"id\" IS NOT NULL  UNION  SELECT t1.\"id\",t1.\"stars\",t1.\"title\",t1.\"create_time\" FROM \"t_topic\" t1 WHERE t1.\"id\" IS NULL  UNION  SELECT t2.\"id\",t2.\"stars\",t2.\"title\",t2.\"create_time\" FROM \"t_topic\" t2 WHERE t2.\"id\" = ? ) t3", sql);
-        return Task.CompletedTask;
+        var db = SqlOnly.Db("sqlite");
+        var q1 = db.Query<Topic>().Where(o => o.Id != null);
+        var q2 = db.Query<Topic>().Where(o => o.Id == null);
+        var q3 = db.Query<Topic>().Where(o => o.Id == "123");
+        Assert.Equal("SELECT t3.\"id\",t3.\"stars\",t3.\"title\",t3.\"create_time\" FROM ( SELECT t.\"id\",t.\"stars\",t.\"title\",t.\"create_time\" FROM \"t_topic\" t WHERE t.\"id\" IS NOT NULL  UNION  SELECT t1.\"id\",t1.\"stars\",t1.\"title\",t1.\"create_time\" FROM \"t_topic\" t1 WHERE t1.\"id\" IS NULL  UNION  SELECT t2.\"id\",t2.\"stars\",t2.\"title\",t2.\"create_time\" FROM \"t_topic\" t2 WHERE t2.\"id\" = ? ) t3",
+            q1.Union(q2, q3).ToSql());
     }
 }

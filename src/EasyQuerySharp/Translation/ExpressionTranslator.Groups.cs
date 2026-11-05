@@ -84,6 +84,8 @@ internal sealed partial class ExpressionTranslator
             case nameof(IGroup<object, object>.Column):
                 // 组内的列本身，不聚合（Java 的 groupTable()）
                 return Value(0, LiteralExpr.Null);
+            case nameof(IGroup<object, object>.Grouping):
+                return new FunctionExpr(SqlFunctionNames.Grouping, [Translate(call.Arguments[0])]);
             case nameof(IGroup<object, object>.StringJoin):
                 return new FunctionExpr(distinct ? SqlFunctionNames.StringJoinDistinct : SqlFunctionNames.StringJoin,
                     [Value(0, LiteralExpr.Null), Translate(call.Arguments[1])]);

@@ -45,6 +45,14 @@ public class MySqlDialect : SqlDialect
         renderer.WriteWhere(statement.Where);
     }
 
+    /// <summary>MySQL 只有 <c>GROUP BY a,b WITH ROLLUP</c> 一种写法，没有 CUBE（与 Java 一致）。</summary>
+    public override void WriteGroupBy(SqlRenderer renderer, IReadOnlyList<SqlExpr> keys, GroupByMode mode)
+    {
+        if (mode == GroupByMode.Cube) throw new NotSupportedException("MySQL 不支持 GROUP BY CUBE");
+        renderer.WriteList(keys, ",");
+        if (mode == GroupByMode.Rollup) renderer.Append(" WITH ROLLUP");
+    }
+
     /// <summary>忽略冲突用 <c>INSERT IGNORE</c>。</summary>
     public override string InsertKeyword(InsertStatement insert) => insert.Conflict is { Ignore: true } ? "INSERT IGNORE INTO " : "INSERT INTO ";
 
@@ -120,6 +128,16 @@ public class MySqlDialect : SqlDialect
     {
         base.RegisterFunctions(f);
         f[SqlFunctionNames.NullOrDefault] = Call("IFNULL");
+        f[SqlFunctionNames.NullSafeEquals] = Template("({0} <=> {1})");
+        // MySQL 没有 DATE_TRUNC：DATE_FORMAT 把更小的部分清零再转回 DATETIME；季度、周再减去月 / 天的偏移（WEEKDAY 周一为 0），与 Java 一致
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Year)] = Template("CAST(DATE_FORMAT({0},'%Y-01-01 00:00:00') AS DATETIME)");
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Quarter)] = Template("DATE_SUB(CAST(DATE_FORMAT({0},'%Y-%m-01 00:00:00') AS DATETIME), INTERVAL ((MONTH({0}) - 1) % 3) MONTH)");
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Month)] = Template("CAST(DATE_FORMAT({0},'%Y-%m-01 00:00:00') AS DATETIME)");
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Week)] = Template("DATE_SUB(CAST(DATE_FORMAT({0},'%Y-%m-%d 00:00:00') AS DATETIME), INTERVAL WEEKDAY({0}) DAY)");
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Day)] = Template("CAST(DATE_FORMAT({0},'%Y-%m-%d 00:00:00') AS DATETIME)");
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Hour)] = Template("CAST(DATE_FORMAT({0},'%Y-%m-%d %H:00:00') AS DATETIME)");
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Minute)] = Template("CAST(DATE_FORMAT({0},'%Y-%m-%d %H:%i:00') AS DATETIME)");
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Second)] = Template("CAST(DATE_FORMAT({0},'%Y-%m-%d %H:%i:%s') AS DATETIME)");
         f[SqlFunctionNames.CompareTo] = Call("STRCMP");
         f[SqlFunctionNames.IndexOf] = Reordered("LOCATE", 1, 0);
         f[SqlFunctionNames.Ceiling] = Call("CEILING");

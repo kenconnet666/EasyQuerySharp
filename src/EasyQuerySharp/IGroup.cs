@@ -53,6 +53,9 @@ public interface IGroup<out TKey, TElement>
     /// </summary>
     TValue Column<TValue>(Func<TElement, TValue> selector);
 
+    /// <summary><c>GROUPING(键)</c>：配合 <c>Rollup()</c> / <c>Cube()</c>，这一行里该键被汇总掉（小计、总计行）时为 1，否则为 0。</summary>
+    int Grouping<TValue>(TValue key);
+
     /// <summary>字符串聚合：MySQL 的 GROUP_CONCAT、PG / SQL Server 的 STRING_AGG、Oracle 的 LISTAGG（对应 Java 的 joining）。</summary>
     string StringJoin<TValue>(Func<TElement, TValue> selector, string separator);
 }

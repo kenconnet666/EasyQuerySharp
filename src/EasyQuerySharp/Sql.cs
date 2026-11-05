@@ -123,6 +123,24 @@ public static partial class Sql
     /// <summary>数据库的随机数（对应 Java 的 random()），多用于随机排序：<c>.OrderBy(t =&gt; Sql.Random())</c>。</summary>
     public static double Random() => throw OnlyInQuery();
 
+    /// <summary>
+    /// 截断到 <paramref name="unit"/> 的起点，更小的部分清零（对应 Java 的 dateTrunc）：PG 写 <c>DATE_TRUNC('month', x)</c>，
+    /// MySQL 用 DATE_FORMAT 清零后转回 DATETIME；周从周一开始。其余方言不支持时渲染期抛出 <see cref="NotSupportedException"/>。
+    /// </summary>
+    public static DateTime DateTrunc(this DateTime value, DateTruncUnit unit) => throw OnlyInQuery();
+
+    /// <summary>同 <see cref="DateTrunc(DateTime, DateTruncUnit)"/>，可空的日期。</summary>
+    public static DateTime? DateTrunc(this DateTime? value, DateTruncUnit unit) => throw OnlyInQuery();
+
+    /// <summary><c>NULLIF(x, other)</c>：等于 <paramref name="other"/> 时为 NULL，否则是原值；常见用法 <c>u.Name.NullIf("")</c> 把空串当 NULL（对应 Java 的 nullIf）。</summary>
+    public static T? NullIf<T>(this T value, T other) => throw OnlyInQuery();
+
+    /// <summary>
+    /// null 安全的相等：两边都为 NULL 也算相等（对应 Java 的 eqNullSafe）。MySQL 写 <c>a &lt;=&gt; b</c>，PG 写 <c>a IS NOT DISTINCT FROM b</c>，
+    /// SQLite 写 <c>a IS b</c>，其余写成 <c>((a = b) OR (a IS NULL AND b IS NULL))</c>。
+    /// </summary>
+    public static bool EqualsNullSafe<T>(this T value, T other) => throw OnlyInQuery();
+
     /// <summary>ISO 星期几：周一 1 … 周日 7（C# 的 <c>x.DayOfWeek</c> 是周日 0 … 周六 6）。</summary>
     public static int IsoDayOfWeek(this DateTime value) => throw OnlyInQuery();
 

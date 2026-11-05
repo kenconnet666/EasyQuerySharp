@@ -86,6 +86,17 @@ public abstract class SqlDialect
         _ => throw new ArgumentOutOfRangeException(nameof(rowLock), rowLock, null),
     });
 
+    /// <summary>写 GROUP BY 之后的键。默认是标准写法 <c>ROLLUP(a,b)</c> / <c>CUBE(a,b)</c>；不支持的方言覆盖成抛出 <see cref="NotSupportedException"/>。</summary>
+    public virtual void WriteGroupBy(SqlRenderer renderer, IReadOnlyList<SqlExpr> keys, GroupByMode mode)
+    {
+        if (mode == GroupByMode.Plain)
+        {
+            renderer.WriteList(keys, ",");
+            return;
+        }
+        renderer.Append(mode == GroupByMode.Rollup ? "ROLLUP(" : "CUBE(").WriteList(keys, ",").Append(")");
+    }
+
     /// <summary>写 LIKE。默认 <c>x LIKE ?</c>（模式里已拼好 %）；方言可按 <see cref="LikeExpr.Mode"/> 改写。</summary>
     public virtual void WriteLike(SqlRenderer renderer, LikeExpr predicate) =>
         renderer.Write(predicate.Operand).Append(predicate.Negated ? " NOT LIKE " : " LIKE ").Write(predicate.Pattern);
@@ -268,6 +279,10 @@ public abstract class SqlDialect
     {
         f[SqlFunctionNames.NullOrDefault] = Call("COALESCE");
         f[SqlFunctionNames.EqualsWith] = (r, a) => r.Append("(CASE ").Write(a[0]).Append(" WHEN ").Write(a[1]).Append(" THEN 1 ELSE 0 END)");
+        f[SqlFunctionNames.NullIf] = Template("NULLIF({0}, {1})");
+        f[SqlFunctionNames.NullSafeEquals] = Template("(({0} = {1}) OR ({0} IS NULL AND {1} IS NULL))");
+        foreach (var unit in Enum.GetValues<DateTruncUnit>())
+            f[SqlFunctionNames.DateTrunc(unit)] = (_, _) => throw new NotSupportedException($"{Name} 方言不支持 DateTrunc({unit})");
         f[SqlFunctionNames.Concat] = Call("CONCAT");
         f[SqlFunctionNames.Length] = Call("CHAR_LENGTH");
         f[SqlFunctionNames.Trim] = Call("TRIM");

@@ -19,7 +19,7 @@ internal sealed partial class ExpressionTranslator
             nameof(Sql.Over.DenseRank) => (Head("DENSE_RANK()"), false),
             nameof(Sql.Over.PercentRank) => (Head("PERCENT_RANK()"), false),
             nameof(Sql.Over.CumeDist) => (Head("CUME_DIST()"), false),
-            nameof(Sql.Over.Ntile) => (Head("NTILE(" + IntLiteral(values[0]) + ")"), false),
+            nameof(Sql.Over.Ntile) => (Head("NTILE(" + PositiveLiteral(values[0], "NTILE 的桶数") + ")"), false),
             nameof(Sql.Over.Count) when values.Count == 0 => (Head("COUNT(*)"), false),
             nameof(Sql.Over.Count) or nameof(Sql.Over.Sum) or nameof(Sql.Over.Avg) or nameof(Sql.Over.Max) or nameof(Sql.Over.Min) =>
                 (Head(call.Method.Name.ToUpperInvariant() + "({0})", values[0]), false),
@@ -41,6 +41,7 @@ internal sealed partial class ExpressionTranslator
             {
                 case nameof(Window.PartitionBy):
                     var keys = StripConvert(step.Arguments[0]) is NewArrayExpression array ? array.Expressions : [step.Arguments[0]];
+                    if (keys.Count == 0) throw Unsupported(step, "PartitionBy 至少要有一个键");
                     partitions.AddRange(keys.Select(k => Translate(StripConvert(k))));
                     break;
                 case nameof(Window.OrderBy):
@@ -87,6 +88,14 @@ internal sealed partial class ExpressionTranslator
         if (stripped is MethodCallExpression { Method.Name: nameof(Sql.NullsFirst) or nameof(Sql.NullsLast) } mark && mark.Method.DeclaringType == typeof(Sql))
             return new OrderByItem(Translate(StripConvert(mark.Arguments[0])), descending, raw, mark.Method.Name == nameof(Sql.NullsLast) ? NullsOrder.Last : NullsOrder.First);
         return new OrderByItem(Translate(stripped), descending, raw);
+    }
+
+    // 必须为正的整数参数（如 NTILE 的桶数），直接写成字面量
+    private static string PositiveLiteral(Expression e, string what)
+    {
+        var value = Convert.ToInt64(ClientEvaluator.Evaluate(e), CultureInfo.InvariantCulture);
+        if (value <= 0) throw new ArgumentOutOfRangeException(nameof(e), value, what + "必须是正数");
+        return value.ToString(CultureInfo.InvariantCulture);
     }
 
     private static string IntLiteral(Expression e) =>

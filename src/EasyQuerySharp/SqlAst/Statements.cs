@@ -90,6 +90,9 @@ public sealed class SelectQuery(TableSource from)
     /// <summary>GROUP BY。</summary>
     public List<SqlExpr> GroupBy { get; } = [];
 
+    /// <summary>GROUP BY 的汇总方式：普通、ROLLUP 或 CUBE。</summary>
+    public GroupByMode GroupByMode { get; set; }
+
     /// <summary>HAVING 条件，按 AND 连接。</summary>
     public List<SqlExpr> Having { get; } = [];
 
@@ -175,4 +178,17 @@ public sealed class DeleteStatement(EntityTableSource table)
 
     /// <summary>WHERE 条件，按 AND 连接。</summary>
     public List<SqlExpr> Where { get; } = [];
+}
+
+/// <summary>GROUP BY 的汇总方式（对应 Java fork 的 GroupingEnum）。</summary>
+public enum GroupByMode
+{
+    /// <summary>普通分组。</summary>
+    Plain,
+
+    /// <summary>按键从右往左逐级小计，最后一行总计。</summary>
+    Rollup,
+
+    /// <summary>键的所有组合都小计。</summary>
+    Cube,
 }

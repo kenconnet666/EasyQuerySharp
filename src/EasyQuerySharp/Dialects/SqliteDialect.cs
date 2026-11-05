@@ -22,6 +22,13 @@ public class SqliteDialect : SqlDialect
     /// <inheritdoc />
     public override bool ParenthesizeCompoundParts => false;
 
+    /// <summary>SQLite 没有 ROLLUP / CUBE。</summary>
+    public override void WriteGroupBy(SqlRenderer renderer, IReadOnlyList<SqlExpr> keys, GroupByMode mode)
+    {
+        if (mode != GroupByMode.Plain) throw new NotSupportedException($"SQLite 不支持 GROUP BY {mode.ToString().ToUpperInvariant()}");
+        base.WriteGroupBy(renderer, keys, mode);
+    }
+
     /// <summary>UPDATE / DELETE 的目标表别名必须写 AS（<c>UPDATE "t" AS t SET …</c>）。</summary>
     public override string WriteTargetAliasSeparator => " AS ";
 
@@ -74,6 +81,7 @@ public class SqliteDialect : SqlDialect
     {
         base.RegisterFunctions(f);
         f[SqlFunctionNames.Length] = Call("LENGTH");
+        f[SqlFunctionNames.NullSafeEquals] = Template("({0} IS {1})");
         f[SqlFunctionNames.DateFormat] = DateFormat("strftime({1}, {0})", ("yyyy", "%Y"), ("MM", "%m"), ("dd", "%d"), ("HH", "%H"), ("mm", "%M"), ("ss", "%S"));
         f[SqlFunctionNames.StringJoin] = Call("GROUP_CONCAT");
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("GROUP_CONCAT(DISTINCT ").Write(a[0]).Append(",").Write(a[1]).Append(")");

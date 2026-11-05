@@ -18,6 +18,12 @@ public static class SqlFunctionNames
     /// <summary>(a, b)：a = b 时 NULL，否则 a。</summary>
     public const string NullIf = "NULLIF";
 
+    /// <summary>(a, b)：null 安全的相等（两边都为 NULL 也算相等），作为条件使用。MySQL <c>&lt;=&gt;</c>、PG <c>IS NOT DISTINCT FROM</c>、SQLite <c>IS</c>。</summary>
+    public const string NullSafeEquals = "NullSafeEquals";
+
+    /// <summary>(key)：<c>GROUPING(key)</c>，ROLLUP / CUBE 的小计行里被汇总掉的键为 1。</summary>
+    public const string Grouping = "GROUPING";
+
     // ---------- 字符串 ----------
 
     /// <summary>(a, b, …)：拼接。MySQL / PG / SQL Server 的 CONCAT，Oracle 的 ||。</summary>
@@ -78,6 +84,9 @@ public static class SqlFunctionNames
 
     /// <summary>(x)：取日期的一部分。</summary>
     public static string DatePartOf(DatePart part) => "DatePart." + part;
+
+    /// <summary>(x)：截断到 <paramref name="unit"/> 的起点（Java 的 dateTrunc）。</summary>
+    public static string DateTrunc(DateTruncUnit unit) => "DateTrunc." + unit;
 
     /// <summary>(start, end)：end 减 start 的整数 <paramref name="unit"/> 数（截断）。</summary>
     public static string DateDiff(DateUnit unit) => "DateDiff." + unit;

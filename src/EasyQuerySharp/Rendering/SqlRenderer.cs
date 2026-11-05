@@ -172,7 +172,7 @@ public sealed class SqlRenderer
         Append(" FROM ").WriteTable(q.From);
         foreach (var j in q.Joins) WriteJoin(j);
         WriteWhere(q.Where);
-        if (q.GroupBy.Count > 0) Append(" GROUP BY ").WriteList(q.GroupBy, ",");
+        if (q.GroupBy.Count > 0) Dialect.WriteGroupBy(Append(" GROUP BY "), q.GroupBy, q.GroupByMode);
         if (q.Having.Count > 0) Append(" HAVING ").WritePredicate(LogicalExpr.And(q.Having));
         if (q.OrderBy.Count > 0)
         {

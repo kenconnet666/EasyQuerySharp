@@ -94,182 +94,24 @@ public sealed class StringFunctionsTest
         SqlOnly.AssertStatement(Db.Query<DocBankCard>().Where(b => b.Code!.Trim() == "123" && b.Code.TrimStart() == "123" && b.Code.TrimEnd() == "123").Select(b => new Draft<string>(b.Id!.Trim())).ToStatement(), sql, parameters);
     }
 
-    [Fact(Skip = "待移植：需要 GroupBy 与导航（M3 / M4）")]
-    [Upstream("StringFunctionsTest.java#joining2MySQL", Pending = true)]
-    public Task Joining2MySQL()
-    {
-        // 期望 SQL：SELECT t.`code` AS `value1`,GROUP_CONCAT(DISTINCT (CASE WHEN t.`type` = ? THEN t1.`name` ELSE NULL END) SEPARATOR ?) AS `value2`,GROUP_CONCAT(DISTINCT t.`bank_id` SEPARATOR ?) AS `value3`,GROUP_CONCAT(DISTINCT (CASE WHEN t.`type` = ? THEN t.`bank_id` ELSE NULL END) SEPARATOR ?) AS `value4` FROM `doc_bank_card` t LEFT JOIN `doc_user` t1 ON t1.`id` = t.`uid` GROUP BY t.`code`
-        // 期望参数：储蓄卡(String),,(String),,(String),储蓄卡(String),,(String)
-        // Java 原文：
-        // ListenerContextManager listenerContextManager = new ListenerContextManager();
-        // EasyEntityQuery easyEntityQuery = create(listenerContextManager, new MySQLDatabaseConfiguration());
-        // listenerContextManager.startCreateListen();
-        // 
-        // try {
-        // 
-        //     List<Draft4<String, String, String, String>> list = easyEntityQuery.queryable(DocBankCard.class)
-        //             .groupBy(bank_card -> GroupKeys.of(bank_card.code()))
-        //             .select(group -> Select.DRAFT.of(
-        //                     group.key1(),
-        // 
-        //                     group.where(o -> o.type().eq("储蓄卡")).distinct().joining(x -> x.user().name(), ","),
-        // 
-        //                     group.groupTable().bankId().joining(",",true),
-        //                     group.groupTable().bankId().joining(",",true).filter(() -> group.groupTable().type().eq("储蓄卡"))
-        //             )).toList();
-        // } catch (Exception ignored) {
-        // 
-        // }
-        // ListenerContext listenerContext = listenerContextManager.getListenContext();
-        // listenerContextManager.clear();
-        // 
-        // Assert.assertNotNull(listenerContext.getJdbcExecuteAfterArg());
-        // JdbcExecuteAfterArg jdbcExecuteAfterArg = listenerContext.getJdbcExecuteAfterArg();
-        // Assert.assertEquals("SELECT t.`code` AS `value1`,GROUP_CONCAT(DISTINCT (CASE WHEN t.`type` = ? THEN t1.`name` ELSE NULL END) SEPARATOR ?) AS `value2`,GROUP_CONCAT(DISTINCT t.`bank_id` SEPARATOR ?) AS `value3`,GROUP_CONCAT(DISTINCT (CASE WHEN t.`type` = ? THEN t.`bank_id` ELSE NULL END) SEPARATOR ?) AS `value4` FROM `doc_bank_card` t LEFT JOIN `doc_user` t1 ON t1.`id` = t.`uid` GROUP BY t.`code`", jdbcExecuteAfterArg.getBeforeArg().getSql());
-        // Assert.assertEquals("储蓄卡(String),,(String),,(String),储蓄卡(String),,(String)", EasySQLUtil.sqlParameterToString(jdbcExecuteAfterArg.getBeforeArg().getSqlParameters().get(0)));
-        return Task.CompletedTask;
-    }
+    // 组内过滤 + 去重的字符串聚合，聚合里用到对一导航时自动 LEFT JOIN
+    [Theory, Upstream("StringFunctionsTest.java#joiningMySQL"), Upstream("StringFunctionsTest.java#joiningMSSQL"), Upstream("StringFunctionsTest.java#joiningORACLE"), Upstream("StringFunctionsTest.java#joiningPGSQL")]
+    [InlineData("mysql", "SELECT t.`code` AS `value1`,GROUP_CONCAT(DISTINCT (CASE WHEN t.`type` = ? THEN t1.`name` ELSE NULL END) SEPARATOR ?) AS `value2`,GROUP_CONCAT(DISTINCT t.`bank_id` SEPARATOR ?) AS `value3` FROM `doc_bank_card` t LEFT JOIN `doc_user` t1 ON t1.`id` = t.`uid` GROUP BY t.`code`")]
+    [InlineData("mssql", "SELECT t.[code] AS [value1],STRING_AGG(DISTINCT (CASE WHEN t.[type] = ? THEN t1.[name] ELSE NULL END), ?) AS [value2],STRING_AGG(DISTINCT t.[bank_id], ?) AS [value3] FROM [doc_bank_card] t LEFT JOIN [doc_user] t1 ON t1.[id] = t.[uid] GROUP BY t.[code]")]
+    [InlineData("oracle", "SELECT t.\"code\" AS \"value1\",LISTAGG(DISTINCT TO_CHAR((CASE WHEN t.\"type\" = ? THEN t1.\"name\" ELSE NULL END)), ?) WITHIN GROUP(ORDER BY 1) AS \"value2\",LISTAGG(DISTINCT TO_CHAR(t.\"bank_id\"), ?) WITHIN GROUP(ORDER BY 1) AS \"value3\" FROM \"doc_bank_card\" t LEFT JOIN \"doc_user\" t1 ON t1.\"id\" = t.\"uid\" GROUP BY t.\"code\"")]
+    [InlineData("pgsql", "SELECT t.\"code\" AS \"value1\",STRING_AGG(DISTINCT ((CASE WHEN t.\"type\" = ? THEN t1.\"name\" ELSE NULL END))::TEXT, ?) AS \"value2\",STRING_AGG(DISTINCT (t.\"bank_id\")::TEXT, ?) AS \"value3\" FROM \"doc_bank_card\" t LEFT JOIN \"doc_user\" t1 ON t1.\"id\" = t.\"uid\" GROUP BY t.\"code\"")]
+    public void Joining(string dialect, string sql) =>
+        SqlOnly.AssertStatement(SqlOnly.Db(dialect).Query<DocBankCard>().GroupBy(c => c.Code)
+            .Select(g => new Draft<string?, string, string>(g.Key, g.Where(o => o.Type == "储蓄卡").Distinct().StringJoin(x => x.User!.Name, ","), g.Distinct().StringJoin(x => x.BankId, ",")))
+            .ToStatement(), sql, "储蓄卡(String),,(String),,(String)");
 
-    [Fact(Skip = "待移植：需要 GroupBy 与导航（M3 / M4）")]
-    [Upstream("StringFunctionsTest.java#joiningMSSQL", Pending = true)]
-    public Task JoiningMSSQL()
-    {
-        // 期望 SQL：SELECT t.[code] AS [value1],STRING_AGG(DISTINCT (CASE WHEN t.[type] = ? THEN t1.[name] ELSE NULL END), ?) AS [value2],STRING_AGG(DISTINCT t.[bank_id], ?) AS [value3] FROM [doc_bank_card] t LEFT JOIN [doc_user] t1 ON t1.[id] = t.[uid] GROUP BY t.[code]
-        // 期望参数：储蓄卡(String),,(String),,(String)
-        // Java 原文：
-        // ListenerContextManager listenerContextManager = new ListenerContextManager();
-        // EasyEntityQuery easyEntityQuery = create(listenerContextManager, new MsSQLDatabaseConfiguration());
-        // listenerContextManager.startCreateListen();
-        // 
-        // 
-        // try {
-        // 
-        //     List<Draft3<String, String, String>> list = easyEntityQuery.queryable(DocBankCard.class)
-        //             .groupBy(bank_card -> GroupKeys.of(bank_card.code()))
-        //             .select(group -> Select.DRAFT.of(
-        //                     group.key1(),
-        // 
-        //                     group.where(o -> o.type().eq("储蓄卡")).distinct().joining(x -> x.user().name(), ","),
-        // 
-        //                     group.groupTable().bankId().joining(",",true)
-        //             )).toList();
-        // } catch (Exception ignored) {
-        // 
-        // }
-        // ListenerContext listenerContext = listenerContextManager.getListenContext();
-        // listenerContextManager.clear();
-        // 
-        // Assert.assertNotNull(listenerContext.getJdbcExecuteAfterArg());
-        // JdbcExecuteAfterArg jdbcExecuteAfterArg = listenerContext.getJdbcExecuteAfterArg();
-        // Assert.assertEquals("SELECT t.[code] AS [value1],STRING_AGG(DISTINCT (CASE WHEN t.[type] = ? THEN t1.[name] ELSE NULL END), ?) AS [value2],STRING_AGG(DISTINCT t.[bank_id], ?) AS [value3] FROM [doc_bank_card] t LEFT JOIN [doc_user] t1 ON t1.[id] = t.[uid] GROUP BY t.[code]", jdbcExecuteAfterArg.getBeforeArg().getSql());
-        // Assert.assertEquals("储蓄卡(String),,(String),,(String)", EasySQLUtil.sqlParameterToString(jdbcExecuteAfterArg.getBeforeArg().getSqlParameters().get(0)));
-        return Task.CompletedTask;
-    }
-
-    [Fact(Skip = "待移植：需要 GroupBy 与导航（M3 / M4）")]
-    [Upstream("StringFunctionsTest.java#joiningMySQL", Pending = true)]
-    public Task JoiningMySQL()
-    {
-        // 期望 SQL：SELECT t.`code` AS `value1`,GROUP_CONCAT(DISTINCT (CASE WHEN t.`type` = ? THEN t1.`name` ELSE NULL END) SEPARATOR ?) AS `value2`,GROUP_CONCAT(DISTINCT t.`bank_id` SEPARATOR ?) AS `value3` FROM `doc_bank_card` t LEFT JOIN `doc_user` t1 ON t1.`id` = t.`uid` GROUP BY t.`code`
-        // 期望参数：储蓄卡(String),,(String),,(String)
-        // Java 原文：
-        // ListenerContextManager listenerContextManager = new ListenerContextManager();
-        // EasyEntityQuery easyEntityQuery = create(listenerContextManager, new MySQLDatabaseConfiguration());
-        // listenerContextManager.startCreateListen();
-        // 
-        // try {
-        // 
-        //     List<Draft3<String, String, String>> list = easyEntityQuery.queryable(DocBankCard.class)
-        //             .groupBy(bank_card -> GroupKeys.of(bank_card.code()))
-        //             .select(group -> Select.DRAFT.of(
-        //                     group.key1(),
-        // 
-        //                     group.where(o -> o.type().eq("储蓄卡")).distinct().joining(x -> x.user().name(), ","),
-        // 
-        //                     group.groupTable().bankId().joining(",",true)
-        //             )).toList();
-        // } catch (Exception ignored) {
-        // 
-        // }
-        // ListenerContext listenerContext = listenerContextManager.getListenContext();
-        // listenerContextManager.clear();
-        // 
-        // Assert.assertNotNull(listenerContext.getJdbcExecuteAfterArg());
-        // JdbcExecuteAfterArg jdbcExecuteAfterArg = listenerContext.getJdbcExecuteAfterArg();
-        // Assert.assertEquals("SELECT t.`code` AS `value1`,GROUP_CONCAT(DISTINCT (CASE WHEN t.`type` = ? THEN t1.`name` ELSE NULL END) SEPARATOR ?) AS `value2`,GROUP_CONCAT(DISTINCT t.`bank_id` SEPARATOR ?) AS `value3` FROM `doc_bank_card` t LEFT JOIN `doc_user` t1 ON t1.`id` = t.`uid` GROUP BY t.`code`", jdbcExecuteAfterArg.getBeforeArg().getSql());
-        // Assert.assertEquals("储蓄卡(String),,(String),,(String)", EasySQLUtil.sqlParameterToString(jdbcExecuteAfterArg.getBeforeArg().getSqlParameters().get(0)));
-        return Task.CompletedTask;
-    }
-
-    [Fact(Skip = "待移植：需要 GroupBy 与导航（M3 / M4）")]
-    [Upstream("StringFunctionsTest.java#joiningORACLE", Pending = true)]
-    public Task JoiningORACLE()
-    {
-        // 期望 SQL：SELECT t."code" AS "value1",LISTAGG(DISTINCT TO_CHAR((CASE WHEN t."type" = ? THEN t1."name" ELSE NULL END)), ?) WITHIN GROUP(ORDER BY 1) AS "value2",LISTAGG(DISTINCT TO_CHAR(t."bank_id"), ?) WITHIN GROUP(ORDER BY 1) AS "value3" FROM "doc_bank_card" t LEFT JOIN "doc_user" t1 ON t1."id" = t."uid" GROUP BY t."code"
-        // 期望参数：储蓄卡(String),,(String),,(String)
-        // Java 原文：
-        // ListenerContextManager listenerContextManager = new ListenerContextManager();
-        // EasyEntityQuery easyEntityQuery = create(listenerContextManager, new OracleDatabaseConfiguration());
-        // listenerContextManager.startCreateListen();
-        // 
-        // 
-        // try {
-        // 
-        //     List<Draft3<String, String, String>> list = easyEntityQuery.queryable(DocBankCard.class)
-        //             .groupBy(bank_card -> GroupKeys.of(bank_card.code()))
-        //             .select(group -> Select.DRAFT.of(
-        //                     group.key1(),
-        // 
-        //                     group.where(o -> o.type().eq("储蓄卡")).distinct().joining(x -> x.user().name(), ","),
-        // 
-        //                     group.groupTable().bankId().joining(",",true)
-        //             )).toList();
-        // } catch (Exception ignored) {
-        // 
-        // }
-        // ListenerContext listenerContext = listenerContextManager.getListenContext();
-        // listenerContextManager.clear();
-        // 
-        // Assert.assertNotNull(listenerContext.getJdbcExecuteAfterArg());
-        // JdbcExecuteAfterArg jdbcExecuteAfterArg = listenerContext.getJdbcExecuteAfterArg();
-        // Assert.assertEquals("SELECT t.\"code\" AS \"value1\",LISTAGG(DISTINCT TO_CHAR((CASE WHEN t.\"type\" = ? THEN t1.\"name\" ELSE NULL END)), ?) WITHIN GROUP(ORDER BY 1) AS \"value2\",LISTAGG(DISTINCT TO_CHAR(t.\"bank_id\"), ?) WITHIN GROUP(ORDER BY 1) AS \"value3\" FROM \"doc_bank_card\" t LEFT JOIN \"doc_user\" t1 ON t1.\"id\" = t.\"uid\" GROUP BY t.\"code\"", jdbcExecuteAfterArg.getBeforeArg().getSql());
-        // Assert.assertEquals("储蓄卡(String),,(String),,(String)", EasySQLUtil.sqlParameterToString(jdbcExecuteAfterArg.getBeforeArg().getSqlParameters().get(0)));
-        return Task.CompletedTask;
-    }
-
-    [Fact(Skip = "待移植：需要 GroupBy 与导航（M3 / M4）")]
-    [Upstream("StringFunctionsTest.java#joiningPGSQL", Pending = true)]
-    public Task JoiningPGSQL()
-    {
-        // 期望 SQL：SELECT t."code" AS "value1",STRING_AGG(DISTINCT ((CASE WHEN t."type" = ? THEN t1."name" ELSE NULL END))::TEXT, ?) AS "value2",STRING_AGG(DISTINCT (t."bank_id")::TEXT, ?) AS "value3" FROM "doc_bank_card" t LEFT JOIN "doc_user" t1 ON t1."id" = t."uid" GROUP BY t."code"
-        // 期望参数：储蓄卡(String),,(String),,(String)
-        // Java 原文：
-        // ListenerContextManager listenerContextManager = new ListenerContextManager();
-        // EasyEntityQuery easyEntityQuery = create(listenerContextManager, new PgSQLDatabaseConfiguration());
-        // listenerContextManager.startCreateListen();
-        // 
-        // 
-        // try {
-        // 
-        //     List<Draft3<String, String, String>> list = easyEntityQuery.queryable(DocBankCard.class)
-        //             .groupBy(bank_card -> GroupKeys.of(bank_card.code()))
-        //             .select(group -> Select.DRAFT.of(
-        //                     group.key1(),
-        // 
-        //                     group.where(o -> o.type().eq("储蓄卡")).distinct().joining(x -> x.user().name(), ","),
-        // 
-        //                     group.groupTable().bankId().joining(",",true)
-        //             )).toList();
-        // } catch (Exception ignored) {
-        // 
-        // }
-        // ListenerContext listenerContext = listenerContextManager.getListenContext();
-        // listenerContextManager.clear();
-        // 
-        // Assert.assertNotNull(listenerContext.getJdbcExecuteAfterArg());
-        // JdbcExecuteAfterArg jdbcExecuteAfterArg = listenerContext.getJdbcExecuteAfterArg();
-        // Assert.assertEquals("SELECT t.\"code\" AS \"value1\",STRING_AGG(DISTINCT ((CASE WHEN t.\"type\" = ? THEN t1.\"name\" ELSE NULL END))::TEXT, ?) AS \"value2\",STRING_AGG(DISTINCT (t.\"bank_id\")::TEXT, ?) AS \"value3\" FROM \"doc_bank_card\" t LEFT JOIN \"doc_user\" t1 ON t1.\"id\" = t.\"uid\" GROUP BY t.\"code\"", jdbcExecuteAfterArg.getBeforeArg().getSql());
-        // Assert.assertEquals("储蓄卡(String),,(String),,(String)", EasySQLUtil.sqlParameterToString(jdbcExecuteAfterArg.getBeforeArg().getSqlParameters().get(0)));
-        return Task.CompletedTask;
-    }
+    // 第四列：去重聚合再加组内过滤（Java 的 joining(",", true).filter(…)）
+    [Fact, Upstream("StringFunctionsTest.java#joining2MySQL")]
+    public void Joining2MySQL() =>
+        SqlOnly.AssertStatement(SqlOnly.Db("mysql").Query<DocBankCard>().GroupBy(c => c.Code)
+            .Select(g => new Draft<string?, string, string, string>(g.Key, g.Where(o => o.Type == "储蓄卡").Distinct().StringJoin(x => x.User!.Name, ","),
+                g.Distinct().StringJoin(x => x.BankId, ","), g.Distinct().Where(o => o.Type == "储蓄卡").StringJoin(x => x.BankId, ",")))
+            .ToStatement(),
+            "SELECT t.`code` AS `value1`,GROUP_CONCAT(DISTINCT (CASE WHEN t.`type` = ? THEN t1.`name` ELSE NULL END) SEPARATOR ?) AS `value2`,GROUP_CONCAT(DISTINCT t.`bank_id` SEPARATOR ?) AS `value3`,GROUP_CONCAT(DISTINCT (CASE WHEN t.`type` = ? THEN t.`bank_id` ELSE NULL END) SEPARATOR ?) AS `value4` FROM `doc_bank_card` t LEFT JOIN `doc_user` t1 ON t1.`id` = t.`uid` GROUP BY t.`code`",
+            "储蓄卡(String),,(String),,(String),储蓄卡(String),,(String)");
 }

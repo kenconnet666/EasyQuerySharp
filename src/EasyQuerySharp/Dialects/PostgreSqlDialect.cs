@@ -95,6 +95,9 @@ public class PostgreSqlDialect : SqlDialect
         f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("STRING_AGG((").Write(a[0]).Append(")::TEXT, ").Write(a[1]).Append(")");
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("STRING_AGG(DISTINCT (").Write(a[0]).Append(")::TEXT, ").Write(a[1]).Append(")");
         // 与 Java 的 PgSQLDateTimeFormatSQLFunction 一致：先转成 TIMESTAMP 再格式化
+        f[SqlFunctionNames.NullSafeEquals] = Template("({0} IS NOT DISTINCT FROM {1})");
+        foreach (var unit in Enum.GetValues<DateTruncUnit>())
+            f[SqlFunctionNames.DateTrunc(unit)] = Template("DATE_TRUNC('" + unit.ToString().ToLowerInvariant() + "', {0})");
         f[SqlFunctionNames.DateFormat] = DateFormat("TO_CHAR(({0})::TIMESTAMP,{1})", ("yyyy", "YYYY"), ("MM", "MM"), ("dd", "DD"), ("HH", "HH24"), ("mm", "MI"), ("ss", "SS"));
     }
 

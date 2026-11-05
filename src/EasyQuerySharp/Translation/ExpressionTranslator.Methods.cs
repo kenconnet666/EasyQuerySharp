@@ -111,6 +111,18 @@ internal sealed partial class ExpressionTranslator
                 return new FunctionExpr(SqlFunctionNames.UtcNow, []);
             case nameof(Sql.Random):
                 return new FunctionExpr(SqlFunctionNames.Random, []);
+            case nameof(Sql.DateTrunc):
+                return new FunctionExpr(SqlFunctionNames.DateTrunc((DateTruncUnit)ClientEvaluator.Evaluate(call.Arguments[1])!), [Translate(call.Arguments[0])]);
+            case nameof(Sql.NullIf):
+            {
+                var (value, other) = TranslatePair(call.Arguments[0], call.Arguments[1]);
+                return new FunctionExpr(SqlFunctionNames.NullIf, [value, other]);
+            }
+            case nameof(Sql.EqualsNullSafe):
+            {
+                var (left, right) = TranslatePair(call.Arguments[0], call.Arguments[1]);
+                return new FunctionExpr(SqlFunctionNames.NullSafeEquals, [left, right]) { IsPredicate = true };
+            }
             case nameof(Sql.IsoDayOfWeek):
                 return new FunctionExpr(SqlFunctionNames.DatePartOf(DatePart.IsoDayOfWeek), [Translate(call.Arguments[0])]);
             case nameof(Sql.Constant):

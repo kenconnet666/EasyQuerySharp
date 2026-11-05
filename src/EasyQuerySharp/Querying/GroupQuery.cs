@@ -23,6 +23,15 @@ public sealed class GroupQuery<TKey, TElement> : IQueryStateAccessor
     public GroupQuery<TKey, TElement> HavingIf(bool condition, Expression<Func<IGroup<TKey, TElement>, bool>> predicate) =>
         condition ? Having(predicate) : this;
 
+    /// <summary>
+    /// 按键从右往左逐级小计并加一行总计：PG / SQL Server / Oracle 写 <c>GROUP BY ROLLUP(a,b)</c>，MySQL 写 <c>GROUP BY a,b WITH ROLLUP</c>（对应 Java 的 rollup）。
+    /// 小计行里被汇总掉的键为 NULL，用 <c>g.Grouping(g.Key.X)</c> 区分。
+    /// </summary>
+    public GroupQuery<TKey, TElement> Rollup() => new(State with { GroupByMode = SqlAst.GroupByMode.Rollup });
+
+    /// <summary>键的所有组合都小计：<c>GROUP BY CUBE(a,b)</c>（对应 Java 的 cube）；MySQL、SQLite 不支持。</summary>
+    public GroupQuery<TKey, TElement> Cube() => new(State with { GroupByMode = SqlAst.GroupByMode.Cube });
+
     /// <summary>按组追加升序排序（通常按键或聚合值）。</summary>
     public GroupQuery<TKey, TElement> OrderBy<TOrder>(Expression<Func<IGroup<TKey, TElement>, TOrder>> key) =>
         new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, false)) });

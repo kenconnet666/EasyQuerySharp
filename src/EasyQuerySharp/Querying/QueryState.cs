@@ -85,6 +85,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>分组键 lambda（参数依次对应各来源）；为 null 表示不分组。</summary>
     public LambdaExpression? GroupKey { get; init; }
 
+    /// <summary>分组的汇总方式（<c>Rollup()</c> / <c>Cube()</c>）。</summary>
+    public SqlAst.GroupByMode GroupByMode { get; init; }
+
     /// <summary>HAVING 条件，lambda 的参数是 <see cref="IGroup{TKey,TElement}"/>。</summary>
     public ImmutableArray<LambdaExpression> Havings { get; init; } = [];
 

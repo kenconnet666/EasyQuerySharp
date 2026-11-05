@@ -122,6 +122,7 @@ internal static class QueryCompiler
         }
         else keys = [translator.Translate(groupKey.Body)];
         query.GroupBy.AddRange(keys);
+        query.GroupByMode = state.GroupByMode;
 
         var element = bindings.Count == 1 ? bindings[0] : new TupleBinding(bindings);
         translator.Group = new GroupBinding(keys, members, element);
