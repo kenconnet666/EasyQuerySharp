@@ -142,8 +142,12 @@ internal static class IncludeRunner
         var links = plan.Pending.Keys.Select(k => (Parent: k, Target: k)).ToList();
         for (var i = 0; i < plan.Via.Count && links.Count > 0; i++)
         {
+            var step = plan.Via[i];
             var next = i + 1 < plan.Via.Count ? plan.Via[i + 1] : plan.Navigation;
-            links = Compose(links, await LoadViaAsync(db, plan.Via[i], next, links.Select(l => l.Target), ct).ConfigureAwait(false));
+            // 经过的是多对多：先经它的中间表换成目标键
+            if (step.Mapping is { } stepMapping)
+                links = Compose(links, await LoadLinksAsync(db, step, stepMapping, links.Select(l => l.Target), ct).ConfigureAwait(false));
+            links = Compose(links, await LoadViaAsync(db, step, next, links.Select(l => l.Target), ct).ConfigureAwait(false));
         }
         if (plan.Navigation.Mapping is { } mapping && links.Count > 0)
             links = Compose(links, await LoadLinksAsync(db, plan.Navigation, mapping, links.Select(l => l.Target), ct).ConfigureAwait(false));
@@ -161,8 +165,7 @@ internal static class IncludeRunner
     private static async Task<List<(CompositeKey From, CompositeKey To)>> LoadViaAsync(
         EasyDb db, NavigationMetadata step, NavigationMetadata next, IEnumerable<CompositeKey> keys, CancellationToken ct)
     {
-        if (step.Mapping is not null || step.TargetColumns.Count != 1)
-            throw new NotSupportedException($"平铺路径经过的 {step} 只支持单列键的一对多 / 对一导航");
+        if (step.TargetColumns.Count != 1) throw new NotSupportedException($"平铺路径经过的 {step} 只支持单列的目标键");
         var table = new EntityTableSource(step.Target);
         var from = step.TargetColumns[0];
         var query = new SelectQuery(table);

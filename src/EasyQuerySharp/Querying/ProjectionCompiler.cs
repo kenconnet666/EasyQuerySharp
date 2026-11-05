@@ -195,9 +195,18 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         return (plan, plan.FlatPaths.Count - 1);
     }
 
-    /// <summary>平铺带出的值数组里第 <paramref name="index"/> 项，转成父属性的类型；没有带出到（父键为空、子数据不存在）时为默认值。</summary>
-    public static object? FlatValue(object? row, int index, Type type) =>
-        row is object?[] values ? ValueReader.ConvertTo(values[index], type) : null;
+    /// <summary>
+    /// 平铺带出的值数组里第 <paramref name="index"/> 项，转成父属性的类型；没有带出到（父键为空、子数据不存在）时为默认值。
+    /// 父属性上声明了值转换器（<c>[Column(Converter = …)]</c>，Java 平铺属性上的 conversion）时读出后再转换。
+    /// </summary>
+    public static object? FlatValue(object? row, int index, Type type, IValueConverter? converter) =>
+        row is object?[] values ? ValueReader.ConvertTo(converter is null ? values[index] : converter.FromProvider(values[index]), type) : null;
+
+    // DTO 属性上声明的值转换器（同一类型共用一个实例）
+    private static IValueConverter? DtoConverter(PropertyInfo property) =>
+        property.GetCustomAttribute<ColumnAttribute>()?.Converter is { } type ? ConverterInstances.GetOrAdd(type, t => (IValueConverter)Activator.CreateInstance(t)!) : null;
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, IValueConverter> ConverterInstances = new();
 
     private IncludePlan? TryInclude(Expression value)
     {
@@ -307,7 +316,8 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
                            ?? throw new NotSupportedException($"{created.Type.Name}.{member.Name} 不是可回填的属性");
             var value = Expression.Parameter(typeof(object), "child");
             Expression assigned = flatIndex is { } index
-                ? Expression.Call(typeof(ProjectionCompiler).GetMethod(nameof(FlatValue))!, value, Expression.Constant(index), Expression.Constant(property.PropertyType))
+                ? Expression.Call(typeof(ProjectionCompiler).GetMethod(nameof(FlatValue))!, value, Expression.Constant(index), Expression.Constant(property.PropertyType),
+                    Expression.Constant(DtoConverter(property), typeof(IValueConverter)))
                 : value;
             var assign = Expression.Lambda<Action<object?>>(
                 Expression.Call(Expression.Constant(property), typeof(PropertyInfo).GetMethod(nameof(PropertyInfo.SetValue), [typeof(object), typeof(object)])!,

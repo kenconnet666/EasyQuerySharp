@@ -5,7 +5,7 @@ namespace EasyQuerySharp.Tests.Upstream.Mysql8;
 /// Java 的 element(n) 对应 C# 的 ElementAt(n)、firstElement() / first() 对应 First()，
 /// flatElement() 是"任一元素满足"，写成 Any；ALL_SUB_QUERY_GROUP_JOIN 对应 GroupJoinAll()。
 /// </summary>
-public sealed class ManyJoinTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
+public sealed partial class ManyJoinTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
 {
     private const string FlatElement = "Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同";
 
