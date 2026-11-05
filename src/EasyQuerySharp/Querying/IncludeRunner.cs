@@ -35,8 +35,10 @@ internal static class IncludeRunner
                 continue;
             }
 
-            var baseState = new QueryState(db, [new EntitySource(nav.Target.Type)]) { Wheres = [.. plan.ChildFilters], Selector = plan.ChildSelector, Interceptors = interceptors };
+            // 先按配置加条件、排序、条数，再投影（投影之后再加条件会包成派生表）
+            var baseState = new QueryState(db, [new EntitySource(nav.Target.Type)]) { Wheres = [.. plan.ChildFilters], Interceptors = interceptors };
             var state = (plan.Configure?.Invoke(baseState) ?? baseState) with { ForceAlias = true };
+            if (plan.ChildSelector is not null) state = state with { Selector = plan.ChildSelector };
             var targets = links.Select(l => l.Target.First).Distinct().ToList();
             CompiledQuery<object?> CompileFor(QueryState s, IEnumerable<object> keys) => QueryCompiler.Compile<object?>(
                 s with { Wheres = s.Wheres.Add(WithExtraFilter(KeyIn(nav.Target.Type, nav.TargetColumns[0], keys), nav.ExtraFilter)) }, relationKeys: nav.TargetColumns);

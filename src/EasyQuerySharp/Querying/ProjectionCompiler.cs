@@ -153,6 +153,20 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
 
     private IncludePlan? TryInclude(Expression value)
     {
+        // 自动映射（SelectAutoInclude）产出的带出标记：导航、带出查询的配置、子对象的投影都在参数里
+        if (ExpressionTranslator.StripConvert(value) is MethodCallExpression marker && marker.Method.DeclaringType == typeof(AutoIncludeMarkers))
+        {
+            if (marker.Arguments[0] is not MemberExpression { Expression: { } markerOwner } markerNav || translator.BindingOf(markerOwner) is not EntityBinding navOwner
+                || translator.FindNavigation(navOwner, markerNav.Member.Name) is not { } navigation)
+                throw new NotSupportedException($"自动映射的带出只能从实体的导航出发：{marker.Arguments[0]}");
+            var childSelector = (LambdaExpression?)((ConstantExpression)marker.Arguments[2]).Value;
+            var markerPlan = new IncludePlan(navigation, childSelector?.ReturnType ?? navigation.Target.Type, childSelector, [], navigation.IsCollection)
+            {
+                Configure = (Func<QueryState, QueryState>?)((ConstantExpression)marker.Arguments[1]).Value,
+            };
+            _includes.Add((markerPlan, navOwner));
+            return markerPlan;
+        }
         var inner = value;
         if (inner is MethodCallExpression { Method.Name: nameof(Enumerable.ToList) or nameof(Enumerable.ToArray) } materialize
             && materialize.Method.DeclaringType == typeof(Enumerable))

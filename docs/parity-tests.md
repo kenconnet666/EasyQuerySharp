@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1490、偏离 192、不适用 68、骨架 15、待做 639。
+合计：已移植 1491、偏离 192、不适用 68、骨架 15、待做 638。
 
 ## 按能力
 
@@ -32,7 +32,7 @@
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 1 | 0 | 0 | 0 | 1 |
 | 流式读取 | `query.stream` | M3 | 9 | 6 | 2 | 1 | 0 | 0 |
 | union / union all | `query.union` | M3 | 18 | 13 | 4 | 0 | 1 | 0 |
-| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 2 | 0 | 0 | 1 | 33 |
+| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 3 | 0 | 0 | 1 | 32 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 23 | 25 | 3 | 0 | 5 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 60 | 1 | 2 | 2 | 2 |
@@ -1501,7 +1501,7 @@
 | mysql8/M8BankTest.java#partitionBy | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t` |
 | mysql8/M8BankTest.java#testExtraDTO | 待做 |  | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t` |
 | mysql8/M8BankTest.java#testExtraDTO123 | 待做 |  | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t` |
-| mysql8/M8BankTest.java#testExtraFilter | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t` |
+| mysql8/M8BankTest.java#testExtraFilter | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.AutoInclude.cs:53 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t` |
 | mysql8/M8BankTest.java#testExtraFilter2 | 待做 |  | `SELECT IFNULL(t2.'__count2__',0) AS 'card_count',t.'id',t.'name',t.'phone',t.'age',t.'create_time' F…` |
 | mysql8/M8PCABTest.java#testFlat | 待做 |  | `SELECT t.'id',t.'name' FROM 'm8_province' t` |
 | mysql8/M8PCABTest.java#testFlat1 | 待做 |  | `SELECT t.'id',t.'name' FROM 'm8_province' t` |
