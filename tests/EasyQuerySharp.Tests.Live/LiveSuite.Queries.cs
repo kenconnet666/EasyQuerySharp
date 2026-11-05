@@ -165,4 +165,24 @@ public abstract partial class LiveSuite
         Assert.Equal(["acme"], await db.Query<Company>().Where(c => c.Users!.Any(u => u.Posts!.Any(p => p.Comments!.Any()))).Select(c => c.Name).ToListAsync(Ct));
         Assert.Equal(2, await db.Query<Comment>().Where(c => c.Post!.User!.Company!.Name == "acme").CountAsync(Ct));
     }
+
+    // UNION 的各分支在 SQLite 上不能加括号：方言决定写法，各库都能执行
+    [Fact]
+    public async Task UnionsQueriesOnEveryDatabase()
+    {
+        var db = await SeededAsync();
+        var names = await db.Query<User>().Where(u => u.Name == "alice").Select(u => new User { Id = u.Id, Name = u.Name })
+            .Union(db.Query<User>().Where(u => u.Name == "bob").Select(u => new User { Id = u.Id, Name = u.Name }))
+            .OrderBy(u => u.Name).Select(u => u.Name).ToListAsync(Ct);
+        Assert.Equal(["alice", "bob"], names);
+    }
+
+    // 递归 CTE（树查询）的写法在各库上都能执行：起点两条评论；评论的 id 与 post_id 可能成环，用子节点条件让递归部分不走下去
+    [Fact]
+    public async Task RunsRecursiveTreeCte()
+    {
+        var db = await SeededAsync();
+        var bodies = await db.Query<Comment>().AsTreeCte(c => c.Id, c => c.PostId, childFilter: c => c.Body == "none").Select(c => c.Body).ToListAsync(Ct);
+        Assert.Equal(["nice", "thanks"], bodies.Order(StringComparer.Ordinal));
+    }
 }

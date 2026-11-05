@@ -38,6 +38,14 @@ public static class QueryBasicsExamples
         return rows.Select(r => new { Name = r.Get<string>("name"), Age = r.Get<int>("age") }).ToList();
     }
 
+    [Example("query/basics", "树：取全部下级并拼成树")]
+    public static async Task<object> DepartmentTree(EasyDb db)
+    {
+        var roots = await db.Query<Department>().Where(d => d.Name == "研发部").AsTreeCte().ToTreeAsync();
+        static object Node(Department d) => new { d.Name, Children = d.Children!.Select(Node).ToList() };
+        return roots.Select(Node).ToList();
+    }
+
     [Example("query/basics", "按条件计数与判断存在")]
     public static async Task<object> CountAndAny(EasyDb db) => new
     {

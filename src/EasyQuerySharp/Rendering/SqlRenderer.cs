@@ -32,7 +32,7 @@ public sealed class SqlRenderer
             r.Append(i > 0 ? " ," : ctes.Any(c => c.RecursivePart is not null) ? dialect.RecursiveWith : "WITH ")
                 .Append(dialect.QuoteIdentifier(ctes[i].Name)).Append(" AS ");
             if (ctes[i].RecursivePart is { } recursive)
-                r.Append("( (").WriteSelect(ctes[i].Query).Append(ctes[i].UnionAll ? ")  UNION ALL  (" : ")  UNION  (").WriteSelect(recursive).Append(") )");
+                r.WriteCompound([ctes[i].Query, recursive], ctes[i].UnionAll);
             else r.Append("(").WriteSelect(ctes[i].Query).Append(")");
         }
         if (ctes.Count > 0) r.Append(" ");
@@ -232,19 +232,23 @@ public sealed class SqlRenderer
             case DerivedTableSource d: Append("(").WriteSelect(d.Query).Append(")"); break;
             case CteTableSource c: Append(Dialect.QuoteIdentifier(c.Name)); break;
             case RawTableSource raw: Append("(").WriteRawSql(raw).Append(")"); break;
-            case UnionTableSource u:
-                // 与 Java 逐字一致：( (q1)  UNION  (q2) )
-                Append("( ");
-                for (var i = 0; i < u.Parts.Count; i++)
-                {
-                    if (i > 0) Append(u.All ? "  UNION ALL  " : "  UNION  ");
-                    Append("(").WriteSelect(u.Parts[i]).Append(")");
-                }
-                Append(" )");
-                break;
+            case UnionTableSource u: WriteCompound(u.Parts, u.All); break;
         }
         if (table.Alias is not null) Append(" ").Append(table.Alias);
         return this;
+    }
+
+    // 与 Java 逐字一致：( (q1)  UNION  (q2) )；方言不允许分支加括号时（SQLite）写 ( q1  UNION  q2 )
+    private SqlRenderer WriteCompound(IReadOnlyList<SelectQuery> parts, bool all)
+    {
+        var (open, close) = Dialect.ParenthesizeCompoundParts ? ("(", ")") : ("", "");
+        Append("( ");
+        for (var i = 0; i < parts.Count; i++)
+        {
+            if (i > 0) Append(all ? "  UNION ALL  " : "  UNION  ");
+            Append(open).WriteSelect(parts[i]).Append(close);
+        }
+        return Append(" )");
     }
 
     private SqlRenderer WriteTableName(EntityTableSource e) => Append(QualifiedName(e));

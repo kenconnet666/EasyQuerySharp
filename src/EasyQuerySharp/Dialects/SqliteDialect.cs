@@ -19,6 +19,9 @@ public class SqliteDialect : SqlDialect
     /// <summary>SQLite 的 SET 列不能带表别名。</summary>
     public override bool QualifySetColumns => false;
 
+    /// <inheritdoc />
+    public override bool ParenthesizeCompoundParts => false;
+
     /// <summary>UPDATE / DELETE 的目标表别名必须写 AS（<c>UPDATE "t" AS t SET …</c>）。</summary>
     public override string WriteTargetAliasSeparator => " AS ";
 

@@ -12,6 +12,10 @@ SELECT "id","name","age","company_id","department_id","manager_id","level","join
 SELECT rt.* FROM (SELECT "name" AS "name","age" AS "age" FROM "t_user" WHERE "age" >= ? ORDER BY "age" ASC) rt WHERE ROWNUM < 4;
 -- params: [30]
 
+-- DepartmentTree：树：取全部下级并拼成树
+WITH "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."company_id",t1."parent_id",t1."name" FROM "t_department" t1 WHERE t1."name" = ?)  UNION ALL  (SELECT t2."cte_deep" + 1 AS "cte_deep",t3."id",t3."company_id",t3."parent_id",t3."name" FROM "as_tree_cte" t2 INNER JOIN "t_department" t3 ON t3."parent_id" = t2."id") ) SELECT t."id",t."company_id",t."parent_id",t."name",t."cte_deep" FROM "as_tree_cte" t;
+-- params: ['研发部']
+
 -- CountAndAny：按条件计数与判断存在
 SELECT COUNT(*) FROM "t_user" WHERE "age" >= ?;
 -- params: [18]

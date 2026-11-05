@@ -51,6 +51,9 @@ public abstract class SqlDialect
         WritePaging(renderer, query);
     }
 
+    /// <summary>UNION 的各分支是否加括号 <c>( (q1)  UNION  (q2) )</c>；SQLite 不允许，覆盖成 false。</summary>
+    public virtual bool ParenthesizeCompoundParts => true;
+
     /// <summary>递归 CTE 的开头（树查询 AsTreeCte）：默认 <c>WITH RECURSIVE </c>；SQL Server、Oracle 不写 RECURSIVE。</summary>
     public virtual string RecursiveWith => "WITH RECURSIVE ";
 
