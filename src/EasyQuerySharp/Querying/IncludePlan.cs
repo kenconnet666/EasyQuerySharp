@@ -40,6 +40,9 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     /// </summary>
     public IReadOnlyList<NavigationMetadata> Via { get; init; } = [];
 
+    /// <summary>平铺带出（Java 的 @NavigateFlat：平铺值或经中间导航的路径）：父键列在投影里排在关联键之后。</summary>
+    public bool IsFlat => FlatPaths is not null || Via.Count > 0;
+
     /// <summary>父对象上的关联列：经过中间导航时是第一段导航的自身列。</summary>
     public IReadOnlyList<ColumnMetadata> ParentColumns => Via.Count > 0 ? Via[0].SelfColumns : Navigation.SelfColumns;
 

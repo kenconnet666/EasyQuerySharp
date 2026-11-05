@@ -26,7 +26,6 @@ internal static class IncludeRunner
         {
             if (plan.Pending.Count == 0) continue;
             var nav = plan.Navigation;
-            if (nav.TargetColumns.Count != 1) throw new NotSupportedException($"复合键导航 {nav} 的带出还不支持");
 
             var links = await ResolveLinksAsync(db, plan, ct).ConfigureAwait(false);
             if (links.Count == 0)
@@ -47,7 +46,7 @@ internal static class IncludeRunner
 
             var childrenByKey = new Dictionary<CompositeKey, List<object?>>();
             var nested = new List<IReadOnlyList<IncludePlan>>();
-            foreach (var targets in links.Select(l => l.Target.First).Distinct().Chunk(context.GroupSize ?? db.Options.IncludeGroupSize))
+            foreach (var targets in links.Select(l => l.Target).Distinct().Chunk(context.GroupSize ?? db.Options.IncludeGroupSize))
             {
                 var compiled = CompileChunk(db, nav, state, targets, context);
                 var statement = SqlRenderer.Render(db.Options.Dialect, compiled.Sql);
@@ -74,10 +73,10 @@ internal static class IncludeRunner
     }
 
     // 按一组目标键编译带出查询；子数据带了 Take / Skip 时每个父对象各取一段，不是整体取一段
-    private static (CompiledQuery<object?> Query, SelectQuery Sql) CompileChunk(EasyDb db, NavigationMetadata nav, QueryState state, object[] targets, IncludeContext context)
+    private static (CompiledQuery<object?> Query, SelectQuery Sql) CompileChunk(EasyDb db, NavigationMetadata nav, QueryState state, CompositeKey[] targets, IncludeContext context)
     {
-        CompiledQuery<object?> CompileFor(QueryState s, IEnumerable<object> keys) => QueryCompiler.Compile<object?>(
-            s with { Wheres = s.Wheres.Add(WithExtraFilter(KeyIn(nav.Target.Type, nav.TargetColumns[0], keys), nav.ExtraFilter)) }, relationKeys: nav.TargetColumns);
+        CompiledQuery<object?> CompileFor(QueryState s, IReadOnlyCollection<CompositeKey> keys) => QueryCompiler.Compile<object?>(
+            s with { Wheres = s.Wheres.Add(WithExtraFilter(KeyIn(nav.Target.Type, nav.TargetColumns, keys), nav.ExtraFilter)) }, relationKeys: nav.TargetColumns);
 
         if (state.Limit is null && state.Offset is null)
         {
@@ -162,21 +161,23 @@ internal static class IncludeRunner
     private static async Task<List<(CompositeKey From, CompositeKey To)>> LoadViaAsync(
         EasyDb db, NavigationMetadata step, NavigationMetadata next, IEnumerable<CompositeKey> keys, CancellationToken ct)
     {
-        if (step.Mapping is not null || step.TargetColumns.Count != 1 || next.SelfColumns.Count != 1)
+        if (step.Mapping is not null || step.TargetColumns.Count != 1)
             throw new NotSupportedException($"平铺路径经过的 {step} 只支持单列键的一对多 / 对一导航");
         var table = new EntityTableSource(step.Target);
         var from = step.TargetColumns[0];
-        var to = next.SelfColumns[0];
         var query = new SelectQuery(table);
-        query.Columns.Add(new SelectColumn(table.Column(to), ProjectionCompiler.RelationAlias(to)));
+        foreach (var to in next.SelfColumns) query.Columns.Add(new SelectColumn(table.Column(to), ProjectionCompiler.RelationAlias(to)));
         query.Columns.Add(new SelectColumn(table.Column(from), ProjectionCompiler.RelationAlias(from)));
         var values = keys.Select(k => k.First).Distinct()
             .Select(v => (SqlExpr)ExpressionTranslator.Parameter(ValueReader.ConvertTo(v, from.ClrType), from.ClrType)).ToList();
         query.Where.Add(new InExpr(table.Column(from), values, negated: false));
         var statement = SqlRenderer.Render(db.Options.Dialect, query);
-        var rows = await db.Executor.QueryAsync(statement, r => (From: CompositeKey.Read(r, [1]), To: CompositeKey.Read(r, [0])), ct).ConfigureAwait(false);
+        var toOrdinals = Enumerable.Range(0, next.SelfColumns.Count).ToArray();
+        var rows = await db.Executor.QueryAsync(statement, r => (From: CompositeKey.Read(r, [toOrdinals.Length]), To: CompositeKey.Read(r, toOrdinals)), ct)
+            .ConfigureAwait(false);
         return rows.Where(r => r.From is not null && r.To is not null).Select(r => (r.From!.Value, r.To!.Value)).ToList();
     }
+
     // 多对多的中间表：按父键取出 (父键, 目标键) 对
     private static async Task<List<(CompositeKey Parent, CompositeKey Target)>> LoadLinksAsync(
         EasyDb db, NavigationMetadata nav, EntityMetadata mapping, IEnumerable<CompositeKey> parentKeys, CancellationToken ct)
@@ -211,15 +212,29 @@ internal static class IncludeRunner
         return Expression.Lambda(Expression.Call(typeof(Sql).GetMethod(nameof(Sql.Group))!, Expression.AndAlso(keyIn.Body, extraBody)), p);
     }
 
-    // x => keys.Contains(x.Key)，键值先转成列的 CLR 类型
-    private static LambdaExpression KeyIn(Type entityType, ColumnMetadata column, IEnumerable<object> keys)
+    // 单列键：x => keys.Contains(x.Key)；复合键：((x.A =? AND x.B =?) OR (…))（与 Java 一致，= 后面不留空格）。键值先转成列的 CLR 类型
+    private static LambdaExpression KeyIn(Type entityType, IReadOnlyList<ColumnMetadata> columns, IReadOnlyCollection<CompositeKey> keys)
     {
-        var listType = typeof(List<>).MakeGenericType(column.ClrType);
-        var list = (IList)Activator.CreateInstance(listType)!;
-        foreach (var key in keys.Distinct()) list.Add(ValueReader.ConvertTo(key, column.ClrType));
         var p = Expression.Parameter(entityType, "x");
-        var body = Expression.Call(Expression.Constant(list), listType.GetMethod("Contains")!, Expression.Property(p, column.Property));
-        return Expression.Lambda(body, p);
+        if (columns.Count == 1)
+        {
+            var column = columns[0];
+            var listType = typeof(List<>).MakeGenericType(column.ClrType);
+            var list = (IList)Activator.CreateInstance(listType)!;
+            foreach (var key in keys.Select(k => k.First).Distinct()) list.Add(ValueReader.ConvertTo(key, column.ClrType));
+            return Expression.Lambda(Expression.Call(Expression.Constant(list), listType.GetMethod("Contains")!, Expression.Property(p, column.Property)), p);
+        }
+        var arguments = columns.Select(c => (Expression)Expression.Convert(Expression.Property(p, c.Property), typeof(object))).ToList();
+        var groups = new List<string>();
+        foreach (var key in keys)
+        {
+            var values = key.Values(columns.Count).ToList();
+            groups.Add("(" + string.Join(" AND ", columns.Select((c, i) => $"{{{i}}} ={{{arguments.Count + i}}}")) + ")");
+            arguments.AddRange(columns.Select((c, i) => (Expression)Expression.Constant(ValueReader.ConvertTo(values[i], c.ClrType), typeof(object))));
+        }
+        var raw = Expression.Call(typeof(Sql).GetMethod(nameof(Sql.Raw))!.MakeGenericMethod(typeof(bool)),
+            Expression.Constant("(" + string.Join(" OR ", groups) + ")"), Expression.NewArrayInit(typeof(object), arguments));
+        return Expression.Lambda(raw, p);
     }
 }
 

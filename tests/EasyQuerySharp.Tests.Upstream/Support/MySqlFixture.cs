@@ -19,7 +19,8 @@ public sealed class MySqlFixture : IAsyncLifetime
     // 不在建表脚本里、由 Java 用例在 @Before 里 syncTable 创建的表
     private static readonly Type[] CodeFirstTables =
         [typeof(SubJoinUser), typeof(SubJoinBook), typeof(SubJoinAuthor), typeof(InterceptorEntity), typeof(Interceptor2Entity),
-        typeof(OnRelationA), typeof(OnRelationB), typeof(OnRelationC), typeof(OnRelationD)];
+        typeof(OnRelationA), typeof(OnRelationB), typeof(OnRelationC), typeof(OnRelationD),
+        typeof(Direct1), typeof(Direct2), typeof(Direct3), typeof(Direct4), typeof(Direct5)];
 
     private EasyDb? _db;
     private string? _skipReason;
@@ -160,6 +161,13 @@ public sealed class MySqlFixture : IAsyncLifetime
 
         await db.Insert(new InterceptorEntity { Id = "1", Name = "123" }).ExecuteAsync();
         await db.Insert(new Interceptor2Entity { Id = "3", Aid = "1", Name = "456" }).ExecuteAsync();
+
+        // DirectRelationTest 的 @Before：五张表的一条关联链
+        await db.Insert(new[] { new Direct1 { C1 = "1", C2 = "2", C3 = "3", C4 = "4", C5 = "5" }, new Direct1 { C1 = "2", C2 = "3", C3 = "4", C4 = "5", C5 = "6" } }).ExecuteAsync();
+        await db.Insert(new[] { new Direct2 { C6 = "6", C7 = "1", C8 = "8", C9 = "9", C10 = "10" }, new Direct2 { C6 = "7", C7 = "8", C8 = "9", C9 = "10", C10 = "11" } }).ExecuteAsync();
+        await db.Insert(new[] { new Direct3 { C11 = "11", C12 = "12", C13 = "8", C14 = "9", C15 = "15" }, new Direct3 { C11 = "13", C12 = "14", C13 = "15", C14 = "16", C15 = "17" } }).ExecuteAsync();
+        await db.Insert(new[] { new Direct4 { C16 = "20", C17 = "21", C18 = "22", C19 = "23", C20 = "15" }, new Direct4 { C16 = "29", C17 = "30", C18 = "32", C19 = "33", C20 = "35" } }).ExecuteAsync();
+        await db.Insert(new[] { new Direct5 { C21 = "22", C22 = "20", C23 = "44", C24 = "55", C25 = "66" }, new Direct5 { C21 = "77", C22 = "88", C23 = "99", C24 = "00", C25 = "11" } }).ExecuteAsync();
     }
 }
 

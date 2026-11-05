@@ -139,20 +139,16 @@ internal static class AutoProjection
                 var rest = string.Join('.', segments.Skip(i + 1));
                 if (rest.Length == 0) throw new InvalidOperationException($"{property.Name} 的 MapPath 以集合导航结尾，需要再指定元素上的属性");
                 // 剩下的全是导航（如 BankCards.User、Areas.Builds）：逐段查中间表，带出最后一个导航的目标（实体或嵌套 DTO 的列表）
-                if (NavigationChain(registry, nav.Target, segments.Skip(i + 1)) is [.., var last] chain)
-                {
-                    var targetElement = MetadataRegistry.ElementType(property.PropertyType);
-                    var through = targetElement.IsAssignableFrom(last.Target.Type) ? null : Build(registry, last.Target, targetElement, null, visiting, root: false);
-                    var method = typeof(AutoIncludeMarkers).GetMethod(nameof(AutoIncludeMarkers.Through))!
-                        .MakeGenericMethod(member.PropertyType, last.Target.Type, through?.ReturnType ?? last.Target.Type);
-                    return Expression.Call(method, Expression.Property(current, member), Expression.Constant(chain.Select(n => n.Property.Name).ToArray()),
-                        Expression.Constant(ConfigureOf(targetElement, last.Target.Type), typeof(Func<QueryState, QueryState>)), Expression.Constant(through, typeof(LambdaExpression)));
-                }
+                if (NavigationChain(registry, nav.Target, segments.Skip(i + 1)) is [_, ..] chain)
+                    return ThroughValue(registry, Expression.Property(current, member), chain, property, visiting);
                 var element = Expression.Parameter(nav.Target.Type, "e");
                 var selector = Expression.Lambda(PathValue(registry, nav.Target, element, property, rest, join: true, visiting), element);
                 return Expression.Call(typeof(AutoIncludeMarkers).GetMethod(nameof(AutoIncludeMarkers.Many))!.MakeGenericMethod(nav.Target.Type, selector.ReturnType),
                     Expression.Property(current, member), Expression.Constant(null, typeof(Func<QueryState, QueryState>)), Expression.Constant(selector, typeof(LambdaExpression)));
             }
+            // 对一导航之后全是导航（如 Direct2.Direct3）：同样逐段查中间表，带出最后一个导航的目标
+            if (nav is { IsCollection: false } && !join && NavigationChain(registry, nav.Target, segments.Skip(i + 1)) is [_, ..] toOneChain)
+                return ThroughValue(registry, Expression.Property(current, member), toOneChain, property, visiting);
             // 对一导航、后面不再经过集合：剩下的路径在目标实体上取，整段走一条带出查询
             if (nav is { IsCollection: false } && !join && !HasCollection(registry, nav.Target, segments.Skip(i + 1)))
             {
@@ -166,6 +162,17 @@ internal static class AutoProjection
             if (nav is not null) entity = nav.Target;
         }
         return current;
+    }
+
+    // AutoIncludeMarkers.Through(第一个导航, 后续导航名, 配置, 投影)：最后一个导航的目标映射成属性的元素类型（实体本身或嵌套 DTO）
+    private static Expression ThroughValue(MetadataRegistry registry, Expression navigation, List<NavigationMetadata> chain, PropertyInfo property, HashSet<Type> visiting)
+    {
+        var last = chain[^1].Target;
+        var element = MetadataRegistry.ElementType(property.PropertyType);
+        var selector = element.IsAssignableFrom(last.Type) ? null : Build(registry, last, element, null, visiting, root: false);
+        var method = typeof(AutoIncludeMarkers).GetMethod(nameof(AutoIncludeMarkers.Through))!.MakeGenericMethod(navigation.Type, property.PropertyType);
+        return Expression.Call(method, navigation, Expression.Constant(chain.Select(n => n.Property.Name).ToArray()),
+            Expression.Constant(ConfigureOf(element, last.Type), typeof(Func<QueryState, QueryState>)), Expression.Constant(selector, typeof(LambdaExpression)));
     }
 
     // 剩下的路径段全是导航时依次返回它们，否则为 null
@@ -214,9 +221,9 @@ internal static class AutoIncludeMarkers
         throw new InvalidOperationException("只能出现在查询的投影里");
 
     /// <summary>
-    /// 经过集合导航再沿导航走到的实体（<c>[MapPath("BankCards.User")]</c>）带出成列表：<paramref name="path"/> 是第一个导航之后依次经过的导航名，
-    /// <paramref name="selector"/> 的参数是最后一个导航的目标实体，为 null 时取整个实体。
+    /// 沿导航路径走到的实体（<c>[MapPath("BankCards.User")]</c>、<c>[MapPath("Direct2.Direct3")]</c>）带出：<paramref name="path"/> 是第一个导航之后依次经过的导航名，
+    /// 逐段查中间表换键；经过集合时是列表。<paramref name="selector"/> 的参数是最后一个导航的目标实体，为 null 时取整个实体。
     /// </summary>
-    public static List<TResult> Through<TNavigation, TEntity, TResult>(TNavigation navigation, string[] path, Func<QueryState, QueryState>? configure, LambdaExpression? selector) =>
+    public static TValue Through<TNavigation, TValue>(TNavigation navigation, string[] path, Func<QueryState, QueryState>? configure, LambdaExpression? selector) =>
         throw new InvalidOperationException("只能出现在查询的投影里");
 }

@@ -62,14 +62,18 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         _shaped = Shape(body, member: null, topLevel: true);
         if (includes is { Count: > 0 })
             _shaped = WithIncludes(_shaped, root as EntityBinding ?? throw new NotSupportedException("Include 只能用在实体查询上"), includes);
-        foreach (var (plan, owner) in _includes)
-        {
-            plan.ParentKeyOrdinals = plan.ParentColumns.Select(c => RelationColumn(owner.Table, c)).ToArray();
-            // 只给满足条件的父对象带出：条件列也要读出来（没选出时写成 __relation__列）
-            if (plan.Navigation.IncludeOn is { } on) plan.ConditionOrdinal = RelationColumn(owner.Table, on.Column);
-        }
+        // 与 Java 一致：导航带出的父键先于关联键，平铺带出（@NavigateFlat：平铺值、经中间表的路径）的父键在关联键之后
+        foreach (var (plan, owner) in _includes.Where(i => !i.Plan.IsFlat)) RegisterParentKeys(plan, owner);
         if (relationKeys is not null && root is not null)
             RelationOrdinals = relationKeys.Select(c => RelationColumn(root.Table, c)).ToArray();
+        foreach (var (plan, owner) in _includes.Where(i => i.Plan.IsFlat)) RegisterParentKeys(plan, owner);
+    }
+
+    private void RegisterParentKeys(IncludePlan plan, SourceBinding owner)
+    {
+        plan.ParentKeyOrdinals = plan.ParentColumns.Select(c => RelationColumn(owner.Table, c)).ToArray();
+        // 只给满足条件的父对象带出：条件列也要读出来（没选出时写成 __relation__列）
+        if (plan.Navigation.IncludeOn is { } on) plan.ConditionOrdinal = RelationColumn(owner.Table, on.Column);
     }
 
     /// <summary>关联键列的别名：与 Java 一致按字段名起（首字母小写的属性名，如 <c>__relation__bankId</c>）。</summary>
@@ -215,7 +219,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
                 }
             var offset = through ? 1 : 0;
             var childSelector = (LambdaExpression?)((ConstantExpression)marker.Arguments[2 + offset]).Value;
-            var markerPlan = new IncludePlan(navigation, childSelector?.ReturnType ?? navigation.Target.Type, childSelector, [], navigation.IsCollection || through)
+            var markerPlan = new IncludePlan(navigation, childSelector?.ReturnType ?? navigation.Target.Type, childSelector, [], navigation.IsCollection || via.Any(v => v.IsCollection))
             {
                 Configure = (Func<QueryState, QueryState>?)((ConstantExpression)marker.Arguments[1 + offset]).Value,
                 Via = via,

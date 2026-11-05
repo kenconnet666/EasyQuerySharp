@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1646、偏离 204、不适用 77、骨架 6、待做 471。
+合计：已移植 1648、偏离 204、不适用 77、骨架 6、待做 469。
 
 ## 按能力
 
@@ -32,7 +32,7 @@
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 2 | 0 | 0 | 0 | 0 |
 | 流式读取 | `query.stream` | M3 | 9 | 6 | 2 | 1 | 0 | 0 |
 | union / union all | `query.union` | M3 | 18 | 14 | 4 | 0 | 0 | 0 |
-| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 20 | 1 | 0 | 1 | 14 |
+| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 22 | 1 | 0 | 1 | 12 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 23 | 25 | 3 | 0 | 5 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 60 | 1 | 2 | 2 | 2 |
@@ -82,8 +82,8 @@
 | DateTimeFunctionsTest.java#booleanMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:90 | `SELECT t.'deleted' AS 'value1',(NOT (t.'deleted')) AS 'value2' FROM 't_blog' t WHERE t.'deleted' = ?` |
 | DateTimeFunctionsTest.java#dateTimeProp2MySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:52 | `SELECT t.'create_time' AS 'value1',YEAR(t.'create_time') AS 'value2',MONTH(t.'create_time') AS 'valu…` |
 | DateTimeFunctionsTest.java#dateTimePropMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/DateTimeFunctionsTest.cs:52 | `SELECT t.'create_time' AS 'value1',YEAR(t.'create_time') AS 'value2',MONTH(t.'create_time') AS 'valu…` |
-| DirectRelationTest.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:11 | `SELECT t.'c1',t.'c2',t.'c3',t.'c4',t.'c5' FROM 'direct1' t LEFT JOIN 'direct2' t1 ON t1.'c7' = t.'c1…` |
-| DirectRelationTest.java#testJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:17 | `SELECT t3.'c18' AS 'value1' FROM 'direct1' t LEFT JOIN 'direct2' t1 ON t1.'c7' = t.'c1' LEFT JOIN 'd…` |
+| DirectRelationTest.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:13 | `SELECT t.'c1',t.'c2',t.'c3',t.'c4',t.'c5' FROM 'direct1' t LEFT JOIN 'direct2' t1 ON t1.'c7' = t.'c1…` |
+| DirectRelationTest.java#testJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:19 | `SELECT t3.'c18' AS 'value1' FROM 'direct1' t LEFT JOIN 'direct2' t1 ON t1.'c7' = t.'c1' LEFT JOIN 'd…` |
 | EntityQueryAggregateTest1.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:59 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
 | EntityQueryAggregateTest1.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:78 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
 | EntityQueryAggregateTest1.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:97 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
@@ -1487,8 +1487,8 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| DirectRelationTest.java#test4 | 待做 |  | `SELECT t.'c1',t.'c2',t.'c3',t.'c4' FROM 'direct1' t` |
-| DirectRelationTest.java#test5 | 待做 |  | `SELECT t.'c1',t.'c2',t.'c3',t.'c4' FROM 'direct1' t` |
+| DirectRelationTest.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:81 | `SELECT t.'c1',t.'c2',t.'c3',t.'c4' FROM 'direct1' t` |
+| DirectRelationTest.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:102 | `SELECT t.'c1',t.'c2',t.'c3',t.'c4' FROM 'direct1' t` |
 | GeneralFunctionsTest.java#testKingbaseCte | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:250 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0+0 AS "deep",t1."id",t1."parent_id",t1."content",t1."user…` |
 | QueryTest14.java#test1 | 待做 |  | `SELECT t.'id',t.'name',t.'password' FROM 't_test_user' t` |
 | QueryTest16.java#test111 | 待做 |  | `SELECT t.'id' AS '__relation__id' FROM 'sys_user' t WHERE t.'deleted' = ?` |
