@@ -637,3 +637,18 @@ public class M8Comment
     [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(ParentId)])]
     public List<M8Comment>? SubComments { get; set; }
 }
+
+/// <summary>对应 Java：entity/SysDept（部门按 pid 自关联成树）。</summary>
+[Table("sys_dept")]
+public class SysDept
+{
+    [Column(PrimaryKey = true)]
+    public long? Id { get; set; }
+
+    public long? Pid { get; set; }
+
+    public string? Name { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(Pid)])]
+    public List<SysDept>? Children { get; set; }
+}

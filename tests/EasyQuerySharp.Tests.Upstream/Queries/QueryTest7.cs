@@ -159,7 +159,7 @@ public sealed class QueryTest7(MySqlFixture fixture) : MySqlTest(fixture)
 
     private Query<Topic> IdNotNull => Db.Query<Topic>().Where(o => o.Id != null);
 
-    [Fact, Upstream("QueryTest7.java#testCTE1")]
+    [Fact, Upstream("QueryTest7.java#testCTE1"), Upstream("QueryTest11.java#testCTE1")]
     public void TestCTE1() => Assert.Equal("WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `cte_deep`,t1.`id`,t1.`stars`,t1.`title`,t1.`create_time` FROM `t_topic` t1 WHERE t1.`id` IS NOT NULL)  UNION ALL  (SELECT t2.`cte_deep` + 1 AS `cte_deep`,t3.`id`,t3.`stars`,t3.`title`,t3.`create_time` FROM `as_tree_cte` t2 INNER JOIN `t_topic` t3 ON t3.`stars` = t2.`id`) ) SELECT t.`id`,t.`stars`,t.`title`,t.`create_time`,t.`cte_deep` FROM `as_tree_cte` t", IdNotNull.AsTreeCte().ToSql());
 
     // Java 的 asTreeCTECustom("id", "stars")：AsTreeCte(节点键, 上级键)

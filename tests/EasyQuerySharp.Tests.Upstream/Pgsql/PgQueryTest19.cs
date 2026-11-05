@@ -125,7 +125,7 @@ public sealed class PgQueryTest19(PgFixture fixture) : PgTest(fixture)
     }
 
     // 自动映射成 DTO 再拼树；层级列改名为 deep1，DTO 的 Deep 对不上，不赋值
-    [Fact, Upstream("pgsql/QueryTest19.java#tree7")]
+    [Fact, Upstream("pgsql/QueryTest19.java#tree7"), Upstream("pgsql/QueryCteTest.java#tree7")]
     public async Task Tree7()
     {
         using var listen = SqlCapture.Listen();

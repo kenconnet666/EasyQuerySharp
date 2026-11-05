@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1665、偏离 205、不适用 77、骨架 6、待做 451。
+合计：已移植 1668、偏离 205、不适用 77、骨架 6、待做 448。
 
 ## 按能力
 
@@ -32,13 +32,13 @@
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 2 | 0 | 0 | 0 | 0 |
 | 流式读取 | `query.stream` | M3 | 9 | 6 | 2 | 1 | 0 | 0 |
 | union / union all | `query.union` | M3 | 18 | 14 | 4 | 0 | 0 | 0 |
-| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 30 | 1 | 0 | 1 | 4 |
+| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 32 | 1 | 0 | 1 | 2 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 23 | 25 | 3 | 0 | 5 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 60 | 1 | 2 | 2 | 2 |
 | include 带出导航 | `nav.include` | M4 | 37 | 33 | 2 | 0 | 0 | 2 |
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 133 | 3 | 1 | 0 | 5 |
-| 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 22 | 2 | 0 | 0 | 1 |
+| 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 23 | 2 | 0 | 0 | 0 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
 | 列加密 | `column.encryption` | M5 | 8 | 7 | 0 | 0 | 0 | 1 |
 | 拦截器 | `interceptor` | M5 | 3 | 3 | 0 | 0 | 0 | 0 |
@@ -1519,8 +1519,8 @@
 | mysql8/MySQL8Test3.java#testTree3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:300 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'deep',t1.'id',t1.'parent_id',t1.'content',t1.'user_i…` |
 | mysql8/MySQL8Test3.java#testTree4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:310 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'deep',t1.'id',t1.'parent_id',t1.'content',t1.'user_i…` |
 | mysql8/MySQL8Test3.java#testTree5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:320：异常信息用中文，说明缺的是哪个属性 |  |
-| mysql8/MySQL8Test5.java#testSysDeptCTE | 待做 |  |  |
-| pgsql/QueryCteTest.java#tree7 | 待做 |  | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "deep1",t1."id",t1."parent_id",t1."name" FROM "public…` |
+| mysql8/MySQL8Test5.java#testSysDeptCTE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:312 |  |
+| pgsql/QueryCteTest.java#tree7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:128 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "deep1",t1."id",t1."parent_id",t1."name" FROM "public…` |
 | pgsql/QueryTest19.java#tree7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:128 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "deep1",t1."id",t1."parent_id",t1."name" FROM "catego…` |
 | pgsql/QueryTest19.java#tree8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:139 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
 
@@ -1859,7 +1859,7 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| QueryTest11.java#testCTE1 | 待做 |  | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
+| QueryTest11.java#testCTE1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:162 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
 | QueryTest7.java#testCTE1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:162 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
 | QueryTest7.java#testCTE1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:166 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
 | QueryTest7.java#testCTE2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:170 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |

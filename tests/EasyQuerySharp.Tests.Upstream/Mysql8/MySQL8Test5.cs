@@ -293,4 +293,31 @@ public sealed class MySQL8Test5(Mysql8Fixture fixture) : Mysql8Test(fixture)
         listen.AssertSql("SELECT `id`,`name`,`deleted` FROM `my_config_logic` WHERE `deleted` = ?");
         listen.AssertParams("false(Boolean)");
     }
+
+    /// <summary>对应 Java：dto/SysDeptTreeResp（部门树，deep 与层级列同名）。</summary>
+    public sealed class SysDeptTreeResp
+    {
+        public long? Id { get; set; }
+
+        public long? Pid { get; set; }
+
+        public string? Name { get; set; }
+
+        public long? Deep { get; set; }
+
+        public List<SysDeptTreeResp>? Children { get; set; }
+    }
+
+    // 往上找全部上级：每个起点各成一条到根的链，层级列 deep 填进 DTO
+    [Fact, Upstream("mysql8/MySQL8Test5.java#testSysDeptCTE")]
+    public async Task TestSysDeptCTE()
+    {
+        var tree = await Db.Query<SysDept>().Where(s => new[] { "abc-算法部", "abc-召回模型", "abc-渠道部" }.Contains(s.Name))
+            .AsTreeCte(o => { o.Up = true; o.DeepColumnName = "deep"; })
+            .OrderBy(s => s.Id)
+            .SelectAutoInclude<SysDeptTreeResp>().ToTreeAsync(Ct);
+        static string Format(SysDeptTreeResp d) => $"SysDeptTreeResp(id={d.Id}, pid={d.Pid}, name={d.Name}, deep={d.Deep}, children=[{string.Join(", ", d.Children!.Select(Format))}])";
+        Assert.Equal("[SysDeptTreeResp(id=2, pid=0, name=总部B, deep=2, children=[SysDeptTreeResp(id=21, pid=2, name=研发中心, deep=1, children=[SysDeptTreeResp(id=211, pid=21, name=abc-算法部, deep=0, children=[])])]), SysDeptTreeResp(id=2, pid=0, name=总部B, deep=2, children=[SysDeptTreeResp(id=22, pid=2, name=市场中心, deep=1, children=[SysDeptTreeResp(id=222, pid=22, name=abc-渠道部, deep=0, children=[])])]), SysDeptTreeResp(id=2, pid=0, name=总部B, deep=4, children=[SysDeptTreeResp(id=21, pid=2, name=研发中心, deep=3, children=[SysDeptTreeResp(id=211, pid=21, name=abc-算法部, deep=2, children=[SysDeptTreeResp(id=2111, pid=211, name=推荐算法, deep=1, children=[SysDeptTreeResp(id=21111, pid=2111, name=abc-召回模型, deep=0, children=[])])])])])]",
+            "[" + string.Join(", ", tree.Select(Format)) + "]");
+    }
 }

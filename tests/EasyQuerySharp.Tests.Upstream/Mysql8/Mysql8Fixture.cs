@@ -24,7 +24,7 @@ public sealed class Mysql8Fixture : IAsyncLifetime
         typeof(M8User), typeof(M8Role), typeof(M8UserRole), typeof(M8User2), typeof(M8Role2), typeof(M8UserRole2),
         typeof(M8UserBook), typeof(M8RoleMenu), typeof(M8Menu), typeof(M8Province), typeof(M8City), typeof(M8Area),
         typeof(M8AreaBuild), typeof(M8AreaBuildLicense), typeof(M8Parent), typeof(M8Child), typeof(M8ParentChild), typeof(BatchInsert),
-        typeof(TableNoKey), typeof(OffsetChunkTest), typeof(M8UserTest), typeof(Comment), typeof(M8SaveA), typeof(MyConfigLogicDelete), typeof(M8IncludeLimitTopic), typeof(M8IncludeLimitChild), typeof(TreeA), typeof(TreeB), typeof(M8Comment),
+        typeof(TableNoKey), typeof(OffsetChunkTest), typeof(M8UserTest), typeof(Comment), typeof(M8SaveA), typeof(MyConfigLogicDelete), typeof(M8IncludeLimitTopic), typeof(M8IncludeLimitChild), typeof(TreeA), typeof(TreeB), typeof(M8Comment), typeof(SysDept),
     ];
 
     private EasyDb? _db;
@@ -135,6 +135,12 @@ public sealed class Mysql8Fixture : IAsyncLifetime
 
         // 与 Java 相同的 1000 行按偏移分批读取的数据
         await db.Insert(Enumerable.Range(0, 1000).Select(i => new OffsetChunkTest { Id = i.ToString(System.Globalization.CultureInfo.InvariantCulture), Seq = i }).ToList()).ExecuteAsync();
+
+        // MySQL8Test5.testSysDeptCTE 用到的部门（Java 仓库里没有这份数据，按用例的期望结果还原）
+        await db.Insert(new (long Id, long Pid, string Name)[]
+        {
+            (2, 0, "总部B"), (21, 2, "研发中心"), (22, 2, "市场中心"), (211, 21, "abc-算法部"), (222, 22, "abc-渠道部"), (2111, 211, "推荐算法"), (21111, 2111, "abc-召回模型"),
+        }.Select(d => new SysDept { Id = d.Id, Pid = d.Pid, Name = d.Name }).ToList()).ExecuteAsync();
 
         // Java BaseTest 的评论：一条主评论和四条子评论
         await db.Insert(new[]
