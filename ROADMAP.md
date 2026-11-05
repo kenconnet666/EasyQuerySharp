@@ -147,6 +147,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [x] 3.3 子查询：`In(subQuery)`、`Exists`、派生表 `AsSubQuery()`。
 - [~] 3.4 `Union` / `UnionAll`（已完成），CTE：`AsCte(name)`（已完成），递归 CTE 随 4.10 的树一起做。
 - [x] 3.5 流式读取 `ToAsyncEnumerable()`，无实体查询 `db.SqlQueryAsync<Dictionary<..>>`、`QuerySql<Dictionary<..>>(sql, params)` 与 `ToDictionariesAsync`。
+  - [!] Java 的 Map 查询构造器（`mapQueryable()` / `queryable(Map.class).asTable(..)` / `queryable("表名")`：按列名字符串加条件、选列、联表，约 20 个用例，见 QueryTest14 / 16 / 19 / 28）是规划之外的新公共概念：C# 目前用原生 SQL 覆盖，是否提供按名字拼的动态查询 API 待定。
 - [ ] 3.6 LINQ 查询语法（`from … join … group … select`）的支持测试。
 
 ## M4 导航与对象树（[0002](docs/decisions/0002-object-tree-and-dto.md)）
