@@ -31,6 +31,9 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     /// <summary>写了 AS 的成员。作为派生表再投影时，外层只给这些成员写 AS（与 Java 一致：内层带别名的列，外层也带）。</summary>
     public HashSet<string> AliasedMembers { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>整个投影只是一个值时，它在 <see cref="MemberColumns"/> 里登记用的成员名。</summary>
+    internal const string ScalarMember = "";
+
     /// <summary>投影的是整个实体时的元数据（派生表据此按实体物化）；否则为 null。</summary>
     public EntityMetadata? Entity { get; private set; }
 
@@ -122,7 +125,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
                 return RegisterToOne(Expression.MemberInit(newExpr, bindings), toOne);
             }
             default:
-                return ShapeScalar(body, member);
+                return ShapeScalar(body, member, topLevel);
         }
     }
 
@@ -275,6 +278,10 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
             ordinals[memberName] = AddColumn(new ColumnExpr(binding.Table, column), column, topLevel ? memberName : null, forceAlias: binding.AliasedMembers.Contains(memberName));
         if (topLevel)
             foreach (var (name, nested) in binding.NestedEntities) NestedEntities[name] = nested;
+        // 内层投影是一个值：直接读这一列
+        if (binding.MemberColumns.Count == 1 && binding.MemberColumns.ContainsKey(ScalarMember))
+            return Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(type), _reader,
+                Expression.Constant(ordinals[ScalarMember]), Expression.Constant(null, typeof(IValueConverter)));
 
         Expression Read(string memberName, Type valueType) =>
             binding.NestedEntities.TryGetValue(memberName, out var nested) ? ReadNested(memberName, nested, valueType)
@@ -359,14 +366,15 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         return Expression.ListInit(created, initializers);
     }
 
-    private Expression ShapeScalar(Expression body, MemberInfo? member)
+    // 整个投影就是一个值（Select(c => c.Code)）时，以空成员名登记它的列，外层把这个查询当派生表时按它读出
+    private Expression ShapeScalar(Expression body, MemberInfo? member, bool topLevel = false)
     {
         var sql = ExpressionTranslator.AsValue(translator.Translate(body));
         var converter = (sql as ColumnExpr)?.Column?.Converter;
         // 分组投影里的组内列（g.Column(..)）按普通列处理：同名不写 AS（Java 的 groupTable() 列）
         var groupColumn = ExpressionTranslator.StripConvert(body) is MethodCallExpression { Method.Name: nameof(IGroup<object, object>.Column) } call
                           && ExpressionTranslator.IsGroupType(call.Method.DeclaringType!);
-        var ordinal = AddColumn(sql, member is null ? null : ColumnName(member), member?.Name, plainColumn: groupColumn);
+        var ordinal = AddColumn(sql, member is null ? null : ColumnName(member), member?.Name ?? (topLevel ? ScalarMember : null), plainColumn: groupColumn);
         return Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(body.Type), _reader, Expression.Constant(ordinal),
             Expression.Constant(converter, typeof(IValueConverter)));
     }

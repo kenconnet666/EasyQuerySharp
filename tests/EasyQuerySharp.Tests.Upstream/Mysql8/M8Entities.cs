@@ -173,6 +173,76 @@ public class M8Area
     public string? Cid { get; set; }
 
     public string? Name { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(M8AreaBuild.Aid)])]
+    public List<M8AreaBuild>? Builds { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/many/M8AreaBuild。</summary>
+[Table("m8_build")]
+public class M8AreaBuild
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Aid { get; set; }
+
+    public string? Name { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/M8Parent（一对多与经中间表的多对多子项，order 是关键字列）。</summary>
+[Table("m8_parent")]
+public class M8Parent
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    public int? Order { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(M8Child.ParentId)], OrderBy = nameof(M8Child.Order))]
+    public List<M8Child>? Children { get; set; }
+
+    [Navigate(RelationType.ManyToMany, SelfProperties = [nameof(Id)], SelfMappingProperties = [nameof(M8ParentChild.ParentId)], Mapping = typeof(M8ParentChild),
+        TargetProperties = [nameof(M8Child.Id)], TargetMappingProperties = [nameof(M8ParentChild.ChildId)], OrderBy = nameof(M8Child.Order))]
+    public List<M8Child>? Children2 { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/M8Child。</summary>
+[Table("m8_child")]
+public class M8Child
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? ParentId { get; set; }
+
+    public string? Name { get; set; }
+
+    public int? Order { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/M8ParentChild。</summary>
+[Table("m8_parent_child")]
+public class M8ParentChild
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? ParentId { get; set; }
+
+    public string? ChildId { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/BatchInsert（自增主键）。</summary>
+[Table("m8_batch")]
+public class BatchInsert
+{
+    [Column(PrimaryKey = true, Generated = true)]
+    public long? Id { get; set; }
+
+    public string? Name { get; set; }
 }
 
 /// <summary>对应 Java：mysql8/entity/M8UserRole2。</summary>

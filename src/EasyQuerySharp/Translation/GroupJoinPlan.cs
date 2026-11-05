@@ -122,6 +122,50 @@ internal sealed class GroupJoinPlan
         };
     }
 
+    /// <summary>所属行上的关联列（外层 ON 右侧的列），用来识别可以下推到分组子查询的键条件。</summary>
+    public IReadOnlyList<ColumnExpr> OwnerColumns { get; set; } = [];
+
+    /// <summary>
+    /// 所属查询 WHERE 里只涉及关联列的等值 / IN 条件（或全由它们组成的 OR）复制一份到分组子查询的 WHERE 末尾，
+    /// 列换成子查询里的关联键，先过滤再分组（与 Java 一致）。在 <see cref="Complete"/> 之后调用。
+    /// </summary>
+    public void PushDownKeyPredicates(IEnumerable<SqlExpr> ownerWhere)
+    {
+        foreach (var predicate in ownerWhere.SelectMany(Conjuncts))
+            if (Retarget(predicate) is { } pushed) Inner.Where.Add(pushed);
+
+        // 一个 Where 里的 a && b 是一个 AND 节点，按合取项逐个看
+        static IEnumerable<SqlExpr> Conjuncts(SqlExpr e) =>
+            e is LogicalExpr { IsAnd: true, IsGrouped: false } and ? and.Operands.SelectMany(Conjuncts) : [e];
+    }
+
+    private SqlExpr? Retarget(SqlExpr predicate)
+    {
+        switch (predicate)
+        {
+            case BinaryExpr { Operator: SqlBinaryOperator.Equal } b when KeyFor(b.Left) is { } key && IsValue(b.Right):
+                return new BinaryExpr(key, b.Operator, b.Right);
+            case InExpr { Values: { } values, Negated: false } i when KeyFor(i.Operand) is { } key && values.All(IsValue):
+                return new InExpr(key, values, negated: false);
+            case LogicalExpr { IsAnd: false } or:
+                var parts = or.Operands.Select(Retarget).ToList();
+                return parts.All(p => p is not null) ? new LogicalExpr(false, parts!) : null;
+            default:
+                return null;
+        }
+
+        static bool IsValue(SqlExpr e) => e is ParameterExpr or LiteralExpr;
+    }
+
+    // 所属行上的某个关联列 → 子查询里对应的关联键
+    private ColumnExpr? KeyFor(SqlExpr e)
+    {
+        if (e is not ColumnExpr column) return null;
+        for (var i = 0; i < OwnerColumns.Count; i++)
+            if (OwnerColumns[i].Table == column.Table && OwnerColumns[i].Name == column.Name) return _keyColumns[i].Column;
+        return null;
+    }
+
     /// <summary>
     /// 按已登记的聚合生成子查询的 SELECT 与 WHERE；可重复调用（以最后一次为准）。
     /// 全部聚合都有条件时，它们共有的合取项（按第一个聚合里的顺序）提到 WHERE，各聚合的 CASE 里只留其余部分（与 Java 一致）；

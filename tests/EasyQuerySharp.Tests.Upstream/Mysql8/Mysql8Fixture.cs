@@ -22,6 +22,7 @@ public sealed class Mysql8Fixture : IAsyncLifetime
         typeof(SchoolClass), typeof(SchoolTeacher), typeof(SchoolClassTeacher),
         typeof(M8User), typeof(M8Role), typeof(M8UserRole), typeof(M8User2), typeof(M8Role2), typeof(M8UserRole2),
         typeof(M8UserBook), typeof(M8RoleMenu), typeof(M8Menu), typeof(M8Province), typeof(M8City), typeof(M8Area),
+        typeof(M8AreaBuild), typeof(M8Parent), typeof(M8Child), typeof(M8ParentChild), typeof(BatchInsert),
     ];
 
     private EasyDb? _db;
@@ -97,6 +98,27 @@ public sealed class Mysql8Fixture : IAsyncLifetime
         await db.Insert(new M8RoleMenu { Id = "rm123", RoleId = "r123", MenuId = "m123" }).ExecuteAsync();
         await db.Insert(new M8Menu { Id = "m123", Name = "测试菜单", Path = "/admin", OwnerId = "o123" }).ExecuteAsync();
         await db.Insert(new M8MenuOwner { Id = "o123", Name = "测试所属菜单" }).ExecuteAsync();
+
+        // 与 Java mysql8/BaseTest 相同的省 → 市 → 区 → 楼
+        await db.Insert(new M8Province { Id = "p1", Name = "浙江" }).ExecuteAsync();
+        await db.Insert(new[]
+        {
+            new M8City { Id = "c1", Pid = "p1", Name = "杭州" },
+            new M8City { Id = "c2", Pid = "p1", Name = "宁波" },
+        }).ExecuteAsync();
+        await db.Insert(new[]
+        {
+            new M8Area { Id = "a1", Cid = "c1", Name = "上城区" },
+            new M8Area { Id = "a2", Cid = "c1", Name = "下城区" },
+            new M8Area { Id = "a3", Cid = "c2", Name = "宁波A" },
+            new M8Area { Id = "a4", Cid = "c2", Name = "宁波B" },
+        }).ExecuteAsync();
+        await db.Insert(new[]
+        {
+            new M8AreaBuild { Id = "b1", Aid = "a1", Name = "科创楼" },
+            new M8AreaBuild { Id = "b2", Aid = "a1", Name = "创新楼" },
+            new M8AreaBuild { Id = "b3", Aid = "a2", Name = "创业楼" },
+        }).ExecuteAsync();
     }
 }
 

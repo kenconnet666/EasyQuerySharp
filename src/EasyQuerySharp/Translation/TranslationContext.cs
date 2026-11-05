@@ -71,6 +71,7 @@ internal sealed class TranslationContext(
         plan.Table.AliasAfterJoins = plan.Inner.Joins.Count;
         // 多对多时 Java 多建了一张中间表的副本，派生表的别名再跳过一个
         plan.Table.ReservedAliases = navigation.Mapping is null ? 0 : 1;
+        plan.OwnerColumns = navigation.SelfColumns.Select(owner.OwnerColumn).OfType<ColumnExpr>().ToList();
         var keys = plan.KeyColumns
             .Select((k, i) => (SqlExpr)new BinaryExpr(k, SqlBinaryOperator.Equal, owner.OwnerColumn(navigation.SelfColumns[i])))
             .ToList();
@@ -194,9 +195,11 @@ internal sealed class TranslationContext(
     {
         foreach (var plan in _groupJoins.Values)
         {
-            // 嵌套的分组合并（分组子查询里再合并的导航）先收尾
-            plan.InnerContext.CompleteGroupJoins();
             plan.Complete();
+            // 整个集合分组时，所属查询里对关联列的条件下推进来（取一段行的分组先编号，不下推）
+            if (plan.Element is EntityBinding) plan.PushDownKeyPredicates(query.Where);
+            // 嵌套的分组合并（分组子查询里再合并的导航）在外层收尾之后：它要用外层分组子查询的 WHERE 下推
+            plan.InnerContext.CompleteGroupJoins();
         }
     }
 
