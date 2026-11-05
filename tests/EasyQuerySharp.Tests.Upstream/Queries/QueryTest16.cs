@@ -97,6 +97,24 @@ public sealed class QueryTest16(MySqlFixture fixture) : MySqlTest(fixture)
         AssertStatement(Db.Query<Company>().Where(com => com.Name!.Contains("xx公司")).LimitSelect(10, 20, com => new Draft<string?, int?>(com.Id, com.Users!.Sum(x => x.Age))).ToStatement(),
             "SELECT t1.`id` AS `value1`,IFNULL((SELECT SUM(t2.`age`) FROM `t_user` t2 WHERE t2.`company_id` = t1.`id`),0) AS `value2` FROM (SELECT t.`id`,t.`name`,t.`create_time` FROM `t_company` t WHERE t.`name` LIKE ? LIMIT 20 OFFSET 10) t1", "%xx公司%(String)");
 
+    // 子查询的表起别名（Java 的 configure(r -> r.asAlias("myRole"))）；时间区间两端都有值时都写上
+    [Fact, Upstream("QueryTest16.java#test20")]
+    public void Test20()
+    {
+        var begin = new DateTime(2020, 1, 1, 1, 2, 0);
+        var end = new DateTime(2026, 1, 1, 1, 2, 0);
+        AssertStatement(Db.Query<SysUser>().Where(user => user.Company!.Name!.Contains("123")
+                && user.Roles!.AsAlias("myRole").Any(role => role.Name!.Contains("查询的角色名") && role.CreateTime.RangeClosed(begin, end))).ToStatement(),
+            "SELECT t.`id`,t.`company_id`,t.`name`,t.`age`,t.`create_time` FROM `t_user` t LEFT JOIN `t_company` t1 ON t1.`id` = t.`company_id` WHERE t1.`name` LIKE ? AND EXISTS(SELECT 1 FROM `t_role` myRole WHERE EXISTS(SELECT 1 FROM `t_user_role` t3 WHERE t3.`role_id` = myRole.`id` AND t3.`user_id` = t.`id` LIMIT 1) AND myRole.`name` LIKE ? AND (myRole.`create_time` >= ? AND myRole.`create_time` <= ?) LIMIT 1)",
+            "%123%(String),%查询的角色名%(String),2020-01-01T01:02(LocalDateTime),2026-01-01T01:02(LocalDateTime)");
+    }
+
+    // Oracle：先按 ROWNUM 取段再在外层算子查询的合计（NVL 兜底）
+    [Fact, Upstream("QueryTest16.java#testSubSumOracle")]
+    public void TestSubSumOracle() =>
+        SqlOnly.AssertStatement(SqlOnly.Db("oracle").Query<Company>().Where(com => com.Name!.Contains("xx公司")).LimitSelect(10, 20, com => new Draft<string?, int?>(com.Id, com.Users!.Sum(x => x.Age))).ToStatement(),
+            "SELECT t1.\"id\" AS \"value1\",NVL((SELECT SUM(t2.\"age\") FROM \"t_user\" t2 WHERE t2.\"company_id\" = t1.\"id\"),0) AS \"value2\" FROM (SELECT rt.* FROM(SELECT t.\"id\",t.\"name\",t.\"create_time\", ROWNUM AS \"__rownum__\" FROM \"t_company\" t WHERE t.\"name\" LIKE ? AND ROWNUM < 31) rt WHERE rt.\"__rownum__\" > 10) t1", "%xx公司%(String)");
+
     /// <summary>对应 Java：vo/CompanyVO。</summary>
     private sealed class CompanyVO
     {

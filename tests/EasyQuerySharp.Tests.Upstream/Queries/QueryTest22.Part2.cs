@@ -124,6 +124,13 @@ public sealed partial class QueryTest22
             UserColumns + " LEFT JOIN (SELECT t1.`uid` AS `__group_key1__`,SUM(DISTINCT (SELECT COUNT(DISTINCT t3.`id`) FROM `doc_part` t3 WHERE t3.`card_id` = t1.`id`)) AS `__sum2__` FROM `doc_bank_card` t1 WHERE t1.`type` = ? GROUP BY t1.`uid`) t2 ON t2.`__group_key1__` = t.`id` ORDER BY IFNULL(t2.`__sum2__`,0) ASC",
             "建设(String)");
 
+    // 全部集合导航合并成分组 JOIN：内层的计数也合并成分组 LEFT JOIN
+    [Fact, Upstream("QueryTest22.java#testOrderCountDistinct6_1")]
+    public void TestOrderCountDistinct6_1() =>
+        SqlOnly.AssertStatement(Users().GroupJoinAll().OrderBy(user => user.BankCards!.Where(bk => bk.Type == "建设").Distinct().Sum(x => x.Parts!.Select(p => p.Id).Distinct().LongCount())).ToStatement(),
+            UserColumns + " LEFT JOIN (SELECT t1.`uid` AS `__group_key1__`,SUM(DISTINCT IFNULL(t4.`__count2__`,0)) AS `__sum2__` FROM `doc_bank_card` t1 LEFT JOIN (SELECT t3.`card_id` AS `__group_key1__`,COUNT(DISTINCT t3.`id`) AS `__count2__` FROM `doc_part` t3 GROUP BY t3.`card_id`) t4 ON t4.`__group_key1__` = t1.`id` WHERE t1.`type` = ? GROUP BY t1.`uid`) t2 ON t2.`__group_key1__` = t.`id` ORDER BY IFNULL(t2.`__sum2__`,0) ASC",
+            "建设(String)");
+
     [Fact, Upstream("QueryTest22.java#testOrderCountDistinct7")]
     public void TestOrderCountDistinct7() =>
         SqlOnly.AssertStatement(Users().OrderBy(user => user.BankCards!.Where(bk => bk.Type == "建设").Distinct().Sum(x => x.Parts!.Select(p => p.Id ?? "x").Distinct().LongCount())).ToStatement(),
