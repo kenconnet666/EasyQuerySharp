@@ -3,14 +3,14 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1636、偏离 204、不适用 77、骨架 6、待做 481。
+合计：已移植 1640、偏离 204、不适用 77、骨架 6、待做 477。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 349 | 43 | 35 | 0 | 8 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 351 | 43 | 35 | 0 | 6 |
 | 分页结果 | `query.page` | M1 | 22 | 18 | 3 | 0 | 0 | 1 |
 | 原生 SQL | `sql.native` | M1 | 50 | 40 | 9 | 1 | 0 | 0 |
 | 删除 | `write.delete` | M1 | 25 | 13 | 1 | 10 | 0 | 1 |
@@ -32,7 +32,7 @@
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 2 | 0 | 0 | 0 | 0 |
 | 流式读取 | `query.stream` | M3 | 9 | 6 | 2 | 1 | 0 | 0 |
 | union / union all | `query.union` | M3 | 18 | 14 | 4 | 0 | 0 | 0 |
-| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 12 | 1 | 0 | 1 | 22 |
+| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 14 | 1 | 0 | 1 | 20 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 23 | 25 | 3 | 0 | 5 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 60 | 1 | 2 | 2 | 2 |
@@ -450,8 +450,8 @@
 | doc/DocTest1.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DocTest1.cs:25 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | doc/DocTest1.java#testBlog4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DocTest1.cs:71 | `SELECT t1.'name' AS 'value1',t3.'name' AS 'value2' FROM 'test_self' t LEFT JOIN 'my_user' t1 ON t1.'…` |
 | mysql8/CTETest.java#cteTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:56 | `WITH 'm8_user_temp' AS (SELECT t.'id',t.'name' FROM 'm8_user' t WHERE t.'age' IS NULL) SELECT t2.'id…` |
-| mysql8/IncludeConditionTest.java#testInclude1 | 待做 |  | `SELECT 'id','name','version' FROM 'my_task'` |
-| mysql8/IncludeConditionTest.java#testInclude2 | 待做 |  | `SELECT 'id','name','version' FROM 'my_task' WHERE 'id' = ?` |
+| mysql8/IncludeConditionTest.java#testInclude1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/IncludeConditionTest.cs:26 | `SELECT 'id','name','version' FROM 'my_task'` |
+| mysql8/IncludeConditionTest.java#testInclude2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/IncludeConditionTest.cs:53 | `SELECT 'id','name','version' FROM 'my_task' WHERE 'id' = ?` |
 | mysql8/M8BankTest.java#dynamicPartition | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:87 |  |
 | mysql8/M8BankTest.java#fromSubQuery1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:122 | `SELECT t1.'value1' AS 'value1',t1.'value2' AS 'value2',t1.'value3' AS 'value3' FROM (SELECT t.'name'…` |
 | mysql8/M8BankTest.java#includeSubQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:28 | `SELECT t.'name' AS 'vo1',t.'id' AS 'vo2',t.'phone' AS 'vo3',t.'id' AS '__relation__id' FROM 't_sys_u…` |
@@ -1496,8 +1496,8 @@
 | QueryTest19.java#testDoc99 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:63 | `SELECT t.'id',t.'name' FROM 't_user' t` |
 | QueryTestRelationTest.java#testRelation | 待做 |  | `SELECT 'id','com_id','user_id','gw' FROM 'my_com_user'` |
 | doc/DocTest1.java#testBlog5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DocTest1.cs:82 | `SELECT t1.'name' AS 'uname1',t3.'name' AS 'uname2',t.'id',t.'name' FROM 'test_self' t LEFT JOIN 'my_…` |
-| mysql8/IncludeConditionTest.java#testInclude3 | 待做 |  | `SELECT t.'id',t.'name',t.'version' AS '__relation__version' FROM 'my_task' t WHERE t.'id' = ?` |
-| mysql8/IncludeConditionTest.java#testInclude4 | 待做 |  | `SELECT t.'id',t.'name',t.'version' FROM 'my_task' t WHERE t.'id' = ?` |
+| mysql8/IncludeConditionTest.java#testInclude3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/IncludeConditionTest.cs:111 | `SELECT t.'id',t.'name',t.'version' AS '__relation__version' FROM 'my_task' t WHERE t.'id' = ?` |
+| mysql8/IncludeConditionTest.java#testInclude4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/IncludeConditionTest.cs:127 | `SELECT t.'id',t.'name',t.'version' FROM 'my_task' t WHERE t.'id' = ?` |
 | mysql8/M8BankTest.java#partitionBy | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t` |
 | mysql8/M8BankTest.java#testExtraDTO | 待做 |  | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t` |
 | mysql8/M8BankTest.java#testExtraDTO123 | 待做 |  | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t` |

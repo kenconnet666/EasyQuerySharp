@@ -33,6 +33,16 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     /// <summary>主查询结果里父键列的序号（投影完成后填入）。</summary>
     public int[] ParentKeyOrdinals { get; set; } = [];
 
+    /// <summary>导航有 <see cref="NavigationMetadata.IncludeOn"/> 时，主查询结果里条件列的序号（投影完成后填入）。</summary>
+    public int? ConditionOrdinal { get; set; }
+
+    // 父对象满足带出条件（没有条件时总是满足）：值按条件列的类型比较
+    private bool Applies(object? value) =>
+        Navigation.IncludeOn is not { } on || Equals(Normalize(value, on.Column), Normalize(on.Value, on.Column));
+
+    private static object? Normalize(object? value, ColumnMetadata column) =>
+        Materialization.ValueReader.ConvertTo(column.Converter is { } converter && value is not null && !column.ClrType.IsInstanceOfType(value) ? converter.FromProvider(value) : value, column.ClrType);
+
     /// <summary>本次执行收集到的父键 → 等待填充的目标（集合或单值的写回函数）。</summary>
     internal Dictionary<CompositeKey, List<Action<object?>>> Pending { get; } = [];
 
@@ -41,6 +51,8 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     /// </summary>
     public object? Register(DbDataReader reader, Action<object?>? assign)
     {
+        // 不满足带出条件的父对象：导航保持 null（与 Java 一致，集合也不给空列表）
+        if (ConditionOrdinal is { } ordinal && !Applies(reader.IsDBNull(ordinal) ? null : reader.GetValue(ordinal))) return null;
         var key = CompositeKey.Read(reader, ParentKeyOrdinals);
         if (IsCollection)
         {
@@ -55,6 +67,7 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     /// <summary>已经在内存里的实体（LoadIncludeAsync）：按导航的自身列取父键，集合属性先放一个空 List，对一属性登记回填。</summary>
     public void RegisterLoaded(object entity, System.Reflection.PropertyInfo property)
     {
+        if (Navigation.IncludeOn is { } on && !Applies(on.Column.Getter(entity))) return;
         var key = CompositeKey.Of(Navigation.SelfColumns.Select(c => c.Property.GetValue(entity)));
         if (IsCollection)
         {

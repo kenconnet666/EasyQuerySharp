@@ -60,7 +60,11 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         if (includes is { Count: > 0 })
             _shaped = WithIncludes(_shaped, root as EntityBinding ?? throw new NotSupportedException("Include 只能用在实体查询上"), includes);
         foreach (var (plan, owner) in _includes)
+        {
             plan.ParentKeyOrdinals = plan.Navigation.SelfColumns.Select(c => RelationColumn(owner.Table, c)).ToArray();
+            // 只给满足条件的父对象带出：条件列也要读出来（没选出时写成 __relation__列）
+            if (plan.Navigation.IncludeOn is { } on) plan.ConditionOrdinal = RelationColumn(owner.Table, on.Column);
+        }
         if (relationKeys is not null && root is not null)
             RelationOrdinals = relationKeys.Select(c => RelationColumn(root.Table, c)).ToArray();
     }

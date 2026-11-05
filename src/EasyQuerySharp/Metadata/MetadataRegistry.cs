@@ -45,7 +45,10 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
             mapping is null ? [] : attribute.SelfMappingProperties.Select(mapping.GetColumn).ToList(),
             mapping is null ? [] : attribute.TargetMappingProperties.Select(mapping.GetColumn).ToList(),
             ExtraFilterOf(self.Type, property, nameof(NavigateAttribute.ExtraFilter), attribute.ExtraFilter),
-            ExtraFilterOf(self.Type, property, nameof(NavigateAttribute.ExtraMappingFilter), attribute.ExtraMappingFilter));
+            ExtraFilterOf(self.Type, property, nameof(NavigateAttribute.ExtraMappingFilter), attribute.ExtraMappingFilter))
+        {
+            IncludeOn = property.GetCustomAttribute<IncludeOnAttribute>() is { } on ? (self.GetColumn(on.Property), on.Value) : null,
+        };
     }
 
     /// <summary>

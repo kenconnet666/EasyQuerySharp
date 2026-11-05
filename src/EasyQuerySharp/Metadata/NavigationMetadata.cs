@@ -59,6 +59,9 @@ public sealed class NavigationMetadata
     /// <summary>直达路径上依次经过的导航属性名；不是直达导航时为空。</summary>
     public IReadOnlyList<string> DirectPath { get; }
 
+    /// <summary>只给满足条件的父对象带出（<see cref="IncludeOnAttribute"/>）：父实体上的列与要等于的值；没有时为 null。</summary>
+    public (ColumnMetadata Column, object Value)? IncludeOn { get; internal init; }
+
     /// <summary>导航属性。</summary>
     public PropertyInfo Property { get; }
 

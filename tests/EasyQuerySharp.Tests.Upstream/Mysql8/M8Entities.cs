@@ -527,3 +527,79 @@ public class MyComment4
 
     public List<MyComment4>? Children { get; set; }
 }
+
+/// <summary>对应 Java：mysql8/entity/condition/MyTask（按 version 决定挂哪张子表 / 扩展表）。</summary>
+[Table("my_task")]
+public class MyTask
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    public long? Version { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(MySubTask1.TaskId)])]
+    [IncludeOn(nameof(Version), 1L)]
+    public List<MySubTask1>? MySubTask1List { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(MySubTask2.TaskId)])]
+    [IncludeOn(nameof(Version), 2L)]
+    public List<MySubTask2>? MySubTask2List { get; set; }
+
+    [Navigate(RelationType.OneToOne, SelfProperties = [nameof(Id)], TargetProperties = [nameof(MyTask1Ext.TaskId)])]
+    [IncludeOn(nameof(Version), 1L)]
+    public MyTask1Ext? MyTask1Ext { get; set; }
+
+    [Navigate(RelationType.OneToOne, SelfProperties = [nameof(Id)], TargetProperties = [nameof(MyTask2Ext.TaskId)])]
+    [IncludeOn(nameof(Version), 2L)]
+    public MyTask2Ext? MyTask2Ext { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/condition/MySubTask1。</summary>
+[Table("my_task_sub1")]
+public class MySubTask1
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? TaskId { get; set; }
+
+    public string? Name { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/condition/MySubTask2。</summary>
+[Table("my_task_sub2")]
+public class MySubTask2
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? TaskId { get; set; }
+
+    public string? Name { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/condition/MyTask1Ext。</summary>
+[Table("my_task1_ext")]
+public class MyTask1Ext
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? TaskId { get; set; }
+
+    public string? Name { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/condition/MyTask2Ext。</summary>
+[Table("my_task2_ext")]
+public class MyTask2Ext
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? TaskId { get; set; }
+
+    public string? Name { get; set; }
+}
