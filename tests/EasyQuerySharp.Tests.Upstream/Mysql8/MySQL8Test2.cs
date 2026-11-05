@@ -323,43 +323,43 @@ public sealed class MySQL8Test2(Mysql8Fixture fixture) : Mysql8Test(fixture)
 
     private const string CityCountJoin = "LEFT JOIN (SELECT t1.`pid` AS `__group_key1__`,COUNT(?) AS `__count2__` FROM `m8_city` t1 WHERE t1.`name` IS NOT NULL AND t1.`id` IS NOT NULL GROUP BY t1.`pid`) t2 ON t2.`__group_key1__` = t.`id`";
 
-    // Java 的 valueOf(() -> 条件) 投影成布尔值，C# 直接投影比较表达式；Java 在比较前多一个空格
-    [Fact, Upstream("mysql8/MySQL8Test2.java#testMerge2", Deviation = "Java 的条件片段（valueOf / 比较嵌套聚合）在比较前多写一个空格：AND  t.`id` <= …、( t.`id` <= …)；C# 不写")]
+    // Java 的 valueOf(() -> 条件) 投影成布尔值，C# 直接投影比较表达式；Java 的字符串 id 直接与计数比较，C# 用 (long)(object) 只改类型
+    [Fact, Upstream("mysql8/MySQL8Test2.java#testMerge2")]
     public async Task TestMerge2()
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<M8Province>().UseValueFilter(ValueFilter.NotNullOrBlank, includeNavigations: true).GroupJoinAll()
-            .Where(m => m.Name.LikeContains("浙江") && Sql.Cast<long>(m.Id) <= m.Cities!.Where(c => c.Name != null && c.Id != null).Count())
-            .Select(m => new Draft<bool>(Sql.Cast<long>(m.Id) <= m.Cities!.Where(c => c.Name != null && c.Id != null).Count()))
+            .Where(m => m.Name.LikeContains("浙江") && (long)(object)m.Id! <= m.Cities!.Where(c => c.Name != null && c.Id != null).Count())
+            .Select(m => new Draft<bool>((long)(object)m.Id! <= m.Cities!.Where(c => c.Name != null && c.Id != null).Count()))
             .ToPageAsync(1, 2, Ct);
-        listen.AssertSql(0, "SELECT COUNT(*) FROM `m8_province` t " + CityCountJoin + " WHERE t.`name` LIKE CONCAT('%',?,'%') AND CAST(t.`id` AS SIGNED) <= IFNULL(t2.`__count2__`,0)");
+        listen.AssertSql(0, "SELECT COUNT(*) FROM `m8_province` t " + CityCountJoin + " WHERE t.`name` LIKE CONCAT('%',?,'%') AND  t.`id` <= IFNULL(t2.`__count2__`,0)");
         listen.AssertParams(0, "1(Integer),浙江(String)");
     }
 
-    [Fact, Upstream("mysql8/MySQL8Test2.java#testMerge3", Deviation = "Java 的比较嵌套聚合在比较前多写一个空格：AND  t.`id` <= …；C# 不写。Java 的 String 列直接与计数比较，C# 先 Sql.Cast<long>")]
+    [Fact, Upstream("mysql8/MySQL8Test2.java#testMerge3")]
     public async Task TestMerge3()
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<M8Province>().UseValueFilter(ValueFilter.NotNullOrBlank, includeNavigations: true).GroupJoinAll()
-            .Where(m => m.Name.LikeContains("浙江") && Sql.Cast<long>(m.Id) <= m.Cities!.Where(c => c.Name != null && c.Id != null).Count())
+            .Where(m => m.Name.LikeContains("浙江") && (long)(object)m.Id! <= m.Cities!.Where(c => c.Name != null && c.Id != null).Count())
             .Select(m => new Draft<string?>(m.Name))
             .ToPageAsync(1, 2, Ct);
-        listen.AssertSql(0, "SELECT COUNT(*) FROM `m8_province` t " + CityCountJoin + " WHERE t.`name` LIKE CONCAT('%',?,'%') AND CAST(t.`id` AS SIGNED) <= IFNULL(t2.`__count2__`,0)");
+        listen.AssertSql(0, "SELECT COUNT(*) FROM `m8_province` t " + CityCountJoin + " WHERE t.`name` LIKE CONCAT('%',?,'%') AND  t.`id` <= IFNULL(t2.`__count2__`,0)");
         listen.AssertParams(0, "1(Integer),浙江(String)");
     }
 
     // 两个计数共有 id 非空：提到 WHERE
-    [Fact, Upstream("mysql8/MySQL8Test2.java#testMerge5", Deviation = "Java 的比较嵌套聚合在比较前多写一个空格：AND  t.`id` <= …；C# 不写。Java 的 String 列直接与计数比较，C# 先 Sql.Cast<long>")]
+    [Fact, Upstream("mysql8/MySQL8Test2.java#testMerge5")]
     public async Task TestMerge5()
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<M8Province>().UseValueFilter(ValueFilter.NotNullOrBlank, includeNavigations: true).GroupJoinAll()
             .Where(m => m.Name.LikeContains("浙江")
-                        && Sql.Cast<long>(m.Id) <= m.Cities!.Where(c => c.Name != null && c.Id != null).Count()
-                        && Sql.Cast<long>(m.Id) >= m.Cities!.Where(c => c.Name == null && c.Id != null).Count())
+                        && (long)(object)m.Id! <= m.Cities!.Where(c => c.Name != null && c.Id != null).Count()
+                        && (long)(object)m.Id! >= m.Cities!.Where(c => c.Name == null && c.Id != null).Count())
             .Select(m => new Draft<string?>(m.Name))
             .ToPageAsync(1, 2, Ct);
-        listen.AssertSql(0, "SELECT COUNT(*) FROM `m8_province` t LEFT JOIN (SELECT t1.`pid` AS `__group_key1__`,COUNT((CASE WHEN t1.`name` IS NOT NULL THEN ? ELSE NULL END)) AS `__count2__`,COUNT((CASE WHEN t1.`name` IS NULL THEN ? ELSE NULL END)) AS `__count3__` FROM `m8_city` t1 WHERE t1.`id` IS NOT NULL GROUP BY t1.`pid`) t2 ON t2.`__group_key1__` = t.`id` WHERE t.`name` LIKE CONCAT('%',?,'%') AND CAST(t.`id` AS SIGNED) <= IFNULL(t2.`__count2__`,0) AND CAST(t.`id` AS SIGNED) >= IFNULL(t2.`__count3__`,0)");
+        listen.AssertSql(0, "SELECT COUNT(*) FROM `m8_province` t LEFT JOIN (SELECT t1.`pid` AS `__group_key1__`,COUNT((CASE WHEN t1.`name` IS NOT NULL THEN ? ELSE NULL END)) AS `__count2__`,COUNT((CASE WHEN t1.`name` IS NULL THEN ? ELSE NULL END)) AS `__count3__` FROM `m8_city` t1 WHERE t1.`id` IS NOT NULL GROUP BY t1.`pid`) t2 ON t2.`__group_key1__` = t.`id` WHERE t.`name` LIKE CONCAT('%',?,'%') AND  t.`id` <= IFNULL(t2.`__count2__`,0) AND  t.`id` >= IFNULL(t2.`__count3__`,0)");
         listen.AssertParams(0, "1(Integer),1(Integer),浙江(String)");
     }
 }

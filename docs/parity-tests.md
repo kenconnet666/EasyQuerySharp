@@ -3,14 +3,14 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1450、偏离 154、不适用 34、骨架 15、待做 751。
+合计：已移植 1458、偏离 146、不适用 34、骨架 15、待做 751。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 343 | 33 | 13 | 0 | 46 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 345 | 31 | 13 | 0 | 46 |
 | 分页结果 | `query.page` | M1 | 22 | 17 | 2 | 0 | 0 | 3 |
 | 原生 SQL | `sql.native` | M1 | 50 | 35 | 6 | 1 | 0 | 8 |
 | 删除 | `write.delete` | M1 | 25 | 9 | 1 | 2 | 0 | 13 |
@@ -59,8 +59,8 @@
 | SQL Server 方言 | `dialect.mssql` | M6 | 38 | 0 | 0 | 0 | 0 | 38 |
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | M6 | 13 | 0 | 0 | 0 | 0 | 13 |
 | UPDATE / DELETE … RETURNING | `write.returning` | M6 | 3 | 0 | 0 | 0 | 0 | 3 |
-| 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 0 | 1 | 0 | 0 | 16 |
-| 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 75 | 17 | 0 | 0 | 9 |
+| 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 1 | 0 | 0 | 0 | 16 |
+| 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 80 | 12 | 0 | 0 | 9 |
 | search 扩展 | `search` | M7 | 45 | 0 | 0 | 0 | 0 | 45 |
 | 分库分表 | `sharding` | M7 | 48 | 0 | 0 | 0 | 0 | 48 |
 | 跨库链接（asTableLink） | `table.link` | M7 | 13 | 9 | 0 | 0 | 0 | 4 |
@@ -359,10 +359,10 @@
 | QueryTest23.java#testaaa | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest23.cs:76 |  |
 | QueryTest24.java#test11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:60 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest24.java#test12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:60 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest24.java#testEnum | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:200：Java 的 ClassProxy 总写 AS，C# 的 DTO 投影同名列不写 AS | `SELECT t.'topic_type' AS 'topic_type' FROM 't_topic_type' t` |
-| QueryTest24.java#testx13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:164 | `SELECT t.'topic_type' FROM 't_topic_type' t LIMIT 1` |
-| QueryTest24.java#testx16 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:179：Java 的 whereById(null) 写成 = ?（参数 null，永不成立），C# 写成 IS NULL | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE 'id' = ?` |
-| QueryTest24.java#testx17 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:188：同 test27：StartsWith 写成 LIKE ? | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest24.java#testEnum | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:203：Java 的 ClassProxy 总写 AS，C# 的 DTO 投影同名列不写 AS | `SELECT t.'topic_type' AS 'topic_type' FROM 't_topic_type' t` |
+| QueryTest24.java#testx13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:165 | `SELECT t.'topic_type' FROM 't_topic_type' t LIMIT 1` |
+| QueryTest24.java#testx16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:181 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE 'id' = ?` |
+| QueryTest24.java#testx17 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:191 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest25.java#test11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:17 |  |
 | QueryTest25.java#test11a1 | 待做 |  | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'id' IN (?)` |
 | QueryTest25.java#testList | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:123 |  |
@@ -1779,9 +1779,9 @@
 | QueryTest23.java#filterOn3 | 待做 |  | `SELECT COUNT(*) FROM 'doc_bank_card' t INNER JOIN 'doc_bank' t1 ON t1.'id' = t.'bank_id' AND t1.'nam…` |
 | QueryTest23.java#testJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest23.cs:80 |  |
 | QueryTest23.java#testMany2Many | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest23.cs:138 | `SELECT t.'name' AS 'value1',(SELECT COUNT(*) FROM 't_user_book' t2 WHERE t2.'uid' = t.'uid') AS 'val…` |
-| QueryTest24.java#testSubCount | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:210 | `SELECT t.'id',t.'create_time',t.'title',IFNULL(t2.'__count2__',0) AS 'stars' FROM 't_blog' t LEFT JO…` |
-| QueryTest24.java#testx14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:164 | `SELECT MAX(t.'topic_type') FROM 't_topic_type' t LIMIT 1` |
-| QueryTest24.java#testx15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:164 | `SELECT MIN(t.'topic_type') FROM 't_topic_type' t LIMIT 1` |
+| QueryTest24.java#testSubCount | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:213 | `SELECT t.'id',t.'create_time',t.'title',IFNULL(t2.'__count2__',0) AS 'stars' FROM 't_blog' t LEFT JO…` |
+| QueryTest24.java#testx14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:165 | `SELECT MAX(t.'topic_type') FROM 't_topic_type' t LIMIT 1` |
+| QueryTest24.java#testx15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:165 | `SELECT MIN(t.'topic_type') FROM 't_topic_type' t LIMIT 1` |
 | QueryTest27.java#autoMergeMany2Many1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest27.cs:193 | `SELECT t.'station_id',t.'station_name' FROM 't_station' t LEFT JOIN (SELECT t2.'station_id' AS '__gr…` |
 | QueryTest27.java#autoMergeMany2Many2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest27.cs:198 | `SELECT t.'station_id',t.'station_name' FROM 't_station' t LEFT JOIN (SELECT t2.'station_id' AS '__gr…` |
 | QueryTest27.java#testCountSubQueryCount | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest27.cs:39 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
@@ -2432,7 +2432,7 @@
 | MigrationTest.java#createTableSQLTest3 | 待做 |  | `ALTER TABLE 't_topic' CHANGE 'title' 'abc' varchar(200) NULL;` |
 | MigrationTest.java#createTableSQLTest4 | 待做 |  |  |
 | QueryTest22.java#testManyOrder | 待做 |  |  |
-| QueryTest24.java#testx18 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:188：同 test27 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest24.java#testx18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:191 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest26.java#testGenerateKeys | 待做 |  |  |
 | QueryTest3.java#userBookTest | 待做 |  |  |
 | migration/MigrationDamengTest.java#test | 待做 |  |  |
@@ -2486,8 +2486,8 @@
 | QueryTest24.java#test24 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:120 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest24.java#test25 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:120 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest24.java#test26 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:135 | `SELECT (t.'create_time' < ? AND t.'title' = ?) FROM 't_blog' t WHERE t.'deleted' = ? AND (t.'create_…` |
-| QueryTest24.java#test27 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:147：Java 的 startsWith 函数写成 LIKE CONCAT(?,'%')，C# 的 StartsWith 写成 LIKE ? | `SELECT DATE_FORMAT(t.'create_time','%Y-%m') AS 'value1',(DATE_FORMAT(t.'create_time','%Y-%m') LIKE C…` |
-| QueryTest24.java#test28 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:156：同 test27 | `SELECT DATE_FORMAT(t.'create_time','%Y-%m') AS 'value1',((DATE_FORMAT(t.'create_time','%Y-%m') LIKE …` |
+| QueryTest24.java#test27 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:148 | `SELECT DATE_FORMAT(t.'create_time','%Y-%m') AS 'value1',(DATE_FORMAT(t.'create_time','%Y-%m') LIKE C…` |
+| QueryTest24.java#test28 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:157 | `SELECT DATE_FORMAT(t.'create_time','%Y-%m') AS 'value1',((DATE_FORMAT(t.'create_time','%Y-%m') LIKE …` |
 | QueryTest24.java#test29 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:135 | `SELECT (t.'create_time' < ? AND t.'title' = ?) FROM 't_blog' t WHERE t.'deleted' = ? AND date_add(t.…` |
 | QueryTest24.java#testContains2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:29：Java 的 contains/startsWith/endsWith 函数写成 LIKE CONCAT('%',?,'%')，C# 的 string.Contains 等写成 LIKE ?（值里带好 %），语义相同 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest24.java#testContains3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:30：同 testContains2；Java 的 asNumber/asStr 等只改类型，C# 用 (T)(object)x 同样不写 CAST | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
@@ -2537,10 +2537,10 @@
 | mysql8/MySQL8Test2.java#testFilterConfigure8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:225 | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'code',…` |
 | mysql8/MySQL8Test2.java#testFilterConfigure9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:235 | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'code',…` |
 | mysql8/MySQL8Test2.java#testMerge | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:310 | `SELECT IFNULL(t2.'__count2__',0) AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 'm8_province…` |
-| mysql8/MySQL8Test2.java#testMerge2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:327：Java 的条件片段（valueOf / 比较嵌套聚合）在比较前多写一个空格：AND  t.'id' <= …、( t.'id' <= …)；C# 不写 | `SELECT COUNT(*) FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',COUNT(?) AS '__c…` |
-| mysql8/MySQL8Test2.java#testMerge3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:339：Java 的比较嵌套聚合在比较前多写一个空格：AND  t.'id' <= …；C# 不写。Java 的 String 列直接与计数比较，C# 先 Sql.Cast<long> | `SELECT COUNT(*) FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',COUNT(?) AS '__c…` |
+| mysql8/MySQL8Test2.java#testMerge2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:327 | `SELECT COUNT(*) FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',COUNT(?) AS '__c…` |
+| mysql8/MySQL8Test2.java#testMerge3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:339 | `SELECT COUNT(*) FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',COUNT(?) AS '__c…` |
 | mysql8/MySQL8Test2.java#testMerge4 | 待做 |  | `SELECT COUNT(*) FROM 'm8_province' t WHERE t.'name' LIKE CONCAT('%',?,'%')` |
-| mysql8/MySQL8Test2.java#testMerge5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:352：Java 的比较嵌套聚合在比较前多写一个空格：AND  t.'id' <= …；C# 不写。Java 的 String 列直接与计数比较，C# 先 Sql.Cast<long> | `SELECT COUNT(*) FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',COUNT((CASE WHEN…` |
+| mysql8/MySQL8Test2.java#testMerge5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:352 | `SELECT COUNT(*) FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',COUNT((CASE WHEN…` |
 | mysql8/MySQL8Test2.java#testSumCount | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:296 | `SELECT IFNULL(t2.'__sum2__',0) AS 'value1',IFNULL(t2.'__sum3__',0) AS 'value2' FROM 'm8_province' t …` |
 | mysql8/MySQL8Test3.java#testDynamicJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:14 |  |
 | mysql8/MySQL8Test4.java#testFilter | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN 't_sys_user' …` |

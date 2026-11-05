@@ -144,21 +144,22 @@ public sealed class QueryTest24(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("2020-01-01T00:00(LocalDateTime),123(String),false(Boolean),2020-01-01T00:00(LocalDateTime),true(Boolean),2022-01-01T00:00(LocalDateTime),2020-01-01T00:00(LocalDateTime),2020-01-01T00:00(LocalDateTime),2020-01-01T00:00(LocalDateTime),1(Long),2020-01-01T00:00(LocalDateTime)");
     }
 
-    [Fact, Upstream("QueryTest24.java#test27", Deviation = "Java 的 startsWith 函数写成 LIKE CONCAT(?,'%')，C# 的 StartsWith 写成 LIKE ?")]
+    // Java 的 startsWith 函数在 SQL 里拼 %：Sql.LikeStartsWith（C# 的 string.StartsWith 对应 likeMatchLeft，% 拼进参数）
+    [Fact, Upstream("QueryTest24.java#test27")]
     public async Task Test27()
     {
         using var listen = SqlCapture.Listen();
-        var list = await Db.Query<BlogEntity>().Select(b => new Draft<string, bool>(b.CreateTime!.Value.ToString("yyyy-MM"), b.CreateTime!.Value.ToString("yyyy-MM").StartsWith("2020-02"))).ToListAsync(Ct);
+        var list = await Db.Query<BlogEntity>().Select(b => new Draft<string, bool>(b.CreateTime!.Value.ToString("yyyy-MM"), Sql.LikeStartsWith(b.CreateTime!.Value.ToString("yyyy-MM"), "2020-02"))).ToListAsync(Ct);
         Assert.All(list, item => Assert.Equal(item.Value1.StartsWith("2020-02", StringComparison.Ordinal), item.Value2));
-        listen.AssertSql("SELECT DATE_FORMAT(t.`create_time`,'%Y-%m') AS `value1`,(DATE_FORMAT(t.`create_time`,'%Y-%m') LIKE ?) AS `value2` FROM `t_blog` t WHERE t.`deleted` = ?");
+        listen.AssertSql("SELECT DATE_FORMAT(t.`create_time`,'%Y-%m') AS `value1`,(DATE_FORMAT(t.`create_time`,'%Y-%m') LIKE CONCAT(?,'%')) AS `value2` FROM `t_blog` t WHERE t.`deleted` = ?");
     }
 
-    [Fact, Upstream("QueryTest24.java#test28", Deviation = "同 test27")]
+    [Fact, Upstream("QueryTest24.java#test28")]
     public async Task Test28()
     {
         using var listen = SqlCapture.Listen();
-        await Db.Query<BlogEntity>().Select(b => new Draft<string, bool>(b.CreateTime!.Value.ToString("yyyy-MM"), b.CreateTime!.Value.ToString("yyyy-MM").StartsWith("2020-02") || b.Title!.StartsWith("小明"))).ToListAsync(Ct);
-        listen.AssertSql("SELECT DATE_FORMAT(t.`create_time`,'%Y-%m') AS `value1`,((DATE_FORMAT(t.`create_time`,'%Y-%m') LIKE ? OR t.`title` LIKE ?)) AS `value2` FROM `t_blog` t WHERE t.`deleted` = ?");
+        await Db.Query<BlogEntity>().Select(b => new Draft<string, bool>(b.CreateTime!.Value.ToString("yyyy-MM"), Sql.LikeStartsWith(b.CreateTime!.Value.ToString("yyyy-MM"), "2020-02") || Sql.LikeStartsWith(b.Title, "小明"))).ToListAsync(Ct);
+        listen.AssertSql("SELECT DATE_FORMAT(t.`create_time`,'%Y-%m') AS `value1`,((DATE_FORMAT(t.`create_time`,'%Y-%m') LIKE CONCAT(?,'%') OR t.`title` LIKE CONCAT(?,'%'))) AS `value2` FROM `t_blog` t WHERE t.`deleted` = ?");
     }
 
     [Fact, Upstream("QueryTest24.java#testx13"), Upstream("QueryTest24.java#testx14"), Upstream("QueryTest24.java#testx15")]
@@ -176,24 +177,26 @@ public sealed class QueryTest24(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertSql("SELECT MIN(t.`topic_type`) FROM `t_topic_type` t LIMIT 1");
     }
 
-    [Fact, Upstream("QueryTest24.java#testx16", Deviation = "Java 的 whereById(null) 写成 = ?（参数 null，永不成立），C# 写成 IS NULL")]
+    // whereById(null)：`id` = ?，参数 null（永不成立）
+    [Fact, Upstream("QueryTest24.java#testx16")]
     public async Task Testx16()
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<TopicTypeTest1>().WhereById(null!).ToListAsync(Ct);
-        listen.AssertSql("SELECT `id`,`stars`,`title`,`topic_type`,`create_time` FROM `t_topic_type` WHERE `id` IS NULL");
+        listen.AssertSql("SELECT `id`,`stars`,`title`,`topic_type`,`create_time` FROM `t_topic_type` WHERE `id` = ?");
+        listen.AssertParams("null(null)");
     }
 
     // Java 的 expression().not(() -> …)：C# 的 !(…)
-    [Fact, Upstream("QueryTest24.java#testx17", Deviation = "同 test27：StartsWith 写成 LIKE ?"), Upstream("QueryTest24.java#testx18", Deviation = "同 test27")]
+    [Fact, Upstream("QueryTest24.java#testx17"), Upstream("QueryTest24.java#testx18")]
     public async Task Testx17()
     {
         var after = new DateTime(2024, 1, 1);
         using var listen = SqlCapture.Listen();
-        await Db.Query<BlogEntity>().Where(b => !(b.Title!.StartsWith("123") && b.CreateTime > after)).ToListAsync(Ct);
-        listen.AssertSql(BlogSelect + " AND NOT (`title` LIKE ? AND `create_time` > ?)");
-        await Db.Query<BlogEntity>().Where(b => !(b.Title!.StartsWith("123") || b.CreateTime > after)).ToListAsync(Ct);
-        listen.AssertSql(BlogSelect + " AND NOT ((`title` LIKE ? OR `create_time` > ?))");
+        await Db.Query<BlogEntity>().Where(b => !(Sql.LikeStartsWith(b.Title, "123") && b.CreateTime > after)).ToListAsync(Ct);
+        listen.AssertSql(BlogSelect + " AND (NOT (`title` LIKE CONCAT(?,'%') AND `create_time` > ?))");
+        await Db.Query<BlogEntity>().Where(b => !(Sql.LikeStartsWith(b.Title, "123") || b.CreateTime > after)).ToListAsync(Ct);
+        listen.AssertSql(BlogSelect + " AND (NOT ((`title` LIKE CONCAT(?,'%') OR `create_time` > ?)))");
         await Db.Query<SysUser>().Where(s => s.Phone!.StartsWith("186")).Select(s => new Draft<string?, string>(s.Phone, s.Address!.Substring(1, 10))).ToListAsync(Ct);
     }
 

@@ -9,12 +9,17 @@ namespace EasyQuerySharp.Translation;
 /// <summary>按主键构造条件：查询与写入共用。</summary>
 internal static class KeyPredicates
 {
-    /// <summary><c>t => t.Key == id</c>（主键值先转成主键类型）。</summary>
-    public static Expression<Func<T, bool>> ById<T>(EntityMetadata entity, object id)
+    /// <summary>
+    /// <c>t => t.Key == id</c>（主键值先转成主键类型）。id 为 null 时写成 <c>`id` = ?</c>、参数为 null（永不成立，与 Java 的 whereById(null) 一致），
+    /// 不改写成 IS NULL：按主键查找不应该查出主键为空的行。
+    /// </summary>
+    public static Expression<Func<T, bool>> ById<T>(EntityMetadata entity, object? id)
     {
         var key = entity.SingleKey;
         var p = Expression.Parameter(typeof(T), "t");
-        var body = Expression.Equal(Expression.Property(p, key.Property), Expression.Constant(ValueReader.ConvertTo(id, key.ClrType), key.ClrType));
+        Expression value = Expression.Constant(ValueReader.ConvertTo(id, key.ClrType), key.ClrType);
+        if (id is null) value = Expression.Call(typeof(Sql).GetMethod(nameof(Sql.Constant))!.MakeGenericMethod(key.ClrType), value);
+        var body = Expression.Equal(Expression.Property(p, key.Property), value);
         return Expression.Lambda<Func<T, bool>>(body, p);
     }
 

@@ -195,7 +195,8 @@ internal sealed partial class ExpressionTranslator
         ExistsExpr { FromNavigation: true } e => new NotExpr(e),
         ExistsExpr e => new ExistsExpr(e.Query, !e.Negated),
         NotExpr n => n.Operand,
-        _ => new NotExpr(predicate),
+        // 其余整体取反：Java 总写成 (NOT (p))
+        _ => NotSatisfying(predicate),
     };
 
     private SqlExpr TranslateBinary(BinaryExpression b)
