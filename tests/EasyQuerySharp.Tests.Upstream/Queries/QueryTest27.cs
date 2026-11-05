@@ -146,4 +146,91 @@ public sealed class QueryTest27(MySqlFixture fixture) : MySqlTest(fixture)
             listen.AssertParams("false(Boolean),123(String)");
         }
     }
+
+    // ---------- 导航上的表配置：Java 的 nav().configure(r -> r.disableLogicDelete() / r.asTable(..)) ----------
+    // 对一导航写成 Sql.DisableLogicDelete(nav) / Sql.AsTable(nav, ..)，集合导航写成 nav.DisableLogicDelete() / nav.AsTable(..)。
+    // 改了表名的用例库里没有那张表（Java 用 try/catch 吞掉执行错误），这里只生成语句比对
+
+    private static void AssertStatement(SqlStatement statement, string sql, string parameters)
+    {
+        Assert.Equal(sql, statement.Text);
+        Assert.Equal(parameters, JavaParams.Format(statement));
+    }
+
+    [Fact, Upstream("QueryTest27.java#testAAA")]
+    public async Task TestAAA()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysUser>().Where(o => Sql.DisableLogicDelete(o.MyBlog)!.Star == 1).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`id`,t.`create_time`,t.`username`,t.`phone`,t.`id_card`,t.`address` FROM `easy-query-test`.`t_sys_user` t LEFT JOIN `t_blog` t1 ON t1.`id` = t.`id` WHERE t1.`star` = ?");
+        listen.AssertParams("1(Integer)");
+    }
+
+    [Fact, Upstream("QueryTest27.java#testAAA2")]
+    public void TestAAA2() =>
+        AssertStatement(Db.Query<SysUser>().Where(o => Sql.AsTable(o.MyBlog, "BlogAbc")!.Star == 1).ToStatement(), "SELECT t.`id`,t.`create_time`,t.`username`,t.`phone`,t.`id_card`,t.`address` FROM `easy-query-test`.`t_sys_user` t LEFT JOIN `BlogAbc` t1 ON t1.`deleted` = ? AND t1.`id` = t.`id` WHERE t1.`star` = ?", "false(Boolean),1(Integer)");
+
+    [Fact, Upstream("QueryTest27.java#testAAA4")]
+    public void TestAAA4() =>
+        AssertStatement(Db.Query<SysUser>().Where(o => Sql.AsTable(o.MyBlog, "BlogAbc")!.Star == 1 && o.Blogs!.AsTable("BInner").Any(x => x.Star == 1)).ToStatement(),
+            "SELECT t.`id`,t.`create_time`,t.`username`,t.`phone`,t.`id_card`,t.`address` FROM `easy-query-test`.`t_sys_user` t LEFT JOIN `BlogAbc` t1 ON t1.`deleted` = ? AND t1.`id` = t.`id` WHERE t1.`star` = ? AND EXISTS(SELECT 1 FROM `BInner` t2 WHERE t2.`deleted` = ? AND t2.`title` = t.`id` AND t2.`star` = ? LIMIT 1)", "false(Boolean),1(Integer),false(Boolean),1(Integer)");
+
+    // Java 的 ALL_SUB_QUERY_GROUP_JOIN：GroupJoinAll()；表配置带进分组合并的派生表
+    [Fact, Upstream("QueryTest27.java#testAAA42"), Upstream("QueryTest27.java#testAAA43")]
+    public void TestAAA42() =>
+        AssertStatement(Db.Query<SysUser>().GroupJoinAll()
+                .Where(o => Sql.AsTable(o.MyBlog, "BlogAbc")!.Star == 1 && o.Blogs!.AsTable("BInner").Any(x => x.Star == 1)).ToStatement(),
+            "SELECT t.`id`,t.`create_time`,t.`username`,t.`phone`,t.`id_card`,t.`address` FROM `easy-query-test`.`t_sys_user` t LEFT JOIN `BlogAbc` t1 ON t1.`deleted` = ? AND t1.`id` = t.`id` LEFT JOIN (SELECT t2.`title` AS `__group_key1__`,(COUNT(?) > 0) AS `__any2__` FROM `BInner` t2 WHERE t2.`deleted` = ? AND t2.`star` = ? GROUP BY t2.`title`) t3 ON t3.`__group_key1__` = t.`id` WHERE t1.`star` = ? AND IFNULL(t3.`__any2__`,?) = ?", "false(Boolean),1(Integer),false(Boolean),1(Integer),1(Integer),false(Boolean),true(Boolean)");
+
+    // Java 的 blogs().mode(SUB_QUERY_ONLY)：GroupJoinIf(false, ..) 让这个导航不参与 GroupJoinAll
+    [Fact, Upstream("QueryTest27.java#testAAA45")]
+    public void TestAAA45() =>
+        AssertStatement(Db.Query<SysUser>().GroupJoinAll().GroupJoinIf(false, o => o.Blogs)
+                .Where(o => Sql.AsTable(o.MyBlog, "BlogAbc")!.Star == 1 && o.Blogs!.AsTable("BInner").Any(x => x.Star == 1)).ToStatement(),
+            "SELECT t.`id`,t.`create_time`,t.`username`,t.`phone`,t.`id_card`,t.`address` FROM `easy-query-test`.`t_sys_user` t LEFT JOIN `BlogAbc` t1 ON t1.`deleted` = ? AND t1.`id` = t.`id` WHERE t1.`star` = ? AND EXISTS(SELECT 1 FROM `BInner` t2 WHERE t2.`deleted` = ? AND t2.`title` = t.`id` AND t2.`star` = ? LIMIT 1)", "false(Boolean),1(Integer),false(Boolean),1(Integer)");
+
+    // 导航上标了 GroupJoin = true（Java 的 subQueryToGroupJoin）：多对多的 Any 自动合并成分组 JOIN，主表的键条件下推到分组里
+    [Fact, Upstream("QueryTest27.java#autoMergeMany2Many1")]
+    public void AutoMergeMany2Many1() =>
+        AssertStatement(Db.Query<Station>().Where(s => s.StationId == "123" && s.Operators!.Any(x => x.TenantOperatorId == "1234")).ToStatement(),
+            "SELECT t.`station_id`,t.`station_name` FROM `t_station` t LEFT JOIN (SELECT t2.`station_id` AS `__group_key1__`,(COUNT(?) > 0) AS `__any2__` FROM `t_tenant_operator` t1 INNER JOIN `t_station_tenant` t2 ON t1.`tenant_operator_id` = t2.`tenant_id` WHERE t1.`tenant_operator_id` = ? AND t2.`station_id` = ? GROUP BY t2.`station_id`) t4 ON t4.`__group_key1__` = t.`station_id` WHERE t.`station_id` = ? AND IFNULL(t4.`__any2__`,?) = ?", "1(Integer),1234(String),123(String),123(String),false(Boolean),true(Boolean)");
+
+    [Fact, Upstream("QueryTest27.java#autoMergeMany2Many2")]
+    public void AutoMergeMany2Many2() =>
+        AssertStatement(Db.Query<Station>().Where(s => s.Operators!.Any(x => x.TenantOperatorId == "1234")).ToStatement(),
+            "SELECT t.`station_id`,t.`station_name` FROM `t_station` t LEFT JOIN (SELECT t2.`station_id` AS `__group_key1__`,(COUNT(?) > 0) AS `__any2__` FROM `t_tenant_operator` t1 INNER JOIN `t_station_tenant` t2 ON t1.`tenant_operator_id` = t2.`tenant_id` WHERE t1.`tenant_operator_id` = ? GROUP BY t2.`station_id`) t4 ON t4.`__group_key1__` = t.`station_id` WHERE IFNULL(t4.`__any2__`,?) = ?", "1(Integer),1234(String),false(Boolean),true(Boolean)");
+
+    // Java 的 MapKeyModeEnum.FIELD_NAME（Map 的键用属性名）：C# 的 Map 投影键是列名，要属性名作键时投影成 DTO
+    [Fact, Upstream("QueryTest27.java#selectAllMap", Deviation = "C# 的 Sql.Columns 以列名作键，不写 AS；没有按属性名作键的模式")]
+    public async Task SelectAllMap()
+    {
+        using var listen = SqlCapture.Listen();
+        var rows = await Db.Query<BlogEntity>().OrderBy(o => Sql.Random()).Select(b => new Dictionary<string, object?>(Sql.Columns(b))).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`id`,t.`create_time`,t.`update_time`,t.`create_by`,t.`update_by`,t.`deleted`,t.`title`,t.`content`,t.`url`,t.`star`,t.`publish_time`,t.`score`,t.`status`,t.`order`,t.`is_top`,t.`top` FROM `t_blog` t WHERE t.`deleted` = ? ORDER BY RAND() ASC");
+        Assert.All(rows, row => Assert.NotNull(row["create_time"]));
+    }
+
+    // Java 的 getTrackEntityStateNotNull(..).getEntityValueState("title").isChanged()：GetTrackedChanges 列出变化的属性
+    [Fact, Upstream("QueryTest27.java#testDiff")]
+    public void TestDiff()
+    {
+        using var tracking = Db.BeginTracking();
+        var topic = new Topic { Id = "123", Title = "456" };
+        Db.AddTracking(topic);
+        topic.Stars = 1;
+        topic.Title = "567";
+        Assert.Contains(nameof(Topic.Title), Db.GetTrackedChanges(topic));
+    }
+
+    [Fact, Upstream("QueryTest27.java#testDiff2")]
+    public void TestDiff2()
+    {
+        using var tracking = Db.BeginTracking();
+        var topic = new Topic { Id = "123", Title = "456" };
+        Db.AddTracking(topic);
+        topic.Stars = 1;
+        topic.Title = "456";
+        Assert.DoesNotContain(nameof(Topic.Title), Db.GetTrackedChanges(topic));
+        Assert.Contains(nameof(Topic.Stars), Db.GetTrackedChanges(topic));
+    }
 }

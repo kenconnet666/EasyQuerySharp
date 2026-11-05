@@ -13,20 +13,23 @@ internal sealed partial class TranslationContext
     /// 这个集合导航是否合并成分组 LEFT JOIN：第一个表来源上用 GroupJoin 声明的、导航上标了 GroupJoin 的、或开了 GroupJoinAll（GroupJoinIf(false) 可关闭）。
     /// 是的话返回（必要时创建）它的合并计划，派生表 JOIN 到所属表所在的查询。
     /// </summary>
-    public GroupJoinPlan? GroupJoinFor(SourceBinding owner, NavigationMetadata navigation, GroupJoinWindow? window = null)
+    public GroupJoinPlan? GroupJoinFor(SourceBinding owner, NavigationMetadata navigation, GroupJoinWindow? window = null, NavigationTableOptions options = default)
     {
         // 所属方可以是实体表，也可以是投影了整个实体的派生表（如 Part 的 Entity）
         if (owner.OwnerEntity is null) return null;
-        if (parent is not null && !Owns(owner.Table)) return parent.GroupJoinFor(owner, navigation, window);
+        if (parent is not null && !Owns(owner.Table)) return parent.GroupJoinFor(owner, navigation, window, options);
         var spec = GroupJoinSpecs.LastOrDefault(s => s.Member == navigation.Property.Name && s.OwnerType.IsAssignableFrom(navigation.Self.Type));
         if (spec is { Enabled: false } || (spec is null && !navigation.GroupJoin && !GroupJoinAll)) return null;
         // 同一导航上不同的取行方式各是一张派生表
-        var key = (owner.Table, navigation.Property.Name + "|" + window?.Key);
+        var key = (owner.Table, navigation.Property.Name + "|" + window?.Key + options.Key);
         if (_groupJoins.TryGetValue(key, out var existing)) return existing;
         var configured = spec?.Configure is { } configure && Db is not null
             ? configure(new Querying.QueryState(Db, [new Querying.EntitySource(navigation.Target.Type)]))
             : null;
-        var plan = window is null ? WholePlan(navigation, configured) : WindowedPlan(navigation, configured, window);
+        // 导航上的表配置与 GroupJoin(…, q => q.AsTable(..) / DisableLogicDelete()) 配的合在一起
+        options = new NavigationTableOptions(options.NoLogicDelete || configured?.DisableLogicDelete == true,
+            options.TableName ?? (configured?.Sources[0] as Querying.EntitySource)?.TableName);
+        var plan = window is null ? WholePlan(navigation, configured, options) : WindowedPlan(navigation, configured, window, options);
         plan.Required = navigation.Required;
         plan.MergeFilters = MergeGroupFilters;
         if (configured is not null) plan.ValueFilter = configured.ValueFilter;
@@ -44,9 +47,9 @@ internal sealed partial class TranslationContext
     }
 
     // 整个集合分组：FROM 目标表（多对多时 INNER JOIN 中间表）GROUP BY 关联键
-    private GroupJoinPlan WholePlan(NavigationMetadata navigation, Querying.QueryState? configured)
+    private GroupJoinPlan WholePlan(NavigationMetadata navigation, Querying.QueryState? configured, NavigationTableOptions options)
     {
-        var element = new EntityTableSource(navigation.Target);
+        var element = new EntityTableSource(navigation.Target) { TableNameOverride = options.TableName };
         var inner = new SelectQuery(element);
         var groupKeys = navigation.Mapping is { } mapping
             ? navigation.SelfMappingColumns.Select(JoinMapping(inner, element, navigation, mapping).Column).ToList()
@@ -54,7 +57,7 @@ internal sealed partial class TranslationContext
         var plan = new GroupJoinPlan(inner, new EntityBinding(element), groupKeys);
         // 配置里再声明的 GroupJoin（嵌套导航）只在这个分组子查询里生效
         plan.InnerContext = ForSubQuery(plan.Inner, configured?.GroupJoins);
-        foreach (var filter in TargetFilters(navigation, configured, element, plan.InnerContext)) plan.AddBaseWhere(filter);
+        foreach (var filter in TargetFilters(navigation, configured, element, plan.InnerContext, options)) plan.AddBaseWhere(filter);
         return plan;
     }
 
@@ -75,13 +78,13 @@ internal sealed partial class TranslationContext
     /// <c>FROM (SELECT t2.列 AS 列,…,t2.__row__ AS __row__ FROM (SELECT t1.列 AS 列,…,(ROW_NUMBER() OVER (PARTITION BY 外键 ORDER BY …)) AS __row__
     /// FROM 目标 t1 WHERE …) t2 WHERE t2.__row__ &gt;= ? AND t2.__row__ &lt;= ?) t3</c>。
     /// </summary>
-    private GroupJoinPlan WindowedPlan(NavigationMetadata navigation, Querying.QueryState? configured, GroupJoinWindow window)
+    private GroupJoinPlan WindowedPlan(NavigationMetadata navigation, Querying.QueryState? configured, GroupJoinWindow window, NavigationTableOptions options)
     {
         if (navigation.Mapping is not null) throw new NotSupportedException($"{navigation} 是多对多导航，分组合并时不支持先取一段行");
-        var element = new EntityTableSource(navigation.Target);
+        var element = new EntityTableSource(navigation.Target) { TableNameOverride = options.TableName };
         var numbered = new SelectQuery(element);
         var context = ForSubQuery(numbered);
-        numbered.Where.AddRange(TargetFilters(navigation, configured, element, context));
+        numbered.Where.AddRange(TargetFilters(navigation, configured, element, context, options));
         var translator = new ExpressionTranslator([]) { Context = context };
         var binding = new EntityBinding(element);
         foreach (var filter in window.Filters)
@@ -122,9 +125,10 @@ internal sealed partial class TranslationContext
     }
 
     // 目标表自带的过滤（逻辑删除、拦截器）、导航的固定条件、GroupJoin(…, q => q.Where(…)) 加的条件
-    private List<SqlExpr> TargetFilters(NavigationMetadata navigation, Querying.QueryState? configured, EntityTableSource element, TranslationContext context)
+    private List<SqlExpr> TargetFilters(NavigationMetadata navigation, Querying.QueryState? configured, EntityTableSource element, TranslationContext context,
+        NavigationTableOptions options)
     {
-        var filters = TableFilters(element).ToList();
+        var filters = TableFilters(element, !options.NoLogicDelete).ToList();
         if (navigation.ExtraFilter is { } extraFilter) filters.Add(context.PredicateOn(extraFilter, element));
         if (configured is null) return filters;
         var translator = new ExpressionTranslator([]) { Context = context };

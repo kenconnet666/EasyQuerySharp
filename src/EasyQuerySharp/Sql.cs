@@ -164,6 +164,24 @@ public static partial class Sql
     /// </summary>
     public static IEnumerable<T> DisableLogicDelete<T>(this IEnumerable<T> navigation) => throw OnlyInQuery();
 
+    /// <summary>
+    /// 这个对一导航的隐式 JOIN 不带逻辑删除条件（对应 Java 的 nav().configure(r -> r.disableLogicDelete())）：
+    /// <c>.Where(u => Sql.DisableLogicDelete(u.MyBlog)!.Star == 1)</c>。同一导航带不同配置时各自 JOIN 一次。
+    /// </summary>
+    public static T DisableLogicDelete<T>(T navigation) where T : class? => throw OnlyInQuery();
+
+    /// <summary>
+    /// 这个集合导航的隐式子查询（或分组合并）改用表 <paramref name="tableName"/>（对应 Java 的 nav().configure(r -> r.asTable(..))）：
+    /// <c>.Where(u => u.Blogs!.AsTable("t_blog_2024").Any(b => b.Star == 1))</c>。
+    /// </summary>
+    public static IEnumerable<T> AsTable<T>(this IEnumerable<T> navigation, string tableName) => throw OnlyInQuery();
+
+    /// <summary>
+    /// 这个对一导航的隐式 JOIN 改用表 <paramref name="tableName"/>：<c>.Where(u => Sql.AsTable(u.MyBlog, "t_blog_2024")!.Star == 1)</c>。
+    /// 同一导航带不同配置时各自 JOIN 一次。
+    /// </summary>
+    public static T AsTable<T>(T navigation, string tableName) where T : class? => throw OnlyInQuery();
+
     // ---------- Map 投影 ----------
 
     /// <summary>

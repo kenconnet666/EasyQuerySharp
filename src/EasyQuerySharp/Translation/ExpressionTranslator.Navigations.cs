@@ -14,13 +14,32 @@ internal sealed partial class ExpressionTranslator
     /// <summary>所属表上名为 <paramref name="member"/> 的导航；不是导航时返回 null（投影编译器识别带出时用）。</summary>
     internal NavigationMetadata? FindNavigation(EntityBinding owner, string member) => Navigation(owner, member);
 
+    /// <summary>
+    /// 剥掉导航外面的配置标记（<see cref="Sql.DisableLogicDelete{T}(T)"/>、<see cref="Sql.AsTable{T}(T, string)"/> 及集合上的同名扩展），
+    /// 返回导航本身的表达式；没有标记时原样返回、<paramref name="options"/> 为默认值。
+    /// </summary>
+    private static Expression StripNavigationOptions(Expression e, out NavigationTableOptions options)
+    {
+        options = default;
+        while (StripConvert(e) is MethodCallExpression { Method.Name: nameof(Sql.DisableLogicDelete) or nameof(Sql.AsTable) } call && call.Method.DeclaringType == typeof(Sql))
+        {
+            options = call.Method.Name == nameof(Sql.DisableLogicDelete)
+                ? options with { NoLogicDelete = true }
+                // 外层的标记先剥到，内层的同类标记不覆盖它
+                : options with { TableName = options.TableName ?? ClientEvaluator.Evaluate(call.Arguments[1]) as string };
+            e = call.Arguments[0];
+        }
+        return e;
+    }
+
     /// <summary>对一导航 <c>x.User</c>：返回隐式 JOIN 的目标表绑定；不是对一导航时返回 null。</summary>
-    private EntityBinding? ToOneNavigation(MemberExpression m)
+    private EntityBinding? ToOneNavigation(MemberExpression m, NavigationTableOptions options = default)
     {
         // 起点可以是实体表，也可以是整行实体的派生表（如集合导航的 First() 行）
         if (m.Expression is null || BindingOf(m.Expression) is not { OwnerEntity: { } entity } owner) return null;
         if (Context?.Metadata.FindNavigation(entity, m.Member.Name) is not { IsCollection: false } nav) return null;
-        if (nav.DirectPath.Count == 0) return Context!.JoinFor(owner, nav);
+        if (nav.DirectPath.Count == 0) return Context!.JoinFor(owner, nav, options);
+        if (options != default) throw Unsupported(m, $"直达导航 {nav} 不支持 Sql.DisableLogicDelete / Sql.AsTable");
         // 直达导航：沿路径逐级 JOIN（与手写 x.A.B 共用同一组 JOIN）
         var current = Context!.JoinFor(owner, Context.Metadata.FindNavigation(entity, nav.DirectPath[0]) is { IsCollection: false } first
             ? first : throw Unsupported(m, $"直达路径 {nav} 上的 {nav.DirectPath[0]} 必须是对一导航"));
@@ -56,17 +75,12 @@ internal sealed partial class ExpressionTranslator
             chain.Add(mc);
             current = mc.Arguments[0];
         }
-        var logicDelete = true;
-        if (current is MethodCallExpression { Method.Name: nameof(Sql.DisableLogicDelete) } disable && disable.Method.DeclaringType == typeof(Sql))
-        {
-            logicDelete = false;
-            current = disable.Arguments[0];
-        }
+        current = StripNavigationOptions(current, out var options);
         if (CollectionNavigation(current) is not var (owner, nav)) return false;
         chain.Reverse();
 
         // 声明了分组合并的导航：聚合登记到合并的派生表上
-        if (Context?.GroupJoinFor(owner, nav, WindowOf(chain, out var rest)) is { } plan)
+        if (Context?.GroupJoinFor(owner, nav, WindowOf(chain, out var rest), options) is { } plan)
         {
             result = TranslateGroupJoin(plan, rest, negated);
             return true;
@@ -74,7 +88,7 @@ internal sealed partial class ExpressionTranslator
         // 取反只在分组合并时特殊处理（!Any → None 列），其余照常翻译后取反
         if (negated) return false;
 
-        var scope = NewCollectionSubQuery(owner, nav, logicDelete);
+        var scope = NewCollectionSubQuery(owner, nav, options);
         foreach (var op in chain.Take(chain.Count - 1)) scope.Apply(op);
 
         var terminal = chain[^1];
@@ -157,16 +171,17 @@ internal sealed partial class ExpressionTranslator
             chain.Add(mc);
             current = StripConvert(mc.Arguments[0]);
         }
+        current = StripNavigationOptions(current, out var options);
         if (chain.Count == 0 || CollectionNavigation(current) is not var (owner, nav)) return false;
         chain.Reverse();
         var separator = Translate(call.Arguments[0]);
 
-        if (Context?.GroupJoinFor(owner, nav, WindowOf(chain, out var rest)) is { } plan)
+        if (Context?.GroupJoinFor(owner, nav, WindowOf(chain, out var rest), options) is { } plan)
         {
             result = TranslateGroupJoin(plan, rest, negated: false, separator);
             return true;
         }
-        var scope = NewCollectionSubQuery(owner, nav);
+        var scope = NewCollectionSubQuery(owner, nav, options);
         foreach (var op in chain) scope.Apply(op);
         if (scope.Selector is not { } selector) throw Unsupported(call, "string.Join 需要先 Select 出字符串");
         scope.Translator.Bind(selector, [scope.Element]);
@@ -190,15 +205,15 @@ internal sealed partial class ExpressionTranslator
     /// 集合导航的子查询骨架：目标表自带的过滤条件、与所属行的关联条件、导航的固定条件。
     /// 一对多关联写成 <c>目标.外键 = 所属.键</c>；多对多经中间表写成 EXISTS。
     /// </summary>
-    private CollectionSubQuery NewCollectionSubQuery(SourceBinding owner, NavigationMetadata nav, bool logicDelete = true)
+    private CollectionSubQuery NewCollectionSubQuery(SourceBinding owner, NavigationMetadata nav, NavigationTableOptions options = default)
     {
-        var table = new EntityTableSource(nav.Target);
+        var table = new EntityTableSource(nav.Target) { TableNameOverride = options.TableName };
         var sub = new SelectQuery(table);
         var context = Context!.ForSubQuery(sub);
         var translator = new ExpressionTranslator(new Dictionary<ParameterExpression, SourceBinding>(_scope)) { Context = context };
         var element = new EntityBinding(table);
 
-        sub.Where.AddRange(context.TableFilters(table, logicDelete));
+        sub.Where.AddRange(context.TableFilters(table, !options.NoLogicDelete));
         // 关联条件与导航的固定条件合成一组 (关联 AND 固定条件)（与 Java 一致）；没有固定条件时不加括号
         var relation = new List<SqlExpr>();
         if (nav.Mapping is { } mapping)

@@ -39,7 +39,7 @@
 
 | 能力 | key | 用例数 | C# 写法 | M |
 |---|---|---|---|---|
-| 隐式子查询 any / none / count / sum … | `nav.subquery` | 142 | `u.Posts.Any(p => ..)` / `!u.Posts.Any(..)` / `u.Posts.Count(..)` / `u.Posts.Sum(p => p.Amount)` / `u.Posts.Where(..).Max(..)`；导航上的固定条件 `[Navigate(.., ExtraFilter = nameof(静态属性), ExtraMappingFilter = ..)]`（属性每次查询重新取值，返回 null 即不加），子查询里写成 `(关联 AND 固定条件)`；`u.Posts.DisableLogicDelete().Any(..)` 关闭这个子查询的逻辑删除 | M4 |
+| 隐式子查询 any / none / count / sum … | `nav.subquery` | 142 | `u.Posts.Any(p => ..)` / `!u.Posts.Any(..)` / `u.Posts.Count(..)` / `u.Posts.Sum(p => p.Amount)` / `u.Posts.Where(..).Max(..)`；导航上的固定条件 `[Navigate(.., ExtraFilter = nameof(静态属性), ExtraMappingFilter = ..)]`（属性每次查询重新取值，返回 null 即不加），子查询里写成 `(关联 AND 固定条件)`；`u.Posts.DisableLogicDelete().Any(..)` 关闭这个子查询的逻辑删除、`u.Posts.AsTable("t_post_2024").Any(..)` 换表（分组合并时同样生效）；对一导航写成 `Sql.DisableLogicDelete(p.Author)` / `Sql.AsTable(p.Author, ..)`（对应 nav().configure(..)，同一导航不同配置各 JOIN 一次） | M4 |
 | 子查询改成分组 join | `nav.groupJoin` | 67 | `Query.GroupJoin(u => u.Posts, q => …)` 或导航上 `[Navigate(GroupJoin = true)]`；`GroupJoinAll()` 对应 ALL_SUB_QUERY_GROUP_JOIN。同一导航上的多个聚合共用一次分组 join，各聚合共有的条件提到派生表的 WHERE（`GroupJoinNoMerge()` 关闭）；多对多、嵌套（`q => q.GroupJoin(r => r.Menus)`）、Required 导航（INNER JOIN、不包 IFNULL）；主查询里对所属表关联列的等值 / IN 条件（或全由它们组成的 OR）下推进分组子查询 | M4 |
 | 一对多展开 flatElement / elements | `nav.flat` | 56 | `flatElement()` 写成 `Any(..)`；`elements(i, j)` 写成 `OrderBy(..).Skip(i).Take(j - i + 1)`：聚合时 ORDER BY / LIMIT 留在子查询里，之后再加条件或 `Any` 时先把这段行包成派生表；分组合并（`GroupJoin`）时按 `ROW_NUMBER()` 编组内行号再取段，同样取法的聚合合并到同一张派生表。取第 i 个元素用 `ElementAt(i)` / `First()`（多对多经中间表编号）；链上没写排序时按导航的 `PartitionOrder`：主键（默认）、`None`（Java 的 IGNORE）、`Navigation`（按 `[Navigate(OrderBy = "OpenTime, Code desc nulls first")]`，Java 的 orderByProps + NAVIGATE） | M4 |
 | include | `nav.include` | 37 | `.Include(o => o.Lines, q => q.Where(..).Include(l => l.Product))` | M4 |
@@ -57,7 +57,7 @@
 | upsert | `write.upsert` | 13 | `.OnConflict(u => u.Id).Merge(u => new { u.Name })` / `.Ignore()`，按方言渲染成 `ON DUPLICATE KEY` / `ON CONFLICT` / `MERGE` | M5 |
 | 写哪些列、批量执行 | `write.strategy` | 19 | `.Columns(ColumnStrategy.NotNull)`；`.Batch()` 用驱动的批处理（`DbBatch`） | M5 |
 | UPDATE / DELETE 里用导航 | `write.join` | 10 | `db.Update<Card>().Set(c => new Card { Type = c.User!.Name }).Where(c => c.User!.Name!.Contains("x"))`：SET 或条件里的对一导航生成 INNER JOIN（先翻译 SET 再翻译条件，别名按出现顺序）。MySQL：`UPDATE t INNER JOIN … SET` / `DELETE t FROM … JOIN`；PostgreSQL：`UPDATE … SET … FROM … WHERE` / `DELETE FROM … USING`；其余方言暂时抛出 NotSupportedException | M5 |
-| 追踪与差异更新 | `tracking` | 62 | `q.AsTracking()` 加 `db.Update(entity)` 只更新改过的列；不追踪时用 `db.Update<T>().Changes(before, after)` | M5 |
+| 追踪与差异更新 | `tracking` | 62 | `q.AsTracking()` 加 `db.Update(entity)` 只更新改过的列；不追踪时用 `db.Update<T>().Changes(before, after)`；`db.GetTrackedChanges(entity)` 列出被追踪实体变了的属性 | M5 |
 | 聚合根保存 | `save.aggregate` | 39 | `db.Save(root).Cascade(o => o.Lines).ExecuteAsync()` | M5 |
 
 ## 列规则与扩展

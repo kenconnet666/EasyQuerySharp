@@ -131,6 +131,17 @@ public sealed class EasyDb
         return Tracker.Add(entity);
     }
 
+    /// <summary>
+    /// 被追踪的实体自追踪（或上次写入成功）以来值变了的属性（主键除外），按列顺序返回
+    /// （对应 Java 的 getTrackEntityStateNotNull(e).getEntityValueState(属性).isChanged()）；没有被追踪时抛出 <see cref="InvalidOperationException"/>。
+    /// </summary>
+    public IReadOnlyList<string> GetTrackedChanges(object entity)
+    {
+        ArgumentNullException.ThrowIfNull(entity);
+        var entry = Tracker.Find(entity) ?? throw new InvalidOperationException($"{entity.GetType().Name} 没有被追踪，先 BeginTracking() 并 AddTracking(..)");
+        return entry.ChangedColumns().Select(c => c.PropertyName).ToList();
+    }
+
     /// <summary>不再追踪这个实体；不在作用域里或本就没追踪时返回 false。</summary>
     public bool RemoveTracking(object entity)
     {

@@ -68,15 +68,15 @@ internal sealed partial class TranslationContext(
     /// 对一导航的隐式 JOIN：同一个来源上的同一个导航只连一次。ON 里先写目标表自带的过滤条件，再写 <c>目标键 = 本表键</c>（与 Java 版一致）；
     /// <see cref="NavigationMetadata.Required"/> 时用 INNER JOIN，否则 LEFT JOIN。
     /// </summary>
-    public EntityBinding JoinFor(SourceBinding owner, NavigationMetadata navigation)
+    public EntityBinding JoinFor(SourceBinding owner, NavigationMetadata navigation, NavigationTableOptions options = default)
     {
         // 所属表在外层查询里（子查询引用外层的导航）：JOIN 加到外层（与 Java 一致）
-        if (parent is not null && !Owns(owner.Table)) return parent.JoinFor(owner, navigation);
-        var key = (owner.Table, navigation.Property.Name);
+        if (parent is not null && !Owns(owner.Table)) return parent.JoinFor(owner, navigation, options);
+        var key = (owner.Table, navigation.Property.Name + options.Key);
         if (_joins.TryGetValue(key, out var existing)) return existing;
 
-        var target = new EntityTableSource(navigation.Target);
-        var conditions = new List<SqlExpr>(TableFilters(target));
+        var target = new EntityTableSource(navigation.Target) { TableNameOverride = options.TableName };
+        var conditions = new List<SqlExpr>(TableFilters(target, !options.NoLogicDelete));
         var keys = navigation.SelfColumns
             .Select((self, i) => (SqlExpr)new BinaryExpr(target.Column(navigation.TargetColumns[i]), SqlBinaryOperator.Equal, owner.OwnerColumn(self)))
             .ToList();
@@ -99,4 +99,14 @@ internal sealed partial class TranslationContext(
 
     // 表来源是不是本查询的 FROM / JOIN（含已加上的隐式 JOIN）
     private bool Owns(TableSource table) => query.From == table || query.Joins.Any(j => j.Table == table);
+}
+
+/// <summary>
+/// 导航上的表配置（<see cref="Sql.DisableLogicDelete{T}(T)"/>、<see cref="Sql.AsTable{T}(T, string)"/>，对应 Java 的 nav().configure(..)）；
+/// 默认值表示没有配置。
+/// </summary>
+internal readonly record struct NavigationTableOptions(bool NoLogicDelete, string? TableName)
+{
+    /// <summary>区分同一导航不同配置的缓存键后缀；没有配置时为空串。</summary>
+    public string Key => this == default ? "" : $"|{NoLogicDelete}|{TableName}";
 }

@@ -172,7 +172,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 覆盖能力：`write.upsert` 13、`write.strategy` 19、`write.join` 10、`tracking` 62、`save.aggregate` 39、`interceptor` 3、`logicDelete` 10、`version` 13、`column.encryption` 8、`column.converter`，加上 fork 的 insert-select 和 JSON 列。
 
 - [x] 5.1 拦截器：`QueryFilter<T>`、`EntityInterceptor<T>`（含按条件更新追加 SET）；默认关闭、按名启用 / 关闭。内置多租户、自动填充不做成库功能，用这两个基类几行即可写出（见 InterceptorTest）。
-- [x] 5.2 逻辑删除：布尔、删除时间与自定义策略（`ILogicDeleteStrategy`）；可以按导航单独关闭（`u.Posts.DisableLogicDelete().Any(..)`）；`.Hard()`。
+- [x] 5.2 逻辑删除：布尔、删除时间与自定义策略（`ILogicDeleteStrategy`）；可以按导航单独关闭（`u.Posts.DisableLogicDelete().Any(..)`、对一导航 `Sql.DisableLogicDelete(p.Author)`），导航也可换表（`AsTable`）；`.Hard()`。
 - [x] 5.3 乐观锁 `[Version]`：`WithVersion` / `IgnoreVersion`，按实体写入成功后写回新版本；冲突检测用 `ExecuteAsync(expectedRows)` 抛 `ConcurrencyException`。
 - [~] 5.4 值转换器、枚举存储方式、值对象 `[ValueObject]`、JSON 列（`JsonValueConverter<T>` 已完成）。
 - [~] 5.5 列加密：与 Java 的 AES / SM4 密文兼容，支持分段 LIKE（`[Encryption]` 与 AES 策略已完成；SM4 待做）。
