@@ -38,7 +38,8 @@ public sealed class SqlConversionTest(MySqlFixture fixture) : MySqlTest(fixture)
 
         var read = await Db.Query<SysUserSQLEncryption>().WhereById("12345").FirstAsync(Ct);
         Assert.Equal(("12345", "username", "13232456789", "12345678", "xxxxxxx"), (read.Id, read.Username, read.Phone, read.IdCard, read.Address));
-        Assert.Equal(user.CreateTime!.Value.ToString("yyyyMMddHHmm"), read.CreateTime!.Value.ToString("yyyyMMddHHmm"));
+        // DATETIME 存到秒（MySQL 四舍五入小数秒），按分钟比较在整分附近会跨分钟，改为允许 1 秒误差
+        Assert.InRange((read.CreateTime!.Value - user.CreateTime!.Value).Duration(), TimeSpan.Zero, TimeSpan.FromSeconds(1));
 
         read.Phone = "111123456";
         Assert.Equal(1, await Db.Update(read).ExecuteAsync(Ct));
