@@ -211,4 +211,15 @@ public sealed class PgQueryTest19Queries(PgFixture fixture) : PgTest(fixture)
             })
             .ToListAsync(Ct);
     }
+
+    // 按标题一对多带出用户；全部集合导航合并成分组 JOIN 后的计数、任一、带条件的任一
+    [Fact, Upstream("pgsql/QueryTest19.java#test")]
+    public async Task Test()
+    {
+        var blog = await Db.Query<BlogEntity>().Include(b => b.Users).Where(b => b.Title == "title0").SingleAsync(Ct);
+        Assert.Single(blog!.Users!);
+        Assert.Single(await Db.Query<BlogEntity>().GroupJoinAll().Where(b => b.Users!.LongCount() > 0).ToListAsync(Ct));
+        Assert.Single(await Db.Query<BlogEntity>().GroupJoinAll().Where(b => b.Users!.Any()).ToListAsync(Ct));
+        Assert.Single(await Db.Query<BlogEntity>().GroupJoinAll().Where(b => b.Users!.Where(s => !string.IsNullOrWhiteSpace(s.Id)).Any()).ToListAsync(Ct));
+    }
 }

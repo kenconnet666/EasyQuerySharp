@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1668、偏离 205、不适用 77、骨架 6、待做 448。
+合计：已移植 1669、偏离 205、不适用 77、骨架 6、待做 447。
 
 ## 按能力
 
@@ -36,7 +36,7 @@
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 23 | 25 | 3 | 0 | 5 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 60 | 1 | 2 | 2 | 2 |
-| include 带出导航 | `nav.include` | M4 | 37 | 33 | 2 | 0 | 0 | 2 |
+| include 带出导航 | `nav.include` | M4 | 37 | 34 | 2 | 0 | 0 | 1 |
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 133 | 3 | 1 | 0 | 5 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 23 | 2 | 0 | 0 | 0 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
@@ -1701,7 +1701,7 @@
 | mysql8/MySQL8Test4.java#testIncludeIdOnly1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:280 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
 | mysql8/MySQL8Test4.java#testIncludeIdOnly2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:291 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
 | mysql8/MySQL8Test5.java#selectJoinInclude | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:164 |  |
-| pgsql/QueryTest19.java#test | 待做 |  |  |
+| pgsql/QueryTest19.java#test | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:216 |  |
 | pgsql/QueryTest19.java#testAll | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:114 | `SELECT t."id",t."name",t."phone",t."age" FROM "doc_user" t WHERE NOT (EXISTS(SELECT 1 FROM "doc_bank…` |
 | pgsql/QueryTest19.java#testAll1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:127 | `SELECT t."id",t."name",t."phone",t."age" FROM "doc_user" t WHERE NOT (EXISTS(SELECT 1 FROM "doc_bank…` |
 | pgsql/QueryTest19.java#testAll2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:140 | `SELECT t."id",t."name",t."phone",t."age" FROM "doc_user" t WHERE NOT (EXISTS(SELECT 1 FROM "doc_bank…` |

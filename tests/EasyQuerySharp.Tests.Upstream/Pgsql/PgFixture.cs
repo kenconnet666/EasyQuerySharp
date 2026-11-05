@@ -14,7 +14,7 @@ public sealed class PgFixture : IAsyncLifetime
     /// <summary>Java 用例使用的库名。</summary>
     public const string Database = "easy-query-test";
 
-    private static readonly Type[] Tables = [typeof(BlogEntity), typeof(DocBank), typeof(DocBankCard), typeof(DocUser), typeof(MyCategory)];
+    private static readonly Type[] Tables = [typeof(BlogEntity), typeof(DocBank), typeof(DocBankCard), typeof(DocUser), typeof(MyCategory), typeof(SysUser)];
 
     private EasyDb? _db;
     private string? _skipReason;
@@ -47,6 +47,8 @@ public sealed class PgFixture : IAsyncLifetime
 
         _db = new EasyDb(o => o.UsePostgreSql(NpgsqlDataSource.Create(TestDatabases.PostgreSql.TryConnectionString(Database)!)).AddListener(SqlCapture.Instance)
             .AddInterceptor(new MyCategoryInterceptor()));
+        // SysUser 的表在 easy-query-test schema 下（Java 的 code-first 一并建 schema）
+        await _db.ExecuteSqlAsync("CREATE SCHEMA IF NOT EXISTS \"easy-query-test\"");
         await _db.CodeFirst.CreateTablesAsync(Tables);
         await SeedAsync(_db);
     }
@@ -103,6 +105,8 @@ public sealed class PgFixture : IAsyncLifetime
             new MyCategory { Id = "5", ParentId = "3", Name = "节点5" },
             new MyCategory { Id = "6", ParentId = "3", Name = "节点6" },
         }).ExecuteAsync();
+        // 与 Java 一致只有 id 的用户，对应标题为 title0 的博客（BlogEntity.Users 按 title 关联）
+        await db.Insert(new SysUser { Id = "title0" }).ExecuteAsync();
     }
 }
 
