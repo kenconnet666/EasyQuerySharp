@@ -22,30 +22,45 @@ internal static class AutoProjection
             var parameter = Expression.Parameter(source.Type, "o");
             return Expression.Lambda(Expression.Call(typeof(Sql).GetMethod(nameof(Sql.Columns))!.MakeGenericMethod(source.Type), parameter), parameter);
         }
-        return Build(null, source, target, excluded, []);
+        return Build(null, source, target, excluded, [], root: true);
     }
 
     /// <summary>按结构带出导航的自动映射（selectAutoInclude）：嵌套 DTO 沿同名导航递归映射；DTO 引用自身的集合（树）留给 ToTreeAsync 拼。</summary>
-    public static LambdaExpression BuildWithIncludes(MetadataRegistry registry, EntityMetadata source, Type target) => Build(registry, source, target, null, []);
+    public static LambdaExpression BuildWithIncludes(MetadataRegistry registry, EntityMetadata source, Type target) => Build(registry, source, target, null, [], root: true);
 
-    // registry 为 null 时只映射列
-    private static LambdaExpression Build(MetadataRegistry? registry, EntityMetadata source, Type target, IReadOnlySet<string>? excluded, HashSet<Type> visiting)
+    // registry 为 null 时只映射列。[MapExpression] 的列与 Java 一致：根查询放最前面（Java 先应用额外的 select），带出查询放最后面
+    private static LambdaExpression Build(MetadataRegistry? registry, EntityMetadata source, Type target, IReadOnlySet<string>? excluded, HashSet<Type> visiting, bool root)
     {
         var parameter = Expression.Parameter(source.Type, "o");
         var bindings = new List<MemberBinding>();
+        var expressions = new List<MemberBinding>();
         visiting.Add(target);
         foreach (var property in MetadataRegistry.OrderedProperties(target))
         {
             if (property.SetMethod is not { IsPublic: true } || property.IsDefined(typeof(ColumnIgnoreAttribute), inherit: true)) continue;
             if (excluded?.Contains(property.Name) == true) continue;
-            var value = registry is null ? ColumnValue(source, parameter, property) : Value(registry, source, parameter, property, visiting);
+            var mapped = registry is null ? null : MappedExpression(source, parameter, property);
+            var value = mapped ?? (registry is null ? ColumnValue(source, parameter, property) : Value(registry, source, parameter, property, visiting));
             if (value is null) continue;
             if (value.Type != property.PropertyType) value = Expression.Convert(value, property.PropertyType);
-            bindings.Add(Expression.Bind(property, value));
+            (mapped is null ? bindings : expressions).Add(Expression.Bind(property, value));
         }
         visiting.Remove(target);
+        bindings = root ? [.. expressions, .. bindings] : [.. bindings, .. expressions];
         if (bindings.Count == 0) throw new InvalidOperationException($"{target.Name} 没有与 {source.Type.Name} 同名的属性，无法自动映射");
         return Expression.Lambda(Expression.MemberInit(Expression.New(target), bindings), parameter);
+    }
+
+    // [MapExpression(nameof(静态成员))]：成员是 Expression<Func<源实体, 值>>，参数换成当前行
+    private static Expression? MappedExpression(EntityMetadata source, ParameterExpression row, PropertyInfo property)
+    {
+        if (property.GetCustomAttribute<MapExpressionAttribute>() is not { } attribute) return null;
+        const BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
+        var dto = property.DeclaringType!;
+        var value = dto.GetProperty(attribute.ExpressionMember, flags)?.GetValue(null) ?? dto.GetField(attribute.ExpressionMember, flags)?.GetValue(null);
+        if (value is not LambdaExpression { Parameters: [{ } parameter] } lambda || !parameter.Type.IsAssignableFrom(source.Type))
+            throw new InvalidOperationException($"{dto.Name}.{property.Name} 的 MapExpression 需要静态成员 {attribute.ExpressionMember}，类型是 Expression<Func<{source.Type.Name}, …>>");
+        return new Translation.ExpressionTranslator.ParameterReplacer(parameter, row).Visit(lambda.Body);
     }
 
     // 同名的列
@@ -68,13 +83,13 @@ internal static class AutoProjection
             // 属性就是实体本身：整个对象带出；否则映射成嵌套 DTO
             if (property.PropertyType.IsAssignableFrom(nav.Target.Type)) return navValue;
             if (visiting.Contains(property.PropertyType)) return null;
-            return Include(nameof(AutoIncludeMarkers.One), nav, navValue, property.PropertyType, Build(registry, nav.Target, property.PropertyType, null, visiting));
+            return Include(nameof(AutoIncludeMarkers.One), nav, navValue, property.PropertyType, Build(registry, nav.Target, property.PropertyType, null, visiting, root: false));
         }
         var element = MetadataRegistry.ElementType(property.PropertyType);
         if (element == property.PropertyType || ScalarTypes.IsScalar(element)) return null;
         // 引用自身的集合（树形 DTO）：不展开，拼树时再挂
         if (visiting.Contains(element)) return null;
-        var selector = element.IsAssignableFrom(nav.Target.Type) ? null : Build(registry, nav.Target, element, null, visiting);
+        var selector = element.IsAssignableFrom(nav.Target.Type) ? null : Build(registry, nav.Target, element, null, visiting, root: false);
         return Include(nameof(AutoIncludeMarkers.Many), nav, navValue, element, selector);
     }
 
@@ -88,7 +103,7 @@ internal static class AutoProjection
     }
 
     // DTO 实现了 IAutoIncludeConfigure<目标实体> 时，把它的 Configure 包成对查询状态的配置
-    private static Func<QueryState, QueryState>? ConfigureOf(Type dto, Type entity)
+    public static Func<QueryState, QueryState>? ConfigureOf(Type dto, Type entity)
     {
         var contract = typeof(IAutoIncludeConfigure<>).MakeGenericType(entity);
         if (!contract.IsAssignableFrom(dto)) return null;

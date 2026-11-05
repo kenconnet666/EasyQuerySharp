@@ -86,3 +86,31 @@ public class MyCategoryVO4
     [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(ParentId)])]
     public List<MyCategoryVO4>? Children { get; set; }
 }
+
+/// <summary>对应 Java：entity/vo/MyCategoryVO2（分类树的 DTO）。</summary>
+public class MyCategoryVO2
+{
+    public string? Id { get; set; }
+
+    public string? ParentId { get; set; }
+
+    public string? Name { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(ParentId)])]
+    public List<MyCategoryVO2>? Children { get; set; }
+}
+
+/// <summary>对应 Java：entity/vo/MyCategoryVO3（多一个层级属性 Deep，层级列叫 deep 时才有值）。</summary>
+public class MyCategoryVO3
+{
+    public string? Id { get; set; }
+
+    public string? ParentId { get; set; }
+
+    public string? Name { get; set; }
+
+    public long? Deep { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(ParentId)])]
+    public List<MyCategoryVO3>? Children { get; set; }
+}

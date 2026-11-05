@@ -470,3 +470,60 @@ public class TreeC : ICteView<TreeC>
     public static Query<TreeC> View(EasyDb db) => db.Query<TreeA>().LeftJoin<TreeB>((a, b) => a.Id == b.Aid)
         .Select((a, b) => new TreeC { Id = a.Id, Name = a.Name, Pid = b.Apid });
 }
+
+/// <summary>对应 Java：mysql8/dto/MyComment（评论树投影成 DTO：DTO 上声明指向自身的导航，层级列同名时带上层级）。</summary>
+public class MyComment
+{
+    public string? Id { get; set; }
+
+    public string? ParentId { get; set; }
+
+    public string? Content { get; set; }
+
+    public string? UserId { get; set; }
+
+    public string? PostId { get; set; }
+
+    public DateTime? CreateAt { get; set; }
+
+    public long? Deep { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(ParentId)])]
+    public List<MyComment>? Children { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/dto/MyComment3（DTO 上没有声明导航：按源实体的 Children 导航与同名属性拼树）。</summary>
+public class MyComment3
+{
+    public string? Id { get; set; }
+
+    public string? ParentId { get; set; }
+
+    public string? Content { get; set; }
+
+    public string? UserId { get; set; }
+
+    public string? PostId { get; set; }
+
+    public DateTime? CreateAt { get; set; }
+
+    public long? Deep { get; set; }
+
+    public List<MyComment3>? Children { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/dto/MyComment4（缺上级键 ParentId，拼不成树）。</summary>
+public class MyComment4
+{
+    public string? Id { get; set; }
+
+    public string? Content { get; set; }
+
+    public string? UserId { get; set; }
+
+    public string? PostId { get; set; }
+
+    public DateTime? CreateAt { get; set; }
+
+    public List<MyComment4>? Children { get; set; }
+}

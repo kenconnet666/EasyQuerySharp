@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Linq.Expressions;
+using System.Reflection;
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.Rendering;
 
@@ -77,28 +78,66 @@ public sealed partial class Query<T>
     /// </summary>
     public async Task<List<T>> ToTreeAsync(CancellationToken cancellationToken = default)
     {
-        var entity = Db.Metadata.Get<T>();
-        var nav = TreeNavigation(Db.Metadata, entity)
-                  ?? throw new InvalidOperationException($"{typeof(T).Name} 上没有指向自身的集合导航（如 List<{typeof(T).Name}> Children），无法拼成树");
-        if (State.Sources is [TreeCteSource tree, ..])
+        var tree = State.Sources[0] as TreeCteSource;
+        var shape = TreeShapeOf(tree);
+        if (tree is null)
         {
-            var compiled = QueryCompiler.Compile<T>(State with { AppendTreeDeep = true });
-            var statement = SqlRenderer.Render(Db.Options.Dialect, compiled.Sql);
-            var deepOrdinal = compiled.Sql.Columns.Count - 1;
-            var rows = await Db.Executor.QueryAsync(statement,
-                r => (Row: compiled.Shaper(r), Deep: Convert.ToInt64(r.GetValue(deepOrdinal), System.Globalization.CultureInfo.InvariantCulture)), cancellationToken).ConfigureAwait(false);
-            // 投影成 DTO 时按 DTO 上指向自身的导航取键；直接取实体时按树查询的键列
-            var (self, parent) = State.HasSelector ? (nav.SelfColumns, nav.TargetColumns) : (tree.SelfColumns, tree.ParentColumns);
-            var nodes = rows.Select(x => new TreeNode(x.Row!, Key(self, x.Row!), Key(parent, x.Row!), x.Deep)).ToList();
-            return TreeAssembler.Assemble(nodes, nav, tree.Options.Up).Cast<T>().ToList();
+            var list = await ToListAsync(cancellationToken).ConfigureAwait(false);
+            return TreeAssembler.Assemble(list.Select(x => new TreeNode(x!, shape.Self(x!), shape.Parent(x!), null)).ToList(), shape.Children, up: false)
+                .Cast<T>().ToList();
         }
-        var list = await ToListAsync(cancellationToken).ConfigureAwait(false);
-        return TreeAssembler.Assemble(list.Select(x => new TreeNode(x!, Key(nav.SelfColumns, x!), Key(nav.TargetColumns, x!), null)).ToList(), nav, up: false)
-            .Cast<T>().ToList();
+        var compiled = QueryCompiler.Compile<T>(State with { AppendTreeDeep = true });
+        var statement = SqlRenderer.Render(Db.Options.Dialect, compiled.Sql);
+        var deepOrdinal = compiled.Sql.Columns.Count - 1;
+        var rows = await Db.Executor.QueryAsync(statement,
+            r => (Row: compiled.Shaper(r), Deep: Convert.ToInt64(r.GetValue(deepOrdinal), System.Globalization.CultureInfo.InvariantCulture)), cancellationToken).ConfigureAwait(false);
+        // DTO 上与层级列同名的属性填上层级（与 Java 按列名映射一致）
+        if (State.HasSelector && Db.Metadata.Get<T>().Columns.FirstOrDefault(c => c.Name == tree.Options.DeepColumnName) is { } deepColumn)
+            foreach (var (row, deep) in rows)
+                deepColumn.Property.SetValue(row, Materialization.ValueReader.ConvertTo(deep, deepColumn.ClrType));
+        var nodes = rows.Select(x => new TreeNode(x.Row!, shape.Self(x.Row!), shape.Parent(x.Row!), x.Deep)).ToList();
+        return TreeAssembler.Assemble(nodes, shape.Children, tree.Options.Up).Cast<T>().ToList();
     }
+
+    /// <summary>
+    /// 结果类型怎样拼树：自己声明了指向自身的集合导航（实体，或带 <c>[Navigate]</c> 的 DTO）时按它；
+    /// 直接取实体的树查询按树的键列（AsTreeCte 可以另指键）；DTO 没有声明时按源实体指向自身的导航，在 DTO 上找同名的键属性与子节点集合。
+    /// </summary>
+    private TreeShape TreeShapeOf(TreeCteSource? tree)
+    {
+        var result = Db.Metadata.Get<T>();
+        if (TreeNavigation(Db.Metadata, result) is { } nav)
+        {
+            var (self, parent) = tree is not null && !State.HasSelector ? (tree.SelfColumns, tree.ParentColumns) : (nav.SelfColumns, nav.TargetColumns);
+            return new TreeShape(nav.Property, r => Key(self, r), r => Key(parent, r));
+        }
+        var sourceType = State.Sources[0] switch
+        {
+            TreeCteSource t => t.Base.ElementType,
+            EntitySource e => e.EntityType,
+            _ => typeof(T),
+        };
+        var source = Db.Metadata.Get(sourceType);
+        var sourceNav = sourceType == typeof(T) ? null : TreeNavigation(Db.Metadata, source);
+        if (sourceNav is null)
+            throw new InvalidOperationException($"{typeof(T).Name} 上没有指向自身的集合导航（如 List<{typeof(T).Name}> Children），无法拼成树");
+        var children = DtoProperty(sourceNav.Property.Name);
+        if (!children.PropertyType.IsAssignableFrom(typeof(List<T>)))
+            throw new InvalidOperationException($"{typeof(T).Name}.{children.Name} 要是 List<{typeof(T).Name}>，才能挂子节点");
+        var selfKeys = (tree?.SelfColumns ?? sourceNav.SelfColumns).Select(c => DtoProperty(c.PropertyName)).ToList();
+        var parentKeys = (tree?.ParentColumns ?? sourceNav.TargetColumns).Select(c => DtoProperty(c.PropertyName)).ToList();
+        return new TreeShape(children, r => selfKeys.Select(p => p.GetValue(r)).ToArray(), r => parentKeys.Select(p => p.GetValue(r)).ToArray());
+    }
+
+    private static PropertyInfo DtoProperty(string name) =>
+        typeof(T).GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase)
+        ?? throw new InvalidOperationException($"{typeof(T).Name} 上没有属性 {name}，拼树时取不到父子键");
 
     private static object?[] Key(IReadOnlyList<ColumnMetadata> columns, object row) => columns.Select(c => c.GetProviderValue(row)).ToArray();
 }
+
+/// <summary>拼树用到的：挂子节点的集合属性、取自身键与上级键的函数。</summary>
+internal sealed record TreeShape(PropertyInfo Children, Func<object, object?[]> Self, Func<object, object?[]> Parent);
 
 /// <summary>拼树的一个节点：自身键、上级键与层级（不是树查询时为 null）。</summary>
 internal sealed record TreeNode(object Entity, object?[] Self, object?[] Parent, long? Deep);
@@ -106,7 +145,7 @@ internal sealed record TreeNode(object Entity, object?[] Self, object?[] Parent,
 /// <summary>按 Java 的 EasyTreeUtil 拼树：节点键带上层级，下行时父 (键, 层级) 对子 (上级键, 层级 - 1)，上行反过来。</summary>
 internal static class TreeAssembler
 {
-    public static List<object> Assemble(List<TreeNode> nodes, NavigationMetadata children, bool up)
+    public static List<object> Assemble(List<TreeNode> nodes, PropertyInfo children, bool up)
     {
         foreach (var node in nodes) SetChildren(children, node, []);
         if (nodes.Count == 0 || nodes[0].Deep is null) return Plain(nodes, children);
@@ -123,7 +162,7 @@ internal static class TreeAssembler
     }
 
     // 普通查询：上级不在结果里的是根
-    private static List<object> Plain(List<TreeNode> nodes, NavigationMetadata children)
+    private static List<object> Plain(List<TreeNode> nodes, PropertyInfo children)
     {
         var selves = nodes.Select(n => n.Self).ToList();
         var roots = nodes.Where(n => !selves.Any(s => Same(s, n.Parent))).ToList();
@@ -132,7 +171,7 @@ internal static class TreeAssembler
         return roots.Select(n => n.Entity).ToList();
     }
 
-    private static void AttachDown(TreeNode parent, List<TreeNode> pool, NavigationMetadata children)
+    private static void AttachDown(TreeNode parent, List<TreeNode> pool, PropertyInfo children)
     {
         var found = pool.Where(n => Same(n.Parent, parent.Self) && n.Deep - 1 == parent.Deep).ToList();
         if (found.Count == 0) return;
@@ -141,7 +180,7 @@ internal static class TreeAssembler
         foreach (var child in found) AttachDown(child, pool, children);
     }
 
-    private static void AttachUp(TreeNode child, List<TreeNode> pool, List<TreeNode> roots, NavigationMetadata children)
+    private static void AttachUp(TreeNode child, List<TreeNode> pool, List<TreeNode> roots, PropertyInfo children)
     {
         var parent = pool.FirstOrDefault(n => Same(n.Self, child.Parent) && n.Deep - 1 == child.Deep);
         if (parent is null)
@@ -156,10 +195,10 @@ internal static class TreeAssembler
 
     private static bool Same(object?[] a, object?[] b) => a.Length == b.Length && a.Zip(b).All(p => Equals(p.First, p.Second));
 
-    private static void SetChildren(NavigationMetadata children, TreeNode parent, List<TreeNode> nodes)
+    private static void SetChildren(PropertyInfo children, TreeNode parent, List<TreeNode> nodes)
     {
-        var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(children.Target.Type))!;
+        var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(MetadataRegistry.ElementType(children.PropertyType)))!;
         foreach (var n in nodes) list.Add(n.Entity);
-        children.Property.SetValue(parent.Entity, list);
+        children.SetValue(parent.Entity, list);
     }
 }

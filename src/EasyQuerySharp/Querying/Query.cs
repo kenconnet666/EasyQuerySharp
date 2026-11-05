@@ -138,11 +138,16 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     /// <summary>
     /// 按 DTO 的结构自动投影并带出导航（对应 Java 的 selectAutoInclude）：同名属性取列；与实体导航同名的属性按导航映射——
     /// 集合是嵌套 DTO（或实体）的列表、对一是嵌套 DTO（或实体），都用带出查询按父键批量取（没有 N+1）；<c>[MapPath("A.B")]</c> 取导航路径上的值。
-    /// 嵌套 DTO 实现 <see cref="IAutoIncludeConfigure{TEntity}"/> 时给它的带出查询加条件、排序、条数。
+    /// 嵌套 DTO 实现 <see cref="IAutoIncludeConfigure{TEntity}"/> 时给它的带出查询加条件、排序、条数（根 DTO 实现时配置这条查询本身）；
+    /// <c>[MapExpression]</c> 的属性取表达式的值。
     /// </summary>
     /// <example><code>db.Query&lt;SysUser&gt;().SelectAutoInclude&lt;UserDto&gt;()   // UserDto { Id, Name, List&lt;CardDto&gt; BankCards }</code></example>
-    public Query<TResult> SelectAutoInclude<TResult>() where TResult : new() =>
-        new(Open with { Selector = AutoProjection.BuildWithIncludes(Db.Metadata, Db.Metadata.Get<T>(), typeof(TResult)) });
+    public Query<TResult> SelectAutoInclude<TResult>() where TResult : new()
+    {
+        // 根 DTO 也实现了 IAutoIncludeConfigure<T> 时，先按它配置这条查询（如合并分组、加条件）
+        var configured = AutoProjection.ConfigureOf(typeof(TResult), typeof(T)) is { } configure ? configure(Open) : Open;
+        return new(configured with { Selector = AutoProjection.BuildWithIncludes(Db.Metadata, Db.Metadata.Get<T>(), typeof(TResult)) });
+    }
 
     /// <summary>
     /// 按属性名自动投影到 <typeparamref name="TResult"/>，但排除 <paramref name="excluded"/> 列出的属性（对应 Java 的 FETCHER.allFieldsExclude）。

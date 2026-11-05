@@ -262,4 +262,65 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
         Assert.Empty(await Db.Query<Comment>().Where(c => c.Id == null).AsTreeCte().ToTreeAsync(Ct));
         listen.AssertSql("WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `cte_deep`,t1.`id`,t1.`parent_id`,t1.`content`,t1.`user_id`,t1.`post_id`,t1.`create_at` FROM `t_comment` t1 WHERE t1.`id` IS NULL)  UNION ALL  (SELECT t2.`cte_deep` + 1 AS `cte_deep`,t3.`id`,t3.`parent_id`,t3.`content`,t3.`user_id`,t3.`post_id`,t3.`create_at` FROM `as_tree_cte` t2 INNER JOIN `t_comment` t3 ON t3.`parent_id` = t2.`id`) ) SELECT t.`id`,t.`parent_id`,t.`content`,t.`user_id`,t.`post_id`,t.`create_at`,t.`cte_deep` FROM `as_tree_cte` t");
     }
+
+    // 自动映射成 DTO 再拼树：DTO 上声明了指向自身的导航，层级列叫 deep 时 DTO 的 Deep 有值
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testTree2")]
+    public async Task TestTree2()
+    {
+        using var listen = SqlCapture.Listen();
+        var tree = await Db.Query<Comment>().AsTreeCte(o => o.DeepColumnName = "deep").SelectAutoInclude<MyComment>().ToTreeAsync(Ct);
+        listen.AssertSql("WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `deep`,t1.`id`,t1.`parent_id`,t1.`content`,t1.`user_id`,t1.`post_id`,t1.`create_at` FROM `t_comment` t1)  UNION ALL  (SELECT t2.`deep` + 1 AS `deep`,t3.`id`,t3.`parent_id`,t3.`content`,t3.`user_id`,t3.`post_id`,t3.`create_at` FROM `as_tree_cte` t2 INNER JOIN `t_comment` t3 ON t3.`parent_id` = t2.`id`) ) SELECT t.`id`,t.`parent_id`,t.`content`,t.`user_id`,t.`post_id`,t.`create_at`,t.`deep` FROM `as_tree_cte` t");
+        Assert.Equal(3, tree.Count);
+        Assert.Equal((C0122, C03ab), (tree[0].Id, tree[0].ParentId));
+        Assert.Equal(C1bcc, Assert.Single(tree[0].Children!).Id);
+        Assert.Empty(tree[0].Children![0].Children!);
+        Assert.Equal((C03ab, "0"), (tree[1].Id, tree[1].ParentId));
+        var child = Assert.Single(tree[1].Children!);
+        Assert.Equal(C0122, child.Id);
+        Assert.Equal(C1bcc, Assert.Single(child.Children!).Id);
+        Assert.Equal((C1bcc, C0122), (tree[2].Id, tree[2].ParentId));
+        Assert.Empty(tree[2].Children!);
+        Assert.All(tree, n => Assert.Equal(0L, n.Deep));
+    }
+
+    // 往上走：每个起点沿上级挂到最上面，根是最上面那一级（层级最大）
+    private static void AssertUpTree<TNode>(List<TNode> tree, Func<TNode, string?> id, Func<TNode, long?> deep, Func<TNode, List<TNode>?> children)
+    {
+        Assert.Equal(3, tree.Count);
+        Assert.All(tree, n => Assert.Equal(C03ab, id(n)));
+        Assert.Equal([1L, 0L, 2L], tree.Select(n => deep(n)!.Value));
+        Assert.Equal(C0122, id(Assert.Single(children(tree[0])!)));
+        Assert.Empty(children(tree[1])!);
+        var middle = Assert.Single(children(tree[2])!);
+        Assert.Equal((C0122, 1L), (id(middle), deep(middle)));
+        Assert.Equal(C1bcc, id(Assert.Single(children(middle)!)));
+    }
+
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testTree3")]
+    public async Task TestTree3()
+    {
+        using var listen = SqlCapture.Listen();
+        var tree = await Db.Query<Comment>().AsTreeCte(o => { o.Up = true; o.DeepColumnName = "deep"; }).SelectAutoInclude<MyComment>().ToTreeAsync(Ct);
+        listen.AssertSql("WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `deep`,t1.`id`,t1.`parent_id`,t1.`content`,t1.`user_id`,t1.`post_id`,t1.`create_at` FROM `t_comment` t1)  UNION ALL  (SELECT t2.`deep` + 1 AS `deep`,t3.`id`,t3.`parent_id`,t3.`content`,t3.`user_id`,t3.`post_id`,t3.`create_at` FROM `as_tree_cte` t2 INNER JOIN `t_comment` t3 ON t3.`id` = t2.`parent_id`) ) SELECT t.`id`,t.`parent_id`,t.`content`,t.`user_id`,t.`post_id`,t.`create_at`,t.`deep` FROM `as_tree_cte` t");
+        AssertUpTree(tree, n => n.Id, n => n.Deep, n => n.Children);
+    }
+
+    // DTO 上没有声明导航：按源实体的 Children 导航，在 DTO 上找同名的键与子节点
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testTree4")]
+    public async Task TestTree4()
+    {
+        using var listen = SqlCapture.Listen();
+        var tree = await Db.Query<Comment>().AsTreeCte(o => { o.Up = true; o.DeepColumnName = "deep"; }).SelectAutoInclude<MyComment3>().ToTreeAsync(Ct);
+        listen.AssertSql("WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `deep`,t1.`id`,t1.`parent_id`,t1.`content`,t1.`user_id`,t1.`post_id`,t1.`create_at` FROM `t_comment` t1)  UNION ALL  (SELECT t2.`deep` + 1 AS `deep`,t3.`id`,t3.`parent_id`,t3.`content`,t3.`user_id`,t3.`post_id`,t3.`create_at` FROM `as_tree_cte` t2 INNER JOIN `t_comment` t3 ON t3.`id` = t2.`parent_id`) ) SELECT t.`id`,t.`parent_id`,t.`content`,t.`user_id`,t.`post_id`,t.`create_at`,t.`deep` FROM `as_tree_cte` t");
+        AssertUpTree(tree, n => n.Id, n => n.Deep, n => n.Children);
+    }
+
+    // DTO 缺上级键：拼树前报错
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testTree5", Deviation = "异常信息用中文，说明缺的是哪个属性")]
+    public async Task TestTree5()
+    {
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Db.Query<Comment>().Where(c => c.ParentId != null).FilterBy(new Comment()).AsTreeCte().SelectAutoInclude<MyComment4>().ToTreeAsync(Ct));
+        Assert.Equal("MyComment4 上没有属性 ParentId，拼树时取不到父子键", ex.Message);
+    }
 }
