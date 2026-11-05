@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Linq.Expressions;
+using EasyQuerySharp.Interceptors;
 using EasyQuerySharp.Materialization;
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.Rendering;
@@ -15,7 +16,8 @@ namespace EasyQuerySharp.Querying;
 /// </summary>
 internal static class IncludeRunner
 {
-    public static async Task RunAsync(EasyDb db, IReadOnlyList<IncludePlan> plans, CancellationToken ct)
+    /// <summary>执行 <paramref name="plans"/>；子查询沿用主查询的拦截器选择（主查询 DisableInterceptors 时子数据同样不过滤，与 Java 一致）。</summary>
+    public static async Task RunAsync(EasyDb db, IReadOnlyList<IncludePlan> plans, InterceptorSelection interceptors, CancellationToken ct)
     {
         foreach (var plan in plans)
         {
@@ -33,7 +35,7 @@ internal static class IncludeRunner
                 continue;
             }
 
-            var baseState = new QueryState(db, [new EntitySource(nav.Target.Type)]) { Wheres = [.. plan.ChildFilters], Selector = plan.ChildSelector };
+            var baseState = new QueryState(db, [new EntitySource(nav.Target.Type)]) { Wheres = [.. plan.ChildFilters], Selector = plan.ChildSelector, Interceptors = interceptors };
             var state = plan.Configure?.Invoke(baseState) ?? baseState;
             state = state with
             {
@@ -60,7 +62,7 @@ internal static class IncludeRunner
                     sink(child);
             }
             plan.Pending.Clear();
-            await RunAsync(db, compiled.Includes, ct).ConfigureAwait(false);
+            await RunAsync(db, compiled.Includes, interceptors, ct).ConfigureAwait(false);
         }
     }
 

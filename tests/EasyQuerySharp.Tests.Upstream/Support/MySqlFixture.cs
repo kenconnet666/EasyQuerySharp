@@ -17,7 +17,8 @@ public sealed class MySqlFixture : IAsyncLifetime
     private static readonly string[] Scripts = ["mysql-init-sqk-easy.sql", "relation.sql", "doc.sql"];
 
     // 不在建表脚本里、由 Java 用例在 @Before 里 syncTable 创建的表
-    private static readonly Type[] CodeFirstTables = [typeof(SubJoinUser), typeof(SubJoinBook), typeof(SubJoinAuthor)];
+    private static readonly Type[] CodeFirstTables =
+        [typeof(SubJoinUser), typeof(SubJoinBook), typeof(SubJoinAuthor), typeof(InterceptorEntity), typeof(Interceptor2Entity)];
 
     private EasyDb? _db;
     private string? _skipReason;
@@ -68,6 +69,8 @@ public sealed class MySqlFixture : IAsyncLifetime
                 .AddInterceptor(new MyTenantInterceptor())
                 .AddInterceptor(new MyTenantInsertInterceptor())
                 .AddInterceptor(new TopicUpdateInterceptor())
+                .AddInterceptor(new TestInterceptor())
+                .AddInterceptor(new TestInterceptor2())
                 .AddLogicDeleteStrategy(nameof(MyLogicDelStrategy), new MyLogicDelStrategy());
         });
         await _db.CodeFirst.CreateTablesAsync(CodeFirstTables);
@@ -153,6 +156,9 @@ public sealed class MySqlFixture : IAsyncLifetime
             UpdateBy = i.ToString(),
             TenantId = i.ToString(),
         })).ExecuteAsync();
+
+        await db.Insert(new InterceptorEntity { Id = "1", Name = "123" }).ExecuteAsync();
+        await db.Insert(new Interceptor2Entity { Id = "3", Aid = "1", Name = "456" }).ExecuteAsync();
     }
 }
 

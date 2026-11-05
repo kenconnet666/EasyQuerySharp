@@ -71,3 +71,20 @@ public sealed class TopicUpdateInterceptor : EntityInterceptor<TopicUpdate>
 
     public override void BeforeConditionUpdate(UpdateSetBuilder<TopicUpdate> sets) => sets.Set(e => e.CreateTime, DateTime.Now);
 }
+
+/// <summary>
+/// 对应 Java：common/TestInterceptor 的 <see cref="InterceptorEntity"/> 部分：查询总是追加原生条件 <c>1=1</c>。
+/// Java 的同一个类对 <see cref="Interceptor2Entity"/> 追加 <c>2=2</c>，C# 拆成 <see cref="TestInterceptor2"/>，两者同名，按名字关闭时一起关闭。
+/// </summary>
+public sealed class TestInterceptor : QueryFilter<InterceptorEntity>
+{
+    public override Expression<Func<InterceptorEntity, bool>>? Filter() => _ => Sql.Raw<bool>("1=1");
+}
+
+/// <summary>对应 Java：common/TestInterceptor 的 <see cref="Interceptor2Entity"/> 部分：追加 <c>2=2</c>。</summary>
+public sealed class TestInterceptor2 : QueryFilter<Interceptor2Entity>
+{
+    public override string Name => nameof(TestInterceptor);
+
+    public override Expression<Func<Interceptor2Entity, bool>>? Filter() => _ => Sql.Raw<bool>("2=2");
+}
