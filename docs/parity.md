@@ -41,7 +41,7 @@
 |---|---|---|---|---|
 | 隐式子查询 any / none / count / sum … | `nav.subquery` | 142 | `u.Posts.Any(p => ..)` / `!u.Posts.Any(..)` / `u.Posts.Count(..)` / `u.Posts.Sum(p => p.Amount)` / `u.Posts.Where(..).Max(..)`；导航上的固定条件 `[Navigate(.., ExtraFilter = nameof(静态属性), ExtraMappingFilter = ..)]`（属性每次查询重新取值，返回 null 即不加），子查询里写成 `(关联 AND 固定条件)`；`u.Posts.DisableLogicDelete().Any(..)` 关闭这个子查询的逻辑删除 | M4 |
 | 子查询改成分组 join | `nav.groupJoin` | 67 | `u.Posts.GroupJoin().Count()`，同一导航上的多个聚合共用一次分组 join | M4 |
-| 一对多展开 flatElement / elements | `nav.flat` | 56 | 条件里用 `Any(..)`；投影里用 `u.Posts.Select(p => p.Title).ToList()`；取第 i 个元素用 `ElementAt(i)` / `First()` | M4 |
+| 一对多展开 flatElement / elements | `nav.flat` | 56 | `flatElement()` 写成 `Any(..)`；`elements(i, j)` 写成 `OrderBy(..).Skip(i).Take(j - i + 1)`：聚合时 ORDER BY / LIMIT 留在子查询里，之后再加条件或 `Any` 时先把这段行包成派生表；分组合并（`GroupJoin`）时按 `ROW_NUMBER()` 编组内行号再取段，同样取法的聚合合并到同一张派生表。取第 i 个元素用 `ElementAt(i)` / `First()` | M4 |
 | include | `nav.include` | 37 | `.Include(o => o.Lines, q => q.Where(..).Include(l => l.Product))` | M4 |
 | 按 DTO 结构自动带出 | `dto.autoInclude` | 35 | `[MapFrom<User>] partial record UserVo(..)` 加 `Select<UserVo>()`，编译期生成映射 | M4 |
 | 按键填充 fillMany / fillOne | `fill` | 4 | 投影里写 `db.Query<OrderLine>().Where(l => l.OrderNo == o.No).ToList()`（不是导航的关联），规划器把它拆成按键批量查询 | M4 |

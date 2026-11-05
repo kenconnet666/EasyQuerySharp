@@ -1,7 +1,7 @@
 namespace EasyQuerySharp.Tests.Upstream.Mysql8;
 
 /// <summary>对应 Java：mysql8/M8BankTest.java（银行、银行卡、用户的导航用例）。</summary>
-public sealed class M8BankTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
+public sealed partial class M8BankTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
 {
     /// <summary>MyUserVO：投影目标（Java 的 vo/MyUserVO 的标量部分）。</summary>
     public sealed class MyUserVO

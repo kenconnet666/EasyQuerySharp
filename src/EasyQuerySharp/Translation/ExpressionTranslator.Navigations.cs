@@ -66,44 +66,23 @@ internal sealed partial class ExpressionTranslator
         chain.Reverse();
 
         // 声明了分组合并的导航：聚合登记到合并的派生表上
-        if (Context?.GroupJoinFor(owner, nav) is { } plan)
+        if (Context?.GroupJoinFor(owner, nav, WindowOf(chain, out var rest)) is { } plan)
         {
-            result = TranslateGroupJoin(plan, chain, negated);
+            result = TranslateGroupJoin(plan, rest, negated);
             return true;
         }
         // 取反只在分组合并时特殊处理（!Any → None 列），其余照常翻译后取反
         if (negated) return false;
 
-        var sub = NewCollectionSubQuery(owner, nav, out var t, out var element, logicDelete);
-        LambdaExpression? selector = null;
-        var distinct = false;
-        foreach (var op in chain.Take(chain.Count - 1))
-        {
-            switch (op.Method.Name)
-            {
-                case nameof(Enumerable.Where):
-                    sub.Where.Add(t.ElementPredicate(Lambda(op.Arguments[1]), element));
-                    break;
-                case nameof(Enumerable.Select):
-                    selector = Lambda(op.Arguments[1]);
-                    break;
-                case nameof(Enumerable.Distinct):
-                    distinct = true;
-                    break;
-                case nameof(Enumerable.Take):
-                    // 只取前几行：EXISTS(… LIMIT 1) 等（Java 条件对象的写法）
-                    sub.Limit = Convert.ToInt64(ClientEvaluator.Evaluate(op.Arguments[1]), System.Globalization.CultureInfo.InvariantCulture);
-                    break;
-                default:
-                    throw Unsupported(op, "集合导航上不支持这个方法");
-            }
-        }
+        var scope = NewCollectionSubQuery(owner, nav, logicDelete);
+        foreach (var op in chain.Take(chain.Count - 1)) scope.Apply(op);
 
         var terminal = chain[^1];
         var predicate = terminal.Arguments.Count > 1 && terminal.Method.Name is nameof(Enumerable.Any) or nameof(Enumerable.All)
             or nameof(Enumerable.Count) or nameof(Enumerable.LongCount)
-            ? t.ElementPredicate(Lambda(terminal.Arguments[1]), element)
+            ? scope.Predicate(Lambda(terminal.Arguments[1]))
             : null;
+        var (sub, t, element, selector, distinct) = (scope.Query, scope.Translator, scope.Element, scope.Selector, scope.Distinct);
         SqlExpr Value()
         {
             var lambda = terminal.Arguments.Count > 1 ? Lambda(terminal.Arguments[1]) : selector
@@ -167,7 +146,7 @@ internal sealed partial class ExpressionTranslator
     private SqlExpr TranslateGroupJoin(GroupJoinPlan plan, List<MethodCallExpression> chain, bool negated, SqlExpr? separator = null)
     {
         var t = new ExpressionTranslator(new Dictionary<ParameterExpression, SourceBinding>(_scope)) { Context = plan.InnerContext };
-        var element = new EntityBinding(plan.Element);
+        var element = plan.Element;
         var filters = new List<SqlExpr>();
         var filterKeys = new List<string>();
         LambdaExpression? selector = null;
@@ -247,6 +226,46 @@ internal sealed partial class ExpressionTranslator
         }
     }
 
+    /// <summary>
+    /// 分组合并时链上的"取一段行"：最后一个 Skip / Take 及其之前的 Where（取行前的条件）、OrderBy / ThenBy（组内排序）。
+    /// 没有 Skip / Take 时返回 null，<paramref name="rest"/> 是整条链；否则 <paramref name="rest"/> 是取行之后的部分。
+    /// </summary>
+    private static GroupJoinWindow? WindowOf(List<MethodCallExpression> chain, out List<MethodCallExpression> rest)
+    {
+        var last = chain.FindLastIndex(op => op.Method.Name is nameof(Enumerable.Skip) or nameof(Enumerable.Take));
+        rest = last < 0 ? chain : chain.Skip(last + 1).ToList();
+        if (last < 0) return null;
+        var filters = new List<LambdaExpression>();
+        var orders = new List<(LambdaExpression, bool)>();
+        long skip = 0;
+        long? take = null;
+        var key = new List<string>();
+        foreach (var op in chain.Take(last + 1))
+        {
+            switch (op.Method.Name)
+            {
+                case nameof(Enumerable.Where):
+                    filters.Add(Lambda(op.Arguments[1]));
+                    break;
+                case nameof(Enumerable.OrderBy) or nameof(Enumerable.ThenBy) or nameof(Enumerable.OrderByDescending) or nameof(Enumerable.ThenByDescending):
+                    orders.Add((Lambda(op.Arguments[1]), op.Method.Name.EndsWith("Descending", System.StringComparison.Ordinal)));
+                    break;
+                case nameof(Enumerable.Skip):
+                    skip = Convert.ToInt64(ClientEvaluator.Evaluate(op.Arguments[1]), System.Globalization.CultureInfo.InvariantCulture);
+                    key.Add("skip:" + skip);
+                    continue;
+                case nameof(Enumerable.Take):
+                    take = Convert.ToInt64(ClientEvaluator.Evaluate(op.Arguments[1]), System.Globalization.CultureInfo.InvariantCulture);
+                    key.Add("take:" + take);
+                    continue;
+                default:
+                    throw Unsupported(op, "取一段行之前只支持 Where / OrderBy / ThenBy");
+            }
+            key.Add(op.Method.Name + ":" + GroupJoinKey(Lambda(op.Arguments[1])));
+        }
+        return new GroupJoinWindow(filters, orders, skip, take, string.Join("|", key));
+    }
+
     // 聚合去重用的结构键：lambda 的文本，参数按位置改名（x => x.A 与 y => y.A 视为相同）
     private static string GroupJoinKey(LambdaExpression lambda)
     {
@@ -276,36 +295,18 @@ internal sealed partial class ExpressionTranslator
         chain.Reverse();
         var separator = Translate(call.Arguments[0]);
 
-        if (Context?.GroupJoinFor(owner, nav) is { } plan)
+        if (Context?.GroupJoinFor(owner, nav, WindowOf(chain, out var rest)) is { } plan)
         {
-            result = TranslateGroupJoin(plan, chain, negated: false, separator);
+            result = TranslateGroupJoin(plan, rest, negated: false, separator);
             return true;
         }
-        var sub = NewCollectionSubQuery(owner, nav, out var t, out var element);
-        LambdaExpression? selector = null;
-        var distinct = false;
-        foreach (var op in chain)
-        {
-            switch (op.Method.Name)
-            {
-                case nameof(Enumerable.Where):
-                    sub.Where.Add(t.ElementPredicate(Lambda(op.Arguments[1]), element));
-                    break;
-                case nameof(Enumerable.Select):
-                    selector = Lambda(op.Arguments[1]);
-                    break;
-                case nameof(Enumerable.Distinct):
-                    distinct = true;
-                    break;
-                default:
-                    throw Unsupported(op, "string.Join 的集合导航上不支持这个方法");
-            }
-        }
-        if (selector is null) throw Unsupported(call, "string.Join 需要先 Select 出字符串");
-        t.Bind(selector, [element]);
-        sub.Columns.Add(new SelectColumn(new FunctionExpr(distinct ? SqlFunctionNames.StringJoinDistinct : SqlFunctionNames.StringJoin,
-            [t.Translate(StripConvert(selector.Body)), separator]), null));
-        result = new SubQueryExpr(sub);
+        var scope = NewCollectionSubQuery(owner, nav);
+        foreach (var op in chain) scope.Apply(op);
+        if (scope.Selector is not { } selector) throw Unsupported(call, "string.Join 需要先 Select 出字符串");
+        scope.Translator.Bind(selector, [scope.Element]);
+        scope.Query.Columns.Add(new SelectColumn(new FunctionExpr(scope.Distinct ? SqlFunctionNames.StringJoinDistinct : SqlFunctionNames.StringJoin,
+            [scope.Translator.Translate(StripConvert(selector.Body)), separator]), null));
+        result = new SubQueryExpr(scope.Query);
         return true;
     }
 
@@ -381,7 +382,7 @@ internal sealed partial class ExpressionTranslator
     {
         if (m.Member.Name != "Count" || m.Expression is null || CollectionNavigation(m.Expression) is not var (owner, nav)) return null;
         if (Context?.GroupJoinFor(owner, nav) is { } plan) return plan.Reference(GroupAggregate.Count, null, null, false, "", "");
-        var sub = NewCollectionSubQuery(owner, nav, out _, out _);
+        var sub = NewCollectionSubQuery(owner, nav).Query;
         sub.Columns.Add(new SelectColumn(new FunctionExpr(SqlFunctionNames.Count, [LiteralExpr.Star]), null));
         return new SubQueryExpr(sub);
     }
@@ -390,13 +391,13 @@ internal sealed partial class ExpressionTranslator
     /// 集合导航的子查询骨架：目标表自带的过滤条件、与所属行的关联条件、导航的固定条件。
     /// 一对多关联写成 <c>目标.外键 = 所属.键</c>；多对多经中间表写成 EXISTS。
     /// </summary>
-    private SelectQuery NewCollectionSubQuery(SourceBinding owner, NavigationMetadata nav, out ExpressionTranslator translator, out EntityBinding element, bool logicDelete = true)
+    private CollectionSubQuery NewCollectionSubQuery(SourceBinding owner, NavigationMetadata nav, bool logicDelete = true)
     {
         var table = new EntityTableSource(nav.Target);
         var sub = new SelectQuery(table);
         var context = Context!.ForSubQuery(sub);
-        translator = new ExpressionTranslator(new Dictionary<ParameterExpression, SourceBinding>(_scope)) { Context = context };
-        element = new EntityBinding(table);
+        var translator = new ExpressionTranslator(new Dictionary<ParameterExpression, SourceBinding>(_scope)) { Context = context };
+        var element = new EntityBinding(table);
 
         sub.Where.AddRange(context.TableFilters(table, logicDelete));
         // 关联条件与导航的固定条件合成一组 (关联 AND 固定条件)（与 Java 一致）；没有固定条件时不加括号
@@ -430,7 +431,7 @@ internal sealed partial class ExpressionTranslator
             sub.Where.Add(LogicalExpr.Grouped(relation));
         }
         else sub.Where.AddRange(relation);
-        return sub;
+        return new CollectionSubQuery(this, sub, translator, element);
     }
 
     private SqlExpr ElementPredicate(LambdaExpression lambda, SourceBinding element)

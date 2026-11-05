@@ -9,6 +9,18 @@ namespace EasyQuerySharp.Translation;
 /// </summary>
 internal sealed record GroupJoinSpec(Type OwnerType, string Member, bool Enabled, Func<Querying.QueryState, Querying.QueryState>? Configure);
 
+/// <summary>
+/// 分组合并前先"取一段行"（Java 的 <c>orderBy(…).elements(i, j)</c>，C# 的 <c>OrderBy(…).Skip(i).Take(n)</c>）：
+/// <paramref name="Filters"/> 是取行之前的条件，<paramref name="Orders"/> 是每组内的排序；<paramref name="Key"/> 区分不同的取法，
+/// 同样取法的聚合合并到同一张派生表。
+/// </summary>
+internal sealed record GroupJoinWindow(
+    IReadOnlyList<System.Linq.Expressions.LambdaExpression> Filters,
+    IReadOnlyList<(System.Linq.Expressions.LambdaExpression Key, bool Descending)> Orders,
+    long Skip,
+    long? Take,
+    string Key);
+
 /// <summary>分组合并里的一种聚合。</summary>
 internal enum GroupAggregate
 {
@@ -34,10 +46,10 @@ internal sealed class GroupJoinPlan
     private readonly List<Entry> _entries = [];
     private readonly Dictionary<string, Entry> _byKey = new(StringComparer.Ordinal);
 
-    /// <param name="inner">分组子查询（FROM 目标表）。</param>
-    /// <param name="element">子查询里的目标表。</param>
+    /// <param name="inner">分组子查询（FROM 目标表，取一段行时 FROM 编了行号的派生表）。</param>
+    /// <param name="element">子查询里集合元素的绑定：目标表，或取一段行后的派生表。</param>
     /// <param name="keys">子查询里的关联键列：一对多是目标表的外键，多对多是中间表里对应所属表的列。</param>
-    public GroupJoinPlan(SelectQuery inner, EntityTableSource element, IReadOnlyList<ColumnExpr> keys)
+    public GroupJoinPlan(SelectQuery inner, SourceBinding element, IReadOnlyList<ColumnExpr> keys)
     {
         Inner = inner;
         Element = element;
@@ -53,8 +65,8 @@ internal sealed class GroupJoinPlan
     /// <summary>分组子查询。</summary>
     public SelectQuery Inner { get; }
 
-    /// <summary>子查询里的目标表。</summary>
-    public EntityTableSource Element { get; }
+    /// <summary>子查询里集合元素的绑定。</summary>
+    public SourceBinding Element { get; }
 
     /// <summary>子查询的翻译上下文（条件里的隐式 JOIN 加到子查询上，同一导航只连一次）。</summary>
     public TranslationContext InnerContext { get; set; } = null!;
