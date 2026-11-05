@@ -13,6 +13,11 @@
         <PackageVersion Include="xunit.v3.extensibility.core" Version="4.0.2" />
     </ItemGroup>
 
+    <!-- 基准 -->
+    <ItemGroup>
+        <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
+    </ItemGroup>
+
     <!-- 数据库驱动 -->
     <ItemGroup>
         <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.14" />

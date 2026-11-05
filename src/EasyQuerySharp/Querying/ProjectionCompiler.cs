@@ -77,7 +77,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     public Func<DbDataReader, T> Compile<T>()
     {
         var shaped = _shaped ?? throw new InvalidOperationException("投影还没有 Prepare");
-        return Expression.Lambda<Func<DbDataReader, T>>(Coerce(shaped, typeof(T)), _reader).Compile();
+        return Materialization.ShaperCache.Get<T>(Coerce(shaped, typeof(T)), _reader);
     }
 
     private Expression Shape(Expression body, MemberInfo? member, bool topLevel)

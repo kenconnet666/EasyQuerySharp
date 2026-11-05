@@ -150,7 +150,7 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     public string ToSql() => ToStatement().Text;
 
     /// <summary>渲染成带参数的语句，不执行。</summary>
-    public SqlStatement ToStatement() => SqlRenderer.Render(Db.Options.Dialect, QueryCompiler.Compile<TElement>(State).Sql);
+    public SqlStatement ToStatement() => SqlRenderer.Render(Db.Options.Dialect, QueryCompiler.CompileSql(State));
 
     // ---------- 终结方法 ----------
 

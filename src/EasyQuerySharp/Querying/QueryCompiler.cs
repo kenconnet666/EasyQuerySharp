@@ -122,19 +122,15 @@ internal static class QueryCompiler
     /// <summary>完整翻译：按投影（没有时投影到第一个来源的实体）填入 SELECT 列表并生成读取函数。</summary>
     public static CompiledQuery<T> Compile<T>(QueryState state, IReadOnlyList<ColumnMetadata>? relationKeys = null)
     {
-        // 原生 SELECT 列表、或从原生 SQL 来源整体读取：列序号未知，按列名映射到实体
-        var rawColumns = state.RawSelect ?? (state.Selector is null && state.Sources[0] is RawSqlSource ? "*" : null);
-        if (rawColumns is not null)
+        if (RawSelect(state) is { } raw)
         {
-            var rawFrame = Build(state);
-            rawFrame.Query.Columns.Add(new SelectColumn(new LiteralExpr(rawColumns), null));
             // 标量（如 QuerySql<int>("select 1")）取第一列，其余按列名映射
             if (ScalarTypes.IsScalar(typeof(T)))
-                return new CompiledQuery<T>(rawFrame.Query, r => Materialization.ValueReader.Read<T>(r, 0, null));
+                return new CompiledQuery<T>(raw, r => Materialization.ValueReader.Read<T>(r, 0, null));
             if (typeof(T) == typeof(Dictionary<string, object?>))
-                return new CompiledQuery<T>(rawFrame.Query, r => (T)(object)Materialization.EntityMaterializer.ReadDictionary(r));
+                return new CompiledQuery<T>(raw, r => (T)(object)Materialization.EntityMaterializer.ReadDictionary(r));
             var entity = state.Db.Metadata.Get<T>();
-            return new CompiledQuery<T>(rawFrame.Query, r => Materialization.EntityMaterializer.ReadByName<T>(r, entity));
+            return new CompiledQuery<T>(raw, r => Materialization.EntityMaterializer.ReadByName<T>(r, entity));
         }
         var (frame, projection) = Project(state, relationKeys: relationKeys);
         return new CompiledQuery<T>(frame.Query, projection.Compile<T>())
@@ -142,6 +138,19 @@ internal static class QueryCompiler
             Includes = projection.Includes,
             RelationOrdinals = projection.RelationOrdinals,
         };
+    }
+
+    /// <summary>只翻译成 SQL AST，不编译读取函数（<c>ToSql</c> / <c>ToStatement</c> 用，编译读取函数是翻译里最贵的一步）。</summary>
+    public static SelectQuery CompileSql(QueryState state) => RawSelect(state) ?? Project(state).Frame.Query;
+
+    // 原生 SELECT 列表、或从原生 SQL 来源整体读取：列序号未知，读的时候按列名映射；不是这两种时返回 null
+    private static SelectQuery? RawSelect(QueryState state)
+    {
+        var rawColumns = state.RawSelect ?? (state.Selector is null && state.Sources[0] is RawSqlSource ? "*" : null);
+        if (rawColumns is null) return null;
+        var frame = Build(state);
+        frame.Query.Columns.Add(new SelectColumn(new LiteralExpr(rawColumns), null));
+        return frame.Query;
     }
 
     /// <summary>翻译成带 SELECT 列表的 AST，不生成读取函数（用于子查询、派生表）。</summary>

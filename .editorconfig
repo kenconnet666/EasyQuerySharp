@@ -27,7 +27,7 @@ csharp_prefer_braces = when_multiline:suggestion
 # SQL 生成全程用不变区域（InvariantCulture），这条规则在库里保留；测试与工具里只是噪音
 dotnet_diagnostic.CA1305.severity = warning
 
-[{tests,tools,samples,docs}/**.cs]
+[{tests,tools,samples,docs,benchmarks}/**.cs]
 dotnet_diagnostic.CA1305.severity = none
 # 测试方法名沿用 Java 用例名（如 Query0_1），不强制命名规则
 dotnet_diagnostic.CA1707.severity = none

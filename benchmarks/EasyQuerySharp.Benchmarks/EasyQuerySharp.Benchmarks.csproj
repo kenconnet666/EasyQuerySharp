@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+      性能基准（BenchmarkDotNet）：查询翻译与渲染、读取物化。只在本地按需跑，不进 CI：
+        dotnet run -c Release (项目 benchmarks/EasyQuerySharp.Benchmarks，参数 filter 选基准)
+      BenchmarkDotNet 只在这个项目里引用，核心包仍零依赖。
+    -->
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <IsPackable>false</IsPackable>
+        <!-- 基准代码不要求写文档注释 -->
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\EasyQuerySharp\EasyQuerySharp.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="BenchmarkDotNet" />
+        <PackageReference Include="Microsoft.Data.Sqlite" />
+    </ItemGroup>
+
+</Project>
