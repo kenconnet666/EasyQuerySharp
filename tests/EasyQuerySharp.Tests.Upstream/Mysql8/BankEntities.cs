@@ -19,6 +19,33 @@ public class SysBank
     [Navigate(RelationType.ManyToMany, SelfProperties = [nameof(Id)], SelfMappingProperties = [nameof(SysBankCard.BankId)],
         Mapping = typeof(SysBankCard), TargetProperties = [nameof(SysUser.Id)], TargetMappingProperties = [nameof(SysBankCard.Uid)])]
     public List<SysUser>? Users { get; set; }
+
+    [Navigate(RelationType.OneToOne, SelfProperties = [nameof(Id)], TargetProperties = [nameof(FirstSysBankCard.BankId)])]
+    public FirstSysBankCard? FirstBankCard { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/bank/FirstSysBankCard（每个用户最近开的一张卡，由查询定义的实体）。</summary>
+[Table("bank_card_first")]
+public class FirstSysBankCard : ICteView<FirstSysBankCard>
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Uid { get; set; }
+
+    public string? Code { get; set; }
+
+    public string? Type { get; set; }
+
+    public string? BankId { get; set; }
+
+    public DateTime? OpenTime { get; set; }
+
+    public static Query<FirstSysBankCard> View(EasyDb db) =>
+        db.Query<SysBankCard>()
+            .Select(m => new Part<SysBankCard, long>(m, Sql.Over.RowNumber(w => w.PartitionBy(m.Uid).OrderByDescending(m.OpenTime))))
+            .Where(card => card.Value1 == 1L)
+            .Select(u => new FirstSysBankCard { Id = u.Entity.Id, Uid = u.Entity.Uid, Code = u.Entity.Code, Type = u.Entity.Type, BankId = u.Entity.BankId, OpenTime = u.Entity.OpenTime });
 }
 
 /// <summary>对应 Java：mysql8/entity/bank/SysBankCard。</summary>

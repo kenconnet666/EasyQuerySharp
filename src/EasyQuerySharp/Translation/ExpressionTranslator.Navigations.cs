@@ -9,7 +9,8 @@ internal sealed partial class ExpressionTranslator
     /// <summary>当前 SELECT 的翻译上下文（导航要用）；写入命令等没有上下文时为 null，此时不支持导航。</summary>
     public TranslationContext? Context { get; set; }
 
-    private NavigationMetadata? Navigation(EntityBinding owner, string member) => Context?.Metadata.FindNavigation(owner.Entity, member);
+    private NavigationMetadata? Navigation(SourceBinding owner, string member) =>
+        owner.OwnerEntity is { } entity ? Context?.Metadata.FindNavigation(entity, member) : null;
 
     /// <summary>所属表上名为 <paramref name="member"/> 的导航；不是导航时返回 null（投影编译器识别带出时用）。</summary>
     internal NavigationMetadata? FindNavigation(SourceBinding owner, string member) =>
@@ -38,7 +39,7 @@ internal sealed partial class ExpressionTranslator
     }
 
     /// <summary>对一导航 <c>x.User</c>：返回隐式 JOIN 的目标表绑定；不是对一导航时返回 null。</summary>
-    private EntityBinding? ToOneNavigation(MemberExpression m, NavigationTableOptions options = default)
+    private SourceBinding? ToOneNavigation(MemberExpression m, NavigationTableOptions options = default)
     {
         // 起点可以是实体表，也可以是整行实体的派生表（如集合导航的 First() 行）
         if (m.Expression is null || BindingOf(m.Expression) is not { OwnerEntity: { } entity } owner) return null;

@@ -251,6 +251,10 @@ internal static class QueryCompiler
         return (frame, projection);
     }
 
+    /// <summary>由查询定义的实体（ICteView）作为隐式 JOIN 的目标时的绑定（按 CTE 读）；不是视图实体时返回 null。</summary>
+    internal static SourceBinding? ViewBinding(EasyDb db, Type entityType) =>
+        CteViews.Of(db, entityType) is null ? null : CreateBinding(db, new EntitySource(entityType));
+
     private static SourceBinding CreateBinding(EasyDb db, QuerySource source)
     {
         switch (source)

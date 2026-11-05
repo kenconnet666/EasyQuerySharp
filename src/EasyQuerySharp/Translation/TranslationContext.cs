@@ -11,7 +11,7 @@ namespace EasyQuerySharp.Translation;
 internal sealed partial class TranslationContext(
     MetadataRegistry metadata, Func<EntityTableSource, bool, IEnumerable<SqlExpr>> tableFilters, SelectQuery query, TranslationContext? parent = null)
 {
-    private readonly Dictionary<(TableSource, string), EntityBinding> _joins = [];
+    private readonly Dictionary<(TableSource, string), SourceBinding> _joins = [];
 
     /// <summary>元数据。</summary>
     public MetadataRegistry Metadata => metadata;
@@ -75,12 +75,24 @@ internal sealed partial class TranslationContext(
     /// 对一导航的隐式 JOIN：同一个来源上的同一个导航只连一次。ON 里先写目标表自带的过滤条件，再写 <c>目标键 = 本表键</c>（与 Java 版一致）；
     /// <see cref="NavigationMetadata.Required"/> 时用 INNER JOIN，否则 LEFT JOIN。
     /// </summary>
-    public EntityBinding JoinFor(SourceBinding owner, NavigationMetadata navigation, NavigationTableOptions options = default)
+    public SourceBinding JoinFor(SourceBinding owner, NavigationMetadata navigation, NavigationTableOptions options = default)
     {
         // 所属表在外层查询里（子查询引用外层的导航）：JOIN 加到外层（与 Java 一致）
         if (parent is not null && !Owns(owner.Table)) return parent.JoinFor(owner, navigation, options);
         var key = (owner.Table, navigation.Property.Name + options.Key);
         if (_joins.TryGetValue(key, out var existing)) return existing;
+
+        // 目标是由查询定义的实体（ICteView）：JOIN 它的 CTE，过滤条件已在视图查询里
+        if (Db is not null && options == default && Querying.QueryCompiler.ViewBinding(Db, navigation.Target.Type) is { } view)
+        {
+            var viewKeys = navigation.SelfColumns
+                .Select((self, i) => (SqlExpr)new BinaryExpr(view.OwnerColumn(navigation.TargetColumns[i]), SqlBinaryOperator.Equal, owner.OwnerColumn(self)))
+                .ToList();
+            query.Joins.Add(new JoinClause(navigation.Required ? JoinKind.Inner : JoinKind.Left, view.Table, viewKeys.Count == 1 ? viewKeys[0] : LogicalExpr.Grouped(viewKeys))
+                { Implicit = true, AfterWhere = WhereTranslated });
+            _joins[key] = view;
+            return view;
+        }
 
         var target = options.TableFor(navigation.Target);
         var conditions = new List<SqlExpr>(TableFilters(target, !options.NoLogicDelete));

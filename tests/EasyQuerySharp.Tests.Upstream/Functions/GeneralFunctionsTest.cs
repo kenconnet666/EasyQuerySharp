@@ -193,36 +193,11 @@ public sealed class GeneralFunctionsTest
         return Task.CompletedTask;
     }
 
-    [Fact(Skip = "待移植")]
-    [Upstream("GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey3", Pending = true)]
-    public Task MySQLInsertIgnore2UpdateKey3()
-    {
-        // 期望 SQL：INSERT INTO `t_topic_auto` (`stars`,`title`) VALUES (?,?)
-        // 期望参数：123(Integer),123(String)
-        // Java 原文：
-        // ListenerContextManager listenerContextManager = new ListenerContextManager();
-        // EasyEntityQuery easyEntityQuery = create2(listenerContextManager, new MySQLDatabaseConfiguration());
-        // listenerContextManager.startCreateListen();
-        // 
-        // try {
-        // 
-        //     TopicAuto entity = new TopicAuto();
-        //     entity.setStars(123);
-        //     entity.setTitle("123");
-        // 
-        //     easyEntityQuery.insertable(entity).executeRows();
-        // } catch (Exception ex) {
-        // }
-        // 
-        // ListenerContext listenerContext = listenerContextManager.getListenContext();
-        // listenerContextManager.clear();
-        // 
-        // Assert.assertNotNull(listenerContext.getJdbcExecuteAfterArg());
-        // JdbcExecuteAfterArg jdbcExecuteAfterArg = listenerContext.getJdbcExecuteAfterArg();
-        // Assert.assertEquals("INSERT INTO `t_topic_auto` (`stars`,`title`) VALUES (?,?)", jdbcExecuteAfterArg.getBeforeArg().getSql());
-        // Assert.assertEquals("123(Integer),123(String)", EasySQLUtil.sqlParameterToString(jdbcExecuteAfterArg.getBeforeArg().getSqlParameters().get(0)));
-        return Task.CompletedTask;
-    }
+    // 自增主键不写进 INSERT
+    [Fact, Upstream("GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey3")]
+    public void MySQLInsertIgnore2UpdateKey3() =>
+        SqlOnly.AssertStatement(SqlOnly.Db("mysql").Insert(new TopicAuto { Stars = 123, Title = "123" }).ToStatement(),
+            "INSERT INTO `t_topic_auto` (`stars`,`title`) VALUES (?,?)", "123(Integer),123(String)");
 
     // 先分页再按投影排序：分页的分组查询包成派生表，排序在外层（Oracle 用 ROWNUM 分页）
     [Fact, Upstream("GeneralFunctionsTest.java#limitOrderTest1")]
