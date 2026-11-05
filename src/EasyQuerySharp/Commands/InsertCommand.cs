@@ -147,6 +147,7 @@ public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> wh
             values.Add(parameter);
         }
 
+        if (columns.Count == 0) throw new InvalidOperationException($"{typeof(T).Name} 的插入没有要写的列");
         var keyColumn = _fillKeys ? Entity.KeyColumns.FirstOrDefault(k => k.IsGenerated) : null;
         var insert = new InsertStatement(table, columns, [values])
         {

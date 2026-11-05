@@ -86,6 +86,12 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         return this;
     }
 
+    /// <summary><paramref name="condition"/> 为 true 时才自增（对应 Java 的 setColumns(condition, c -&gt; c.increment(..))）。</summary>
+    public UpdateCommand<T> IncrementIf<TValue>(bool condition, Expression<Func<T, TValue>> column, TValue by) => condition ? Increment(column, by) : this;
+
+    /// <summary><paramref name="condition"/> 为 true 时才自减。</summary>
+    public UpdateCommand<T> DecrementIf<TValue>(bool condition, Expression<Func<T, TValue>> column, TValue by) => condition ? Decrement(column, by) : this;
+
     /// <summary>按实体更新时写哪些列；显式指定后优先于追踪的差异（与 Java 的优先级一致：用户设置 &gt; 追踪 &gt; 默认）。</summary>
     public UpdateCommand<T> Columns(ColumnStrategy strategy)
     {
@@ -183,7 +189,8 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         if (entity is null && update.Sets.Count > 0) AddInterceptorSets(update, table);
         if (update.Sets.Count == 0)
         {
-            if (tracked is not null) return null;
+            // 按实体更新时没有要写的列（追踪无变化、按列策略全被筛掉）不发语句，受影响 0 行（与 Java 一致）
+            if (entity is not null) return null;
             throw new InvalidOperationException($"{typeof(T).Name} 的更新没有要写的列");
         }
         var newVersion = AddVersionSet(update, table, entity);

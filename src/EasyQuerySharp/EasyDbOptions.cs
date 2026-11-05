@@ -83,11 +83,12 @@ public sealed class EasyDbOptions
     /// <summary>按名字注册的自定义逻辑删除策略，供 <c>[LogicDelete(LogicDeleteStrategy.Custom, StrategyName = "名字")]</c> 使用。</summary>
     public Dictionary<string, Metadata.ILogicDeleteStrategy> LogicDeleteStrategies { get; } = new(StringComparer.Ordinal);
 
-    /// <summary>注册自定义逻辑删除策略（对应 Java 的 applyLogicDeleteStrategy）。</summary>
+    /// <summary>注册自定义逻辑删除策略（对应 Java 的 applyLogicDeleteStrategy）；名字重复时抛出异常。</summary>
     public EasyDbOptions AddLogicDeleteStrategy(string name, Metadata.ILogicDeleteStrategy strategy)
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
-        LogicDeleteStrategies[name] = strategy ?? throw new ArgumentNullException(nameof(strategy));
+        ArgumentNullException.ThrowIfNull(strategy);
+        if (!LogicDeleteStrategies.TryAdd(name, strategy)) throw new InvalidOperationException($"逻辑删除策略 {name} 重复注册");
         return this;
     }
 

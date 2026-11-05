@@ -3,19 +3,19 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1499、偏离 193、不适用 68、骨架 15、待做 629。
+合计：已移植 1528、偏离 194、不适用 72、骨架 15、待做 595。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 339 | 42 | 28 | 0 | 26 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 340 | 43 | 32 | 0 | 20 |
 | 分页结果 | `query.page` | M1 | 22 | 18 | 2 | 0 | 0 | 2 |
 | 原生 SQL | `sql.native` | M1 | 50 | 37 | 7 | 1 | 0 | 5 |
-| 删除 | `write.delete` | M1 | 25 | 9 | 1 | 10 | 0 | 5 |
-| 插入 | `write.insert` | M1 | 50 | 33 | 0 | 0 | 1 | 16 |
-| 更新 | `write.update` | M1 | 59 | 29 | 4 | 8 | 0 | 18 |
+| 删除 | `write.delete` | M1 | 25 | 13 | 1 | 10 | 0 | 1 |
+| 插入 | `write.insert` | M1 | 50 | 35 | 0 | 0 | 1 | 14 |
+| 更新 | `write.update` | M1 | 59 | 38 | 4 | 8 | 0 | 9 |
 | CASE WHEN | `expr.case` | M2 | 27 | 19 | 6 | 0 | 0 | 2 |
 | 日期函数 | `func.date` | M2 | 101 | 73 | 13 | 7 | 0 | 8 |
 | 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 49 | 3 | 0 | 0 | 7 |
@@ -47,7 +47,7 @@
 | 追踪与差异更新 | `tracking` | M5 | 62 | 39 | 17 | 0 | 0 | 6 |
 | 乐观锁版本 | `version` | M5 | 13 | 13 | 0 | 0 | 0 | 0 |
 | UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
-| 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 12 | 6 | 0 | 0 | 8 |
+| 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 19 | 6 | 0 | 0 | 1 |
 | upsert | `write.upsert` | M5 | 13 | 3 | 0 | 0 | 2 | 8 |
 | ClickHouse 方言 | `dialect.clickhouse` | M6 | 4 | 0 | 0 | 0 | 0 | 4 |
 | 达梦方言 | `dialect.dameng` | M6 | 51 | 0 | 0 | 0 | 0 | 51 |
@@ -65,7 +65,7 @@
 | 分库分表 | `sharding` | M7 | 48 | 0 | 0 | 0 | 0 | 48 |
 | 跨库链接（asTableLink） | `table.link` | M7 | 13 | 9 | 0 | 0 | 0 | 4 |
 | 换表名（asTable / 表名映射） | `table.rename` | M7 | 52 | 33 | 9 | 0 | 0 | 10 |
-| 换 schema（asSchema） | `table.schema` | M7 | 25 | 16 | 2 | 0 | 0 | 7 |
+| 换 schema（asSchema） | `table.schema` | M7 | 25 | 22 | 2 | 0 | 0 | 1 |
 
 ## 逐条
 
@@ -159,12 +159,12 @@
 | GenericTest2.java#test1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:26：测的是 Java 的 Introspector 反射 |  |
 | GenericTest2.java#testAgroalGetUrl | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:28：测的是 Agroal 数据源 |  |
 | GenericTest2.java#testLinkedCaseInsensitiveMap1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:21：测的是 Java 内部工具类，C# 用 BCL 或没有对应的公共 API |  |
-| GenericWithDatabaseTest.java#queryLargeColumnTest1 | 待做 |  | `SELECT 'id','name','content' FROM 'query_large_column_test'` |
-| GenericWithDatabaseTest.java#repeatApply1 | 待做 |  |  |
-| GenericWithDatabaseTest.java#testPrintSQL1 | 待做 |  |  |
-| GenericWithDatabaseTest.java#testPrintSQL2 | 待做 |  |  |
-| GenericWithDatabaseTest.java#testQueryLockClonePropagation | 待做 |  |  |
-| GenericWithDatabaseTest.java#testQueryLockExtendFromPropagation | 待做 |  |  |
+| GenericWithDatabaseTest.java#queryLargeColumnTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:18 | `SELECT 'id','name','content' FROM 'query_large_column_test'` |
+| GenericWithDatabaseTest.java#repeatApply1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:157：只有拦截器与自定义逻辑删除策略按名注册；加密与主键生成策略在特性上按类型引用，不存在重复注册 |  |
+| GenericWithDatabaseTest.java#testPrintSQL1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:166：测的是 Java 表达式上下文（ExpressionContext）的克隆细节；C# 的查询状态是不可变 record，派生查询天然保留全部设置 |  |
+| GenericWithDatabaseTest.java#testPrintSQL2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:168：测的是 Java 表达式上下文（ExpressionContext）的克隆细节；C# 的查询状态是不可变 record，派生查询天然保留全部设置 |  |
+| GenericWithDatabaseTest.java#testQueryLockClonePropagation | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:170：测的是 Java 表达式上下文（ExpressionContext）的克隆细节；C# 的查询状态是不可变 record，派生查询天然保留全部设置 |  |
+| GenericWithDatabaseTest.java#testQueryLockExtendFromPropagation | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:172：测的是 Java 表达式上下文（ExpressionContext）的克隆细节；C# 的查询状态是不可变 record，派生查询天然保留全部设置 |  |
 | InjectTest.java#injectTest1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/InjectTest.cs:11：测的是 Java 自带的依赖注入容器；C# 用 Microsoft.Extensions.DependencyInjection，没有对应的内部容器 |  |
 | InjectTest.java#injectTest2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/InjectTest.cs:13：测的是 Java 自带的依赖注入容器；C# 用 Microsoft.Extensions.DependencyInjection，没有对应的内部容器 |  |
 | InjectTest.java#injectTest3 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/InjectTest.cs:15：测的是 Java 自带的依赖注入容器；C# 用 Microsoft.Extensions.DependencyInjection，没有对应的内部容器 |  |
@@ -611,10 +611,10 @@
 | DeleteTest.java#deleteTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:65 | `UPDATE 't_blog' SET 'deleted' = ? WHERE 'deleted' = ? AND 'id' = ?` |
 | DeleteTest.java#deletex | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:122 | `DELETE FROM 't_blog' WHERE 'id' = ?` |
 | DeleteTest.java#deletex1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:122 | `UPDATE 't_blog' SET 'deleted' = ? WHERE 'deleted' = ? AND 'id' = ?` |
-| GenericWithDatabaseTest.java#deleteTest13 | 待做 |  | `DELETE FROM 'query_large_column_test' WHERE 'id' = ?` |
-| GenericWithDatabaseTest.java#deleteTest14 | 待做 |  | `DELETE FROM 'aaa' WHERE 'id' = ?` |
-| GenericWithDatabaseTest.java#queryLargeColumnTest14 | 待做 |  |  |
-| GenericWithDatabaseTest.java#queryLargeColumnTest15 | 待做 |  | `DELETE FROM 'query_large_column_test' WHERE 'id' = ?` |
+| GenericWithDatabaseTest.java#deleteTest13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:69 | `DELETE FROM 'query_large_column_test' WHERE 'id' = ?` |
+| GenericWithDatabaseTest.java#deleteTest14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:73 | `DELETE FROM 'aaa' WHERE 'id' = ?` |
+| GenericWithDatabaseTest.java#queryLargeColumnTest14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:87 |  |
+| GenericWithDatabaseTest.java#queryLargeColumnTest15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:91 | `DELETE FROM 'query_large_column_test' WHERE 'id' = ?` |
 | QueryTest12.java#testDoc23 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.Part2.cs:144 | `DELETE FROM 'relation_user' t WHERE EXISTS(SELECT 1 FROM 'relation_teacher' t1 WHERE EXISTS(SELECT 1…` |
 | QueryTest26.java#testAAA | 待做 |  |  |
 | TestDeleteFlatAndPredicate.java#testExpressionKey | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/FlatAndPredicateTest.cs:20：测的是 Java 表达式树的内部结构（getFlatAndPredicates 提取主键值），C# 不暴露 SQL 表达式树 |  |
@@ -638,8 +638,8 @@
 | DeleteTest.java#deleteTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:34 | `DELETE FROM 't_topic' WHERE 'id' = ?` |
 | DeleteTest.java#deleteTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:45 |  |
 | GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey3 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:197 | `INSERT INTO 't_topic_auto' ('stars','title') VALUES (?,?)` |
-| GenericWithDatabaseTest.java#queryLargeColumnTest3 | 待做 |  |  |
-| GenericWithDatabaseTest.java#queryLargeColumnTest4 | 待做 |  | `INSERT INTO 'query_large_column_test' ('id') VALUES (?)` |
+| GenericWithDatabaseTest.java#queryLargeColumnTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:23 |  |
+| GenericWithDatabaseTest.java#queryLargeColumnTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:28 | `INSERT INTO 'query_large_column_test' ('id') VALUES (?)` |
 | InsertTest.java#incrementTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:123 | `INSERT INTO 'custom_increment' ('id','name','address') VALUES (mysqlNextId(),?,?)` |
 | InsertTest.java#incrementTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:123 | `INSERT INTO 'custom_increment' ('id','name','address') VALUES (mysqlNextId(),?,?)` |
 | InsertTest.java#insertCustom | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:113 | `INSERT INTO 'xxxxx' ('stars') VALUES (?)` |
@@ -686,15 +686,15 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| GenericWithDatabaseTest.java#queryLargeColumnTest23 | 待做 |  | `UPDATE 'query_large_column_test' SET 'id' = ?,'name' = ?,'content' = ? WHERE 'id' = ?` |
-| GenericWithDatabaseTest.java#queryLargeColumnTest8 | 待做 |  | `UPDATE 'query_large_column_test' SET 'name' = ?,'content' = ? WHERE 'id' = ?` |
-| GenericWithDatabaseTest.java#updateTest24 | 待做 |  | `UPDATE 'x_t_blog' SET 'star' = 'star' + ? WHERE 'deleted' = ? AND 'id' = ?` |
-| GenericWithDatabaseTest.java#updateTest25 | 待做 |  | `UPDATE 'x_t_blog' SET 'star' = 'star' + ? WHERE 'deleted' = ? AND 'id' = ?` |
-| GenericWithDatabaseTest.java#updateTest26 | 待做 |  | `UPDATE 'x_t_blog' SET 'score' = 'score' + ? WHERE 'deleted' = ? AND 'id' = ?` |
-| GenericWithDatabaseTest.java#updateTest27 | 待做 |  | `UPDATE 'x_t_blog' SET 'star' = 'star' - ? WHERE 'deleted' = ? AND 'id' = ?` |
-| GenericWithDatabaseTest.java#updateTest28 | 待做 |  | `UPDATE 'x_t_blog' SET 'star' = 'star' + ? WHERE 'deleted' = ? AND 'id' = ?` |
-| GenericWithDatabaseTest.java#updateTest29 | 待做 |  | `UPDATE 't_unknown' SET 'money' = 'money' + ? WHERE 'id' = ?` |
-| GenericWithDatabaseTest.java#updateTest30 | 待做 |  |  |
+| GenericWithDatabaseTest.java#queryLargeColumnTest23 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:115 | `UPDATE 'query_large_column_test' SET 'id' = ?,'name' = ?,'content' = ? WHERE 'id' = ?` |
+| GenericWithDatabaseTest.java#queryLargeColumnTest8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:42 | `UPDATE 'query_large_column_test' SET 'name' = ?,'content' = ? WHERE 'id' = ?` |
+| GenericWithDatabaseTest.java#updateTest24 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:121 | `UPDATE 'x_t_blog' SET 'star' = 'star' + ? WHERE 'deleted' = ? AND 'id' = ?` |
+| GenericWithDatabaseTest.java#updateTest25 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:121 | `UPDATE 'x_t_blog' SET 'star' = 'star' + ? WHERE 'deleted' = ? AND 'id' = ?` |
+| GenericWithDatabaseTest.java#updateTest26 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:131 | `UPDATE 'x_t_blog' SET 'score' = 'score' + ? WHERE 'deleted' = ? AND 'id' = ?` |
+| GenericWithDatabaseTest.java#updateTest27 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:136 | `UPDATE 'x_t_blog' SET 'star' = 'star' - ? WHERE 'deleted' = ? AND 'id' = ?` |
+| GenericWithDatabaseTest.java#updateTest28 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:141 | `UPDATE 'x_t_blog' SET 'star' = 'star' + ? WHERE 'deleted' = ? AND 'id' = ?` |
+| GenericWithDatabaseTest.java#updateTest29 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:146 | `UPDATE 't_unknown' SET 'money' = 'money' + ? WHERE 'id' = ?` |
+| GenericWithDatabaseTest.java#updateTest30 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:152 |  |
 | QueryTest18.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:132 |  |
 | QueryTest21.java#TestReverse | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest21.cs:78 | `SELECT COUNT(*) FROM 't_topic' WHERE 'id' IS NOT NULL` |
 | QueryTest24.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:247 |  |
@@ -2084,13 +2084,13 @@
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
 | DeleteTest.java#testBatchDelete | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:108：批量：Java 一条语句两组参数，C# 每个实体一条语句 | `DELETE FROM 't_topic' WHERE 'id' = ?` |
-| GenericWithDatabaseTest.java#queryLargeColumnTest10 | 待做 |  | `UPDATE 'query_large_column_test' SET 'name' = ? WHERE 'id' = ?` |
-| GenericWithDatabaseTest.java#queryLargeColumnTest11 | 待做 |  | `UPDATE 'query_large_column_test' SET 'content' = ? WHERE 'id' = ?` |
-| GenericWithDatabaseTest.java#queryLargeColumnTest12 | 待做 |  |  |
-| GenericWithDatabaseTest.java#queryLargeColumnTest5 | 待做 |  | `INSERT INTO 'query_large_column_test' ('id') VALUES (?)` |
-| GenericWithDatabaseTest.java#queryLargeColumnTest6 | 待做 |  | `INSERT INTO 'query_large_column_test' ('id','name','content') VALUES (?,?,?)` |
-| GenericWithDatabaseTest.java#queryLargeColumnTest7 | 待做 |  | `INSERT INTO 'query_large_column_test' ('name','content') VALUES (?,?)` |
-| GenericWithDatabaseTest.java#queryLargeColumnTest9 | 待做 |  |  |
+| GenericWithDatabaseTest.java#queryLargeColumnTest10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:55 | `UPDATE 'query_large_column_test' SET 'name' = ? WHERE 'id' = ?` |
+| GenericWithDatabaseTest.java#queryLargeColumnTest11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:60 | `UPDATE 'query_large_column_test' SET 'content' = ? WHERE 'id' = ?` |
+| GenericWithDatabaseTest.java#queryLargeColumnTest12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:65 |  |
+| GenericWithDatabaseTest.java#queryLargeColumnTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:28 | `INSERT INTO 'query_large_column_test' ('id') VALUES (?)` |
+| GenericWithDatabaseTest.java#queryLargeColumnTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:32 | `INSERT INTO 'query_large_column_test' ('id','name','content') VALUES (?,?,?)` |
+| GenericWithDatabaseTest.java#queryLargeColumnTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:37 | `INSERT INTO 'query_large_column_test' ('name','content') VALUES (?,?)` |
+| GenericWithDatabaseTest.java#queryLargeColumnTest9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:47 |  |
 | InsertTest.java#insertBatch | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:100：Java 的 batch() 返回 JDBC 的 SUCCESS_NO_INFO（-3）；C# 每个实体一条语句，返回真实行数 |  |
 | InsertTest.java#mapInsertTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:133 | `INSERT INTO 'aaaaa' ('id','name') VALUES (?,?)` |
 | InsertTest.java#mapInsertTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:141 | `INSERT INTO 'aaaaa' ('id','name','name1') VALUES (?,?,?)` |
@@ -2733,12 +2733,12 @@
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
 | DeleteTest.java#deletex2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:135 | `UPDATE 'asv'.'t_blog' xx SET xx.'deleted' = ? WHERE xx.'deleted' = ? AND xx.'id' = ?` |
-| GenericWithDatabaseTest.java#deleteTest15 | 待做 |  | `DELETE FROM 'xxx'.'query_large_column_testaaa' WHERE 'id' = ?` |
-| GenericWithDatabaseTest.java#deleteTest16 | 待做 |  | `DELETE FROM 'xxx'.'query_large_column_testaaa' WHERE 'id' = ?` |
-| GenericWithDatabaseTest.java#queryLargeColumnTest19 | 待做 |  | `UPDATE 'xxx'.'abc' SET 'content' = ? WHERE 'id' = ?` |
-| GenericWithDatabaseTest.java#queryLargeColumnTest20 | 待做 |  | `UPDATE 'xcv'.'query_large_column_testabc' SET 'content' = ? WHERE 'id' = ?` |
-| GenericWithDatabaseTest.java#queryLargeColumnTest21 | 待做 |  |  |
-| GenericWithDatabaseTest.java#queryLargeColumnTest22 | 待做 |  |  |
+| GenericWithDatabaseTest.java#deleteTest15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:77 | `DELETE FROM 'xxx'.'query_large_column_testaaa' WHERE 'id' = ?` |
+| GenericWithDatabaseTest.java#deleteTest16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:77 | `DELETE FROM 'xxx'.'query_large_column_testaaa' WHERE 'id' = ?` |
+| GenericWithDatabaseTest.java#queryLargeColumnTest19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:95 | `UPDATE 'xxx'.'abc' SET 'content' = ? WHERE 'id' = ?` |
+| GenericWithDatabaseTest.java#queryLargeColumnTest20 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:100 | `UPDATE 'xcv'.'query_large_column_testabc' SET 'content' = ? WHERE 'id' = ?` |
+| GenericWithDatabaseTest.java#queryLargeColumnTest21 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:105 |  |
+| GenericWithDatabaseTest.java#queryLargeColumnTest22 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:110 |  |
 | InsertTest.java#insertEmpty | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:165 |  |
 | InsertTest.java#insertTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:29 | `INSERT INTO 'xxx'.'aaa' ('stars','title','create_time') VALUES (?,?,?)` |
 | InsertTest.java#insertTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:34 | `INSERT INTO 'xxx'.'t_topic_autoaaa' ('stars','title','create_time') VALUES (?,?,?)` |

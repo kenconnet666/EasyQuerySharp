@@ -114,3 +114,44 @@ public class MyCategoryVO3
     [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(ParentId)])]
     public List<MyCategoryVO3>? Children { get; set; }
 }
+
+/// <summary>对应 Java：entity/notable/QueryLargeColumnTestEntity（库里没有这张表，只为拿到出错的 SQL）。</summary>
+[Table("query_large_column_test")]
+public class QueryLargeColumnTestEntity
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    public string? Content { get; set; }
+}
+
+/// <summary>对应 Java：entity/UnknownTable（库里没有这张表）。</summary>
+[Table("t_unknown")]
+public class UnknownTable
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public int? Age { get; set; }
+
+    public int? Age1 { get; set; }
+
+    public long? Money { get; set; }
+
+    public long? Money1 { get; set; }
+
+    public DateTime? Birthday { get; set; }
+
+    public DateTime? Birthday1 { get; set; }
+}
+
+/// <summary>对应 Java：entity/NoKeyEntity（没有主键）。</summary>
+[Table("t_nokey")]
+public class NoKeyEntity
+{
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+}
