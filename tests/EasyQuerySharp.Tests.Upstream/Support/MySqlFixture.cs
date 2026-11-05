@@ -164,10 +164,6 @@ public abstract class MySqlTest(MySqlFixture fixture)
     /// <summary>连到 <c>easy-query-test</c> 的 EasyDb。</summary>
     protected EasyDb Db => fixture.Db;
 
-    /// <summary>只生成 SQL、不连库的 EasyDb（对应 Java 的 EmptyDataSource）。</summary>
-    protected static EasyDb SqlOnly(Func<EasyDbOptions, EasyDbOptions> configure) =>
-        new(o => configure(o).AddListener(SqlCapture.Instance));
-
     /// <summary>当前测试的取消令牌。</summary>
     protected static CancellationToken Ct => TestContext.Current.CancellationToken;
 }
