@@ -23,7 +23,6 @@ public sealed class GenericTest2
     [Fact, Upstream("GenericTest2.java#createTest1", NotApplicable = JavaUtility)] public void CreateTest1() { }
     [Fact, Upstream("GenericTest2.java#StringCharSegmentTest1", NotApplicable = "测的是 Java 的 EasyStringUtil 分段工具；C# 的分段是加密策略的内部实现，由往返用例覆盖")] public void StringCharSegmentTest1() { }
     [Fact, Upstream("GenericTest2.java#check", NotApplicable = JavaUtility)] public void Check() { }
-    [Fact, Upstream("GenericTest2.java#test", NotApplicable = "测的是 Java 的代理类生成")] public void Test() { }
     [Fact, Upstream("GenericTest2.java#test1", NotApplicable = "测的是 Java 的 Introspector 反射")] public void Test1() { }
     [Fact, Upstream("GenericTest2.java#sqlFormat", NotApplicable = "测的是 druid 的 SQL 格式化工具")] public void SqlFormat() { }
     [Fact, Upstream("GenericTest2.java#testAgroalGetUrl", NotApplicable = "测的是 Agroal 数据源")] public void TestAgroalGetUrl() { }
