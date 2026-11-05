@@ -1,7 +1,11 @@
 -- FirstMissing：查不到时返回 null
 SELECT rt.* FROM (SELECT "id","name","age","company_id","department_id","manager_id","level","joined_at" FROM "t_user" WHERE "name" = ?) rt WHERE ROWNUM < 2;
 -- params: ['不存在的人']
-SELECT rt.* FROM (SELECT "id","name","age","company_id","department_id","manager_id","level","joined_at" FROM "t_user" WHERE "id" = ?) rt WHERE ROWNUM < 2;
+SELECT "id","name","age","company_id","department_id","manager_id","level","joined_at" FROM "t_user" WHERE "id" = ?;
+-- params: [999]
+
+-- FindThrows：查不到时抛 NotFoundException
+SELECT "id","name","age","company_id","department_id","manager_id","level","joined_at" FROM "t_user" WHERE "id" = ?;
 -- params: [999]
 
 -- CountAndAny：按条件计数与判断存在

@@ -16,6 +16,20 @@ public static class QueryBasicsExamples
         return new { FirstIsNull = first is null, FoundIsNull = found is null };
     }
 
+    [Example("query/basics", "查不到时抛 NotFoundException")]
+    public static async Task<object> FindThrows(EasyDb db)
+    {
+        try
+        {
+            await db.Query<User>().FindOrThrowAsync(999L, "用户不存在");
+            return "found";
+        }
+        catch (NotFoundException ex)
+        {
+            return ex.Message;
+        }
+    }
+
     [Example("query/basics", "按条件计数与判断存在")]
     public static async Task<object> CountAndAny(EasyDb db) => new
     {

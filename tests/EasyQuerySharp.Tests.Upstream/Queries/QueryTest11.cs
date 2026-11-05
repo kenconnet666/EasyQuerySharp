@@ -196,6 +196,9 @@ public sealed class QueryTest11(MySqlFixture fixture) : MySqlTest(fixture)
     [Fact, Upstream("QueryTest11.java#testx12_1")]
     public async Task Testx12_1()
     {
+        // 空表时 FirstAsync 抛 NotFoundException（与 Java 的 firstNotNull 一致），先确保有一行
+        if (await Db.Query<TopicTypeTest1>().WhereById("123").FirstOrDefaultAsync(Ct) is null)
+            await Db.Insert(new TopicTypeTest1 { Id = "123", Stars = 1, Title = "t", TopicType = TopicTypeEnum.Classer, CreateTime = DateTime.Now }).ExecuteAsync(Ct);
         using var listen = SqlCapture.Listen();
         await Db.Query<TopicTypeTest1>().Select(o => Sql.Cast<int>(o.TopicType)).FirstAsync(Ct);
         listen.AssertSql("SELECT CAST(t.`topic_type` AS SIGNED) FROM `t_topic_type` t LIMIT 1");

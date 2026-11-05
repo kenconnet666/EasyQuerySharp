@@ -35,6 +35,9 @@ public sealed class EntityMetadata
     /// <summary>主键列；没有主键时为空。</summary>
     public IReadOnlyList<ColumnMetadata> KeyColumns { get; }
 
+    /// <summary>查不到行时的默认消息（<see cref="TableAttribute.NotFoundMessage"/>）；没有配置时为 null。</summary>
+    public string? NotFoundMessage { get; internal init; }
+
     /// <summary>逻辑删除列；没有时为 null。</summary>
     public ColumnMetadata? LogicDeleteColumn { get; internal set; }
 

@@ -17,13 +17,13 @@ UPDATE "t_user" AS t SET "level" = ? WHERE EXISTS(SELECT 1 FROM "t_post" t1 WHER
 -- params: ['senior', 2000]
 
 -- UpdateEntity：按实体更新：按主键写全部列
-SELECT "id","name","price","stock" FROM "t_product" WHERE "id" = ? LIMIT 1;
+SELECT "id","name","price","stock" FROM "t_product" WHERE "id" = ?;
 -- params: [6]
 UPDATE "t_product" SET "name" = ?,"price" = ?,"stock" = ? WHERE "id" = ?;
 -- params: ['贴纸礼包', 25.00, 200, 6]
 
 -- UpdateColumns：只写指定的列
-SELECT "id","name","price","stock" FROM "t_product" WHERE "id" = ? LIMIT 1;
+SELECT "id","name","price","stock" FROM "t_product" WHERE "id" = ?;
 -- params: [6]
 UPDATE "t_product" SET "stock" = ? WHERE "id" = ?;
 -- params: [199, 6]
@@ -33,7 +33,7 @@ DELETE FROM "t_comment" WHERE "likes" < ?;
 -- params: [3]
 
 -- LogicDelete：逻辑删除：改写成 UPDATE，版本号一起加一
-SELECT "id","title","deleted","version","created_by","updated_at" FROM "t_doc" WHERE "deleted" = ? AND "id" = ? LIMIT 1;
+SELECT "id","title","deleted","version","created_by","updated_at" FROM "t_doc" WHERE "deleted" = ? AND "id" = ?;
 -- params: [false, 2]
 UPDATE "t_doc" SET "deleted" = ?,"version" = ? WHERE "deleted" = ? AND "version" = ? AND "id" = ?;
 -- params: [true, 2, false, 1, 2]
@@ -41,6 +41,6 @@ UPDATE "t_doc" SET "deleted" = ?,"version" = ? WHERE "deleted" = ? AND "version"
 -- Transaction：事务：出错时整体回滚
 UPDATE "t_product" SET "stock" = ("stock" - ?) WHERE "id" = ?;
 -- params: [1, 5]
-SELECT "id","name","price","stock" FROM "t_product" WHERE "id" = ? LIMIT 1;
+SELECT "id","name","price","stock" FROM "t_product" WHERE "id" = ?;
 -- params: [5]
 

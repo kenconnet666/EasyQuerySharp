@@ -125,6 +125,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
 
         return new EntityMetadata(type, table?.Name ?? NameConversion.Convert(type.Name), table?.Schema, table?.Comment, columns)
         {
+            NotFoundMessage = table?.NotFoundMessage,
             LogicDelete = logicDelete,
             LogicDeleteColumn = logicDeleteColumn,
             VersionColumn = versionColumn,

@@ -144,8 +144,8 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
         Assert.Empty(joined);
         Assert.Null(await Db.Query<Topic>().Where(o => o.Id == "123").SingleOrDefaultAsync(Ct));
         // Java 的 firstNotNull / singleNotNull：没有数据时抛出异常
-        await Assert.ThrowsAsync<InvalidOperationException>(() => Db.Query<Topic>().Where(o => o.Id == "123").FirstAsync(Ct));
-        await Assert.ThrowsAsync<InvalidOperationException>(() => Db.Query<Topic>().Where(o => o.Id == "123").SingleAsync(Ct));
+        await Assert.ThrowsAsync<NotFoundException>(() => Db.Query<Topic>().Where(o => o.Id == "123").FirstAsync(Ct));
+        await Assert.ThrowsAsync<NotFoundException>(() => Db.Query<Topic>().Where(o => o.Id == "123").SingleAsync(Ct));
         Assert.NotNull(await Db.Query<Topic>().Where(o => o.Id == "1").SingleAsync(Ct));
     }
 

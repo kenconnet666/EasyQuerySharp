@@ -198,8 +198,15 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     /// <summary>INNER JOIN 一个子查询（作为派生表）。</summary>
     public Query<T, T2> InnerJoin<T2>(Query<T2> subQuery, Expression<Func<T, T2, bool>> on) => Join<T2>(JoinKind.Inner, subQuery.State.AsJoinSource(), on);
 
-    /// <summary>按主键查一行；没有时返回 null（对应 Java 的 findOrNull）。</summary>
-    public Task<T?> FindAsync(object id, CancellationToken cancellationToken = default) => WhereById(id).FirstOrDefaultAsync(cancellationToken);
+    /// <summary>按主键查一行（主键至多一行，不加 LIMIT）；没有时返回 null（对应 Java 的 findOrNull）。</summary>
+    public Task<T?> FindAsync(object id, CancellationToken cancellationToken = default) => WhereById(id).SingleOrDefaultAsync(cancellationToken);
+
+    /// <summary>
+    /// 按主键查一行；没有时抛出 <see cref="NotFoundException"/>（对应 Java 的 findNotNull），
+    /// 消息为 <paramref name="message"/>，不给时取实体配置的默认消息。
+    /// </summary>
+    public Task<T> FindOrThrowAsync(object id, string? message = null, CancellationToken cancellationToken = default) =>
+        message is null ? WhereById(id).SingleAsync(cancellationToken) : WhereById(id).SingleAsync(message, cancellationToken);
 
     /// <summary>SUM。没有行时返回 <c>default</c>（结果类型写成可空即得到 null）。</summary>
     public Task<TResult> SumAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default) =>

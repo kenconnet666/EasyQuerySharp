@@ -255,27 +255,62 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         return list.Count == 0 ? default : list[0];
     }
 
-    /// <summary>第一行；没有时抛出 <see cref="InvalidOperationException"/>（对应 Java 的 firstNotNull）。</summary>
-    public async Task<TElement> FirstAsync(CancellationToken cancellationToken = default) =>
-        await FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false)
-        ?? throw new InvalidOperationException($"没有查到 {typeof(TElement).Name}");
+    /// <summary>第一行；没有时抛出 <see cref="NotFoundException"/>，消息取根实体配置的默认消息（对应 Java 的 firstNotNull）。</summary>
+    public Task<TElement> FirstAsync(CancellationToken cancellationToken = default) => FirstAsync(NotFound, cancellationToken);
 
-    /// <summary>唯一一行（不加 LIMIT）；没有时返回 null，多于一行时抛出异常（对应 Java 的 singleOrNull）。</summary>
+    /// <summary>第一行；没有时抛出带 <paramref name="message"/> 的 <see cref="NotFoundException"/>。</summary>
+    public Task<TElement> FirstAsync(string message, CancellationToken cancellationToken = default) =>
+        FirstAsync(() => new NotFoundException(message), cancellationToken);
+
+    /// <summary>第一行；没有时抛出 <paramref name="error"/> 创建的异常。</summary>
+    public async Task<TElement> FirstAsync(Func<Exception> error, CancellationToken cancellationToken = default)
+    {
+        var list = await With(State with { Limit = 1 }).ToListAsync(cancellationToken).ConfigureAwait(false);
+        return list.Count > 0 ? list[0] : throw error();
+    }
+
+    /// <summary>唯一一行（不加 LIMIT）；没有时返回 null，多于一行时抛出 <see cref="InvalidOperationException"/>（对应 Java 的 singleOrNull）。</summary>
     public async Task<TElement?> SingleOrDefaultAsync(CancellationToken cancellationToken = default)
     {
         var list = await ToListAsync(cancellationToken).ConfigureAwait(false);
-        return list.Count switch
-        {
-            0 => default,
-            1 => list[0],
-            _ => throw new InvalidOperationException($"期望最多一行 {typeof(TElement).Name}，实际 {list.Count} 行"),
-        };
+        return list.Count == 0 ? default : Single(list);
     }
 
-    /// <summary>唯一一行；没有或多于一行时抛出异常（对应 Java 的 singleNotNull）。</summary>
-    public async Task<TElement> SingleAsync(CancellationToken cancellationToken = default) =>
-        await SingleOrDefaultAsync(cancellationToken).ConfigureAwait(false)
-        ?? throw new InvalidOperationException($"没有查到 {typeof(TElement).Name}");
+    /// <summary>唯一一行；没有时抛出 <see cref="NotFoundException"/>，多于一行时抛出 <see cref="InvalidOperationException"/>（对应 Java 的 singleNotNull）。</summary>
+    public Task<TElement> SingleAsync(CancellationToken cancellationToken = default) => SingleAsync(NotFound, cancellationToken);
+
+    /// <summary>唯一一行；没有时抛出带 <paramref name="message"/> 的 <see cref="NotFoundException"/>。</summary>
+    public Task<TElement> SingleAsync(string message, CancellationToken cancellationToken = default) =>
+        SingleAsync(() => new NotFoundException(message), cancellationToken);
+
+    /// <summary>唯一一行；没有时抛出 <paramref name="error"/> 创建的异常，多于一行时抛出 <see cref="InvalidOperationException"/>。</summary>
+    public async Task<TElement> SingleAsync(Func<Exception> error, CancellationToken cancellationToken = default)
+    {
+        var list = await ToListAsync(cancellationToken).ConfigureAwait(false);
+        return list.Count == 0 ? throw error() : Single(list);
+    }
+
+    private static TElement Single(List<TElement> list) => list.Count == 1
+        ? list[0]
+        : throw new InvalidOperationException($"期望最多一行 {typeof(TElement).Name}，实际 {list.Count} 行");
+
+    /// <summary>
+    /// 要求至少有一行（对应 Java 的 required）：按 <see cref="AnyAsync"/> 查询，没有时抛出 <see cref="NotFoundException"/>，
+    /// 消息为 <paramref name="message"/>，不给时取根实体配置的默认消息。
+    /// </summary>
+    public Task EnsureAnyAsync(string? message = null, CancellationToken cancellationToken = default) =>
+        EnsureAnyAsync(message is null ? NotFound : () => new NotFoundException(message), cancellationToken);
+
+    /// <summary>要求至少有一行；没有时抛出 <paramref name="error"/> 创建的异常。</summary>
+    public async Task EnsureAnyAsync(Func<Exception> error, CancellationToken cancellationToken = default)
+    {
+        if (!await AnyAsync(cancellationToken).ConfigureAwait(false)) throw error();
+    }
+
+    /// <summary>查不到行时的默认异常：消息取 FROM 实体上 <see cref="Metadata.TableAttribute.NotFoundMessage"/> 的配置。</summary>
+    private protected NotFoundException NotFound() =>
+        new((State.Sources[0] is EntitySource source ? Db.Metadata.Get(source.EntityType).NotFoundMessage : null)
+            ?? $"没有查到 {typeof(TElement).Name}");
 
     /// <summary>是否有任何一行：<c>SELECT  1  … LIMIT 1</c>（与 Java 的 any 逐字一致，1 两侧各有一个空格）。</summary>
     public async Task<bool> AnyAsync(CancellationToken cancellationToken = default)

@@ -12,7 +12,7 @@ public sealed class PublicApiTest(MySqlFixture fixture) : MySqlTest(fixture)
         using var listen = SqlCapture.Listen();
         var topic = await Db.Query<Topic>().FindAsync("1", Ct);
         Assert.Equal("1", topic?.Id);
-        listen.AssertSql("SELECT `id`,`stars`,`title`,`create_time` FROM `t_topic` WHERE `id` = ? LIMIT 1");
+        listen.AssertSql("SELECT `id`,`stars`,`title`,`create_time` FROM `t_topic` WHERE `id` = ?");
         Assert.Null(await Db.Query<Topic>().FindAsync("no-such-id", Ct));
     }
 

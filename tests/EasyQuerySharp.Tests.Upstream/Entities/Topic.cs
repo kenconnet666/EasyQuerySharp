@@ -3,7 +3,7 @@ using EasyQuerySharp.Metadata;
 namespace EasyQuerySharp.Tests.Upstream.Entities;
 
 /// <summary>对应 Java：entity/Topic。</summary>
-[Table("t_topic")]
+[Table("t_topic", NotFoundMessage = "未找到主题信息")]
 public class Topic
 {
     [Column(PrimaryKey = true)]

@@ -18,4 +18,10 @@ public sealed class TableAttribute(string? name = null) : Attribute
 
     /// <summary>不映射的属性名（通常是基类里这张表没有的列，对应 Java 的 ignoreProperties）。</summary>
     public string[] IgnoreProperties { get; init; } = [];
+
+    /// <summary>
+    /// 查不到行时 <see cref="NotFoundException"/> 的默认消息（对应 Java 的 @EasyAssertMessage），
+    /// 用于 FirstAsync / SingleAsync / FindOrThrowAsync / EnsureAnyAsync 没有给出消息时。
+    /// </summary>
+    public string? NotFoundMessage { get; init; }
 }

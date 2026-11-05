@@ -148,5 +148,5 @@ db.Query<User>().Where(..).Select(..).ToListAsync()
 ## 命名
 
 - 入口方法：`db.Query<T>()`，不叫 `Queryable`，避免和 `System.Linq.Queryable` 混淆。写入用 `db.Insert(...)` / `db.Update<T>()` / `db.Delete<T>()` / `db.Save(...)`。
-- 终结方法：`ToListAsync` / `FirstAsync` / `FirstOrDefaultAsync` / `SingleAsync` / `AnyAsync` / `CountAsync` / `ToPageAsync` / `ExecuteAsync`（写入，返回受影响的行数）。
+- 终结方法：`ToListAsync` / `FirstAsync` / `FirstOrDefaultAsync` / `SingleAsync` / `FindAsync` / `FindOrThrowAsync` / `AnyAsync` / `EnsureAnyAsync` / `CountAsync` / `ToPageAsync` / `ExecuteAsync`（写入，返回受影响的行数）。
 - 写入一律以 `ExecuteAsync` 结束（TS 的决定），读代码时一眼看出哪里真正执行。
