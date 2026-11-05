@@ -784,4 +784,32 @@ public sealed partial class QueryTest(MySqlFixture fixture) : MySqlTest(fixture)
         Assert.Equal(33, await Db.Query<BlogEntity>().WhereByIds(new[] { "11", "22" }).SumAsync(o => o.Star, Ct));
         Assert.Equal(35, await Db.Query<BlogEntity>().WhereByIds(new[] { "13", "22" }).SumAsync(o => o.Star, Ct));
     }
+
+    private sealed class RankRow
+    {
+        public string? Id { get; set; }
+
+        public long Rank1 { get; set; }
+    }
+
+    // Java 把别名写在原生片段里（"… as rank1"）；C# 的原生值赋给成员，别名由成员名生成
+    [Fact, Upstream("QueryTest.java#query11_2", Deviation = RawAlias), Upstream("QueryTest.java#query11_3", Deviation = RawAlias)]
+    public void Query11_2()
+    {
+        var sub = Db.Query<Topic>().Where(t => t.Id == "3");
+        var sql = Db.Query<BlogEntity>().LeftJoin(sub, (a, b) => a.Id == b.Id).Where(o => o.Id != null && o.Id == "3")
+            .Select((a, b) => new RankRow { Id = a.Id, Rank1 = Sql.Raw<long>("rank() over(order by {0} desc)", b.Stars) }).ToSql();
+        Assert.Equal("SELECT t.`id`,rank() over(order by t2.`stars` desc) AS `rank1` FROM `t_blog` t LEFT JOIN (SELECT t1.`id`,t1.`stars`,t1.`title`,t1.`create_time` FROM `t_topic` t1 WHERE t1.`id` = ?) t2 ON t.`id` = t2.`id` WHERE t.`deleted` = ? AND t.`id` IS NOT NULL AND t.`id` = ?", sql);
+    }
+
+    private const string RawAlias = "Java 把列别名写在原生片段里（rank() over(..) as rank1）；C# 的原生值赋给 DTO 成员，别名由成员名生成（AS `rank1`）";
+
+    // Java 用例没有断言：原生条件片段、原生片段作为一列、原生片段赋给实体属性
+    [Fact, Upstream("QueryNativeSQLTest.java#testNativeSQL1")]
+    public async Task TestNativeSQL1()
+    {
+        await Db.Query<Topic>().Where(t => Sql.Raw<bool>("{0}={1}", t.Title, "123")).ToListAsync(Ct);
+        await Db.Query<Topic>().Select(t => new Draft<string>(Sql.Raw<string>("{0}", t.Title))).ToListAsync(Ct);
+        await Db.Query<Topic>().Select(t => new Topic { Title = Sql.Raw<string>("{0}", t.Stars) }).ToListAsync(Ct);
+    }
 }

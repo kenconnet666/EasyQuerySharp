@@ -349,4 +349,24 @@ public sealed class QueryTest15(MySqlFixture fixture) : MySqlTest(fixture)
         await Db.Query<Topic>().Where(t => Sql.Raw<bool>("{0} in ({1})", t.Id, new[] { "1", "2" })).ToListAsync(Ct);
         await Db.Query<Topic>().Select(t => Sql.Sum(t.Stars)).ToListAsync(Ct);
     }
+
+    // Java 用例没有断言：日期格式、OR 分组、nullOrDefault、原生条件混在一起；投影排除两列后把 id 当标题，或用原生片段赋值
+    [Fact, Upstream("QueryTest15.java#testxxx1")]
+    public async Task Testxxx1()
+    {
+        await Db.Query<Topic>()
+            .Where(o => o.CreateTime!.Value.ToString("yyyy/MM/dd") == "2023/01/01"
+                        && (o.Stars != 1 || o.CreateTime <= new DateTime(2024, 1, 1, 1, 1, 0) || !o.Title!.Contains("abc"))
+                        && o.CreateTime.Value.ToString("yyyy/MM/dd") == "2023/01/01"
+                        && (o.Id ?? "yyyy/MM/dd") == "xxx"
+                        && Sql.Raw<bool>("{0} != {1}", o.Stars, o.CreateTime)
+                        && (o.CreateTime.Value.ToString("yyyy/MM/dd") == "2023/01/01" || (o.Id ?? "yyyy/MM/dd") == "xxx" || Sql.Raw<bool>("{0} != {1}", o.Stars, o.CreateTime))
+                        && o.CreateTime.Value.ToString("yyyy/MM/dd") == "2023/01/02"
+                        && (o.Id ?? "yyyy/MM/dd2") == "xxx1")
+            .Select(o => new Topic { Stars = o.Stars, CreateTime = o.CreateTime, Title = o.Id, Id = o.Id })
+            .ToListAsync(Ct);
+        await Db.Query<Topic>().Where(o => o.CreateTime!.Value.ToString("yyyy/MM/dd") == "2023/01/01")
+            .Select(o => new Topic { Title = (o.Stars ?? 0).ToString(), Id = Sql.Raw<string>("IFNULL({0},'')", o.Id) })
+            .ToListAsync(Ct);
+    }
 }
