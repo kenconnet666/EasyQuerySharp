@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1626、偏离 201、不适用 77、骨架 7、待做 493。
+合计：已移植 1630、偏离 204、不适用 77、骨架 7、待做 486。
 
 ## 按能力
 
@@ -14,15 +14,15 @@
 | 分页结果 | `query.page` | M1 | 22 | 18 | 3 | 0 | 0 | 1 |
 | 原生 SQL | `sql.native` | M1 | 50 | 40 | 9 | 1 | 0 | 0 |
 | 删除 | `write.delete` | M1 | 25 | 13 | 1 | 10 | 0 | 1 |
-| 插入 | `write.insert` | M1 | 50 | 41 | 1 | 0 | 1 | 7 |
+| 插入 | `write.insert` | M1 | 50 | 44 | 1 | 0 | 1 | 4 |
 | 更新 | `write.update` | M1 | 59 | 46 | 5 | 8 | 0 | 0 |
-| CASE WHEN | `expr.case` | M2 | 27 | 19 | 6 | 0 | 0 | 2 |
+| CASE WHEN | `expr.case` | M2 | 27 | 20 | 7 | 0 | 0 | 0 |
 | 日期函数 | `func.date` | M2 | 101 | 79 | 15 | 7 | 0 | 0 |
 | 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 55 | 3 | 0 | 0 | 1 |
 | 字符串聚合（joining） | `func.joining` | M2 | 29 | 26 | 3 | 0 | 0 | 0 |
 | JSON 函数 | `func.json` | M2 | 12 | 12 | 0 | 0 | 0 | 0 |
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
-| 字符串函数 | `func.string` | M2 | 131 | 118 | 5 | 4 | 1 | 3 |
+| 字符串函数 | `func.string` | M2 | 131 | 118 | 7 | 4 | 1 | 1 |
 | 行锁 | `lock` | M2 | 28 | 21 | 1 | 0 | 0 | 6 |
 | 窗口函数 | `window` | M2 | 44 | 42 | 1 | 1 | 0 | 0 |
 | CTE | `query.cte` | M3 | 11 | 8 | 3 | 0 | 0 | 0 |
@@ -666,7 +666,7 @@
 | QueryTest15.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:111 | `SELECT 'id','first_name','last_name','birthday',CONCAT('first_name','last_name') AS 'full_name',CEIL…` |
 | QueryTest15.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:132 | `SELECT 'id','first_name','last_name','birthday',CONCAT('first_name','last_name') AS 'full_name',CEIL…` |
 | QueryTest18.java#test111 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.cs:115 |  |
-| QueryTest27.java#testUUId | 待做 |  |  |
+| QueryTest27.java#testUUId | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest27.cs:275 |  |
 | QueryTest4.java#testJson1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:42 |  |
 | QueryTest4.java#testJson2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:52 |  |
 | QueryTest4.java#testJson2Jackson | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:52 |  |
@@ -679,8 +679,8 @@
 | mysql8/MySQL8Test5.java#testLikeStartsWith | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:129 | `SELECT 'column1','column2','column3' FROM 'no_key_table' WHERE 'column2' LIKE CONCAT(?,'%') ESCAPE '…` |
 | pgsql/QueryTest.java#testDraft9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:119 |  |
 | pgsql/QueryTest.java#testDraft9_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:119 |  |
-| pgsql/QueryTest18.java#testLikeStartsWith | 待做 |  | `SELECT "column1","column2","column3" FROM "no_key_table" WHERE "column2" LIKE CONCAT((?)::TEXT,'%') …` |
-| pgsql/QueryTest19.java#testUUId | 待做 |  |  |
+| pgsql/QueryTest18.java#testLikeStartsWith | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest18.cs:13 | `SELECT "column1","column2","column3" FROM "no_key_table" WHERE "column2" LIKE CONCAT((?)::TEXT,'%') …` |
+| pgsql/QueryTest19.java#testUUId | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:177 |  |
 
 ### 更新（`write.update`，M1）
 
@@ -775,8 +775,8 @@
 | SubJoinTest.java#testSubJoinCaseWhen1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:53 | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
 | SubJoinTest.java#testSubJoinCaseWhen2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:53 | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
 | mysql8/MySQL8Test2.java#abc | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:129 |  |
-| pgsql/MathQueryTest.java#testPropertyMath | 待做 |  | `SELECT t."test_value" AS "test_value",ABS(t."test_value") AS "test_abs",SIGN(t."test_value") AS "tes…` |
-| pgsql/QueryTest19.java#testItem | 待做 |  |  |
+| pgsql/MathQueryTest.java#testPropertyMath | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/MathQueryTest.cs:91：C# 的 Math.Pow / Atan2 只有 double 重载，pow 与 atan2 的参数是 Double（Java 是 BigDecimal）；Java 的 DTO 代理 set() 同名列也写 AS，C# 同名不写 | `SELECT t."test_value" AS "test_value",ABS(t."test_value") AS "test_abs",SIGN(t."test_value") AS "tes…` |
+| pgsql/QueryTest19.java#testItem | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:197 |  |
 
 ### 日期函数（`func.date`，M2）
 
@@ -1017,8 +1017,8 @@
 | GenericTest2.java#easySm4EncryptionIdCardTest | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:34：SM4 不在 .NET 的 BCL 里，核心不引入第三方加密库；需要时由使用方实现 IEncryptionStrategy |  |
 | GenericTest2.java#easySm4EncryptionTest | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:30：SM4 不在 .NET 的 BCL 里，核心不引入第三方加密库；需要时由使用方实现 IEncryptionStrategy |  |
 | InsertTest.java#insertTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:13 |  |
-| MathQueryTest.java#testPropertyMath | 待做 |  | `SELECT t.'test_value' AS 'test_value',ABS(t.'test_value') AS 'test_abs',SIGN(t.'test_value') AS 'tes…` |
-| MathQueryTest.java#testPropertyMath2 | 待做 |  | `SELECT t.'test_value' AS 'test_value',ABS(t.'test_value') AS 'test_abs',SIGN(t.'test_value') AS 'tes…` |
+| MathQueryTest.java#testPropertyMath | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/MathQueryTest.cs:55：C# 的 Math.Pow / Atan2 只有 double 重载，pow 与 atan2 的参数是 Double（Java 是 BigDecimal）；Java 的 DTO 代理 set() 同名列也写 AS，C# 同名不写 | `SELECT t.'test_value' AS 'test_value',ABS(t.'test_value') AS 'test_abs',SIGN(t.'test_value') AS 'tes…` |
+| MathQueryTest.java#testPropertyMath2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/MathQueryTest.cs:55：C# 的 Math.Pow / Atan2 只有 double 重载，pow 与 atan2 的参数是 Double（Java 是 BigDecimal）；Java 的 DTO 代理 set() 同名列也写 AS，C# 同名不写 | `SELECT t.'test_value' AS 'test_value',ABS(t.'test_value') AS 'test_abs',SIGN(t.'test_value') AS 'tes…` |
 | MyTest1.java#testDraft1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:40 | `SELECT t.'content' AS 'value1',CHAR_LENGTH(t.'content') AS 'value2' FROM 't_blog' t WHERE t.'deleted…` |
 | MyTest1.java#testDraft1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:40 | `SELECT t.'content' AS 'value1',CHAR_LENGTH(t.'content') AS 'value2' FROM 't_blog' t WHERE t.'deleted…` |
 | MyTest1.java#testDraft2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:50 | `SELECT t.'content' AS 'value1',CHAR_LENGTH(t.'content') AS 'value2' FROM 't_blog' t WHERE t.'deleted…` |

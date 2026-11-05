@@ -58,12 +58,12 @@ internal static partial class UpstreamScanner
             : new(id, PortStatus.Ported, null, location);
     }
 
-    // 命名参数的值：字符串字面量，或同一文件里 const string 常量的名字（如 NotApplicable = JavaUtility）
+    // 命名参数的值：字符串字面量，或同一文件里 const string 常量的名字（如 NotApplicable = JavaUtility；带类型名时取最后一段，如 MathQueryTest.DoubleParams）
     private static string? Named(string rest, string name, string fileText)
     {
         var m = Regex.Match(rest, name + @"\s*=\s*""((?:[^""\\]|\\.)*)""");
         if (m.Success) return m.Groups[1].Value;
-        var constant = Regex.Match(rest, name + @"\s*=\s*(?<id>[A-Za-z_]\w*)");
+        var constant = Regex.Match(rest, name + @"\s*=\s*(?:[A-Za-z_]\w*\.)*(?<id>[A-Za-z_]\w*)");
         if (!constant.Success) return null;
         var id = constant.Groups["id"].Value;
         var definition = Regex.Match(fileText, @"const\s+string\s+" + id + @"\s*=\s*""((?:[^""\\]|\\.)*)""");
