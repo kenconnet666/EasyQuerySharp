@@ -63,6 +63,14 @@ internal sealed partial class ExpressionTranslator
                 SqlExpr counted = filter is null ? one : new CaseExpr([(filter, one)], LiteralExpr.Null);
                 return new FunctionExpr(distinct ? SqlFunctionNames.CountDistinct : SqlFunctionNames.Count, [counted]);
             }
+            // Count(predicate)：满足条件的行数，条件与组上的 Where 一起写进 CASE
+            case nameof(IGroup<object, object>.Count) when !call.Method.IsGenericMethod:
+            {
+                var condition = ElementPredicate((LambdaExpression)StripConvert(call.Arguments[0]), group.Element);
+                if (filter is not null) condition = LogicalExpr.And([filter, condition]);
+                return new FunctionExpr(distinct ? SqlFunctionNames.CountDistinct : SqlFunctionNames.Count,
+                    [new CaseExpr([(condition, new ParameterExpr(1, typeof(int)))], LiteralExpr.Null)]);
+            }
             case nameof(IGroup<object, object>.Count):
                 return new FunctionExpr(distinct ? SqlFunctionNames.CountDistinct : SqlFunctionNames.Count, [Value(0, LiteralExpr.Null)]);
             case nameof(IGroup<object, object>.Sum):

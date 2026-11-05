@@ -34,6 +34,8 @@ dotnet_diagnostic.CA1707.severity = none
 dotnet_diagnostic.CA1711.severity = none
 dotnet_diagnostic.CA1515.severity = none
 dotnet_diagnostic.CA1861.severity = none
+# 查询表达式里的导航集合要写 Any()（翻译成 EXISTS），不是 List.Count
+dotnet_diagnostic.CA1860.severity = none
 # 查询表达式里的 ToLower / CompareTo 等会翻译成 SQL，区域设置规则不适用
 dotnet_diagnostic.CA1304.severity = none
 dotnet_diagnostic.CA1307.severity = none

@@ -10,6 +10,16 @@ namespace EasyQuerySharp;
 public static partial class Sql
 {
     /// <summary>
+    /// 原生 SQL 插值里的标识符：<c>$"SELECT * FROM {Sql.Identifier("t_user")}"</c> 按方言加引号（MySQL 反引号、PG 双引号、SQL Server 方括号）。
+    /// 与其它 Sql 方法不同，它在运行时求值，不写在查询表达式里。
+    /// </summary>
+    public static SqlIdentifier Identifier(string name)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        return new SqlIdentifier(name);
+    }
+
+    /// <summary>
     /// 原样的 LIKE：<paramref name="pattern"/> 里的 % 与 _ 由调用方自己写。
     /// 一般写法用 <see cref="string.Contains(string)"/>（<c>%v%</c>）、<see cref="string.StartsWith(string)"/>（<c>v%</c>）、<see cref="string.EndsWith(string)"/>（<c>%v</c>）。
     /// </summary>

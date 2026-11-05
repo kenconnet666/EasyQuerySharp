@@ -66,7 +66,7 @@ public sealed class SqlRenderer
         AliasAllocator.Allocate(update.Table, update.Joins, update.Sets.Select(s => s.Value).Concat(update.Where));
         var r = new SqlRenderer(dialect);
         if (update.Joins.Count > 0) dialect.WriteJoinedUpdate(r, update);
-        else r.Append("UPDATE ").WriteTable(update.Table).Append(" SET ").WriteSets(update.Sets).WriteWhere(update.Where);
+        else r.Append("UPDATE ").WriteWriteTarget(update.Table).Append(" SET ").WriteSets(update.Sets).WriteWhere(update.Where);
         return r.Build();
     }
 
@@ -76,17 +76,17 @@ public sealed class SqlRenderer
         AliasAllocator.Allocate(delete.Table, delete.Joins, delete.Where);
         var r = new SqlRenderer(dialect);
         if (delete.Joins.Count > 0) dialect.WriteJoinedDelete(r, delete);
-        else r.Append("DELETE FROM ").WriteTable(delete.Table).WriteWhere(delete.Where);
+        else r.Append("DELETE FROM ").WriteWriteTarget(delete.Table).WriteWhere(delete.Where);
         return r.Build();
     }
 
-    /// <summary>输出 SET 列表 <c>a = ?,b = ?</c>；<paramref name="qualified"/> 为 false 时列不带表别名（PostgreSQL 的 UPDATE … FROM 要求）。</summary>
-    public SqlRenderer WriteSets(IReadOnlyList<(ColumnExpr Column, SqlExpr Value)> sets, bool qualified = true)
+    /// <summary>输出 SET 列表 <c>a = ?,b = ?</c>；列是否带表别名由 <see cref="SqlDialect.QualifySetColumns"/> 决定。</summary>
+    public SqlRenderer WriteSets(IReadOnlyList<(ColumnExpr Column, SqlExpr Value)> sets)
     {
         for (var i = 0; i < sets.Count; i++)
         {
             if (i > 0) Append(",");
-            if (qualified) Write(sets[i].Column);
+            if (Dialect.QualifySetColumns) Write(sets[i].Column);
             else Append(Dialect.QuoteIdentifier(sets[i].Column.Name));
             Append(" = ").Write(sets[i].Value);
         }
@@ -205,6 +205,13 @@ public sealed class SqlRenderer
 
     // 顶层 AND 平铺输出；其余交给 Write（OR 组自带括号）
     private SqlRenderer WritePredicate(SqlExpr predicate) => Write(predicate);
+
+    /// <summary>UPDATE / DELETE 的目标表：别名前的分隔由 <see cref="SqlDialect.WriteTargetAliasSeparator"/> 决定（SQLite 要写 AS）。</summary>
+    public SqlRenderer WriteWriteTarget(EntityTableSource table)
+    {
+        WriteTableName(table);
+        return table.Alias is null ? this : Append(Dialect.WriteTargetAliasSeparator).Append(table.Alias);
+    }
 
     /// <summary>输出一个表来源（表名、派生表、CTE 引用…），有别名时跟上别名。</summary>
     public SqlRenderer WriteTable(TableSource table)

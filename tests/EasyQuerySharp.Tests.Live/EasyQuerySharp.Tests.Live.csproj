@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <!-- L3 实库测试：按环境变量 EQS_*_CS 连接各数据库，没配置的跳过；见 docs/decisions/0003-testing-and-parity.md -->
+    <!--
+      L3 跨方言共用套件：LiveSuite 的用例在每个数据库上各跑一遍（每库一个薄子类），按环境变量 EQS_*_CS 连接，没配置的跳过。
+      见 docs/decisions/0003-testing-and-parity.md。
+    -->
 
     <ItemGroup>
         <ProjectReference Include="..\EasyQuerySharp.TestKit\EasyQuerySharp.TestKit.csproj" />
@@ -8,6 +11,11 @@
 
     <ItemGroup>
         <PackageReference Include="xunit.v3" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="EasyQuerySharp.TestKit" />
+        <Using Include="EasyQuerySharp.Querying" />
     </ItemGroup>
 
 </Project>

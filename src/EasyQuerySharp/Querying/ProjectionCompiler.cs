@@ -150,25 +150,39 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
             && materialize.Method.DeclaringType == typeof(Enumerable))
             inner = materialize.Arguments[0];
 
+        // 从外往里拆：最外层可以是 Select，里面是 Where 与排序；排序在子查询上执行（按书写顺序）
         LambdaExpression? selector = null;
         var filters = new List<LambdaExpression>();
-        while (inner is MethodCallExpression mc && mc.Method.DeclaringType == typeof(Enumerable) && mc.Method.Name is nameof(Enumerable.Select) or nameof(Enumerable.Where))
+        var orders = new List<OrderSpec>();
+        while (inner is MethodCallExpression mc && mc.Method.DeclaringType == typeof(Enumerable) && mc.Arguments.Count == 2
+               && mc.Method.Name is nameof(Enumerable.Select) or nameof(Enumerable.Where) or nameof(Enumerable.OrderBy) or nameof(Enumerable.OrderByDescending)
+                   or nameof(Enumerable.ThenBy) or nameof(Enumerable.ThenByDescending))
         {
             var lambda = (LambdaExpression)ExpressionTranslator.StripConvert(mc.Arguments[1]);
-            if (mc.Method.Name == nameof(Enumerable.Select))
+            switch (mc.Method.Name)
             {
-                if (selector is not null || filters.Count > 0) return null;
-                selector = lambda;
+                case nameof(Enumerable.Select):
+                    if (selector is not null || filters.Count > 0 || orders.Count > 0) return null;
+                    selector = lambda;
+                    break;
+                case nameof(Enumerable.Where):
+                    filters.Insert(0, lambda);
+                    break;
+                default:
+                    orders.Insert(0, new OrderSpec(lambda, mc.Method.Name.EndsWith("Descending", StringComparison.Ordinal)));
+                    break;
             }
-            else filters.Insert(0, lambda);
             inner = mc.Arguments[0];
         }
 
         if (inner is not MemberExpression { Expression: { } ownerExpr } navMember || translator.BindingOf(ownerExpr) is not EntityBinding owner) return null;
         if (translator.FindNavigation(owner, navMember.Member.Name) is not { } nav) return null;
-        if (!nav.IsCollection && (selector is not null || filters.Count > 0 || inner != value)) return null;
+        if (!nav.IsCollection && (selector is not null || filters.Count > 0 || orders.Count > 0 || inner != value)) return null;
 
-        var plan = new IncludePlan(nav, selector?.ReturnType ?? nav.Target.Type, selector, filters, nav.IsCollection);
+        var plan = new IncludePlan(nav, selector?.ReturnType ?? nav.Target.Type, selector, filters, nav.IsCollection)
+        {
+            Configure = orders.Count == 0 ? null : state => state with { OrderBys = state.OrderBys.AddRange(orders) },
+        };
         _includes.Add((plan, owner));
         return plan;
     }

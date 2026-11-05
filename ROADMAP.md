@@ -25,6 +25,24 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 
 - 文档卡片随各里程碑一起补，M8 只负责收尾和站点。
 - 某一项进入待决状态时，跳到顺序里下一个不依赖它的项。
+- 每完成一块功能顺手整理（拆文件、合并重复、删死代码），整理单独提交。
+
+2026-11 定下的剩余阶段（按顺序）：
+
+| 阶段 | 内容 |
+|---|---|
+| A 基础设施 | L3 `LiveSuite`（1.12）、表达式形状缓存与基准（1.7）、生成器与分析器项目、`DocsExamples` 卡片与快照（1.11）、示例模型（0.10） |
+| B M1–M3 清零 | 基本查询、函数、多表组合的剩余用例，以及它们需要的新能力 |
+| C M4 | 一对多展开、按 DTO 自动带出与 `[MapFrom]`、树与递归 CTE、多对多分组合并 |
+| D M5 | 聚合根保存、`Changes`、`DbBatch`、INSERT … SELECT、枚举 / 值对象、SM4、MERGE |
+| E M6 | 各方言实库验证与新方言、方言专属函数、RETURNING、H2 用例改到 SQLite |
+| F M7 | 表名映射、分库分表、search、按对象筛选剩余、code-first、二级缓存、依赖注入 |
+
+已定的取舍：
+- **M8 文档站暂不做**；卡片与 SQL 快照照常随功能补。
+- **SAP HANA 也进 CI**：用 HANA Express 容器并压低内存（`--agree-to-sap-license`，限制 `global_allocation_limit`、关闭不需要的服务），跑不起来时再退回只在本地验证。
+- 生成器项目引用 Microsoft.CodeAnalysis、依赖注入与缓存包引用 Microsoft.Extensions 的抽象包：都只在各自的包里，核心包仍零依赖。
+- M10 不发 NuGet；基准对比、AOT 验证、README 可以做。
 
 ## M0 地基
 
@@ -99,7 +117,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [x] 1.9 原生 SQL：`db.Sql<T>($"...")`（插值处理器，值自动参数化）和 `Sql.Raw<T>`。
 - [x] 1.10 `ToPageAsync`。
 - [ ] 1.11 `tools/DocsExamples` 首版：在 SQLite 上实跑、回放驱动、SQL 快照、`--check`；首批页面是"查询 / 基础""写入"。
-- [ ] 1.12 L3 `LiveSuite` 基类和 `LiveSuiteOptions`，首批用例组：queries、writes、native SQL。
+- [x] 1.12 L3 `LiveSuite` 基类和 `LiveSuiteOptions`，首批用例组：queries、writes、native SQL（每个数据库一个薄子类，每个用例 code-first 重建表与种子；已在 SQLite、MySQL 8.4、PG 17 全部通过）。
 
 ## M2 表达式与函数
 

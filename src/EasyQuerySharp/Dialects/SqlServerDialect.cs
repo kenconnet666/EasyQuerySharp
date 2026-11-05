@@ -22,6 +22,27 @@ public class SqlServerDialect : SqlDialect
     /// <inheritdoc />
     public override string? LastInsertIdQuery => "SELECT SCOPE_IDENTITY()";
 
+    /// <summary>没有 <c>CREATE TABLE IF NOT EXISTS</c>，用 <c>IF OBJECT_ID(…) IS NULL</c> 判断。</summary>
+    protected override string CreateTableStatement(Metadata.EntityMetadata entity, string body) =>
+        $"IF OBJECT_ID(N'{QualifiedTable(entity).Replace("'", "''")}', N'U') IS NULL CREATE TABLE {QualifiedTable(entity)} ({body})";
+
+    /// <inheritdoc />
+    protected override string IdentityClause => "IDENTITY(1,1)";
+
+    /// <summary>SQL Server 的类型名：BIT、DATETIME2、NVARCHAR、VARBINARY(MAX)（TIMESTAMP 在这里是行版本，不能用）。</summary>
+    protected override string ClrColumnType(Type type, Metadata.ColumnMetadata column) => type switch
+    {
+        _ when type == typeof(string) => "NVARCHAR(255)",
+        _ when type == typeof(bool) => "BIT",
+        _ when type == typeof(byte) => "TINYINT",
+        _ when type == typeof(double) => "FLOAT",
+        _ when type == typeof(DateTime) => "DATETIME2",
+        _ when type == typeof(DateTimeOffset) => "DATETIMEOFFSET",
+        _ when type == typeof(Guid) => "UNIQUEIDENTIFIER",
+        _ when type == typeof(byte[]) => "VARBINARY(MAX)",
+        _ => base.ClrColumnType(type, column),
+    };
+
     /// <summary>SQL Server 没有 FOR UPDATE（用表提示 WITH (UPDLOCK, ROWLOCK)），NOWAIT / SKIP LOCKED 也一样，不能悄悄忽略（与 Java 一致）。</summary>
     public override void WriteLock(SqlRenderer renderer, RowLock rowLock) =>
         throw new NotSupportedException("SQL Server 不支持 FOR UPDATE 语法，请改用表提示 WITH (UPDLOCK, ROWLOCK)");

@@ -55,14 +55,50 @@ internal static class RawSql
         {
             var end = marked.IndexOf('\u0002', i);
             var index = int.Parse(marked.AsSpan(i + 1, end - i - 1), System.Globalization.CultureInfo.InvariantCulture);
-            command.Append(marked, start, i - start).Append(dialect.ParameterPlaceholder(values.Count));
-            text.Append(marked, start, i - start).Append('?');
-            values.Add(Value(args[index]));
+            command.Append(marked, start, i - start);
+            text.Append(marked, start, i - start);
+            AppendArgument(dialect, args[index], command, text, values);
             start = end + 1;
         }
         command.Append(marked, start, marked.Length - start);
         text.Append(marked, start, marked.Length - start);
         return new SqlStatement(command.ToString(), text.ToString(), values);
+    }
+
+    // 插值处：标识符按方言加引号；集合展开成 ?,?,?（空集合直接报错，避免生成 IN () 这种坏语句）；其余是一个参数
+    private static void AppendArgument(SqlDialect dialect, object? arg, StringBuilder command, StringBuilder text, List<SqlParameterValue> values)
+    {
+        switch (arg)
+        {
+            case SqlIdentifier identifier:
+                var quoted = dialect.QuoteIdentifier(identifier.Name);
+                command.Append(quoted);
+                text.Append(quoted);
+                return;
+            case System.Collections.IEnumerable items and not string and not byte[]:
+                var count = 0;
+                foreach (var item in items)
+                {
+                    if (count++ > 0)
+                    {
+                        command.Append(',');
+                        text.Append(',');
+                    }
+                    AppendParameter(item);
+                }
+                if (count == 0) throw new ArgumentException("原生 SQL 里插入的集合是空的，会生成 IN () 这样的坏语句");
+                return;
+            default:
+                AppendParameter(arg);
+                return;
+        }
+
+        void AppendParameter(object? value)
+        {
+            command.Append(dialect.ParameterPlaceholder(values.Count));
+            text.Append('?');
+            values.Add(Value(value));
+        }
     }
 
     private static SqlParameterValue Value(object? value)

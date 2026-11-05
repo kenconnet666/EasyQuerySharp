@@ -26,7 +26,13 @@ public interface IGroup<out TKey, TElement>
     /// <summary><c>COUNT(*)</c>。</summary>
     long Count();
 
-    /// <summary><c>COUNT(x)</c>。</summary>
+    /// <summary>
+    /// 满足条件的行数：<c>COUNT(CASE WHEN 条件 THEN 1 ELSE NULL END)</c>，与 LINQ 的 <c>Count(predicate)</c> 一致（如 <c>g.Count(p =&gt; p.Paid)</c>）。
+    /// 要数某列非空的个数用 <see cref="Count{TValue}"/>，布尔列写成 <c>g.Count&lt;bool?&gt;(p =&gt; p.Flag)</c>。
+    /// </summary>
+    long Count(Func<TElement, bool> predicate);
+
+    /// <summary><c>COUNT(x)</c>：<paramref name="selector"/> 的值非空的行数。</summary>
     long Count<TValue>(Func<TElement, TValue> selector);
 
     /// <summary><c>SUM(x)</c>。</summary>

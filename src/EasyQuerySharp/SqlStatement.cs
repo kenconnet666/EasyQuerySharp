@@ -17,3 +17,9 @@ public sealed record SqlStatement(string CommandText, string Text, IReadOnlyList
     /// <inheritdoc />
     public override string ToString() => Text;
 }
+
+/// <summary>
+/// 原生 SQL 插值里的标识符（表名、列名）：按方言加引号原样写入，不参数化。用 <see cref="Sql.Identifier"/> 构造。
+/// </summary>
+/// <example><code>await db.SqlQueryAsync&lt;long&gt;($"SELECT COUNT(*) FROM {Sql.Identifier("t_user")} WHERE {Sql.Identifier("age")} &gt; {20}");</code></example>
+public sealed record SqlIdentifier(string Name);

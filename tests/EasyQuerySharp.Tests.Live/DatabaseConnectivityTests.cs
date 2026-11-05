@@ -1,7 +1,7 @@
 using System.Data.Common;
 using EasyQuerySharp.TestKit.Databases;
 
-namespace EasyQuerySharp.Tests.Live.Infrastructure;
+namespace EasyQuerySharp.Tests.Live;
 
 /// <summary>
 /// 测试基础设施自检：每个登记的数据库都能连上、建表、带参数读写、删表。

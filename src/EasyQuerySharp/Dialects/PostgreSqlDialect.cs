@@ -14,13 +14,20 @@ public class PostgreSqlDialect : SqlDialect
     /// <inheritdoc />
     public override string Name => "pgsql";
 
+    /// <summary>PostgreSQL 的 SET 列不能带表别名（<c>SET t."a"</c> 会被当成复合列）。</summary>
+    public override bool QualifySetColumns => false;
+
+    /// <summary>二进制列用 BYTEA，其余同标准类型。</summary>
+    protected override string ClrColumnType(Type type, Metadata.ColumnMetadata column) =>
+        type == typeof(byte[]) ? "BYTEA" : base.ClrColumnType(type, column);
+
     /// <summary>
     /// <c>UPDATE "a" t SET "c" = t1."d" FROM "b" t1 , "e" t2 WHERE 各 ON 条件 AND 原条件</c>（与 Java 逐字一致）：
-    /// 连接的表写在 FROM 里，ON 条件按顺序并入 WHERE；SET 的列不能带表别名。
+    /// 连接的表写在 FROM 里，ON 条件按顺序并入 WHERE。
     /// </summary>
     public override void WriteJoinedUpdate(SqlRenderer renderer, UpdateStatement update)
     {
-        renderer.Append("UPDATE ").WriteTable(update.Table).Append(" SET ").WriteSets(update.Sets, qualified: false).Append(" FROM ");
+        renderer.Append("UPDATE ").WriteTable(update.Table).Append(" SET ").WriteSets(update.Sets).Append(" FROM ");
         WriteJoinedTables(renderer, update.Joins, update.Where);
     }
 

@@ -1,0 +1,81 @@
+using EasyQuerySharp.Dialects;
+using EasyQuerySharp.TestKit.Databases;
+
+namespace EasyQuerySharp.Tests.Live;
+
+/// <summary>
+/// 某个库不支持的能力：对应的用例跳过（与 TS 版 liveSuite 的选项同名）。
+/// </summary>
+public sealed record LiveSuiteOptions
+{
+    /// <summary>行锁要两条连接同时持锁：SQLite 只有库级锁，没有行锁。</summary>
+    public bool RowLocks { get; init; } = true;
+}
+
+/// <summary>
+/// L3 跨方言共用套件（对应 TS 版的 liveSuite）：同一组用例在每个数据库上跑，每个方言一个薄子类，只提供库与方言。
+/// 每个用例用 code-first 重建 <see cref="Tables"/> 并写入同样的种子数据，所以用例之间互不影响；没有配置的库整类跳过。
+/// 用例按主题放在 <c>LiveSuite.*.cs</c>。
+/// </summary>
+public abstract partial class LiveSuite
+{
+    // 删表顺序：子表在前
+    private static readonly Type[] Tables = [typeof(Comment), typeof(Post), typeof(User), typeof(Company)];
+
+    /// <summary>种子数据里用户的创建时间（毫秒精度，各库都要原样读回）。</summary>
+    protected static readonly DateTime CreatedAt = new(2026, 1, 2, 3, 4, 5, 6);
+
+    /// <summary>要连的库。</summary>
+    protected abstract TestDatabase Database { get; }
+
+    /// <summary>方言。</summary>
+    protected abstract SqlDialect Dialect { get; }
+
+    /// <summary>这个库不支持的能力。</summary>
+    protected virtual LiveSuiteOptions Options { get; } = new();
+
+    /// <summary>连接串；需要独立库的方言（MySQL、PG）覆盖成先建库再连 <c>eqs_live</c>。</summary>
+    protected virtual Task<string> ConnectionStringAsync() => Task.FromResult(Database.ConnectionString());
+
+    /// <summary>当前测试的取消令牌。</summary>
+    protected static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    /// <summary>重建表、写入种子数据，返回连到这个库的 EasyDb（带 <see cref="SqlCapture"/> 监听）。</summary>
+    protected async Task<EasyDb> SeededAsync(Action<EasyDbOptions>? configure = null)
+    {
+        var connectionString = await ConnectionStringAsync();
+        var db = new EasyDb(o =>
+        {
+            o.Use(Dialect, Database.Factory.CreateDataSource(connectionString)).AddListener(SqlCapture.Instance);
+            configure?.Invoke(o);
+        });
+        await db.CodeFirst.DropTablesIfExistsAsync(Tables, Ct);
+        await db.CodeFirst.CreateTablesAsync(Tables.Reverse(), Ct);
+        await SeedAsync(db);
+        return db;
+    }
+
+    /// <summary>不支持的能力：跳过当前用例。</summary>
+    protected static void SkipUnless(bool supported, string capability)
+    {
+        if (!supported) Assert.Skip($"这个库不支持{capability}");
+    }
+
+    // 与 TS 版 fixture 的 seed 相同：两家公司、三个用户（carol 没有公司）、四个帖子、两条评论
+    private static async Task SeedAsync(EasyDb db)
+    {
+        var acme = new Company { Name = "acme" };
+        await db.Insert(acme, new Company { Name = "globex" }).FillGeneratedKeys().ExecuteAsync(Ct);
+        var alice = new User { Name = "alice", Age = 30, CompanyId = acme.Id, Attrs = new UserAttrs(["vip"]), CreatedAt = CreatedAt };
+        var bob = new User { Name = "bob", Age = null, CompanyId = acme.Id, Attrs = new UserAttrs([]), CreatedAt = CreatedAt };
+        var carol = new User { Name = "carol", Age = 17, CompanyId = null, Attrs = new UserAttrs([]), CreatedAt = CreatedAt };
+        await db.Insert(alice, bob, carol).FillGeneratedKeys().ExecuteAsync(Ct);
+        var tips = new Post { UserId = alice.Id, Title = "orm tips", Amount = 10.50m };
+        await db.Insert(
+            tips,
+            new Post { UserId = alice.Id, Title = "sql 100%", Amount = 2000.00m },
+            new Post { UserId = bob.Id, Title = "orm_v2", Amount = 1.25m },
+            new Post { UserId = bob.Id, Title = "hello", Amount = 3.00m }).FillGeneratedKeys().ExecuteAsync(Ct);
+        await db.Insert(new Comment { PostId = tips.Id, Body = "nice" }, new Comment { PostId = tips.Id, Body = "thanks" }).ExecuteAsync(Ct);
+    }
+}

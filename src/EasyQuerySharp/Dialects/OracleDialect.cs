@@ -16,6 +16,19 @@ public class OracleDialect : SqlDialect
     /// <inheritdoc />
     public override string Name => "oracle";
 
+    /// <summary>Oracle 的类型名：VARCHAR2、NUMBER(p)、BINARY_DOUBLE（23ai 起有 BOOLEAN 与 IF NOT EXISTS）。</summary>
+    protected override string ClrColumnType(Type type, Metadata.ColumnMetadata column) => type switch
+    {
+        _ when type == typeof(string) => "VARCHAR2(255)",
+        _ when type == typeof(int) || type.IsEnum => "NUMBER(10)",
+        _ when type == typeof(long) => "NUMBER(19)",
+        _ when type == typeof(short) || type == typeof(byte) => "NUMBER(5)",
+        _ when type == typeof(double) => "BINARY_DOUBLE",
+        _ when type == typeof(float) => "BINARY_FLOAT",
+        _ when type == typeof(TimeOnly) || type == typeof(TimeSpan) => "INTERVAL DAY TO SECOND",
+        _ => base.ClrColumnType(type, column),
+    };
+
     /// <inheritdoc />
     public override string ParameterPlaceholder(int index) => ":p" + index;
 
