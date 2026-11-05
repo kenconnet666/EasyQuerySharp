@@ -243,8 +243,7 @@ public sealed class SqlRenderer
 
     private SqlRenderer WriteTableName(EntityTableSource e) => Append(QualifiedName(e));
 
-    private string QualifiedName(EntityTableSource e) =>
-        (e.Schema is null ? "" : Dialect.QuoteIdentifier(e.Schema) + ".") + Dialect.QuoteIdentifier(e.TableName);
+    private string QualifiedName(EntityTableSource e) => Dialect.QualifiedName(e.Schema, e.TableName);
 
     private void WriteParameter(ParameterExpr p)
     {

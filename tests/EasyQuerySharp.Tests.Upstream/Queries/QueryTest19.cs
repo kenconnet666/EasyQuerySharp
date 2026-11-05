@@ -222,4 +222,48 @@ public sealed class QueryTest19(MySqlFixture fixture) : MySqlTest(fixture)
     [Fact, Upstream("QueryTest19.java#testConcat")]
     public async Task TestConcat() =>
         await Db.Query<BlogEntity>().Where(b => string.Compare(b.UpdateTime + "," + b.Id, b.UpdateTime + "," + b.Id) >= 0).ToListAsync(Ct);
+
+    // Java 用例没有断言：字符串转数字后加减再比较
+    [Fact, Upstream("QueryTest19.java#aaa")]
+    public async Task Aaa() => await Db.Query<MyUserHome>().Where(m => Sql.Cast<int>(m.Id) + 1 == 123m).ToListAsync(Ct);
+
+    // schema 写成多级 a.dbo：各级分别加引号
+    [Fact, Upstream("QueryTest19.java#aaa1")]
+    public void Aaa1() => Assert.Equal("SELECT `id`,`name`,`age` FROM `a`.`dbo`.`my_user`", Db.Query<MyUserHome2>().ToSql());
+
+    // Java 用例没有断言：原生 SQL 作为来源再联表分组；count 转成字符串的三种写法里 C# 用 ToString()（CAST）
+    [Fact, Upstream("QueryTest19.java#testUnion1")]
+    public async Task TestUnion1()
+    {
+        const string sql = "SELECT '未开始'AS task_status\nUNION ALL SELECT '进行中'\nUNION ALL SELECT '已完成'\nUNION ALL SELECT '审核中'\nUNION ALL SELECT '已关闭'\n"
+                           + "UNION ALL SELECT '待修改（无需审核）'\nUNION ALL SELECT '待修改（需审核）'";
+        await Db.QuerySql<MyUnion>(sql).LeftJoin<Topic>((m, t2) => m.TaskStatus == (string)(object)t2.Stars! && t2.Id == "10")
+            .GroupBy((m1, _) => m1.TaskStatus)
+            .Select(g => new BlogEntity { Id = g.Key, Title = g.Count(e => e.Item2.Stars).ToString() }).ToListAsync(Ct);
+    }
+
+    // Java 用例没有断言：自关联导航的计数投影
+    [Fact, Upstream("QueryTest19.java#test122")]
+    public async Task Test122() =>
+        await Db.Query<MyCategory>().Select(m => new MyCategoryVO { Id = m.Id, ParentId = m.ParentId, Name = m.Name, Count = m.Children!.LongCount() }).ToListAsync(Ct);
+
+    private static Dictionary<string, object?> Row() => new(StringComparer.Ordinal) { ["id"] = "1", ["stars"] = "2" };
+
+    [Fact, Upstream("QueryTest19.java#mapInsert")]
+    public async Task MapInsert()
+    {
+        using var listen = SqlCapture.Listen();
+        await Assert.ThrowsAsync<EasyQueryException>(() => Db.InsertMap("xxxxx", Row()).ExecuteAsync(Ct));
+        listen.AssertSql("INSERT INTO `xxxxx` (`id`,`stars`) VALUES (?,?)");
+        listen.AssertParams("1(String),2(String)");
+    }
+
+    [Fact, Upstream("QueryTest19.java#mapUpdate")]
+    public async Task MapUpdate()
+    {
+        using var listen = SqlCapture.Listen();
+        await Assert.ThrowsAsync<EasyQueryException>(() => Db.UpdateMap("xxxxx", Row()).WhereColumns("id").ExecuteAsync(Ct));
+        listen.AssertSql("UPDATE `xxxxx` SET `stars` = ? WHERE `id` = ?");
+        listen.AssertParams("2(String),1(String)");
+    }
 }

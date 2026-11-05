@@ -238,8 +238,13 @@ public abstract class SqlDialect
         !column.IsPrimaryKey && (!column.ClrType.IsValueType || Nullable.GetUnderlyingType(column.ClrType) is not null);
 
     /// <summary>带 schema 的表名。</summary>
-    protected string QualifiedTable(Metadata.EntityMetadata entity) =>
-        entity.Schema is null ? QuoteIdentifier(entity.TableName) : QuoteIdentifier(entity.Schema) + "." + QuoteIdentifier(entity.TableName);
+    protected string QualifiedTable(Metadata.EntityMetadata entity) => QualifiedName(entity.Schema, entity.TableName);
+
+    /// <summary>
+    /// 带 schema 的表名：<c>`schema`.`table`</c>；schema 里的 <c>.</c> 分隔多级（如 SQL Server 的 <c>库.dbo</c>），各级分别加引号（与 Java 一致）。
+    /// </summary>
+    public string QualifiedName(string? schema, string table) =>
+        schema is null ? QuoteIdentifier(table) : string.Join(".", schema.Split('.').Select(QuoteIdentifier)) + "." + QuoteIdentifier(table);
 
     /// <summary>写一个函数调用：查函数表，没有登记的按 <c>NAME(a,b)</c> 输出。</summary>
     public void WriteFunction(SqlRenderer renderer, FunctionExpr functionCall)
