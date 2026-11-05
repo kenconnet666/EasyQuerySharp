@@ -71,11 +71,16 @@ internal sealed partial class ExpressionTranslator
             inner.Columns.Add(new SelectColumn(row, "__row__"));
             // Java 在这里多一层匿名表（多对多时还有中间表的副本），派生表的别名跳号
             var table = new DerivedTableSource(inner) { ReservedAliases = link is null ? 1 : 2 };
+            var ownerColumns = nav.SelfColumns.Select(owner.OwnerColumn).ToList();
             var on = partition
-                .Select((p, i) => (SqlExpr)new BinaryExpr(new ColumnExpr(table, p.Item2), SqlBinaryOperator.Equal, owner.OwnerColumn(nav.SelfColumns[i])))
+                .Select((p, i) => (SqlExpr)new BinaryExpr(new ColumnExpr(table, p.Item2), SqlBinaryOperator.Equal, ownerColumns[i]))
                 .Append(new BinaryExpr(new ColumnExpr(table, "__row__"), SqlBinaryOperator.Equal, new ParameterExpr(index + 1, typeof(int))))
                 .ToList();
-            return (table, LogicalExpr.Grouped(on), new DerivedBinding(table, columns.ToDictionary(c => c.PropertyName, c => c.Name), nav.Target));
+            // 所属查询里对关联列的条件（如带出查询的 id IN (…)）先在分区表内层过滤
+            var pushDown = ownerColumns.All(c => c is ColumnExpr) && partition.All(p => p.Item1 is ColumnExpr)
+                ? new KeyPushDown(ownerColumns.Cast<ColumnExpr>().ToList(), partition.Select(p => (ColumnExpr)p.Item1).ToList())
+                : null;
+            return (table, LogicalExpr.Grouped(on), new DerivedBinding(table, columns.ToDictionary(c => c.PropertyName, c => c.Name), nav.Target), pushDown);
         });
     }
 

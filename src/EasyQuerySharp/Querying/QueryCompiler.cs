@@ -102,7 +102,7 @@ internal static class QueryCompiler
         query.Offset = state.Offset;
         query.Limit = state.Limit;
         query.Lock = state.Lock;
-        translator.Context?.CompleteGroupJoins();
+        translator.Context?.CompleteDerivedJoins();
         return new QueryFrame(query, translator, bindings);
     }
 
@@ -244,7 +244,7 @@ internal static class QueryCompiler
         if ((state.Selector is null || state.AppendTreeDeep) && state.Sources[0] is TreeCteSource treeSource)
             frame.Query.Columns.Add(new SelectColumn(new ColumnExpr(frame.Bindings[0].Table, treeSource.Options.DeepColumnName), null));
         // 分组合并的派生表要等整条查询（含投影）翻译完才知道全部聚合
-        frame.Translator.Context?.CompleteGroupJoins();
+        frame.Translator.Context?.CompleteDerivedJoins();
         // 无实体的表（db.Table）单表选列时不加别名（与 Java 的 Map 查询一致）；联表、UNION 时照常编号
         // 声明了导航条件时 Java 已经建了导航的表（没用到的可选导航随后省掉），别名照多表的规则加
         frame.Query.ExplicitProjection = (state.Selector is not null && !state.ImplicitSelector && !state.IsDynamicTable) || state.ForceAlias || !state.NavigationFilters.IsEmpty;

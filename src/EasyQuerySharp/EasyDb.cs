@@ -75,7 +75,7 @@ public sealed class EasyDb
         var plan = new IncludePlan(nav, nav.Target.Type, null, [], nav.IsCollection) { Configure = configure };
         foreach (var entity in entities)
             if (entity is not null) plan.RegisterLoaded(entity, property);
-        return IncludeRunner.RunAsync(this, [plan], InterceptorSelection.Default, cancellationToken);
+        return IncludeRunner.RunAsync(this, [plan], IncludeContext.Default, cancellationToken);
     }
 
     /// <summary>

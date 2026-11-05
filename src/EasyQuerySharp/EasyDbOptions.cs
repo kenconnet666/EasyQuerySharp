@@ -91,6 +91,9 @@ public sealed class EasyDbOptions
     /// <summary>Include 的子数据带了 Take / Skip 时怎样按父对象各取一段（对应 Java 的 includeLimitMode），默认按父对象分区编行号。</summary>
     public IncludeLimitMode IncludeLimitMode { get; set; } = IncludeLimitMode.Partition;
 
+    /// <summary>带出查询每次最多按多少个父键查（<c>IN (…)</c> 的项数，超出时分成几条查询；对应 Java 的 relationGroupSize），默认 512。</summary>
+    public int IncludeGroupSize { get; set; } = 512;
+
     /// <summary>添加拦截器。</summary>
     public EasyDbOptions AddInterceptor(IInterceptor interceptor)
     {

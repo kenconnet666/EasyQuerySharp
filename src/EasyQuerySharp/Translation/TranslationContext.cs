@@ -56,18 +56,22 @@ internal sealed partial class TranslationContext(
 
     private readonly Dictionary<(TableSource, string), DerivedBinding> _elementJoins = [];
 
+    // 取第几行的分区表：整条查询翻译完后把所属查询里对关联列的条件下推进它的内层（见 CompleteDerivedJoins）
+    private readonly List<(SelectQuery Inner, KeyPushDown PushDown)> _elementPushDowns = [];
+
     /// <summary>
     /// 集合导航里的某一行（First / ElementAt）JOIN 成的派生表：同一所属行上、同样的链（条件、排序、序号）只 JOIN 一次。
-    /// 所属表在外层时 JOIN 加到外层。<paramref name="build"/> 在本查询的上下文里构造派生表、ON 条件与绑定。
+    /// 所属表在外层时 JOIN 加到外层。<paramref name="build"/> 在本查询的上下文里构造派生表、ON 条件、绑定，以及关联键的下推（没有时为 null）。
     /// </summary>
     public DerivedBinding ElementJoinFor(SourceBinding owner, string key, bool required,
-        Func<TranslationContext, (DerivedTableSource Table, SqlExpr On, DerivedBinding Binding)> build)
+        Func<TranslationContext, (DerivedTableSource Table, SqlExpr On, DerivedBinding Binding, KeyPushDown? PushDown)> build)
     {
         if (parent is not null && !Owns(owner.Table)) return parent.ElementJoinFor(owner, key, required, build);
         if (_elementJoins.TryGetValue((owner.Table, key), out var existing)) return existing;
-        var (table, on, binding) = build(this);
+        var (table, on, binding, pushDown) = build(this);
         query.Joins.Add(new JoinClause(required ? JoinKind.Inner : JoinKind.Left, table, on) { Implicit = true, AfterWhere = WhereTranslated });
         _elementJoins[(owner.Table, key)] = binding;
+        if (pushDown is not null) _elementPushDowns.Add((table.Query, pushDown));
         return binding;
     }
 

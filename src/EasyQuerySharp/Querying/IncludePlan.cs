@@ -18,8 +18,21 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     /// <summary>子对象类型（实体或 DTO）。</summary>
     public Type ChildType { get; } = childType;
 
-    /// <summary>子对象投影（参数是目标实体）；为 null 时取整个实体。</summary>
-    public LambdaExpression? ChildSelector { get; } = childSelector;
+    /// <summary>子对象投影（参数是目标实体）；为 null 时取整个实体。平铺带出时由各平铺路径拼成 <c>e =&gt; new object?[] { 路径1, 路径2, … }</c>。</summary>
+    public LambdaExpression? ChildSelector => FlatPaths is null ? childSelector : FlatSelector();
+
+    /// <summary>
+    /// 平铺带出（<c>[MapPath]</c> 的对一路径，Java 的 ）：同一导航上的各个平铺路径（参数是目标实体），共用一条带出查询；不是平铺时为 null。
+    /// 子对象是按路径顺序的值数组，各父属性从里面取自己的那一项。
+    /// </summary>
+    public List<LambdaExpression>? FlatPaths { get; init; }
+
+    private LambdaExpression FlatSelector()
+    {
+        var e = Expression.Parameter(Navigation.Target.Type, "e");
+        var values = FlatPaths!.Select(p => (Expression)Expression.Convert(new Translation.ExpressionTranslator.ParameterReplacer(p.Parameters[0], e).Visit(p.Body), typeof(object)));
+        return Expression.Lambda(Expression.NewArrayInit(typeof(object), values), e);
+    }
 
     /// <summary>子数据上的过滤条件（参数是目标实体）。</summary>
     public IReadOnlyList<LambdaExpression> ChildFilters { get; } = childFilters;

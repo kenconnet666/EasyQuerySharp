@@ -44,6 +44,9 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
 
     private readonly List<(IncludePlan Plan, SourceBinding Owner)> _includes = [];
 
+    // 平铺带出按（所属来源, 导航）共用一条带出查询
+    private readonly Dictionary<(SourceBinding Owner, NavigationMetadata Navigation), IncludePlan> _flatPlans = [];
+
     /// <summary>投影里的导航带出（主查询执行后由 <see cref="IncludeRunner"/> 依次执行）。</summary>
     public IReadOnlyList<IncludePlan> Includes => _includes.Select(i => i.Plan).ToList();
 
@@ -118,17 +121,21 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
                 var input = call.Method.GetGenericArguments()[0];
                 return Expression.Invoke(convert, Coerce(Shape(call.Arguments[0], member, false), input));
             }
+            // 值数组（平铺带出的子查询 e => new object?[] { 路径1, 路径2 }）：各项按序成列，不写别名
+            case NewArrayExpression { NodeType: ExpressionType.NewArrayInit } array:
+                return Expression.NewArrayInit(array.Type.GetElementType()!,
+                    array.Expressions.Select(e => Expression.Convert(Shape(ExpressionTranslator.StripConvert(e), null, false), array.Type.GetElementType()!)));
             case NewExpression n when n.Constructor is not null:
             {
                 var members = TargetMembers(n);
-                var toOne = new List<(IncludePlan Plan, MemberInfo Member)>();
+                var toOne = new List<(IncludePlan Plan, MemberInfo Member, int? FlatIndex)>();
                 var args = n.Arguments.Select((a, i) => Coerce(ShapeMember(a, members[i], toOne), a.Type)).ToList();
                 Expression created = n.Members is null ? Expression.New(n.Constructor, args) : Expression.New(n.Constructor, args, n.Members);
                 return RegisterToOne(created, toOne);
             }
             case MemberInitExpression mi:
             {
-                var toOne = new List<(IncludePlan Plan, MemberInfo Member)>();
+                var toOne = new List<(IncludePlan Plan, MemberInfo Member, int? FlatIndex)>();
                 var newExpr = (NewExpression)Shape(mi.NewExpression, member, false);
                 var bindings = mi.Bindings.Cast<MemberAssignment>()
                     .Select(b => Expression.Bind(b.Member, Coerce(ShapeMember(b.Expression, b.Member, toOne), b.Expression.Type))).ToList();
@@ -143,18 +150,48 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     /// 一个成员的值：集合导航（<c>u.Cards</c>、<c>u.Cards.Where(…).Select(…).ToList()</c>）是带出，先放一个空 List，主查询后填充；
     /// 整个对一导航对象（<c>c.Bank</c>）也是带出（单独的 IN 查询），构造完父对象后回填；其余照常翻译。
     /// </summary>
-    private Expression ShapeMember(Expression value, MemberInfo? member, List<(IncludePlan Plan, MemberInfo Member)> toOne)
+    private Expression ShapeMember(Expression value, MemberInfo? member, List<(IncludePlan Plan, MemberInfo Member, int? FlatIndex)> toOne)
     {
+        // 平铺的对一路径：同一导航共用一条带出查询，父属性回填时取自己那一项
+        if (member is not null && TryFlat(value) is var (flatPlan, index))
+        {
+            toOne.Add((flatPlan, member, index));
+            return Expression.Default(value.Type);
+        }
         if (member is not null && TryInclude(value) is { } plan)
         {
             if (plan.IsCollection)
                 return Expression.Call(Expression.Constant(plan), typeof(IncludePlan).GetMethod(nameof(IncludePlan.Register))!, _reader,
                     Expression.Constant(null, typeof(Action<object?>)));
-            toOne.Add((plan, member));
+            toOne.Add((plan, member, null));
             return Expression.Default(value.Type);
         }
         return Shape(value, member, false);
     }
+
+    // AutoIncludeMarkers.Flat(导航, 路径)：按（所属来源, 导航）找共用的平铺带出计划，登记这条路径，返回它在值数组里的位置
+    private (IncludePlan Plan, int Index)? TryFlat(Expression value)
+    {
+        if (ExpressionTranslator.StripConvert(value) is not MethodCallExpression { Method.Name: nameof(AutoIncludeMarkers.Flat) } marker
+            || marker.Method.DeclaringType != typeof(AutoIncludeMarkers))
+            return null;
+        if (marker.Arguments[0] is not MemberExpression { Expression: { } owner } nav || translator.BindingOf(owner) is not { OwnerEntity: not null } navOwner
+            || translator.FindNavigation(navOwner, nav.Member.Name) is not { IsCollection: false } navigation)
+            throw new NotSupportedException($"平铺的路径只能从实体的对一导航出发：{marker.Arguments[0]}");
+        var path = (LambdaExpression)((ConstantExpression)marker.Arguments[1]).Value!;
+        if (!_flatPlans.TryGetValue((navOwner, navigation), out var plan))
+        {
+            plan = new IncludePlan(navigation, typeof(object?[]), null, [], isCollection: false) { FlatPaths = [] };
+            _flatPlans[(navOwner, navigation)] = plan;
+            _includes.Add((plan, navOwner));
+        }
+        plan.FlatPaths!.Add(path);
+        return (plan, plan.FlatPaths.Count - 1);
+    }
+
+    /// <summary>平铺带出的值数组里第 <paramref name="index"/> 项，转成父属性的类型；没有带出到（父键为空、子数据不存在）时为默认值。</summary>
+    public static object? FlatValue(object? row, int index, Type type) =>
+        row is object?[] values ? ValueReader.ConvertTo(values[index], type) : null;
 
     private IncludePlan? TryInclude(Expression value)
     {
@@ -241,19 +278,22 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     }
 
     // 对一带出：父对象构造完后登记回填函数（构造函数参数 / init 属性都能通过反射赋值）
-    private Expression RegisterToOne(Expression created, List<(IncludePlan Plan, MemberInfo Member)> toOne)
+    private Expression RegisterToOne(Expression created, List<(IncludePlan Plan, MemberInfo Member, int? FlatIndex)> toOne)
     {
         if (toOne.Count == 0) return created;
         var instance = Expression.Variable(created.Type, "parent");
         var body = new List<Expression> { Expression.Assign(instance, created) };
-        foreach (var (plan, member) in toOne)
+        foreach (var (plan, member, flatIndex) in toOne)
         {
             var property = member as PropertyInfo ?? created.Type.GetProperty(member.Name)
                            ?? throw new NotSupportedException($"{created.Type.Name}.{member.Name} 不是可回填的属性");
             var value = Expression.Parameter(typeof(object), "child");
+            Expression assigned = flatIndex is { } index
+                ? Expression.Call(typeof(ProjectionCompiler).GetMethod(nameof(FlatValue))!, value, Expression.Constant(index), Expression.Constant(property.PropertyType))
+                : value;
             var assign = Expression.Lambda<Action<object?>>(
                 Expression.Call(Expression.Constant(property), typeof(PropertyInfo).GetMethod(nameof(PropertyInfo.SetValue), [typeof(object), typeof(object)])!,
-                    Expression.Convert(instance, typeof(object)), value),
+                    Expression.Convert(instance, typeof(object)), assigned),
                 value);
             body.Add(Expression.Call(Expression.Constant(plan), typeof(IncludePlan).GetMethod(nameof(IncludePlan.Register))!, _reader, assign));
         }

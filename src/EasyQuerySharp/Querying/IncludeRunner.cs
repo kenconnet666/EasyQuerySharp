@@ -16,8 +16,11 @@ namespace EasyQuerySharp.Querying;
 /// </summary>
 internal static class IncludeRunner
 {
-    /// <summary>执行 <paramref name="plans"/>；子查询沿用主查询的拦截器选择（主查询 DisableInterceptors 时子数据同样不过滤，与 Java 一致）。</summary>
-    public static async Task RunAsync(EasyDb db, IReadOnlyList<IncludePlan> plans, InterceptorSelection interceptors, CancellationToken ct)
+    /// <summary>
+    /// 执行 <paramref name="plans"/>。子查询沿用主查询的拦截器选择（主查询 DisableInterceptors 时子数据同样不过滤，与 Java 一致）、
+    /// 配置参数和分组大小：父键多于分组大小时分成几条查询。
+    /// </summary>
+    public static async Task RunAsync(EasyDb db, IReadOnlyList<IncludePlan> plans, IncludeContext context, CancellationToken ct)
     {
         foreach (var plan in plans)
         {
@@ -36,48 +39,30 @@ internal static class IncludeRunner
             }
 
             // 先按配置加条件、排序、条数，再投影（投影之后再加条件会包成派生表）
-            var baseState = new QueryState(db, [new EntitySource(nav.Target.Type)]) { Wheres = [.. plan.ChildFilters], Interceptors = interceptors };
-            var state = (plan.Configure?.Invoke(baseState) ?? baseState) with { ForceAlias = true };
-            if (plan.ChildSelector is not null) state = state with { Selector = plan.ChildSelector };
-            var targets = links.Select(l => l.Target.First).Distinct().ToList();
-            CompiledQuery<object?> CompileFor(QueryState s, IEnumerable<object> keys) => QueryCompiler.Compile<object?>(
-                s with { Wheres = s.Wheres.Add(WithExtraFilter(KeyIn(nav.Target.Type, nav.TargetColumns[0], keys), nav.ExtraFilter)) }, relationKeys: nav.TargetColumns);
-
-            CompiledQuery<object?> compiled;
-            SelectQuery sql;
-            // 子数据带了 Take / Skip：每个父对象各取一段，不是整体取一段
-            if (state.Limit is null && state.Offset is null)
-                sql = (compiled = CompileFor(state, targets)).Sql;
-            else if (db.Options.IncludeLimitMode == IncludeLimitMode.UnionAll)
+            var baseState = new QueryState(db, [new EntitySource(nav.Target.Type)])
             {
-                var parts = targets.Select(t => CompileFor(state, [t])).ToList();
-                compiled = parts[0];
-                sql = SelectByName(new UnionTableSource([.. parts.Select(p => p.Sql)], all: true) { IndependentAliases = true }, ColumnNames(compiled.Sql));
-            }
-            else
-            {
-                // 内层取整个实体按父对象编号、取段，子对象的投影写在最外层（与 Java 一致）
-                var whole = CompileFor(state with { Limit = null, Offset = null, Selector = null }, targets);
-                var ranged = Ranged(whole.Sql, whole.RelationOrdinals[0], state.Offset ?? 0, state.Limit);
-                var target = nav.Target;
-                var columns = target.Columns.Where(c => c.AutoSelect).ToDictionary(c => c.PropertyName, c => c.Name, StringComparer.Ordinal);
-                // 外层从匿名的派生表取列，Java 都写 AS
-                var binding = new DerivedBinding(ranged, columns, target, columns.Keys.ToHashSet(StringComparer.Ordinal));
-                compiled = QueryCompiler.Compile<object?>(
-                    new QueryState(db, [new BoundSource(binding, target.Type)]) { Selector = state.Selector, ForceAlias = true, Interceptors = interceptors },
-                    relationKeys: nav.TargetColumns);
-                sql = compiled.Sql;
-            }
-            var statement = SqlRenderer.Render(db.Options.Dialect, sql);
-            var rows = await db.Executor.QueryAsync(statement, r => (Child: compiled.Shaper(r), Key: CompositeKey.Read(r, compiled.RelationOrdinals)), ct)
-                .ConfigureAwait(false);
+                Wheres = [.. plan.ChildFilters], Interceptors = context.Interceptors, ConfigureArgument = context.ConfigureArgument,
+            };
+            // 平铺带出（Java 的 @NavigateFlat）单表不写别名；其余带出的子查询在 Java 里总带别名 t
+            var flat = plan.FlatPaths is not null;
+            var state = (plan.Configure?.Invoke(baseState) ?? baseState) with { ForceAlias = !flat };
+            if (plan.ChildSelector is not null) state = state with { Selector = plan.ChildSelector, ImplicitSelector = flat };
 
             var childrenByKey = new Dictionary<CompositeKey, List<object?>>();
-            foreach (var (child, key) in rows)
+            var nested = new List<IReadOnlyList<IncludePlan>>();
+            foreach (var targets in links.Select(l => l.Target.First).Distinct().Chunk(context.GroupSize ?? db.Options.IncludeGroupSize))
             {
-                if (key is null) continue;
-                if (!childrenByKey.TryGetValue(key.Value, out var list)) childrenByKey[key.Value] = list = [];
-                list.Add(child);
+                var compiled = CompileChunk(db, nav, state, targets, context);
+                var statement = SqlRenderer.Render(db.Options.Dialect, compiled.Sql);
+                var rows = await db.Executor.QueryAsync(statement, r => (Child: compiled.Query.Shaper(r), Key: CompositeKey.Read(r, compiled.Query.RelationOrdinals)), ct)
+                    .ConfigureAwait(false);
+                foreach (var (child, key) in rows)
+                {
+                    if (key is null) continue;
+                    if (!childrenByKey.TryGetValue(key.Value, out var list)) childrenByKey[key.Value] = list = [];
+                    list.Add(child);
+                }
+                nested.Add(compiled.Query.Includes);
             }
             foreach (var (parent, target) in links)
             {
@@ -87,8 +72,37 @@ internal static class IncludeRunner
                     sink(child);
             }
             plan.Pending.Clear();
-            await RunAsync(db, compiled.Includes, interceptors, ct).ConfigureAwait(false);
+            foreach (var includes in nested) await RunAsync(db, includes, context, ct).ConfigureAwait(false);
         }
+    }
+
+    // 按一组目标键编译带出查询；子数据带了 Take / Skip 时每个父对象各取一段，不是整体取一段
+    private static (CompiledQuery<object?> Query, SelectQuery Sql) CompileChunk(EasyDb db, NavigationMetadata nav, QueryState state, object[] targets, IncludeContext context)
+    {
+        CompiledQuery<object?> CompileFor(QueryState s, IEnumerable<object> keys) => QueryCompiler.Compile<object?>(
+            s with { Wheres = s.Wheres.Add(WithExtraFilter(KeyIn(nav.Target.Type, nav.TargetColumns[0], keys), nav.ExtraFilter)) }, relationKeys: nav.TargetColumns);
+
+        if (state.Limit is null && state.Offset is null)
+        {
+            var compiled = CompileFor(state, targets);
+            return (compiled, compiled.Sql);
+        }
+        if (db.Options.IncludeLimitMode == IncludeLimitMode.UnionAll)
+        {
+            var parts = targets.Select(t => CompileFor(state, [t])).ToList();
+            return (parts[0], SelectByName(new UnionTableSource([.. parts.Select(p => p.Sql)], all: true) { IndependentAliases = true }, ColumnNames(parts[0].Sql)));
+        }
+        // 内层取整个实体按父对象编号、取段，子对象的投影写在最外层（与 Java 一致）
+        var whole = CompileFor(state with { Limit = null, Offset = null, Selector = null }, targets);
+        var ranged = Ranged(whole.Sql, whole.RelationOrdinals[0], state.Offset ?? 0, state.Limit);
+        var target = nav.Target;
+        var columns = target.Columns.Where(c => c.AutoSelect).ToDictionary(c => c.PropertyName, c => c.Name, StringComparer.Ordinal);
+        // 外层从匿名的派生表取列，Java 都写 AS
+        var binding = new DerivedBinding(ranged, columns, target, columns.Keys.ToHashSet(StringComparer.Ordinal));
+        var outer = QueryCompiler.Compile<object?>(
+            new QueryState(db, [new BoundSource(binding, target.Type)]) { Selector = state.Selector, ForceAlias = true, Interceptors = context.Interceptors },
+            relationKeys: nav.TargetColumns);
+        return (outer, outer.Sql);
     }
 
     /// <summary>
@@ -166,4 +180,14 @@ internal static class IncludeRunner
         var body = Expression.Call(Expression.Constant(list), listType.GetMethod("Contains")!, Expression.Property(p, column.Property));
         return Expression.Lambda(body, p);
     }
+}
+
+/// <summary>带出查询从主查询沿用的设置：拦截器选择、分组大小、配置参数。</summary>
+internal sealed record IncludeContext(InterceptorSelection Interceptors, int? GroupSize, object? ConfigureArgument)
+{
+    /// <summary>不带主查询时（LoadIncludeAsync）：默认拦截器、全局分组大小、没有参数。</summary>
+    public static IncludeContext Default { get; } = new(InterceptorSelection.Default, null, null);
+
+    /// <summary>取主查询上的设置。</summary>
+    public static IncludeContext Of(QueryState state) => new(state.Interceptors, state.IncludeGroupSize, state.ConfigureArgument);
 }

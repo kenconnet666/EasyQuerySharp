@@ -77,7 +77,7 @@ internal static class AutoProjection
 
     private static Expression? Value(MetadataRegistry registry, EntityMetadata source, Expression row, PropertyInfo property, HashSet<Type> visiting)
     {
-        if (property.GetCustomAttribute<MapPathAttribute>() is { } path) return PathValue(registry, source, row, property, path.Path);
+        if (property.GetCustomAttribute<MapPathAttribute>() is { } path) return PathValue(registry, source, row, property, path.Path, path.Join);
         if (ColumnValue(source, row, property) is { } column) return column;
         var navName = source.NavigationProperties.Keys.FirstOrDefault(n => string.Equals(n, property.Name, StringComparison.OrdinalIgnoreCase));
         if (navName is null || registry.FindNavigation(source, navName) is not { } nav) return null;
@@ -121,8 +121,9 @@ internal static class AutoProjection
         };
     }
 
-    // [MapPath("A.B.C")]：对一导航直接成员访问（隐式 JOIN）；遇到集合导航时，剩下的路径在集合元素上取，结果是列表
-    private static Expression PathValue(MetadataRegistry registry, EntityMetadata source, Expression row, PropertyInfo property, string path)
+    // [MapPath("A.B.C")]：遇到集合导航时，剩下的路径在集合元素上取，结果是列表；全是对一导航时默认走带出查询（Flat 标记），
+    // join 为 true（[MapPath(.., Join = true)]，或已经在带出查询里面）时直接成员访问（隐式 JOIN）
+    private static Expression PathValue(MetadataRegistry registry, EntityMetadata source, Expression row, PropertyInfo property, string path, bool join)
     {
         var segments = path.Split('.');
         Expression current = row;
@@ -137,14 +138,36 @@ internal static class AutoProjection
                 var rest = string.Join('.', segments.Skip(i + 1));
                 if (rest.Length == 0) throw new InvalidOperationException($"{property.Name} 的 MapPath 以集合导航结尾，需要再指定元素上的属性");
                 var element = Expression.Parameter(nav.Target.Type, "e");
-                var selector = Expression.Lambda(PathValue(registry, nav.Target, element, property, rest), element);
+                var selector = Expression.Lambda(PathValue(registry, nav.Target, element, property, rest, join: true), element);
                 return Expression.Call(typeof(AutoIncludeMarkers).GetMethod(nameof(AutoIncludeMarkers.Many))!.MakeGenericMethod(nav.Target.Type, selector.ReturnType),
                     Expression.Property(current, member), Expression.Constant(null, typeof(Func<QueryState, QueryState>)), Expression.Constant(selector, typeof(LambdaExpression)));
+            }
+            // 对一导航、后面不再经过集合：剩下的路径在目标实体上取，整段走一条带出查询
+            if (nav is { IsCollection: false } && !join && !HasCollection(registry, nav.Target, segments.Skip(i + 1)))
+            {
+                var target = Expression.Parameter(nav.Target.Type, "e");
+                var rest = segments.Length == i + 1 ? (Expression)target : PathValue(registry, nav.Target, target, property, string.Join('.', segments.Skip(i + 1)), join: true);
+                var flat = Expression.Lambda(rest, target);
+                return Expression.Call(typeof(AutoIncludeMarkers).GetMethod(nameof(AutoIncludeMarkers.Flat))!.MakeGenericMethod(nav.Target.Type, flat.ReturnType),
+                    Expression.Property(current, member), Expression.Constant(flat, typeof(LambdaExpression)));
             }
             current = Expression.Property(current, member);
             if (nav is not null) entity = nav.Target;
         }
         return current;
+    }
+
+    // 剩下的路径段里有没有集合导航
+    private static bool HasCollection(MetadataRegistry registry, EntityMetadata entity, IEnumerable<string> segments)
+    {
+        foreach (var segment in segments)
+        {
+            var member = entity.Type.GetProperty(segment, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            if (member is null || registry.FindNavigation(entity, member.Name) is not { } nav) return false;
+            if (nav.IsCollection) return true;
+            entity = nav.Target;
+        }
+        return false;
     }
 }
 
@@ -155,6 +178,10 @@ internal static class AutoIncludeMarkers
 {
     /// <summary>对一导航带出，<paramref name="selector"/> 为 null 时取整个实体。</summary>
     public static TResult One<TEntity, TResult>(TEntity? navigation, Func<QueryState, QueryState>? configure, LambdaExpression? selector) =>
+        throw new InvalidOperationException("只能出现在查询的投影里");
+
+    /// <summary>对一导航上平铺的一个值（<c>[MapPath]</c>）：同一导航上的几个平铺属性共用一条带出查询，<paramref name="path"/> 的参数是导航的目标实体。</summary>
+    public static TValue Flat<TEntity, TValue>(TEntity? navigation, LambdaExpression path) =>
         throw new InvalidOperationException("只能出现在查询的投影里");
 
     /// <summary>集合导航带出成列表，<paramref name="selector"/> 为 null 时取整个实体。</summary>

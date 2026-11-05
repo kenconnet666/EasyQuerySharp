@@ -152,8 +152,10 @@ internal sealed partial class TranslationContext
         return filters;
     }
 
-    /// <summary>整条查询翻译完后调用：按登记的聚合生成各分组派生表的列。</summary>
-    public void CompleteGroupJoins()
+    /// <summary>
+    /// 整条查询翻译完后调用：按登记的聚合生成各分组派生表的列；所属查询里对关联列的条件下推进分组表与取第几行的分区表（与 Java 一致）。
+    /// </summary>
+    public void CompleteDerivedJoins()
     {
         foreach (var plan in _groupJoins.Values)
         {
@@ -161,7 +163,8 @@ internal sealed partial class TranslationContext
             // 整个集合分组时，所属查询里对关联列的条件下推进来（取一段行的分组先编号，不下推）
             if (plan.Element is EntityBinding) plan.PushDownKeyPredicates(query.Where);
             // 嵌套的分组合并（分组子查询里再合并的导航）在外层收尾之后：它要用外层分组子查询的 WHERE 下推
-            plan.InnerContext.CompleteGroupJoins();
+            plan.InnerContext.CompleteDerivedJoins();
         }
+        foreach (var (inner, pushDown) in _elementPushDowns) inner.Where.AddRange(pushDown.From(query.Where));
     }
 }

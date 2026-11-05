@@ -154,6 +154,12 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>这条查询上生效的拦截器。</summary>
     public InterceptorSelection Interceptors { get; init; } = InterceptorSelection.Default;
 
+    /// <summary>这条查询的带出每次最多按多少个父键查（IncludeGroupSize）；为 null 时用 <see cref="EasyDbOptions.IncludeGroupSize"/>。</summary>
+    public int? IncludeGroupSize { get; init; }
+
+    /// <summary>传给带出查询配置（<see cref="IAutoIncludeConfigure{TEntity}"/>）的参数（WithConfigureArgument，对应 Java 的 setConfigureArgument）。</summary>
+    public object? ConfigureArgument { get; init; }
+
     /// <summary>之后追加的 Where 适用的条件值过滤（UseValueFilter）。</summary>
     public Filtering.ValueFilter ValueFilter { get; init; }
 

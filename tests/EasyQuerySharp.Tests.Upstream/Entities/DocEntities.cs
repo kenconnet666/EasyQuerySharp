@@ -168,10 +168,10 @@ public class TopicSelfVO
 
     public string? Name { get; set; }
 
-    [MapPath("MyUser.Name")]
+    [MapPath("MyUser.Name", Join = true)]
     public string? Uname1 { get; set; }
 
-    [MapPath("Parent.MyUser.Name")]
+    [MapPath("Parent.MyUser.Name", Join = true)]
     public string? Uname2 { get; set; }
 }
 

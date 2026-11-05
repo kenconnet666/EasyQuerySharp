@@ -166,6 +166,24 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     /// <summary>恢复默认生效的全部拦截器（对应 Java 的 useInterceptor()）。</summary>
     public TSelf EnableInterceptors() => With(State with { Interceptors = State.Interceptors.EnableAll() });
 
+    // ---------- 带出 ----------
+
+    /// <summary>这条查询的带出每次最多按 <paramref name="size"/> 个父键查，超出时分成几条查询（对应 Java 的 configure(o -&gt; o.setGroupSize(n))）。</summary>
+    public TSelf IncludeGroupSize(int size)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
+        return With(State with { IncludeGroupSize = size });
+    }
+
+    /// <summary>
+    /// 带一个参数给这条查询及其带出查询的配置读取（<see cref="ConfigureArgument"/>，对应 Java 的 configure(o -&gt; o.setConfigureArgument(arg))），
+    /// 如嵌套 DTO 的 <see cref="IAutoIncludeConfigure{TEntity}.Configure"/> 按它加条件。
+    /// </summary>
+    public TSelf WithConfigureArgument(object? argument) => With(State with { ConfigureArgument = argument });
+
+    /// <summary>通过 <see cref="WithConfigureArgument"/> 带进来的参数；没有时为 null。</summary>
+    public object? ConfigureArgument => State.ConfigureArgument;
+
     // ---------- SQL ----------
 
     /// <summary>渲染成 SQL（参数用 <c>?</c> 占位），不执行。</summary>
@@ -190,7 +208,7 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         }
         var rows = await Db.Executor.QueryAsync(statement, shaper, cancellationToken).ConfigureAwait(false);
         // 投影里的导航带出：每个导航一次 IN 查询，挂回刚读出的行
-        await IncludeRunner.RunAsync(Db, compiled.Includes, State.Interceptors, cancellationToken).ConfigureAwait(false);
+        await IncludeRunner.RunAsync(Db, compiled.Includes, IncludeContext.Of(State), cancellationToken).ConfigureAwait(false);
         foreach (var fill in State.Fills) await fill(rows, cancellationToken).ConfigureAwait(false);
         Track(rows);
         return rows;

@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1640、偏离 204、不适用 77、骨架 6、待做 477。
+合计：已移植 1642、偏离 204、不适用 77、骨架 6、待做 475。
 
 ## 按能力
 
@@ -32,7 +32,7 @@
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 2 | 0 | 0 | 0 | 0 |
 | 流式读取 | `query.stream` | M3 | 9 | 6 | 2 | 1 | 0 | 0 |
 | union / union all | `query.union` | M3 | 18 | 14 | 4 | 0 | 0 | 0 |
-| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 14 | 1 | 0 | 1 | 20 |
+| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 16 | 1 | 0 | 1 | 18 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 23 | 25 | 3 | 0 | 5 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 60 | 1 | 2 | 2 | 2 |
@@ -1498,8 +1498,8 @@
 | doc/DocTest1.java#testBlog5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DocTest1.cs:82 | `SELECT t1.'name' AS 'uname1',t3.'name' AS 'uname2',t.'id',t.'name' FROM 'test_self' t LEFT JOIN 'my_…` |
 | mysql8/IncludeConditionTest.java#testInclude3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/IncludeConditionTest.cs:111 | `SELECT t.'id',t.'name',t.'version' AS '__relation__version' FROM 'my_task' t WHERE t.'id' = ?` |
 | mysql8/IncludeConditionTest.java#testInclude4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/IncludeConditionTest.cs:127 | `SELECT t.'id',t.'name',t.'version' FROM 'my_task' t WHERE t.'id' = ?` |
-| mysql8/M8BankTest.java#partitionBy | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t` |
-| mysql8/M8BankTest.java#testExtraDTO | 待做 |  | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t` |
+| mysql8/M8BankTest.java#partitionBy | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Flat.cs:32 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t` |
+| mysql8/M8BankTest.java#testExtraDTO | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Flat.cs:113 | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t` |
 | mysql8/M8BankTest.java#testExtraDTO123 | 待做 |  | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t` |
 | mysql8/M8BankTest.java#testExtraFilter | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.AutoInclude.cs:56 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t` |
 | mysql8/M8BankTest.java#testExtraFilter2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.AutoInclude.cs:129 | `SELECT IFNULL(t2.'__count2__',0) AS 'card_count',t.'id',t.'name',t.'phone',t.'age',t.'create_time' F…` |

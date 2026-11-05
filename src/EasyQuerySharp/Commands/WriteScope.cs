@@ -35,7 +35,7 @@ internal sealed class WriteScope
     {
         get
         {
-            _context.CompleteGroupJoins();
+            _context.CompleteDerivedJoins();
             return _scratch.Joins.Select(j => j.Table is DerivedTableSource ? j : new JoinClause(JoinKind.Inner, j.Table, j.On));
         }
     }

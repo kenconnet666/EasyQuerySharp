@@ -38,7 +38,7 @@ u.Company!.Project(CompanyVo.Map)        // 对一
 自动映射的约定：
 
 - 同名属性直接对应，忽略大小写。
-- 平铺：`CompanyName` 对应 `Company.Name`（`@NavigateFlat`）；`List<string> PostTitles` 对应 `Posts.Select(p => p.Title)`。路径有歧义时用 `[MapPath("Company.Name")]` 指定。
+- 平铺：`CompanyName` 对应 `Company.Name`（`@NavigateFlat`）；`List<string> PostTitles` 对应 `Posts.Select(p => p.Title)`。路径有歧义时用 `[MapPath("Company.Name")]` 指定。全是对一导航的路径默认走带出查询（同一导航上的几个平铺属性共用一条，单表不写别名，与 Java 的 `@NavigateFlat` 一致）；`[MapPath(.., Join = true)]` 改为主查询里隐式 JOIN（Java 的 `@NavigateJoin`）。带出查询每次最多按 `IncludeGroupSize`（默认 512，可按查询覆盖）个父键查；`WithConfigureArgument(arg)` 把参数传给各层带出配置。
 - 嵌套 DTO：属性类型是 `[MapFrom<Post>]` 的 DTO，或者 `List<>` 里装着这样的 DTO，就沿着导航递归映射。
 - 个别成员要加过滤、排序、条数限制（对应 `EXTRA_AUTO_INCLUDE_CONFIGURE`），用 partial 配置方法只覆盖这一个成员：
 
