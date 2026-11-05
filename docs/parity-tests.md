@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1497、偏离 193、不适用 68、骨架 15、待做 631。
+合计：已移植 1499、偏离 193、不适用 68、骨架 15、待做 629。
 
 ## 按能力
 
@@ -32,7 +32,7 @@
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 1 | 0 | 0 | 0 | 1 |
 | 流式读取 | `query.stream` | M3 | 9 | 6 | 2 | 1 | 0 | 0 |
 | union / union all | `query.union` | M3 | 18 | 13 | 4 | 0 | 1 | 0 |
-| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 9 | 1 | 0 | 1 | 25 |
+| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 11 | 1 | 0 | 1 | 23 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 23 | 25 | 3 | 0 | 5 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 60 | 1 | 2 | 2 | 2 |
@@ -1512,8 +1512,8 @@
 | mysql8/ManyJoinTest.java#testFlatMenuOwner | 待做 |  |  |
 | mysql8/ManyJoinTest.java#testFlatMenuOwner1 | 待做 |  |  |
 | mysql8/ManyJoinTest.java#testFlatMenuOwnerFlatValueConverter | 待做 |  |  |
-| mysql8/MySQL8Test2.java#includePartitionBy | 待做 |  | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t` |
-| mysql8/MySQL8Test2.java#includePartitionBy1 | 待做 |  | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t` |
+| mysql8/MySQL8Test2.java#includePartitionBy | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:473 | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t` |
+| mysql8/MySQL8Test2.java#includePartitionBy1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:486 | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t` |
 | mysql8/MySQL8Test3.java#testQueryFirstLimit2 | 待做 |  | `SELECT t2.'code',t2.'type',t2.'open_time',t2.'uid' AS '__relation__uid' FROM (SELECT t1.'id' AS 'id'…` |
 | mysql8/MySQL8Test3.java#testTree2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:267 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'deep',t1.'id',t1.'parent_id',t1.'content',t1.'user_i…` |
 | mysql8/MySQL8Test3.java#testTree3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:299 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'deep',t1.'id',t1.'parent_id',t1.'content',t1.'user_i…` |

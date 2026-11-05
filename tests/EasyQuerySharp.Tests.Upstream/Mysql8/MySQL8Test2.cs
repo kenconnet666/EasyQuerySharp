@@ -400,4 +400,98 @@ public sealed class MySQL8Test2(Mysql8Fixture fixture) : Mysql8Test(fixture)
             .AsTreeCte(s => s.Id, s => s.Pid).ToListAsync(Ct);
         Assert.StartsWith("WITH RECURSIVE `as_tree_cte` AS (", listen.Last.Statement.Text, StringComparison.Ordinal);
     }
+
+    /// <summary>对应 Java：mysql8/vo/SysBankXDTO / SysBankYDTO 的用户部分。</summary>
+    public sealed class InternalSysUser
+    {
+        public string? Id { get; set; }
+
+        public string? Name { get; set; }
+
+        public string? Phone { get; set; }
+
+        public int? Age { get; set; }
+
+        public DateTime? CreateTime { get; set; }
+    }
+
+    /// <summary>对应 Java：mysql8/vo/SysBankXDTO（每个银行取 3 张卡，不排序；卡上带出用户）。</summary>
+    public sealed class SysBankXDTO
+    {
+        public string? Id { get; set; }
+
+        public string? Name { get; set; }
+
+        public DateTime? CreateTime { get; set; }
+
+        public List<InternalBankCards>? BankCards { get; set; }
+
+        /// <summary>Java 的 @Navigate(limit = 3, partitionOrder = IGNORE)。</summary>
+        public sealed class InternalBankCards : IAutoIncludeConfigure<SysBankCard>
+        {
+            public static Query<SysBankCard> Configure(Query<SysBankCard> query) => query.Take(3);
+
+            public string? Id { get; set; }
+
+            public string? Code { get; set; }
+
+            public string? Type { get; set; }
+
+            public InternalSysUser? User { get; set; }
+        }
+    }
+
+    /// <summary>对应 Java：mysql8/vo/SysBankYDTO（同上，卡上多一列 uid）。</summary>
+    public sealed class SysBankYDTO
+    {
+        public string? Id { get; set; }
+
+        public string? Name { get; set; }
+
+        public DateTime? CreateTime { get; set; }
+
+        public List<InternalBankCards>? BankCards { get; set; }
+
+        /// <summary>Java 的 @Navigate(limit = 3, partitionOrder = IGNORE)。</summary>
+        public sealed class InternalBankCards : IAutoIncludeConfigure<SysBankCard>
+        {
+            public static Query<SysBankCard> Configure(Query<SysBankCard> query) => query.Take(3);
+
+            public string? Id { get; set; }
+
+            public string? Uid { get; set; }
+
+            public string? Code { get; set; }
+
+            public string? Type { get; set; }
+
+            public InternalSysUser? User { get; set; }
+        }
+    }
+
+    // 每个银行取 3 张卡：内层按银行分区编号取段，卡的投影写在最外层；卡上的用户再带出一次
+    [Fact, Upstream("mysql8/MySQL8Test2.java#includePartitionBy")]
+    public async Task IncludePartitionBy()
+    {
+        using var listen = SqlCapture.Listen();
+        var list = await Db.Query<SysBank>().SelectAutoInclude<SysBankXDTO>().ToListAsync(Ct);
+        Assert.All(list, b => Assert.True(b.BankCards!.Count <= 3));
+        listen.AssertSql(0, "SELECT t.`id`,t.`name`,t.`create_time` FROM `t_bank` t");
+        listen.AssertSql(1, "SELECT t2.`id` AS `id`,t2.`code` AS `code`,t2.`type` AS `type`,t2.`uid` AS `__relation__uid`,t2.`bank_id` AS `__relation__bankId` FROM (SELECT t1.`id` AS `id`,t1.`uid` AS `uid`,t1.`code` AS `code`,t1.`type` AS `type`,t1.`bank_id` AS `bank_id`,t1.`open_time` AS `open_time` FROM (SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time`,(ROW_NUMBER() OVER (PARTITION BY t.`bank_id`)) AS `__row__` FROM `t_bank_card` t WHERE t.`bank_id` IN (?,?,?)) t1 WHERE t1.`__row__` >= ? AND t1.`__row__` <= ?) t2");
+        listen.AssertParams(1, "1(String),2(String),3(String),1(Long),3(Long)");
+        listen.AssertSql(2, "SELECT t.`id`,t.`name`,t.`phone`,t.`age`,t.`create_time` FROM `t_sys_user` t WHERE t.`id` IN (?,?)");
+        listen.AssertParams(2, "u1(String),u2(String)");
+    }
+
+    [Fact, Upstream("mysql8/MySQL8Test2.java#includePartitionBy1")]
+    public async Task IncludePartitionBy1()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysBank>().SelectAutoInclude<SysBankYDTO>().ToListAsync(Ct);
+        listen.AssertSql(0, "SELECT t.`id`,t.`name`,t.`create_time` FROM `t_bank` t");
+        listen.AssertSql(1, "SELECT t2.`id` AS `id`,t2.`uid` AS `uid`,t2.`code` AS `code`,t2.`type` AS `type`,t2.`bank_id` AS `__relation__bankId` FROM (SELECT t1.`id` AS `id`,t1.`uid` AS `uid`,t1.`code` AS `code`,t1.`type` AS `type`,t1.`bank_id` AS `bank_id`,t1.`open_time` AS `open_time` FROM (SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time`,(ROW_NUMBER() OVER (PARTITION BY t.`bank_id`)) AS `__row__` FROM `t_bank_card` t WHERE t.`bank_id` IN (?,?,?)) t1 WHERE t1.`__row__` >= ? AND t1.`__row__` <= ?) t2");
+        listen.AssertParams(1, "1(String),2(String),3(String),1(Long),3(Long)");
+        listen.AssertSql(2, "SELECT t.`id`,t.`name`,t.`phone`,t.`age`,t.`create_time` FROM `t_sys_user` t WHERE t.`id` IN (?,?)");
+        listen.AssertParams(2, "u1(String),u2(String)");
+    }
 }

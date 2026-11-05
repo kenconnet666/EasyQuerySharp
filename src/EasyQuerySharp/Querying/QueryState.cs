@@ -34,6 +34,9 @@ internal sealed record EntitySource(Type EntityType) : QuerySource
 /// <summary>子查询作为派生表。</summary>
 internal sealed record SubQuerySource(QueryState Inner) : QuerySource;
 
+/// <summary>已经建好绑定的表来源（编译器内部用：如带出按父对象分区取段后的派生表），按 <paramref name="EntityType"/> 的成员访问列。</summary>
+internal sealed record BoundSource(Translation.SourceBinding Binding, Type EntityType) : QuerySource;
+
 /// <summary>多条查询做 UNION / UNION ALL 后作为派生表，列按第一条查询的投影访问。</summary>
 internal sealed record UnionSource(ImmutableArray<QueryState> Parts, bool All) : QuerySource
 {
@@ -208,6 +211,7 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
         RawSqlSource r => r.EntityType,
         CteSource c => c.Inner.ElementType,
         TreeCteSource t => t.Base.ElementType,
+        BoundSource b => b.EntityType,
         _ => throw new NotSupportedException(source.GetType().Name),
     };
 }

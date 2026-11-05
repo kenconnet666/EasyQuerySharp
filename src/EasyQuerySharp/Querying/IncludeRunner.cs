@@ -56,8 +56,17 @@ internal static class IncludeRunner
             }
             else
             {
-                compiled = CompileFor(state with { Limit = null, Offset = null }, targets);
-                sql = Partitioned(compiled.Sql, compiled.RelationOrdinals[0], state.Offset ?? 0, state.Limit);
+                // 内层取整个实体按父对象编号、取段，子对象的投影写在最外层（与 Java 一致）
+                var whole = CompileFor(state with { Limit = null, Offset = null, Selector = null }, targets);
+                var ranged = Ranged(whole.Sql, whole.RelationOrdinals[0], state.Offset ?? 0, state.Limit);
+                var target = nav.Target;
+                var columns = target.Columns.Where(c => c.AutoSelect).ToDictionary(c => c.PropertyName, c => c.Name, StringComparer.Ordinal);
+                // 外层从匿名的派生表取列，Java 都写 AS
+                var binding = new DerivedBinding(ranged, columns, target, columns.Keys.ToHashSet(StringComparer.Ordinal));
+                compiled = QueryCompiler.Compile<object?>(
+                    new QueryState(db, [new BoundSource(binding, target.Type)]) { Selector = state.Selector, ForceAlias = true, Interceptors = interceptors },
+                    relationKeys: nav.TargetColumns);
+                sql = compiled.Sql;
             }
             var statement = SqlRenderer.Render(db.Options.Dialect, sql);
             var rows = await db.Executor.QueryAsync(statement, r => (Child: compiled.Shaper(r), Key: CompositeKey.Read(r, compiled.RelationOrdinals)), ct)
@@ -83,11 +92,11 @@ internal static class IncludeRunner
     }
 
     /// <summary>
-    /// 按父对象分区取段（Java 的 PARTITION 模式，与 Java 逐字一致）：子查询的排序挪进窗口，
-    /// <c>SELECT t2.列 AS 列,… FROM (SELECT t1.列 AS 列,… FROM (SELECT …,(ROW_NUMBER() OVER (PARTITION BY 关联键 ORDER BY …)) AS __row__ FROM …) t1
-    /// WHERE t1.__row__ &gt;= ? AND t1.__row__ &lt;= ?) t2</c>。
+    /// 按父对象分区取段（Java 的 PARTITION 模式，与 Java 逐字一致）：子查询的排序挪进窗口，返回取段后的派生表
+    /// <c>(SELECT t1.列 AS 列,… FROM (SELECT …,(ROW_NUMBER() OVER (PARTITION BY 关联键 ORDER BY …)) AS __row__ FROM …) t1
+    /// WHERE t1.__row__ &gt;= ? AND t1.__row__ &lt;= ?)</c>，子对象的投影再从它取列。
     /// </summary>
-    private static SelectQuery Partitioned(SelectQuery inner, int keyOrdinal, long skip, long? take)
+    private static DerivedTableSource Ranged(SelectQuery inner, int keyOrdinal, long skip, long? take)
     {
         var names = ColumnNames(inner);
         var orders = inner.OrderBy.ToList();
@@ -98,7 +107,7 @@ internal static class IncludeRunner
         var row = new ColumnExpr(numbered, "__row__");
         ranged.Where.Add(new BinaryExpr(row, SqlBinaryOperator.GreaterThanOrEqual, new ParameterExpr(skip + 1, typeof(long))));
         if (take is { } t) ranged.Where.Add(new BinaryExpr(row, SqlBinaryOperator.LessThanOrEqual, new ParameterExpr(skip + t, typeof(long))));
-        return SelectByName(new DerivedTableSource(ranged), names);
+        return new DerivedTableSource(ranged);
     }
 
     // 查询结果各列的名字（有别名用别名，否则是列名）

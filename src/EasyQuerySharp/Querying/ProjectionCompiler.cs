@@ -42,7 +42,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
 
     private Expression? _shaped;
 
-    private readonly List<(IncludePlan Plan, EntityBinding Owner)> _includes = [];
+    private readonly List<(IncludePlan Plan, SourceBinding Owner)> _includes = [];
 
     /// <summary>投影里的导航带出（主查询执行后由 <see cref="IncludeRunner"/> 依次执行）。</summary>
     public IReadOnlyList<IncludePlan> Includes => _includes.Select(i => i.Plan).ToList();
@@ -67,11 +67,12 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
 
     private int RelationColumn(TableSource table, ColumnMetadata column)
     {
-        var alias = "__relation__" + column.Name;
+        // 与 Java 一致按字段名起别名（首字母小写的属性名，如 __relation__bankId）
+        var alias = "__relation__" + char.ToLowerInvariant(column.PropertyName[0]) + column.PropertyName[1..];
         for (var i = 0; i < _columns.Count; i++)
         {
             var existing = _columns[i];
-            if (existing.Expr is ColumnExpr ce && ce.Table == table && ce.Name == column.Name && (existing.Alias is null || existing.Alias == alias)) return i;
+            if (existing.Expr is ColumnExpr ce && ce.Table == table && ce.Name == column.Name && (existing.Alias is null || existing.Alias == alias || existing.Alias == column.Name)) return i;
         }
         _columns.Add(new SelectColumn(new ColumnExpr(table, column.Name, column), alias));
         return _columns.Count - 1;
@@ -156,7 +157,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         // 自动映射（SelectAutoInclude）产出的带出标记：导航、带出查询的配置、子对象的投影都在参数里
         if (ExpressionTranslator.StripConvert(value) is MethodCallExpression marker && marker.Method.DeclaringType == typeof(AutoIncludeMarkers))
         {
-            if (marker.Arguments[0] is not MemberExpression { Expression: { } markerOwner } markerNav || translator.BindingOf(markerOwner) is not EntityBinding navOwner
+            if (marker.Arguments[0] is not MemberExpression { Expression: { } markerOwner } markerNav || translator.BindingOf(markerOwner) is not { OwnerEntity: not null } navOwner
                 || translator.FindNavigation(navOwner, markerNav.Member.Name) is not { } navigation)
                 throw new NotSupportedException($"自动映射的带出只能从实体的导航出发：{marker.Arguments[0]}");
             var childSelector = (LambdaExpression?)((ConstantExpression)marker.Arguments[2]).Value;
@@ -281,7 +282,9 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
                 continue;
             }
             var sql = binding is DerivedBinding db ? new ColumnExpr(db.Table, db.MemberColumns[c.PropertyName], c) : ((EntityBinding)binding).EntityTable.Column(c);
-            AddColumn(sql, alias: null, topLevel ? c.PropertyName : member is null ? null : member.Name + "." + c.PropertyName);
+            // 派生表里写了别名的列（如带出分区取段后的派生表）外层照写 AS（与 Java 一致）
+            var keepAlias = binding is DerivedBinding { AliasedMembers: var aliased } && aliased.Contains(c.PropertyName);
+            AddColumn(sql, keepAlias ? ((ColumnExpr)sql).Name : null, topLevel ? c.PropertyName : member is null ? null : member.Name + "." + c.PropertyName, forceAlias: keepAlias);
         }
         if (topLevel) Entity = entity;
         else if (member is not null) NestedEntities[member.Name] = entity;

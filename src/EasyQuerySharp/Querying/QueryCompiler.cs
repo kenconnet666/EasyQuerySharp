@@ -278,6 +278,8 @@ internal static class QueryCompiler
             }
             case TreeCteSource tree:
                 return TreeBinding(db, tree);
+            case BoundSource bound:
+                return bound.Binding;
             case CteSource c:
             {
                 var (inner, projection) = CompileSelect(c.Inner);

@@ -12,7 +12,8 @@ internal sealed partial class ExpressionTranslator
     private NavigationMetadata? Navigation(EntityBinding owner, string member) => Context?.Metadata.FindNavigation(owner.Entity, member);
 
     /// <summary>所属表上名为 <paramref name="member"/> 的导航；不是导航时返回 null（投影编译器识别带出时用）。</summary>
-    internal NavigationMetadata? FindNavigation(EntityBinding owner, string member) => Navigation(owner, member);
+    internal NavigationMetadata? FindNavigation(SourceBinding owner, string member) =>
+        owner.OwnerEntity is { } entity ? Context?.Metadata.FindNavigation(entity, member) : null;
 
     /// <summary>
     /// 剥掉导航外面的配置标记（<see cref="Sql.DisableLogicDelete{T}(T)"/>、<see cref="Sql.AsTable{T}(T, string)"/>、<see cref="Sql.AsAlias{T}(T, string)"/>
