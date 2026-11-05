@@ -174,3 +174,21 @@ public class TopicSelfVO
     [MapPath("Parent.MyUser.Name")]
     public string? Uname2 { get; set; }
 }
+
+/// <summary>对应 Java：doc/entity/SysUser（文档示例用的用户，表名常被 asTable 换掉）。</summary>
+[Table("t_sys_user")]
+public class DocSysUser
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    public string? Account { get; set; }
+
+    public string? DepartName { get; set; }
+
+    public string? Phone { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+}
