@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- L4：分析器与生成器的测试。把代码片段连同真实的核心库一起编译，断言报出的诊断；见 docs/decisions/0003-testing-and-parity.md -->
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\EasyQuerySharp\EasyQuerySharp.csproj" />
+        <ProjectReference Include="..\..\src\EasyQuerySharp.Generator\EasyQuerySharp.Generator.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="xunit.v3" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    </ItemGroup>
+
+</Project>
