@@ -145,7 +145,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [x] 3.1 显式 join：`IQuery<T1..T8>` 由仓库内的生成器产出；right join 之后，前面表的列按可空处理。
 - [~] 3.2 `GroupBy` / `Having` / 投影里的 `g.Key`，以及 `Rollup` / `Cube` / `Grouping`。
 - [x] 3.3 子查询：`In(subQuery)`、`Exists`、派生表 `AsSubQuery()`。
-- [~] 3.4 `Union` / `UnionAll`（已完成），CTE：`AsCte(name)`（已完成），递归 CTE 随 4.10 的树一起做。
+- [x] 3.4 `Union` / `UnionAll`，CTE：`AsCte(name)`，递归 CTE（树查询 `AsTreeCte`）。
 - [x] 3.5 流式读取 `ToAsyncEnumerable()`，无实体查询 `db.SqlQueryAsync<Dictionary<..>>`、`QuerySql<Dictionary<..>>(sql, params)` 与 `ToDictionariesAsync`。
   - [x] Java 的 Map 查询构造器（`mapQueryable()` / `queryable(Map.class).asTable(..)` / `queryable("表名")`）：`db.Table(..)` + `DynamicRow.Get<T>(..)`，复用同一条查询管线。
 - [ ] 3.6 LINQ 查询语法（`from … join … group … select`）的支持测试。
@@ -165,7 +165,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [ ] 4.7 `[MapFrom<T>]` 自动映射：平铺约定、`[MapPath]`、partial `Configure`；分析器 EQ0003 和 EQ0005。
 - [~] 4.8 `Include(nav, q => …)` 可以嵌套；ExtraFilter 的分析器 EQ0004（Include、嵌套、多对多经中间表、ExtraFilter / ExtraMappingFilter 已完成；分析器待做）。
 - [~] 4.9 填充：投影里写非导航的关联查询，规划器按键批量执行（`FillMany` / `FillOne` 已完成，带 Take 时按键 UNION ALL）。
-- [ ] 4.10 树：`ToTreeAsync`、`DescendantsOf` / `AncestorsOf`（递归 CTE）；递归 DTO 由生成器诊断。
+- [~] 4.10 树：`AsTreeCte`（递归 CTE，上下两个方向、层级上限、子节点条件）与 `ToTreeAsync` 已完成；树结果投影到 DTO（selectAutoInclude）随 4.7 做；递归 DTO 由生成器诊断。
 - [ ] 4.11 `ToAsyncEnumerable(batchSize)` 按批流式读取对象树；`.AsSnapshot()` 保证多次查询的一致性。
 
 ## M5 写入进阶与列规则

@@ -45,7 +45,7 @@
 | include | `nav.include` | 37 | `.Include(o => o.Lines, q => q.Where(..).Include(l => l.Product))` | M4 |
 | 按 DTO 结构自动带出 | `dto.autoInclude` | 35 | `[MapFrom<User>] partial record UserVo(..)` 加 `Select<UserVo>()`，编译期生成映射 | M4 |
 | 按键填充 fillMany / fillOne | `fill` | 4 | 投影里写 `db.Query<OrderLine>().Where(l => l.OrderNo == o.No).ToList()`（不是导航的关联），规划器把它拆成按键批量查询 | M4 |
-| 树 toTreeList / asTreeCTE | `tree` | 25 | `ToTreeAsync(m => m.Id, m => m.ParentId)` / `DescendantsOf(id)` / `AncestorsOf(id)` | M4 |
+| 树 toTreeList / asTreeCTE | `tree` | 25 | `q.AsTreeCte(o => { o.Up = true; o.LimitDeep = 2; }, childFilter: c => ..)`（沿指向自身的集合导航递归，`WITH RECURSIVE `as_tree_cte` AS ( (…)  UNION ALL  (…) )`，之后照常 Where / Join / Select，可作子查询）、`AsTreeCte(c => c.Id, c => c.ParentId)`（asTreeCTECustom）；`ToTreeAsync()` 按父子键拼成树（树查询按层级配对，与 Java 一致） | M4 |
 
 ## 写入
 

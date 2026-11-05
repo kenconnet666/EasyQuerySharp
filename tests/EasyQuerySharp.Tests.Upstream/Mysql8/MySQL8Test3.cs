@@ -229,4 +229,37 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
         listen.AssertSql("SELECT t.`id`,t.`name`,t.`phone`,t.`age`,t.`create_time` FROM `t_sys_user` t LEFT JOIN (SELECT t1.`id`,t1.`uid`,t1.`code`,t1.`type`,t1.`bank_id`,t1.`open_time`,(ROW_NUMBER() OVER (PARTITION BY t1.`uid` ORDER BY t1.`open_time` ASC)) AS `__row__` FROM `t_bank_card` t1) t3 ON (t3.`uid` = t.`id` AND t3.`__row__` = ?) INNER JOIN `t_bank` t4 ON t4.`id` = t3.`bank_id` WHERE t4.`name` = ?");
         listen.AssertParams("1(Integer),建设银行(String)");
     }
+
+    // ---------- 树：Java 的 asTreeCTE / toTreeList，C# 的 AsTreeCte / ToTreeAsync ----------
+
+    private const string C0122 = "01225d2f-e1a5-46d8-8ef9-535b7b1b7754", C03ab = "03abe9c8-adf1-4934-ae53-3b52c7c3eb2d", C1bcc = "1bccba2c-7cff-43af-b117-2e518be4422a";
+
+    // 每一行都是起点（层级 0），各自挂上走到的下级
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testTree")]
+    public async Task TestTree()
+    {
+        using var listen = SqlCapture.Listen();
+        var tree = await Db.Query<Comment>().AsTreeCte().ToTreeAsync(Ct);
+        listen.AssertSql("WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `cte_deep`,t1.`id`,t1.`parent_id`,t1.`content`,t1.`user_id`,t1.`post_id`,t1.`create_at` FROM `t_comment` t1)  UNION ALL  (SELECT t2.`cte_deep` + 1 AS `cte_deep`,t3.`id`,t3.`parent_id`,t3.`content`,t3.`user_id`,t3.`post_id`,t3.`create_at` FROM `as_tree_cte` t2 INNER JOIN `t_comment` t3 ON t3.`parent_id` = t2.`id`) ) SELECT t.`id`,t.`parent_id`,t.`content`,t.`user_id`,t.`post_id`,t.`create_at`,t.`cte_deep` FROM `as_tree_cte` t");
+        Assert.Equal(3, tree.Count);
+        Assert.Equal(C0122, tree[0].Id);
+        Assert.Equal(C03ab, tree[0].ParentId);
+        Assert.Equal(C1bcc, Assert.Single(tree[0].Children!).Id);
+        Assert.Empty(tree[0].Children![0].Children!);
+        Assert.Equal(C03ab, tree[1].Id);
+        Assert.Equal("0", tree[1].ParentId);
+        var child = Assert.Single(tree[1].Children!);
+        Assert.Equal(C0122, child.Id);
+        var grandChild = Assert.Single(child.Children!);
+        Assert.Equal(C1bcc, grandChild.Id);
+        Assert.Empty(grandChild.Children!);
+    }
+
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testTree_1")]
+    public async Task TestTree_1()
+    {
+        using var listen = SqlCapture.Listen();
+        Assert.Empty(await Db.Query<Comment>().Where(c => c.Id == null).AsTreeCte().ToTreeAsync(Ct));
+        listen.AssertSql("WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `cte_deep`,t1.`id`,t1.`parent_id`,t1.`content`,t1.`user_id`,t1.`post_id`,t1.`create_at` FROM `t_comment` t1 WHERE t1.`id` IS NULL)  UNION ALL  (SELECT t2.`cte_deep` + 1 AS `cte_deep`,t3.`id`,t3.`parent_id`,t3.`content`,t3.`user_id`,t3.`post_id`,t3.`create_at` FROM `as_tree_cte` t2 INNER JOIN `t_comment` t3 ON t3.`parent_id` = t2.`id`) ) SELECT t.`id`,t.`parent_id`,t.`content`,t.`user_id`,t.`post_id`,t.`create_at`,t.`cte_deep` FROM `as_tree_cte` t");
+    }
 }

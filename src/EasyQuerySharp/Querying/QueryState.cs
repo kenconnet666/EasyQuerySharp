@@ -47,6 +47,13 @@ internal sealed record RawSqlSource(string Sql, Type EntityType, IReadOnlyList<o
 /// <summary>公共表表达式（AsCte）：定义是 <paramref name="Inner"/>，按名字引用。</summary>
 internal sealed record CteSource(string Name, QueryState Inner) : QuerySource;
 
+/// <summary>
+/// 树查询（AsTreeCte，对应 Java 的 asTreeCTE）：递归 CTE 的基础部分是 <paramref name="Base"/>，递归部分按
+/// <paramref name="SelfColumns"/>（节点键）与 <paramref name="ParentColumns"/>（指向上级的键）连接；外层按 CTE 的名字引用。
+/// </summary>
+internal sealed record TreeCteSource(QueryState Base, IReadOnlyList<Metadata.ColumnMetadata> SelfColumns, IReadOnlyList<Metadata.ColumnMetadata> ParentColumns,
+    TreeCteOptions Options, LambdaExpression? ChildFilter) : QuerySource;
+
 /// <summary>按什么排序。</summary>
 internal sealed record OrderSpec(LambdaExpression Key, bool Descending, bool Raw = false);
 
@@ -185,6 +192,8 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
         SubQuerySource s => s.Inner.ElementType,
         UnionSource u => u.Parts[0].ElementType,
         RawSqlSource r => r.EntityType,
+        CteSource c => c.Inner.ElementType,
+        TreeCteSource t => t.Base.ElementType,
         _ => throw new NotSupportedException(source.GetType().Name),
     };
 }

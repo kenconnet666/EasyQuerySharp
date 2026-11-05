@@ -14,7 +14,7 @@ public sealed class PgFixture : IAsyncLifetime
     /// <summary>Java 用例使用的库名。</summary>
     public const string Database = "easy-query-test";
 
-    private static readonly Type[] Tables = [typeof(BlogEntity), typeof(DocBank), typeof(DocBankCard), typeof(DocUser)];
+    private static readonly Type[] Tables = [typeof(BlogEntity), typeof(DocBank), typeof(DocBankCard), typeof(DocUser), typeof(MyCategory)];
 
     private EasyDb? _db;
     private string? _skipReason;
@@ -45,7 +45,8 @@ public sealed class PgFixture : IAsyncLifetime
             await SqlScript.ExecuteAsync(server, $"DROP DATABASE IF EXISTS \"{Database}\" WITH (FORCE); CREATE DATABASE \"{Database}\";");
         }
 
-        _db = new EasyDb(o => o.UsePostgreSql(NpgsqlDataSource.Create(TestDatabases.PostgreSql.TryConnectionString(Database)!)).AddListener(SqlCapture.Instance));
+        _db = new EasyDb(o => o.UsePostgreSql(NpgsqlDataSource.Create(TestDatabases.PostgreSql.TryConnectionString(Database)!)).AddListener(SqlCapture.Instance)
+            .AddInterceptor(new MyCategoryInterceptor()));
         await _db.CodeFirst.CreateTablesAsync(Tables);
         await SeedAsync(_db);
     }
@@ -93,6 +94,15 @@ public sealed class PgFixture : IAsyncLifetime
             new DocBankCard { Id = "小明工商", Type = "储蓄卡", Uid = "小明id", BankId = "工商银行" },
             new DocBankCard { Id = "小红建设", Type = "储蓄卡", Uid = "小红id", BankId = "建设银行" },
         }).ExecuteAsync();
+        // 分类树：1 → 3 → 5、6；1 → 4
+        await db.Insert(new[]
+        {
+            new MyCategory { Id = "1", ParentId = null, Name = "根节点" },
+            new MyCategory { Id = "3", ParentId = "1", Name = "节点3" },
+            new MyCategory { Id = "4", ParentId = "1", Name = "节点4" },
+            new MyCategory { Id = "5", ParentId = "3", Name = "节点5" },
+            new MyCategory { Id = "6", ParentId = "3", Name = "节点6" },
+        }).ExecuteAsync();
     }
 }
 
@@ -104,4 +114,14 @@ public abstract class PgTest(PgFixture fixture)
 
     /// <summary>当前测试的取消令牌。</summary>
     protected static CancellationToken Ct => TestContext.Current.CancellationToken;
+}
+
+/// <summary>对应 Java：entity/MyCategoryInterceptor（默认关闭，名字 aaa；启用时分类的查询追加 1=1）。</summary>
+public sealed class MyCategoryInterceptor : Interceptors.QueryFilter<MyCategory>
+{
+    public override string Name => "aaa";
+
+    public override bool EnabledByDefault => false;
+
+    public override System.Linq.Expressions.Expression<Func<MyCategory, bool>>? Filter() => _ => Sql.Raw<bool>("1=1");
 }

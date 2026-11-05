@@ -102,4 +102,13 @@ public sealed class CteTableSource(string name, SelectQuery query) : TableSource
 
     /// <summary>编号时在定义之后多占一个编号（分组后投影的查询作为 JOIN 来源时，与派生表的 <see cref="DerivedTableSource.ReservedAliases"/> 相同）。</summary>
     public bool ReserveExtraAlias { get; init; }
+
+    /// <summary>
+    /// 递归 CTE 的递归部分（树查询 AsTreeCte）：定义写成 <c>WITH RECURSIVE `名字` AS ( (基础)  UNION ALL  (递归) )</c>，
+    /// 递归部分里按名字引用自己；为 null 时是普通 CTE。
+    /// </summary>
+    public SelectQuery? RecursivePart { get; init; }
+
+    /// <summary>递归部分用 UNION ALL（默认）还是 UNION 连接。</summary>
+    public bool UnionAll { get; init; } = true;
 }

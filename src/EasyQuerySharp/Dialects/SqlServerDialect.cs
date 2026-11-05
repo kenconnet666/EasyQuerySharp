@@ -20,6 +20,9 @@ public class SqlServerDialect : SqlDialect
     public override string QuoteIdentifier(string identifier) => $"[{identifier}]";
 
     /// <inheritdoc />
+    public override string RecursiveWith => "WITH ";
+
+    /// <inheritdoc />
     public override string? LastInsertIdQuery => "SELECT SCOPE_IDENTITY()";
 
     /// <summary>没有 <c>CREATE TABLE IF NOT EXISTS</c>，用 <c>IF OBJECT_ID(…) IS NULL</c> 判断。</summary>

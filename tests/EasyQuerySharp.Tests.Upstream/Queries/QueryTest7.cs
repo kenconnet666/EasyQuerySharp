@@ -154,4 +154,39 @@ public sealed class QueryTest7(MySqlFixture fixture) : MySqlTest(fixture)
     [Fact, Upstream("QueryTest7.java#testQuery18")]
     public void TestQuery18() =>
         Assert.Equal(GroupedBlogs + "MAX(t1.`id`) >= ?", GroupedByBlog().HavingIf(true, g => string.Compare(g.Max(e => e.Item2.Id), "1") >= 0).Select(KeyAndScore).ToSql());
+
+    // ---------- 树（Java 的 asTreeCTE）：Topic 的 Children 导航按 stars 指向上级 id ----------
+
+    private Query<Topic> IdNotNull => Db.Query<Topic>().Where(o => o.Id != null);
+
+    [Fact, Upstream("QueryTest7.java#testCTE1")]
+    public void TestCTE1() => Assert.Equal("WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `cte_deep`,t1.`id`,t1.`stars`,t1.`title`,t1.`create_time` FROM `t_topic` t1 WHERE t1.`id` IS NOT NULL)  UNION ALL  (SELECT t2.`cte_deep` + 1 AS `cte_deep`,t3.`id`,t3.`stars`,t3.`title`,t3.`create_time` FROM `as_tree_cte` t2 INNER JOIN `t_topic` t3 ON t3.`stars` = t2.`id`) ) SELECT t.`id`,t.`stars`,t.`title`,t.`create_time`,t.`cte_deep` FROM `as_tree_cte` t", IdNotNull.AsTreeCte().ToSql());
+
+    // Java 的 asTreeCTECustom("id", "stars")：AsTreeCte(节点键, 上级键)
+    [Fact, Upstream("QueryTest7.java#testCTE1_1")]
+    public void TestCTE1_1() => Assert.Equal("WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `cte_deep`,t1.`id`,t1.`stars`,t1.`title`,t1.`create_time` FROM `t_topic` t1 WHERE t1.`id` IS NOT NULL)  UNION ALL  (SELECT t2.`cte_deep` + 1 AS `cte_deep`,t3.`id`,t3.`stars`,t3.`title`,t3.`create_time` FROM `as_tree_cte` t2 INNER JOIN `t_topic` t3 ON t3.`stars` = t2.`id`) ) SELECT t.`id`,t.`stars`,t.`title`,t.`create_time`,t.`cte_deep` FROM `as_tree_cte` t", IdNotNull.AsTreeCte(o => o.Id, o => (string?)(object?)o.Stars).ToSql());
+
+    // 树查询之后再联表、加条件、投影：外层引用 CTE
+    [Fact, Upstream("QueryTest7.java#testCTE2")]
+    public void TestCTE2() =>
+        Assert.Equal("WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `cte_deep`,t1.`id`,t1.`stars`,t1.`title`,t1.`create_time` FROM `t_topic` t1 WHERE t1.`id` IS NOT NULL)  UNION ALL  (SELECT t2.`cte_deep` + 1 AS `cte_deep`,t3.`id`,t3.`stars`,t3.`title`,t3.`create_time` FROM `as_tree_cte` t2 INNER JOIN `t_topic` t3 ON t3.`stars` = t2.`id`) ) SELECT t.`id`,t6.`url` FROM `as_tree_cte` t LEFT JOIN `t_blog` t6 ON t6.`deleted` = ? AND t.`id` = t6.`id` WHERE t.`title` LIKE ?", IdNotNull.AsTreeCte().LeftJoin<BlogEntity>((t, t1) => t.Id == t1.Id).Where((t, _) => t.Title!.Contains("123"))
+            .Select((t, t1) => new BlogEntity { Id = t.Id, Url = t1.Url }).ToSql());
+
+    [Fact, Upstream("QueryTest7.java#testCTE3")]
+    public void TestCTE3() => Assert.Equal("WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `cte_deep`,t1.`id`,t1.`stars`,t1.`title`,t1.`create_time` FROM `t_topic` t1 WHERE t1.`id` IS NOT NULL)  UNION ALL  (SELECT t2.`cte_deep` + 1 AS `cte_deep`,t3.`id`,t3.`stars`,t3.`title`,t3.`create_time` FROM `as_tree_cte` t2 INNER JOIN `t_topic` t3 ON t3.`id` = t2.`stars`) ) SELECT t.`id`,t.`stars`,t.`title`,t.`create_time`,t.`cte_deep` FROM `as_tree_cte` t", IdNotNull.AsTreeCte(o => o.Up = true).ToSql());
+
+    // Java 的 setLimitDeep(0)：LimitDeep，外层 WHERE 层级 <= ?
+    [Fact, Upstream("QueryTest7.java#testCTE4"), Upstream("QueryTest7.java#testCTE5"), Upstream("QueryTest7.java#testCTE6")]
+    public void TestCTE4() => Assert.Equal("WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `cte_deep`,t1.`id`,t1.`stars`,t1.`title`,t1.`create_time` FROM `t_topic` t1 WHERE t1.`id` IS NOT NULL)  UNION ALL  (SELECT t2.`cte_deep` + 1 AS `cte_deep`,t3.`id`,t3.`stars`,t3.`title`,t3.`create_time` FROM `as_tree_cte` t2 INNER JOIN `t_topic` t3 ON t3.`stars` = t2.`id`) ) SELECT t.`id`,t.`stars`,t.`title`,t.`create_time`,t.`cte_deep` FROM `as_tree_cte` t WHERE t.`cte_deep` <= ?", IdNotNull.AsTreeCte(o => o.LimitDeep = 0).ToSql());
+
+    [Fact, Upstream("QueryTest7.java#testCTE7")]
+    public void TestCTE7() =>
+        Assert.Equal("WITH RECURSIVE `abc` AS ( (SELECT 0 AS `xyz`,t1.`id`,t1.`stars`,t1.`title`,t1.`create_time` FROM `t_topic` t1 WHERE t1.`id` IS NOT NULL)  UNION  (SELECT t2.`xyz` + 1 AS `xyz`,t3.`id`,t3.`stars`,t3.`title`,t3.`create_time` FROM `abc` t2 INNER JOIN `t_topic` t3 ON t3.`id` = t2.`stars`) ) SELECT t.`id`,t.`stars`,t.`title`,t.`create_time`,t.`xyz` FROM `abc` t WHERE t.`xyz` <= ?", IdNotNull.AsTreeCte(o =>
+        {
+            o.LimitDeep = 0;
+            o.Up = true;
+            o.UnionAll = false;
+            o.CteTableName = "abc";
+            o.DeepColumnName = "xyz";
+        }).ToSql());
 }

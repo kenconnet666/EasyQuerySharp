@@ -317,3 +317,30 @@ public class BankCardGroupBO
     [Navigate(RelationType.OneToOne, SelfProperties = [nameof(Uid)], TargetProperties = [nameof(SysUser.Id)])]
     public SysUser? User { get; set; }
 }
+
+/// <summary>对应 Java：mysql8/entity/Comment（评论按 parent_id 自关联成树）。</summary>
+[Table("t_comment", NotFoundMessage = "未找到对应的评论信息")]
+public class Comment
+{
+    [Column(PrimaryKey = true, Comment = "评论id")]
+    public string? Id { get; set; }
+
+    [Column(Comment = "父id")]
+    public string? ParentId { get; set; }
+
+    [Column(Comment = "帖子内容")]
+    public string? Content { get; set; }
+
+    [Column(Comment = "用户id")]
+    public string? UserId { get; set; }
+
+    [Column(Comment = "帖子id")]
+    public string? PostId { get; set; }
+
+    [Column(Comment = "回复时间")]
+    public DateTime? CreateAt { get; set; }
+
+    /// <summary>子评论。</summary>
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(ParentId)])]
+    public List<Comment>? Children { get; set; }
+}

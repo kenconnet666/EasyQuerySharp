@@ -80,6 +80,16 @@ internal static class AliasAllocator
             Collect(derived.Query, tables, derived.AliasAfterJoins is null ? null : derived);
             if (derived.AliasAfterJoins is null) Reserve(derived.ReservedAliases, tables);
         }
+        // 递归 CTE（树查询）：先编外层引用自己，再编基础部分、递归部分（递归部分里引用自己时名字已登记，只编号）（与 Java 一致）
+        if (table is CteTableSource { RecursivePart: { } recursive } tree && !tables.OfType<CteTableSource>().Any(c => c.Name == tree.Name))
+        {
+            tables.Add(tree);
+            Collect(tree.Query, tables);
+            Collect(recursive, tables);
+            // Java 拼树时内部还建了 UNION 与 CTE 两层匿名表：之后的表从 t6 起编号
+            Reserve(2, tables);
+            return;
+        }
         // CTE：定义只编号一次（第一次引用时），之后的引用只编自己
         if (table is CteTableSource cte && !tables.OfType<CteTableSource>().Any(c => c.Name == cte.Name))
         {

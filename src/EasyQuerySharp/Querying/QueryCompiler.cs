@@ -43,6 +43,8 @@ internal static class QueryCompiler
             {
                 query = new SelectQuery(binding.Table);
                 query.Where.AddRange(filters);
+                if (source is TreeCteSource { Options.LimitDeep: { } limitDeep } tree)
+                    query.Where.Add(new BinaryExpr(new ColumnExpr(binding.Table, tree.Options.DeepColumnName), SqlBinaryOperator.LessThanOrEqual, new ParameterExpr(limitDeep, typeof(int))));
                 translator.Context = new TranslationContext(db.Metadata, (table, logicDelete) => Filters(db, state, new EntityBinding(table), noLogicDelete: !logicDelete), query, outerContext)
                 {
                     Db = db,
@@ -129,6 +131,43 @@ internal static class QueryCompiler
         }
     }
 
+    /// <summary>
+    /// 树查询的递归 CTE（与 Java 的 asTreeCTE 逐字一致）：
+    /// <c>WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `cte_deep`,t1.… FROM 表 t1 WHERE …)  UNION ALL
+    /// (SELECT t2.`cte_deep` + 1 AS `cte_deep`,t3.… FROM `as_tree_cte` t2 INNER JOIN 表 t3 ON t3.上级 = t2.键) )</c>，往上走时 ON 反过来。
+    /// </summary>
+    private static DerivedBinding TreeBinding(EasyDb db, TreeCteSource tree)
+    {
+        var options = tree.Options;
+        var entity = db.Metadata.Get(tree.Base.ElementType);
+        var (start, _) = CompileSelect(tree.Base with { ForceAlias = true });
+        start.Columns.Insert(0, new SelectColumn(new LiteralExpr("0"), options.DeepColumnName));
+
+        var walked = new CteTableSource(options.CteTableName, start);
+        var child = new EntityTableSource(entity);
+        // 往下走：子节点的上级 = 已走到的节点；往上走：上级节点的键 = 已走到的节点的上级
+        var keys = tree.SelfColumns.Select((self, i) => (SqlExpr)(options.Up
+            ? new BinaryExpr(child.Column(self), SqlBinaryOperator.Equal, new ColumnExpr(walked, tree.ParentColumns[i].Name, tree.ParentColumns[i]))
+            : new BinaryExpr(child.Column(tree.ParentColumns[i]), SqlBinaryOperator.Equal, new ColumnExpr(walked, self.Name, self)))).ToList();
+        var on = Filters(db, tree.Base, new EntityBinding(child)).Concat(keys).ToList();
+        var recursive = new SelectQuery(walked);
+        recursive.Joins.Add(new JoinClause(JoinKind.Inner, child, LogicalExpr.And(on)));
+        // 递归部分里引用自己的 CTE 同样当实体表加条件（与 Java 一致）
+        var walkedRow = new DerivedBinding(walked, entity.Columns.ToDictionary(c => c.PropertyName, c => c.Name), entity);
+        recursive.Where.AddRange(CteFilters(db, walked, entity, walkedRow, !tree.Base.DisableLogicDelete, tree.Base.Interceptors));
+        if (tree.ChildFilter is { } childFilter)
+        {
+            var translator = new ExpressionTranslator([]);
+            translator.Bind(childFilter, [new EntityBinding(child)]);
+            recursive.Where.Add(translator.TranslatePredicate(childFilter.Body));
+        }
+        recursive.Columns.Add(new SelectColumn(new FragmentExpr("{0} + 1", [new ColumnExpr(walked, options.DeepColumnName)]), options.DeepColumnName));
+        foreach (var c in entity.Columns.Where(c => c.AutoSelect)) recursive.Columns.Add(new SelectColumn(child.Column(c), null));
+
+        var table = new CteTableSource(options.CteTableName, start) { ExplicitAlias = tree.Alias, RecursivePart = recursive, UnionAll = options.UnionAll };
+        return new DerivedBinding(table, entity.Columns.ToDictionary(c => c.PropertyName, c => c.Name), entity);
+    }
+
     // 投影的 DTO 上声明了导航时，取它的元数据（外层可以经这些导航隐式 JOIN）；匿名类型、标量、没有导航的 DTO 返回 null
     private static Metadata.EntityMetadata? DtoWithNavigations(EasyDb db, Type? dto) =>
         dto is { IsClass: true } && dto != typeof(string) && !ScalarTypes.IsScalar(dto)
@@ -196,6 +235,9 @@ internal static class QueryCompiler
         // 先登记列，再把列表交给 AST；读取函数由调用方按需编译
         projection.Prepare(selector.Body, frame.Bindings[0], relationKeys, state.Selector is null ? (IReadOnlyList<IncludeSpec>)state.Includes : null);
         frame.Query.Columns.AddRange(projection.Columns);
+        // 树查询不投影时，层级列跟在实体的列之后（与 Java 一致；拼树时按它分层）
+        if (state.Selector is null && state.Sources[0] is TreeCteSource treeSource)
+            frame.Query.Columns.Add(new SelectColumn(new ColumnExpr(frame.Bindings[0].Table, treeSource.Options.DeepColumnName), null));
         // 分组合并的派生表要等整条查询（含投影）翻译完才知道全部聚合
         frame.Translator.Context?.CompleteGroupJoins();
         // 无实体的表（db.Table）单表选列时不加别名（与 Java 的 Map 查询一致）；联表、UNION 时照常编号
@@ -226,6 +268,8 @@ internal static class QueryCompiler
                     NavigationOwner = projection.Entity is null ? DtoWithNavigations(db, s.Inner.Selector?.ReturnType) : null,
                 };
             }
+            case TreeCteSource tree:
+                return TreeBinding(db, tree);
             case CteSource c:
             {
                 var (inner, projection) = CompileSelect(c.Inner);
@@ -257,11 +301,20 @@ internal static class QueryCompiler
         return binding switch
         {
             EntityBinding { EntityTable: var table } => TableFilters(db, table, logicDelete, state.Interceptors),
-            // 整个实体的 CTE 引用：Java 把它当实体表，同样加逻辑删除条件
-            DerivedBinding { Table: CteTableSource cte, Entity: { LogicDeleteColumn: { } column } entity } when logicDelete =>
-                [LogicDeleteStrategies.Resolve(db.Options, entity).NotDeleted(new ColumnExpr(cte, column.Name, column))],
+            // 整个实体的 CTE 引用：Java 把它当实体表，同样加逻辑删除与拦截器的条件
+            DerivedBinding { Table: CteTableSource cte, Entity: { } entity } derived => CteFilters(db, cte, entity, derived, logicDelete, state.Interceptors),
             _ => [],
         };
+    }
+
+    private static List<SqlExpr> CteFilters(EasyDb db, CteTableSource cte, EntityMetadata entity, SourceBinding row, bool logicDelete,
+        Interceptors.InterceptorSelection interceptors)
+    {
+        var result = new List<SqlExpr>();
+        if (logicDelete && entity.LogicDeleteColumn is { } column)
+            result.Add(LogicDeleteStrategies.Resolve(db.Options, entity).NotDeleted(new ColumnExpr(cte, column.Name, column)));
+        result.AddRange(db.Interceptors.QueryFilters(entity.Type, row, interceptors));
+        return result;
     }
 
     /// <summary>一张实体表自带的条件：逻辑删除（<paramref name="logicDelete"/> 为 true 时），再是拦截器的过滤条件。查询与写入共用。</summary>

@@ -51,6 +51,9 @@ public abstract class SqlDialect
         WritePaging(renderer, query);
     }
 
+    /// <summary>递归 CTE 的开头（树查询 AsTreeCte）：默认 <c>WITH RECURSIVE </c>；SQL Server、Oracle 不写 RECURSIVE。</summary>
+    public virtual string RecursiveWith => "WITH RECURSIVE ";
+
     /// <summary>UPDATE 的 SET 列是否带表别名（<c>t.`a` = ?</c>）；PostgreSQL 不允许，覆盖成 false。</summary>
     public virtual bool QualifySetColumns => true;
 

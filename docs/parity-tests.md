@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1424、偏离 174、不适用 65、骨架 15、待做 726。
+合计：已移植 1442、偏离 174、不适用 65、骨架 15、待做 708。
 
 ## 按能力
 
@@ -38,7 +38,7 @@
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 59 | 1 | 2 | 2 | 3 |
 | include 带出导航 | `nav.include` | M4 | 37 | 14 | 0 | 0 | 0 | 23 |
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 130 | 3 | 1 | 0 | 8 |
-| 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 0 | 0 | 0 | 0 | 25 |
+| 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 18 | 0 | 0 | 0 | 7 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
 | 列加密 | `column.encryption` | M5 | 8 | 7 | 0 | 0 | 0 | 1 |
 | 拦截器 | `interceptor` | M5 | 3 | 3 | 0 | 0 | 0 | 0 |
@@ -1860,30 +1860,30 @@
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
 | QueryTest11.java#testCTE1 | 待做 |  | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
-| QueryTest7.java#testCTE1 | 待做 |  | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
-| QueryTest7.java#testCTE1_1 | 待做 |  | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
-| QueryTest7.java#testCTE2 | 待做 |  | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
-| QueryTest7.java#testCTE3 | 待做 |  | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
-| QueryTest7.java#testCTE4 | 待做 |  | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
-| QueryTest7.java#testCTE5 | 待做 |  | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
-| QueryTest7.java#testCTE6 | 待做 |  | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
-| QueryTest7.java#testCTE7 | 待做 |  | `WITH RECURSIVE 'abc' AS ( (SELECT 0 AS 'xyz',t1.'id',t1.'stars',t1.'title',t1.'create_time' FROM 't_…` |
+| QueryTest7.java#testCTE1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:162 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
+| QueryTest7.java#testCTE1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:166 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
+| QueryTest7.java#testCTE2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:170 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
+| QueryTest7.java#testCTE3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:175 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
+| QueryTest7.java#testCTE4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:179 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
+| QueryTest7.java#testCTE5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:179 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
+| QueryTest7.java#testCTE6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:179 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
+| QueryTest7.java#testCTE7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:182 | `WITH RECURSIVE 'abc' AS ( (SELECT 0 AS 'xyz',t1.'id',t1.'stars',t1.'title',t1.'create_time' FROM 't_…` |
 | mysql8/MySQL8Test2.java#cteViewTree1 | 待做 |  |  |
 | mysql8/MySQL8Test2.java#cteViewTree2 | 待做 |  |  |
-| mysql8/MySQL8Test3.java#testTree | 待做 |  | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'parent_id',t1.'content',t1.'us…` |
-| mysql8/MySQL8Test3.java#testTree_1 | 待做 |  | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'parent_id',t1.'content',t1.'us…` |
+| mysql8/MySQL8Test3.java#testTree | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:238 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'parent_id',t1.'content',t1.'us…` |
+| mysql8/MySQL8Test3.java#testTree_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:258 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'parent_id',t1.'content',t1.'us…` |
 | pgsql/QueryTest19.java#cteViewTree1 | 待做 |  |  |
-| pgsql/QueryTest19.java#testToTreeList | 待做 |  | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
-| pgsql/QueryTest19.java#testToTreeList2 | 待做 |  | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
-| pgsql/QueryTest19.java#testToTreeList3 | 待做 |  | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
+| pgsql/QueryTest19.java#testToTreeList | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:21 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
+| pgsql/QueryTest19.java#testToTreeList2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:33 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
+| pgsql/QueryTest19.java#testToTreeList3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:43 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
 | pgsql/QueryTest19.java#testToTreeListDTO | 待做 |  | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
-| pgsql/QueryTest19.java#tree10 | 待做 |  | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
-| pgsql/QueryTest19.java#tree10_1 | 待做 |  | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
-| pgsql/QueryTest19.java#tree11 | 待做 |  | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
-| pgsql/QueryTest19.java#tree12 | 待做 |  | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t2."id",t2."parent_id",t2."name" FROM "cat…` |
+| pgsql/QueryTest19.java#tree10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:68 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
+| pgsql/QueryTest19.java#tree10_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:77 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
+| pgsql/QueryTest19.java#tree11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:77 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
+| pgsql/QueryTest19.java#tree12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:87 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t2."id",t2."parent_id",t2."name" FROM "cat…` |
 | pgsql/QueryTest19.java#tree7_1 | 待做 |  | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "deep",t1."id",t1."parent_id",t1."name" FROM "categor…` |
 | pgsql/QueryTest19.java#tree7_2 | 待做 |  | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "deep1",t1."id",t1."parent_id",t1."name" FROM "catego…` |
-| pgsql/QueryTest19.java#tree9 | 待做 |  | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
+| pgsql/QueryTest19.java#tree9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:57 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
 
 ### 值转换、枚举、JSON 列（`column.converter`，M5）
 

@@ -32,6 +32,9 @@ public class OracleDialect : SqlDialect
     /// <inheritdoc />
     public override string ParameterPlaceholder(int index) => ":p" + index;
 
+    /// <inheritdoc />
+    public override string RecursiveWith => "WITH ";
+
     /// <summary>
     /// <c>SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS "__rownum__" FROM (…) rt WHERE ROWNUM &lt; 末行+1) rt1 WHERE rt1."__rownum__" &gt; 跳过行数</c>；
     /// 只有 LIMIT 时省掉外层。

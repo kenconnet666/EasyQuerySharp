@@ -17,6 +17,10 @@ public class Topic
 
     [ColumnIgnore]
     public string? Alias { get; set; }
+
+    /// <summary>子主题（Java 的 children：本表 stars 指向上级 id，用于树查询）。</summary>
+    [Navigate(RelationType.OneToMany, TargetProperties = [nameof(Stars)])]
+    public List<Topic>? Children { get; set; }
 }
 
 /// <summary>对应 Java：entity/TopicUpdate（映射到 t_topic，配合 TopicUpdateInterceptor 测试更新拦截）。</summary>

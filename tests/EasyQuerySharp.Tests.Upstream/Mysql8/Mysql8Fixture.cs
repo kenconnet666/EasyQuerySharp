@@ -23,7 +23,7 @@ public sealed class Mysql8Fixture : IAsyncLifetime
         typeof(M8User), typeof(M8Role), typeof(M8UserRole), typeof(M8User2), typeof(M8Role2), typeof(M8UserRole2),
         typeof(M8UserBook), typeof(M8RoleMenu), typeof(M8Menu), typeof(M8Province), typeof(M8City), typeof(M8Area),
         typeof(M8AreaBuild), typeof(M8Parent), typeof(M8Child), typeof(M8ParentChild), typeof(BatchInsert),
-        typeof(TableNoKey), typeof(OffsetChunkTest), typeof(M8UserTest),
+        typeof(TableNoKey), typeof(OffsetChunkTest), typeof(M8UserTest), typeof(Comment),
     ];
 
     private EasyDb? _db;
@@ -97,6 +97,14 @@ public sealed class Mysql8Fixture : IAsyncLifetime
         await db.Insert(new M8UserRole2 { UserRoleId = "1", UserId = "123", RoleId = "456" }).ExecuteAsync();
         await db.Insert(new M8Role2 { RoleId = "456", RoleName = "456role" }).ExecuteAsync();
         await db.Insert(new M8Role { Id = "r123", Name = "测试角色", CreateTime = new DateTime(2020, 1, 1) }).ExecuteAsync();
+        // 与 Java 的 mysql8/BaseTest 相同的三条评论：03ab → 0122 → 1bcc
+        const string user = "3b63ddd9-b038-4c24-969e-8b478fe862a5", post = "73f5d341-c6df-43a1-afcd-e246c4d1fcc9";
+        await db.Insert(new[]
+        {
+            new Comment { Id = "03abe9c8-adf1-4934-ae53-3b52c7c3eb2d", ParentId = "0", Content = "写得真详细", UserId = user, PostId = post, CreateAt = new DateTime(2020, 1, 1) },
+            new Comment { Id = "01225d2f-e1a5-46d8-8ef9-535b7b1b7754", ParentId = "03abe9c8-adf1-4934-ae53-3b52c7c3eb2d", Content = "@用户E 具体是指哪方面？", UserId = user, PostId = post, CreateAt = new DateTime(2020, 1, 2) },
+            new Comment { Id = "1bccba2c-7cff-43af-b117-2e518be4422a", ParentId = "01225d2f-e1a5-46d8-8ef9-535b7b1b7754", Content = "@用户E 你是指...", UserId = user, PostId = post, CreateAt = new DateTime(2020, 1, 3) },
+        }).ExecuteAsync();
         await db.Insert(new M8RoleMenu { Id = "rm123", RoleId = "r123", MenuId = "m123" }).ExecuteAsync();
         await db.Insert(new M8Menu { Id = "m123", Name = "测试菜单", Path = "/admin", OwnerId = "o123" }).ExecuteAsync();
         await db.Insert(new M8MenuOwner { Id = "o123", Name = "测试所属菜单" }).ExecuteAsync();

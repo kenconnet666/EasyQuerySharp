@@ -23,13 +23,17 @@ public sealed class InterceptorRegistry
         _interceptors.OfType<T>().Where(i => i.TargetType.IsAssignableFrom(entityType) && selection.Applies(i));
 
     /// <summary>翻译作用于某张实体表的全部查询过滤条件。</summary>
-    internal IEnumerable<SqlExpr> QueryFilters(EntityTableSource table, InterceptorSelection selection)
+    internal IEnumerable<SqlExpr> QueryFilters(EntityTableSource table, InterceptorSelection selection) =>
+        QueryFilters(table.Entity.Type, new EntityBinding(table), selection);
+
+    /// <summary>实体类型 <paramref name="entityType"/> 的查询过滤条件，翻译到 <paramref name="row"/> 上（实体表，或整个实体的 CTE 引用）。</summary>
+    internal IEnumerable<SqlExpr> QueryFilters(Type entityType, SourceBinding row, InterceptorSelection selection)
     {
-        foreach (var interceptor in For<IQueryFilterInterceptor>(table.Entity.Type, selection))
+        foreach (var interceptor in For<IQueryFilterInterceptor>(entityType, selection))
         {
             if (interceptor.FilterLambda() is not { } lambda) continue;
             var translator = new ExpressionTranslator([]);
-            translator.Bind(lambda, [new EntityBinding(table)]);
+            translator.Bind(lambda, [row]);
             yield return translator.TranslatePredicate(lambda.Body);
         }
     }

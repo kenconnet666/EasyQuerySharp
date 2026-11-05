@@ -28,7 +28,13 @@ public sealed class SqlRenderer
         var r = new SqlRenderer(dialect);
         // WITH `a` AS (…) ,`b` AS (…) SELECT …（与 Java 逐字一致）
         for (var i = 0; i < ctes.Count; i++)
-            r.Append(i == 0 ? "WITH " : " ,").Append(dialect.QuoteIdentifier(ctes[i].Name)).Append(" AS (").WriteSelect(ctes[i].Query).Append(")");
+        {
+            r.Append(i > 0 ? " ," : ctes.Any(c => c.RecursivePart is not null) ? dialect.RecursiveWith : "WITH ")
+                .Append(dialect.QuoteIdentifier(ctes[i].Name)).Append(" AS ");
+            if (ctes[i].RecursivePart is { } recursive)
+                r.Append("( (").WriteSelect(ctes[i].Query).Append(ctes[i].UnionAll ? ")  UNION ALL  (" : ")  UNION  (").WriteSelect(recursive).Append(") )");
+            else r.Append("(").WriteSelect(ctes[i].Query).Append(")");
+        }
         if (ctes.Count > 0) r.Append(" ");
         r.WriteSelect(query);
         if (query.Lock == RowLock.None) return r.Build();
