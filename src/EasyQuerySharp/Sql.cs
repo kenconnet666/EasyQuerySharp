@@ -202,6 +202,12 @@ public static partial class Sql
     /// <summary>实体除去 <paramref name="excluded"/>（写成 <c>b.CreateTime, b.Title</c>）以外的全部列（对应 Java 的 selectAll + selectIgnores）。</summary>
     public static Dictionary<string, object?> ColumnsExcept<T>(T entity, params object?[] excluded) => throw OnlyInQuery();
 
+    /// <summary>
+    /// 整个实体但不选 <paramref name="excluded"/> 这几列（对应 Java 的 entity.selectIgnores(..)），读出后这些属性保持默认值；
+    /// 可以嵌在 Part / DTO 里：<c>new Part&lt;BankCard, string?&gt;(Sql.Without(c, c.Id), c.Bank!.Name)</c>。
+    /// </summary>
+    public static T Without<T>(T entity, params object?[] excluded) => throw OnlyInQuery();
+
     // ---------- 聚合（不分组时作用于整个结果，分组时作用于每组）----------
 
     /// <summary><c>COUNT(*)</c>。</summary>

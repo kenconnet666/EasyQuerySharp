@@ -127,8 +127,13 @@ internal sealed class DerivedBinding(
     /// <summary>内层投影的实体；不是整体实体时为 null。</summary>
     public EntityMetadata? Entity => entity;
 
+    /// <summary>
+    /// 内层投影成 DTO、而 DTO 上声明了 [Navigate] 时，DTO 的元数据：外层可以经 DTO 上的导航隐式 JOIN（对应 Java 在 VO 上写 ）。
+    /// </summary>
+    public EntityMetadata? NavigationOwner { get; init; }
+
     /// <inheritdoc />
-    public override EntityMetadata? OwnerEntity => entity;
+    public override EntityMetadata? OwnerEntity => entity ?? NavigationOwner;
 
     /// <inheritdoc />
     public override SqlExpr? Member(MemberInfo member) =>

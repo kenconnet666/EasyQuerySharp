@@ -99,6 +99,10 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
                 return Expression.Call(ReadMapMethod, _reader);
             case MethodCallExpression call when IsColumnsCall(call):
                 return ShapeColumnsMap(call);
+            // Sql.Without(e, e.X, …)：整个实体但不选这几列
+            case MethodCallExpression { Method.Name: nameof(Sql.Without) } call when call.Method.DeclaringType == typeof(Sql):
+                return ShapeEntity(translator.BindingOf(call.Arguments[0]) ?? throw new NotSupportedException($"Sql.Without 只能用在实体上：{call.Arguments[0]}"),
+                    call.Type, topLevel, member, ExcludedMembers(call));
             // Sql.ClientSide(x, f)：SQL 里只有 x（列别名照常按成员），读出后调用 f
             case MethodCallExpression { Method.Name: nameof(Sql.ClientSide) } call when call.Method.DeclaringType == typeof(Sql):
             {
@@ -239,7 +243,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     }
 
     // 整个实体：顶层时（u => u）记下实体元数据与成员列；嵌在 DTO 里时（new { u, … }）LEFT JOIN 没连上的行读成 null
-    private Expression ShapeEntity(SourceBinding binding, Type type, bool topLevel, MemberInfo? member = null)
+    private Expression ShapeEntity(SourceBinding binding, Type type, bool topLevel, MemberInfo? member = null, IReadOnlySet<string>? excluded = null)
     {
         // 无实体的表（db.Table(..)）：列未知，SELECT * 后按列名读成行（与 Java 的 Map 查询一致）
         if (type == typeof(DynamicRow))
@@ -250,8 +254,8 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         var start = _columns.Count;
         var (entity, columns) = binding switch
         {
-            EntityBinding e => (e.Entity, (IReadOnlyList<ColumnMetadata>)e.Entity.Columns.Where(c => c.AutoSelect).ToList()),
-            DerivedBinding { Entity: { } meta } d => (meta, meta.Columns.Where(c => d.MemberColumns.ContainsKey(c.PropertyName)).ToList()),
+            EntityBinding e => (e.Entity, (IReadOnlyList<ColumnMetadata>)e.Entity.Columns.Where(c => c.AutoSelect && excluded?.Contains(c.PropertyName) != true).ToList()),
+            DerivedBinding { Entity: { } meta } d => (meta, meta.Columns.Where(c => d.MemberColumns.ContainsKey(c.PropertyName) && excluded?.Contains(c.PropertyName) != true).ToList()),
             _ => throw new NotSupportedException($"不能把 {type.Name} 作为整体投影"),
         };
         foreach (var c in columns)
@@ -328,6 +332,13 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
 
     private static bool IsMap(Type type) => typeof(IDictionary<string, object?>).IsAssignableFrom(type);
 
+    // Sql.ColumnsExcept / Sql.Without 第二个参数里排除的属性名
+    private static HashSet<string> ExcludedMembers(MethodCallExpression call) =>
+        call.Arguments.Count > 1 && call.Arguments[1] is NewArrayExpression array
+            ? array.Expressions.Select(e => ExpressionTranslator.StripConvert(e) is MemberExpression m ? m.Member.Name
+                : throw new NotSupportedException($"Sql.{call.Method.Name} 只能排除属性访问，如 b.CreateTime：{e}")).ToHashSet(StringComparer.Ordinal)
+            : [];
+
     private static bool IsColumnsCall(MethodCallExpression call) =>
         call.Method.DeclaringType == typeof(Sql) && call.Method.Name is nameof(Sql.Columns) or nameof(Sql.ColumnsExcept);
 
@@ -339,10 +350,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     {
         if (translator.BindingOf(call.Arguments[0]) is not EntityBinding owner)
             throw new NotSupportedException($"Sql.Columns 只能用在实体上：{call.Arguments[0]}");
-        var excluded = call.Arguments.Count > 1 && call.Arguments[1] is NewArrayExpression array
-            ? array.Expressions.Select(e => ExpressionTranslator.StripConvert(e) is MemberExpression m ? m.Member.Name
-                : throw new NotSupportedException($"Sql.ColumnsExcept 只能排除属性访问，如 b.CreateTime：{e}")).ToHashSet(StringComparer.Ordinal)
-            : [];
+        var excluded = ExcludedMembers(call);
         var start = _columns.Count;
         foreach (var c in owner.Entity.Columns.Where(c => c.AutoSelect && !excluded.Contains(c.PropertyName)))
             AddColumn(owner.EntityTable.Column(c), alias: null, memberName: null);

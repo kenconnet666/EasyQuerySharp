@@ -293,3 +293,27 @@ public class M8UserProtect
 
     public DateTime? CreateTime { get; set; }
 }
+
+/// <summary>对应 Java：mysql8/entity/M8UserTest（没有主键的用户表，用于多条件组合）。</summary>
+[Table("m8_user_test")]
+public class M8UserTest
+{
+    public long? Id { get; set; }
+
+    public int? Sex { get; set; }
+
+    public int? Age { get; set; }
+
+    public string? UserName { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/dto/BankCardGroupBO（分组结果，DTO 上声明了一对一导航到用户）。</summary>
+public class BankCardGroupBO
+{
+    public string? Uid { get; set; }
+
+    public long Count { get; set; }
+
+    [Navigate(RelationType.OneToOne, SelfProperties = [nameof(Uid)], TargetProperties = [nameof(SysUser.Id)])]
+    public SysUser? User { get; set; }
+}

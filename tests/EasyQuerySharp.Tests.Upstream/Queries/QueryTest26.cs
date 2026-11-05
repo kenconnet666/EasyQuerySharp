@@ -272,4 +272,12 @@ public sealed class QueryTest26(MySqlFixture fixture) : MySqlTest(fixture)
                 .Where(c => Sql.LikeContains(c.Bank!.Name, "123")).ToStatement(),
             "SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time` FROM `t_bank_card` t INNER JOIN `t_bank` t1 ON t1.`id` = t.`bank_id` AND (t1.`name` LIKE ? OR t1.`name` LIKE CONCAT('%',?,'%')) WHERE t1.`name` LIKE CONCAT('%',?,'%')",
             "%工商银行%(String),建设银行(String),123(String)");
+
+    // 分组结果投影成带导航的 DTO，外层按导航过滤（同 mysql8/M8Test1 的 test23）
+    [Fact, Upstream("QueryTest26.java#test23")]
+    public void Test23() =>
+        SqlOnly.AssertStatement(Db.Query<Mysql8.SysBankCard>().GroupBy(c => c.Uid).Select(g => new Mysql8.BankCardGroupBO { Uid = g.Key, Count = g.Count() })
+                .Where(b => Sql.LikeContains(b.User!.Name, "123")).ToStatement(),
+            "SELECT t1.`uid` AS `uid`,t1.`count` AS `count` FROM (SELECT t.`uid` AS `uid`,COUNT(*) AS `count` FROM `t_bank_card` t GROUP BY t.`uid`) t1 LEFT JOIN `t_sys_user` t2 ON t2.`id` = t1.`uid` WHERE t2.`name` LIKE CONCAT('%',?,'%')",
+            "123(String)");
 }

@@ -129,6 +129,13 @@ internal static class QueryCompiler
         }
     }
 
+    // 投影的 DTO 上声明了导航时，取它的元数据（外层可以经这些导航隐式 JOIN）；匿名类型、标量、没有导航的 DTO 返回 null
+    private static Metadata.EntityMetadata? DtoWithNavigations(EasyDb db, Type? dto) =>
+        dto is { IsClass: true } && dto != typeof(string) && !ScalarTypes.IsScalar(dto)
+        && dto.GetProperties().Any(p => p.IsDefined(typeof(Metadata.NavigateAttribute), true))
+            ? db.Metadata.Get(dto)
+            : null;
+
     /// <summary>完整翻译：按投影（没有时投影到第一个来源的实体）填入 SELECT 列表并生成读取函数。</summary>
     public static CompiledQuery<T> Compile<T>(QueryState state, IReadOnlyList<ColumnMetadata>? relationKeys = null)
     {
@@ -214,7 +221,10 @@ internal static class QueryCompiler
                     // 投影过的查询作为 JOIN 来源：Java 内部多一层匿名表，别名跳过一个
                     ReservedAliases = s.Join is not null && (s.Inner.GroupKey is not null || s.Inner is { HasSelector: true, ImplicitSelector: false }) ? 1 : 0,
                 };
-                return new DerivedBinding(table, projection.MemberColumns, projection.Entity, projection.AliasedMembers, projection.NestedEntities);
+                return new DerivedBinding(table, projection.MemberColumns, projection.Entity, projection.AliasedMembers, projection.NestedEntities)
+                {
+                    NavigationOwner = projection.Entity is null ? DtoWithNavigations(db, s.Inner.Selector?.ReturnType) : null,
+                };
             }
             case CteSource c:
             {
