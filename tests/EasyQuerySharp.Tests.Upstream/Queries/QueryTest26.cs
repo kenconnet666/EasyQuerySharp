@@ -255,4 +255,21 @@ public sealed class QueryTest26(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertSql("SELECT t.`aid`,t.`aname` FROM `on_relation_a` t LEFT JOIN `on_relation_b` t2 ON t2.`aid` = t.`aid` LEFT JOIN `on_relation_c` t3 ON t3.`bid` = t2.`bid` LEFT JOIN `on_relation_d` t1 ON t3.`cid` = t1.`did` WHERE t2.`bname` LIKE CONCAT('%',?,'%')");
         listen.AssertParams("123(String)");
     }
+
+    // Java 的 bank().filter(..)：FilterNavigation(c => c.Bank, ..)，条件写进 JOIN 的 ON；只声明不使用也照样连接
+    [Fact, Upstream("QueryTest26.java#test11")]
+    public void Test11() =>
+        SqlOnly.AssertStatement(Db.Query<Mysql8.SysBankCard>()
+                .FilterNavigation(c => c.Bank, t => t.Name!.Contains("工商银行") || Sql.LikeContains(t.Name, "建设银行")).ToStatement(),
+            "SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time` FROM `t_bank_card` t INNER JOIN `t_bank` t1 ON t1.`id` = t.`bank_id` AND (t1.`name` LIKE ? OR t1.`name` LIKE CONCAT('%',?,'%'))",
+            "%工商银行%(String),建设银行(String)");
+
+    // 声明了条件的导航在条件里再用到时共用同一个 JOIN
+    [Fact, Upstream("QueryTest26.java#test22")]
+    public void Test22() =>
+        SqlOnly.AssertStatement(Db.Query<Mysql8.SysBankCard>()
+                .FilterNavigation(c => c.Bank, t => t.Name!.Contains("工商银行") || Sql.LikeContains(t.Name, "建设银行"))
+                .Where(c => Sql.LikeContains(c.Bank!.Name, "123")).ToStatement(),
+            "SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time` FROM `t_bank_card` t INNER JOIN `t_bank` t1 ON t1.`id` = t.`bank_id` AND (t1.`name` LIKE ? OR t1.`name` LIKE CONCAT('%',?,'%')) WHERE t1.`name` LIKE CONCAT('%',?,'%')",
+            "%工商银行%(String),建设银行(String),123(String)");
 }

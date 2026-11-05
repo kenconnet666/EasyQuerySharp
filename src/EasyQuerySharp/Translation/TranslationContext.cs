@@ -26,7 +26,7 @@ internal sealed partial class TranslationContext(
     public TranslationContext ForSubQuery(SelectQuery subQuery, IReadOnlyList<GroupJoinSpec>? groupJoinSpecs = null) =>
         new(metadata, tableFilters, subQuery, this)
         {
-            Db = Db, GroupJoinAll = GroupJoinAll, MergeGroupFilters = MergeGroupFilters, NavigationValueFilter = NavigationValueFilter, GroupJoinSpecs = groupJoinSpecs ?? [],
+            Db = Db, GroupJoinAll = GroupJoinAll, MergeGroupFilters = MergeGroupFilters, NavigationValueFilter = NavigationValueFilter, GroupJoinSpecs = groupJoinSpecs ?? [], NavigationFilters = NavigationFilters,
         };
 
     /// <summary>本查询的条件已经翻译完（之后加的隐式 JOIN 标 <see cref="JoinClause.AfterWhere"/>）。</summary>
@@ -37,6 +37,13 @@ internal sealed partial class TranslationContext(
 
     /// <summary>本查询第一个表来源上显式声明的分组合并（Query.GroupJoin / GroupJoinIf）。</summary>
     public IReadOnlyList<GroupJoinSpec> GroupJoinSpecs { get; init; } = [];
+
+    /// <summary>本查询声明的导航级固定条件（Query.FilterNavigation），子查询里同样生效。</summary>
+    public IReadOnlyList<NavigationFilterSpec> NavigationFilters { get; init; } = [];
+
+    /// <summary>声明在 <paramref name="navigation"/> 上的固定条件（参数是导航的目标实体）。</summary>
+    public IEnumerable<LambdaExpression> FiltersFor(NavigationMetadata navigation) =>
+        NavigationFilters.Where(s => s.Member == navigation.Property.Name && s.OwnerType.IsAssignableFrom(navigation.Self.Type)).Select(s => s.Predicate);
 
     /// <summary>全部集合导航的聚合都合并成分组 JOIN（GroupJoinAll，对应 Java 的 ALL_SUB_QUERY_GROUP_JOIN），子查询里同样生效。</summary>
     public bool GroupJoinAll { get; init; }
@@ -83,6 +90,8 @@ internal sealed partial class TranslationContext(
         // 复合键整体加括号：ON (a = a AND b = b)
         conditions.Add(keys.Count == 1 ? keys[0] : LogicalExpr.Grouped(keys));
         if (navigation.ExtraFilter is { } extra) conditions.Add(PredicateOn(extra, target));
+        // 查询上声明的导航条件写在键条件之后（Java 的 nav().filter(..)）
+        conditions.AddRange(FiltersFor(navigation).Select(f => PredicateOn(f, target)));
         query.Joins.Add(new JoinClause(navigation.Required ? JoinKind.Inner : JoinKind.Left, target, LogicalExpr.And(conditions)) { Implicit = true, AfterWhere = WhereTranslated });
         var binding = new EntityBinding(target);
         _joins[key] = binding;
@@ -113,3 +122,6 @@ internal readonly record struct NavigationTableOptions(bool NoLogicDelete, strin
     /// <summary>导航目标实体的表来源，带上配置的表名与别名。</summary>
     public EntityTableSource TableFor(EntityMetadata target) => new(target) { TableNameOverride = TableName, ExplicitAlias = Alias };
 }
+
+/// <summary>查询上声明的导航级固定条件：所属实体类型 + 导航属性名 → 以导航目标为参数的条件。</summary>
+internal sealed record NavigationFilterSpec(Type OwnerType, string Member, LambdaExpression Predicate);

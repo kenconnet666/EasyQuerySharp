@@ -330,12 +330,12 @@ public sealed class ManyJoinTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
         listen.AssertParams("1(Integer),1(Integer),123(String),4567(String),123(String),false(Boolean),true(Boolean)");
     }
 
-    // Java 的 bankCards().filter(…) 是导航级条件，C# 写在 GroupJoin 的配置里；用户表的 JOIN 先于分组表编号
-    [Fact, Upstream("mysql8/ManyJoinTest.java#test6GroupJoinCombine", Deviation = "Java 在条件里写 bankCards().filter(…) 给导航加固定条件；C# 写成 GroupJoin(导航, q => q.Where(…))")]
+    // Java 的 bankCards().filter(…) 是导航级条件：C# 的 FilterNavigation；用户表的 JOIN 先于分组表编号
+    [Fact, Upstream("mysql8/ManyJoinTest.java#test6GroupJoinCombine")]
     public async Task Test6GroupJoinCombine()
     {
         using var listen = SqlCapture.Listen();
-        await Db.Query<SysUser>().GroupJoinAll().GroupJoin(u => u.BankCards, q => q.Where(o => (o.Code == "123" || o.Type == "4567") && o.User!.Name == "123"))
+        await Db.Query<SysUser>().GroupJoinAll().FilterNavigation(u => u.BankCards, o => (o.Code == "123" || o.Type == "4567") && o.User!.Name == "123")
             .Where(u => u.BankCards!.Any())
             .Select(u => new Draft<string?, long>(u.Name, u.BankCards!.Count())).ToListAsync(Ct);
         listen.AssertSql("SELECT t.`name` AS `value1`,IFNULL(t3.`__count3__`,0) AS `value2` FROM `t_sys_user` t LEFT JOIN (SELECT t1.`uid` AS `__group_key1__`,(COUNT(*) > 0) AS `__any2__`,COUNT(*) AS `__count3__` FROM `t_bank_card` t1 LEFT JOIN `t_sys_user` t2 ON t2.`id` = t1.`uid` WHERE (t1.`code` = ? OR t1.`type` = ?) AND t2.`name` = ? GROUP BY t1.`uid`) t3 ON t3.`__group_key1__` = t.`id` WHERE IFNULL(t3.`__any2__`,?) = ?");

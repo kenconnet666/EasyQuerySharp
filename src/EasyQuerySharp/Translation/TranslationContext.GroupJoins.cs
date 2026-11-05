@@ -131,6 +131,7 @@ internal sealed partial class TranslationContext
     {
         var filters = TableFilters(element, !options.NoLogicDelete).ToList();
         if (navigation.ExtraFilter is { } extraFilter) filters.Add(context.PredicateOn(extraFilter, element));
+        filters.AddRange(FiltersFor(navigation).Select(f => context.PredicateOn(f, element)));
         if (configured is null) return filters;
         var translator = new ExpressionTranslator([]) { Context = context };
         foreach (var where in configured.Wheres)

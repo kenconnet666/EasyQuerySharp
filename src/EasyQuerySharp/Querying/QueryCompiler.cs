@@ -47,6 +47,7 @@ internal static class QueryCompiler
                 {
                     Db = db,
                     GroupJoinSpecs = state.GroupJoins,
+                    NavigationFilters = state.NavigationFilters.IsEmpty ? outerContext?.NavigationFilters ?? [] : (IReadOnlyList<NavigationFilterSpec>)state.NavigationFilters,
                     GroupJoinAll = state.GroupJoinAll || outerContext?.GroupJoinAll == true,
                     MergeGroupFilters = !state.GroupJoinNoMerge && outerContext?.MergeGroupFilters != false,
                     NavigationValueFilter = state.NavigationValueFilter != Filtering.ValueFilter.All ? state.NavigationValueFilter : outerContext?.NavigationValueFilter ?? Filtering.ValueFilter.All,
@@ -71,6 +72,12 @@ internal static class QueryCompiler
             var conditions = filters.Concat(on is null ? [] : [on]).ToList();
             query.Joins.Add(new JoinClause(source.Join!.Value, binding.Table, conditions.Count == 0 ? null : LogicalExpr.And(conditions)));
         }
+
+        // 声明了条件的对一导航在 Java 里此时就建了表：JOIN 排在条件里的隐式 JOIN 之前，没用到也照样连接
+        if (translator.Context is { } navContext && bindings[0].OwnerEntity is { } root)
+            foreach (var spec in state.NavigationFilters)
+                if (db.Metadata.FindNavigation(root, spec.Member) is { IsCollection: false } nav && spec.OwnerType.IsAssignableFrom(root.Type))
+                    navContext.JoinFor(bindings[0], nav);
 
         // 外层传播下来的值过滤也作用于子查询自己的条件（本查询的条件在 Where 时已按自己的值过滤处理过）
         var propagated = outerContext?.NavigationValueFilter ?? Filtering.ValueFilter.All;

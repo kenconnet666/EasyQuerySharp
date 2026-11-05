@@ -3,14 +3,14 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1458、偏离 146、不适用 34、骨架 15、待做 751。
+合计：已移植 1462、偏离 144、不适用 34、骨架 15、待做 749。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 345 | 31 | 13 | 0 | 46 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 347 | 31 | 13 | 0 | 44 |
 | 分页结果 | `query.page` | M1 | 22 | 17 | 2 | 0 | 0 | 3 |
 | 原生 SQL | `sql.native` | M1 | 50 | 35 | 6 | 1 | 0 | 8 |
 | 删除 | `write.delete` | M1 | 25 | 9 | 1 | 2 | 0 | 13 |
@@ -19,7 +19,7 @@
 | CASE WHEN | `expr.case` | M2 | 27 | 19 | 6 | 0 | 0 | 2 |
 | 日期函数 | `func.date` | M2 | 101 | 72 | 12 | 7 | 0 | 10 |
 | 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 49 | 3 | 0 | 0 | 7 |
-| 字符串聚合（joining） | `func.joining` | M2 | 29 | 16 | 3 | 0 | 5 | 5 |
+| 字符串聚合（joining） | `func.joining` | M2 | 29 | 17 | 2 | 0 | 5 | 5 |
 | JSON 函数 | `func.json` | M2 | 12 | 0 | 0 | 0 | 0 | 12 |
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
 | 字符串函数 | `func.string` | M2 | 131 | 121 | 3 | 0 | 1 | 6 |
@@ -37,7 +37,7 @@
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 36 | 7 | 3 | 0 | 10 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 59 | 1 | 2 | 2 | 3 |
 | include 带出导航 | `nav.include` | M4 | 37 | 14 | 0 | 0 | 0 | 23 |
-| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 130 | 2 | 1 | 0 | 9 |
+| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 131 | 1 | 1 | 0 | 9 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 0 | 0 | 0 | 0 | 25 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
 | 列加密 | `column.encryption` | M5 | 8 | 7 | 0 | 0 | 0 | 1 |
@@ -374,8 +374,8 @@
 | QueryTest25.java#topicIntegerTest | 待做 |  |  |
 | QueryTest25.java#tupleTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:69 | `SELECT t.'id' AS 'value1',t.'create_time' AS 'value2' FROM 't_blog' t WHERE t.'deleted' = ?` |
 | QueryTest26.java#switchCase | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:137：参数类型：Java 的 Map 键是整数 1、2，C# 与字符串列比较时写成字符串 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest26.java#test11 | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
-| QueryTest26.java#test22 | 待做 |  | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
+| QueryTest26.java#test11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:260 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
+| QueryTest26.java#test22 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:268 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
 | QueryTest26.java#testFindInSet | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:102 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
 | QueryTest26.java#testMaxInCaluse | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:195：Java 的 contains 在 Oracle 上写成 LIKE ('%'\|\|TO_CHAR(?)\|\|'%')，C# 的 string.Contains 写成 LIKE ?（值里带好 %） | `SELECT "id","stars","title","create_time" FROM "t_topic" WHERE ("id" IN (?,?,?,?,?,?,?,?,?,?) OR "id…` |
 | QueryTest26.java#testQuery | 待做 |  | `SELECT 'id','name',AES_DECRYPT(from_base64('phone'),?) AS 'phone' FROM 'sys_user2' WHERE AES_DECRYPT…` |
@@ -976,7 +976,7 @@
 | mysql8/MySQL8Test5.java#testManyLimit4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:21 | `SELECT t.'id' AS 'value1',t2.'__joining2__' AS 'value2' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'ui…` |
 | mysql8/MySQL8Test5.java#testManyLimit7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:57 | `SELECT t.'id' AS 'value1',t2.'__joining2__' AS 'value2' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'ui…` |
 | mysql8/MySQL8Test5.java#testToSelectPageResult2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:105：Java 的 eq(null) 写 = ?（参数 null）；C# 与值为 null 的变量比较按 C# 语义写 IS NULL | `SELECT t1.'id',t1.'name',t1.'create_time',t3.'__joining2__' AS '__part__column1' FROM (SELECT t.'id'…` |
-| mysql8/MySQL8Test5.java#testToSelectPageResult3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:117：Java 在条件里写 bankCards().filter(…) 给导航加固定条件；C# 写成 GroupJoin(导航, q => q.Where(…)) | `SELECT t1.'id',t1.'name',t1.'create_time',t3.'__joining2__' AS '__part__column1' FROM (SELECT t.'id'…` |
+| mysql8/MySQL8Test5.java#testToSelectPageResult3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:117 | `SELECT t1.'id',t1.'name',t1.'create_time',t3.'__joining2__' AS '__part__column1' FROM (SELECT t.'id'…` |
 | pgsql/QueryTest19.java#testJoining | 待做 |  | `SELECT t."title" AS "value1",STRING_AGG((t."content")::TEXT, ?) AS "value2" FROM "t_blog" t WHERE t.…` |
 | pgsql/QueryTest19.java#testJoining2 | 待做 |  | `SELECT t."title" AS "value1",STRING_AGG((t."content")::TEXT, ?) AS "value2" FROM "t_blog" t WHERE t.…` |
 | pgsql/QueryTest19.java#testJoining3 | 待做 |  | `SELECT t."id",t."create_time",t."update_time",t."create_by",t."update_by",t."deleted",t."title",t."c…` |
@@ -1843,7 +1843,7 @@
 | mysql8/ManyJoinTest.java#test3GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:296 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
 | mysql8/ManyJoinTest.java#test4GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:309 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
 | mysql8/ManyJoinTest.java#test5GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:321 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test6GroupJoinCombine | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:334：Java 在条件里写 bankCards().filter(…) 给导航加固定条件；C# 写成 GroupJoin(导航, q => q.Where(…)) | `SELECT t.'name' AS 'value1',IFNULL(t3.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test6GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:334 | `SELECT t.'name' AS 'value1',IFNULL(t3.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
 | mysql8/ManyJoinTest.java#test7GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:346 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
 | mysql8/ManyJoinTest.java#test8GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:359 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
 | mysql8/ManyJoinTest.java#test9GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:359 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |

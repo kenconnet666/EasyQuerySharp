@@ -249,6 +249,8 @@ internal sealed partial class ExpressionTranslator
             sub.Where.Add(LogicalExpr.Grouped(relation));
         }
         else sub.Where.AddRange(relation);
+        // 查询上声明的导航条件（FilterNavigation）跟在关联条件之后
+        foreach (var filter in Context!.FiltersFor(nav)) sub.Where.Add(translator.ElementPredicate(filter, element));
         return new CollectionSubQuery(this, sub, translator, element);
     }
 

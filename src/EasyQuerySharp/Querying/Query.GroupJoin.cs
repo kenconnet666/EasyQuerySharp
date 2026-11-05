@@ -33,3 +33,29 @@ internal static class GroupJoinSpecs
         return state with { GroupJoins = state.GroupJoins.Add(new GroupJoinSpec(owner.Type, member.Member.Name, enabled, apply)) };
     }
 }
+
+// 导航级的固定条件（对应 Java 的 nav().filter(..)）
+public sealed partial class Query<T>
+{
+    /// <summary>
+    /// 给对一导航加固定条件：这次查询里这个导航的 JOIN 都带上它（写在 ON 的键条件之后），没在别处用到也照样连接（与 Java 的 nav().filter(..) 一致）。
+    /// <code>db.Query&lt;BankCard&gt;().FilterNavigation(c =&gt; c.Bank, b =&gt; b.Name!.Contains("工商"))
+    /// // … INNER JOIN t_bank t1 ON t1.id = t.bank_id AND t1.name LIKE ?</code>
+    /// </summary>
+    public Query<T> FilterNavigation<TTarget>(Expression<Func<T, TTarget?>> navigation, Expression<Func<TTarget, bool>> predicate) where TTarget : class =>
+        new(NavigationFilterSpecs.Add(State, navigation, predicate));
+
+    /// <summary>给集合导航加固定条件：它的隐式子查询（Any / Count …）与分组合并都带上它。</summary>
+    public Query<T> FilterNavigation<TChild>(Expression<Func<T, IEnumerable<TChild>?>> navigation, Expression<Func<TChild, bool>> predicate) =>
+        new(NavigationFilterSpecs.Add(State, navigation, predicate));
+}
+
+internal static class NavigationFilterSpecs
+{
+    public static QueryState Add(QueryState state, LambdaExpression navigation, LambdaExpression predicate)
+    {
+        if (ExpressionTranslator.StripConvert(navigation.Body) is not MemberExpression { Expression: ParameterExpression owner } member)
+            throw new ArgumentException($"FilterNavigation 需要直接的导航属性，如 c => c.Bank：{navigation}", nameof(navigation));
+        return state with { NavigationFilters = state.NavigationFilters.Add(new NavigationFilterSpec(owner.Type, member.Member.Name, predicate)) };
+    }
+}

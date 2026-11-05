@@ -113,13 +113,13 @@ public sealed class MySQL8Test5(Mysql8Fixture fixture) : Mysql8Test(fixture)
         listen.AssertParams(1, "%银行%(String),,(String)");
     }
 
-    // Java 在条件里写 bankCards().filter(…) 给导航加固定条件；C# 写在 GroupJoin 的配置里
-    [Fact, Upstream("mysql8/MySQL8Test5.java#testToSelectPageResult3", Deviation = "Java 在条件里写 bankCards().filter(…) 给导航加固定条件；C# 写成 GroupJoin(导航, q => q.Where(…))")]
+    // Java 在条件里写 bankCards().filter(…) 给导航加固定条件：C# 的 FilterNavigation
+    [Fact, Upstream("mysql8/MySQL8Test5.java#testToSelectPageResult3")]
     public async Task TestToSelectPageResult3()
     {
         var type = "123";
         using var listen = SqlCapture.Listen();
-        await Db.Query<SysBank>().GroupJoinAll().GroupJoin(b => b.BankCards, q => q.Where(t => t.Type == type)).Where(b => b.Name!.Contains("银行"))
+        await Db.Query<SysBank>().GroupJoinAll().FilterNavigation(b => b.BankCards, t => t.Type == type).Where(b => b.Name!.Contains("银行"))
             .ToPageAsync(1, 2, b => new Part<SysBank, string>(b, string.Join(",", b.BankCards!.Select(s => s.Type))), Ct);
         listen.AssertSql(1, PagedBanks + "WHERE t2.`type` = ? GROUP BY t2.`bank_id`) t3 ON t3.`__group_key1__` = t1.`id`");
         listen.AssertParams(1, "%银行%(String),,(String),123(String)");

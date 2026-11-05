@@ -92,6 +92,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>第一个表来源上要合并成分组 LEFT JOIN 的集合导航（GroupJoin / GroupJoinIf）。</summary>
     public ImmutableArray<Translation.GroupJoinSpec> GroupJoins { get; init; } = [];
 
+    /// <summary>导航级的固定条件（FilterNavigation，对应 Java 的 nav().filter(..)）：对一导航写进 JOIN 的 ON，集合导航写进它的子查询 / 分组合并。</summary>
+    public ImmutableArray<Translation.NavigationFilterSpec> NavigationFilters { get; init; } = [];
+
     /// <summary>全部集合导航都合并成分组 JOIN（GroupJoinAll）。</summary>
     public bool GroupJoinAll { get; init; }
 
@@ -148,7 +151,7 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     {
         ValueFilter = ValueFilter, NavigationValueFilter = NavigationValueFilter, Fills = Fills, Lock = Lock,
         // 分组合并的设置跟到外层：投影包一层后，外层投影里的导航仍按同样的方式合并
-        GroupJoins = GroupJoins, GroupJoinAll = GroupJoinAll, GroupJoinNoMerge = GroupJoinNoMerge,
+        GroupJoins = GroupJoins, GroupJoinAll = GroupJoinAll, GroupJoinNoMerge = GroupJoinNoMerge, NavigationFilters = NavigationFilters,
     };
 
     /// <summary>是否已经有投影（之后的条件要包一层）。</summary>
