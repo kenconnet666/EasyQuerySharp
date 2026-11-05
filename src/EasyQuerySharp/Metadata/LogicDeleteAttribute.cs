@@ -9,6 +9,9 @@ public enum LogicDeleteStrategy
     /// <summary>删除时间：未删除为 NULL，删除时写当前时间。</summary>
     DeletedTime,
 
+    /// <summary>删除时间戳：未删除为 0，删除时写当前的 Unix 毫秒数（对应 Java 的 DELETE_LONG_TIMESTAMP，列是整数）。</summary>
+    DeletedTimestamp,
+
     /// <summary>自定义：由 <see cref="LogicDeleteAttribute.StrategyName"/> 指定的已注册策略决定。</summary>
     Custom,
 }

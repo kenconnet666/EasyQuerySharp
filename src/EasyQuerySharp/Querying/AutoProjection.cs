@@ -138,17 +138,18 @@ internal static class AutoProjection
             {
                 var rest = string.Join('.', segments.Skip(i + 1));
                 if (rest.Length == 0) throw new InvalidOperationException($"{property.Name} 的 MapPath 以集合导航结尾，需要再指定元素上的属性");
-                // 剩下的全是导航（如 BankCards.User、Areas.Builds）：逐段查中间表，带出最后一个导航的目标（实体或嵌套 DTO 的列表）
-                if (NavigationChain(registry, nav.Target, segments.Skip(i + 1)) is [_, ..] chain)
-                    return ThroughValue(registry, Expression.Property(current, member), chain, property, visiting);
+                // 剩下的全是导航（如 BankCards.User、Areas.Builds，最后可以再取一个标量如 Roles.Resources.PermissionMark）：
+                // 逐段查中间表，带出最后一个导航的目标（实体、嵌套 DTO 或那个标量），结果拉平成一个列表
+                if (NavigationChain(registry, nav.Target, segments[(i + 1)..], out var scalar) is [_, ..] chain)
+                    return ThroughValue(registry, Expression.Property(current, member), chain, scalar, property, visiting);
                 var element = Expression.Parameter(nav.Target.Type, "e");
                 var selector = Expression.Lambda(PathValue(registry, nav.Target, element, property, rest, join: true, visiting), element);
                 return Expression.Call(typeof(AutoIncludeMarkers).GetMethod(nameof(AutoIncludeMarkers.Many))!.MakeGenericMethod(nav.Target.Type, selector.ReturnType),
                     Expression.Property(current, member), Expression.Constant(null, typeof(Func<QueryState, QueryState>)), Expression.Constant(selector, typeof(LambdaExpression)));
             }
             // 对一导航之后全是导航（如 Direct2.Direct3）：同样逐段查中间表，带出最后一个导航的目标
-            if (nav is { IsCollection: false } && !join && NavigationChain(registry, nav.Target, segments.Skip(i + 1)) is [_, ..] toOneChain)
-                return ThroughValue(registry, Expression.Property(current, member), toOneChain, property, visiting);
+            if (nav is { IsCollection: false } && !join && NavigationChain(registry, nav.Target, segments[(i + 1)..], out var toOneScalar) is [_, ..] toOneChain && toOneScalar is null)
+                return ThroughValue(registry, Expression.Property(current, member), toOneChain, null, property, visiting);
             // 对一导航、后面不再经过集合：剩下的路径在目标实体上取，整段走一条带出查询
             if (nav is { IsCollection: false } && !join && !HasCollection(registry, nav.Target, segments.Skip(i + 1)))
             {
@@ -165,24 +166,38 @@ internal static class AutoProjection
     }
 
     // AutoIncludeMarkers.Through(第一个导航, 后续导航名, 配置, 投影)：最后一个导航的目标映射成属性的元素类型（实体本身或嵌套 DTO）
-    private static Expression ThroughValue(MetadataRegistry registry, Expression navigation, List<NavigationMetadata> chain, PropertyInfo property, HashSet<Type> visiting)
+    private static Expression ThroughValue(MetadataRegistry registry, Expression navigation, List<NavigationMetadata> chain, PropertyInfo? scalar, PropertyInfo property,
+        HashSet<Type> visiting)
     {
         var last = chain[^1].Target;
         var element = MetadataRegistry.ElementType(property.PropertyType);
-        var selector = element.IsAssignableFrom(last.Type) ? null : Build(registry, last, element, null, visiting, root: false);
+        LambdaExpression? selector;
+        if (scalar is not null)
+        {
+            var e = Expression.Parameter(last.Type, "e");
+            selector = Expression.Lambda(Expression.Property(e, scalar), e);
+        }
+        else selector = element.IsAssignableFrom(last.Type) ? null : Build(registry, last, element, null, visiting, root: false);
         var method = typeof(AutoIncludeMarkers).GetMethod(nameof(AutoIncludeMarkers.Through))!.MakeGenericMethod(navigation.Type, property.PropertyType);
         return Expression.Call(method, navigation, Expression.Constant(chain.Select(n => n.Property.Name).ToArray()),
             Expression.Constant(ConfigureOf(element, last.Type), typeof(Func<QueryState, QueryState>)), Expression.Constant(selector, typeof(LambdaExpression)));
     }
 
-    // 剩下的路径段全是导航时依次返回它们，否则为 null
-    private static List<NavigationMetadata>? NavigationChain(MetadataRegistry registry, EntityMetadata entity, IEnumerable<string> segments)
+    // 剩下的路径段全是导航（最后一段可以是标量属性，由 scalar 带回）时依次返回导航，否则为 null
+    private static List<NavigationMetadata>? NavigationChain(MetadataRegistry registry, EntityMetadata entity, IReadOnlyList<string> segments, out PropertyInfo? scalar)
     {
+        scalar = null;
         var chain = new List<NavigationMetadata>();
-        foreach (var segment in segments)
+        for (var i = 0; i < segments.Count; i++)
         {
-            var member = entity.Type.GetProperty(segment, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-            if (member is null || registry.FindNavigation(entity, member.Name) is not { } nav) return null;
+            var member = entity.Type.GetProperty(segments[i], BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            if (member is null) return null;
+            if (registry.FindNavigation(entity, member.Name) is not { } nav)
+            {
+                if (i != segments.Count - 1 || chain.Count == 0) return null;
+                scalar = member;
+                break;
+            }
             chain.Add(nav);
             entity = nav.Target;
         }

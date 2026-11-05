@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1676、偏离 206、不适用 77、骨架 6、待做 439。
+合计：已移植 1677、偏离 207、不适用 77、骨架 6、待做 437。
 
 ## 按能力
 
@@ -32,9 +32,9 @@
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 2 | 0 | 0 | 0 | 0 |
 | 流式读取 | `query.stream` | M3 | 9 | 6 | 2 | 1 | 0 | 0 |
 | union / union all | `query.union` | M3 | 18 | 14 | 4 | 0 | 0 | 0 |
-| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 32 | 1 | 0 | 1 | 2 |
+| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 33 | 1 | 0 | 1 | 1 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
-| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 25 | 25 | 3 | 0 | 3 |
+| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 25 | 26 | 3 | 0 | 2 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 61 | 2 | 2 | 2 | 0 |
 | include 带出导航 | `nav.include` | M4 | 37 | 34 | 2 | 0 | 0 | 1 |
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 137 | 3 | 1 | 0 | 1 |
@@ -292,8 +292,8 @@
 | QueryTest15.java#testColumn2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:204 | `SELECT t.'stars' FROM 't_topic' t LIMIT 1` |
 | QueryTest15.java#testSimple | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:64 | `SELECT 'id','first_name','last_name','birthday',CONCAT('first_name','last_name') AS 'full_name',CEIL…` |
 | QueryTest15.java#testSubqueryAnonymous | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:99：Java 的学生数子查询里 COUNT 列带 AS 'id'、且多占一个别名编号（selectColumn 建的匿名表）；C# 的计算列写成 Select(s => s.Id).Count()，不写别名、不跳号 | `SELECT t3.'a' AS 'a',t3.'b' AS 'b',t3.'sc' AS 'sc' FROM (SELECT t.'id' AS 'a',t.'name' AS 'b',(SELEC…` |
-| QueryTest16.java#test14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:19 | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN 't_company' …` |
-| QueryTest16.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:29 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest16.java#test14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:20 | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN 't_company' …` |
+| QueryTest16.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:30 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest17.java#test11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:17 | `SELECT t.'id',t.'title' FROM 't_topic' t WHERE t.'title' = ?` |
 | QueryTest17.java#testNopQuery | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:158：Java 用例体全部注释掉了 |  |
 | QueryTest17.java#testSubFrom | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:172 |  |
@@ -570,7 +570,7 @@
 | QueryTest12.java#testSelectPropTypeColumn2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:180 | `SELECT MIN(case t.'score' when ? then 1 else 0 end) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ?…` |
 | QueryTest14.java#test1119 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest14.cs:18 |  |
 | QueryTest15.java#testxxx1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:354 |  |
-| QueryTest16.java#testxxc | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:39 |  |
+| QueryTest16.java#testxxc | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:40 |  |
 | QueryTest17.java#aaaa | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:180 |  |
 | QueryTest17.java#testNativeSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:36 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'id' = ? ORDER BY RAND()` |
 | QueryTest17.java#testNativeSQL1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:48 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'id' = ? ORDER BY IFNULL('stars',?) D…` |
@@ -1433,7 +1433,7 @@
 | QueryTest15.java#test1223 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:321 | `SELECT * FROM '123' WHERE 'name' = ?` |
 | QueryTest15.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:336 |  |
 | QueryTest15.java#testxxx | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:326 | `SELECT * FROM 'table1' t INNER JOIN 'table2' t1 ON t.'id1' = t1.'id2'` |
-| QueryTest16.java#test16 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:144：Java 的 Map 查询 select 之后每个 UNION 分支多占一个别名编号（t、t2，外层 t4）；C# 按实际出现的表连续编号 | `SELECT t4.'a' AS 'a',t4.'b' AS 'b' FROM ( (SELECT t.'a' AS 'a',t.'b' AS 'b' FROM 't_user' t) UNION (…` |
+| QueryTest16.java#test16 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:168：Java 的 Map 查询 select 之后每个 UNION 分支多占一个别名编号（t、t2，外层 t4）；C# 按实际出现的表连续编号 | `SELECT t4.'a' AS 'a',t4.'b' AS 'b' FROM ( (SELECT t.'a' AS 'a',t.'b' AS 'b' FROM 't_user' t) UNION (…` |
 | QueryTest19.java#mapJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:288 | `SELECT t.'table1Column' AS 'table1Column',t1.'table2Column' AS 'table2Column',t2.'table3Column' AS '…` |
 | QueryTest19.java#mapQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:306 | `SELECT 'id' AS 'id','age' AS 'age','id_card' AS 'id_card' FROM 'aaa' WHERE 'id' = ? AND 'name' = ?` |
 | QueryTest19.java#testMapJson | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:318 | `SELECT * FROM 'table1' t LEFT JOIN 'table2' t1 ON t1.'id1' = t.'id2' LEFT JOIN 'table3' t2 ON t2.'id…` |
@@ -1443,7 +1443,7 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| QueryTest16.java#testSubSumOracle2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:131 | `SELECT COUNT(*) FROM "t_company" WHERE "name" LIKE ?` |
+| QueryTest16.java#testSubSumOracle2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:155 | `SELECT COUNT(*) FROM "t_company" WHERE "name" LIKE ?` |
 | QueryTest18.java#testSubCountPage | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.Encryption.cs:9 | `SELECT COUNT(*) FROM 'easy-query-test'.'t_sys_user' WHERE 'phone' LIKE ?` |
 
 ### 流式读取（`query.stream`，M3）
@@ -1491,7 +1491,7 @@
 | DirectRelationTest.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:102 | `SELECT t.'c1',t.'c2',t.'c3',t.'c4' FROM 'direct1' t` |
 | GeneralFunctionsTest.java#testKingbaseCte | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:250 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0+0 AS "deep",t1."id",t1."parent_id",t1."content",t1."user…` |
 | QueryTest14.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest14.cs:182 | `SELECT t.'id',t.'name',t.'password' FROM 't_test_user' t` |
-| QueryTest16.java#test111 | 待做 |  | `SELECT t.'id' AS '__relation__id' FROM 'sys_user' t WHERE t.'deleted' = ?` |
+| QueryTest16.java#test111 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:127 | `SELECT t.'id' AS '__relation__id' FROM 'sys_user' t WHERE t.'deleted' = ?` |
 | QueryTest19.java#testDoc100 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:80 | `SELECT t.'id',t.'name' FROM 't_user' t` |
 | QueryTest19.java#testDoc99 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:63 | `SELECT t.'id',t.'name' FROM 't_user' t` |
 | QueryTestRelationTest.java#testRelation | 待做 |  | `SELECT 'id','com_id','user_id','gw' FROM 'my_com_user'` |
@@ -1538,11 +1538,11 @@
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
 | QueryTest12.java#testDoc24 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.Part2.cs:150 | `DELETE FROM 'relation_user' t WHERE EXISTS(SELECT 1 FROM 'relation_teacher' t1 WHERE (EXISTS(SELECT …` |
-| QueryTest16.java#test1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:46：Java 的 flatElement 在 C# 里写成 Any | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t WHERE EXISTS(SELECT 1 …` |
-| QueryTest16.java#test15 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:24：Java 的 flatElement 在 C# 里写成 Any | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t WHERE (t.'name' LIKE ?…` |
-| QueryTest16.java#test2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:51：Java 的 flatElement 在 C# 里写成 Any | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN (SELECT t2.'…` |
-| QueryTest16.java#test3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:57：Java 的 flatElement 在 C# 里写成 Any | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN (SELECT t2.'…` |
-| QueryTest16.java#testDocSub | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:62：Java 的 flatElement 在 C# 里写成 Any | `SELECT t.'id',t.'name',t.'create_time' FROM 't_company' t WHERE EXISTS(SELECT 1 FROM 't_user' t1 WHE…` |
+| QueryTest16.java#test1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:47：Java 的 flatElement 在 C# 里写成 Any | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t WHERE EXISTS(SELECT 1 …` |
+| QueryTest16.java#test15 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:25：Java 的 flatElement 在 C# 里写成 Any | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t WHERE (t.'name' LIKE ?…` |
+| QueryTest16.java#test2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:52：Java 的 flatElement 在 C# 里写成 Any | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN (SELECT t2.'…` |
+| QueryTest16.java#test3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:58：Java 的 flatElement 在 C# 里写成 Any | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN (SELECT t2.'…` |
+| QueryTest16.java#testDocSub | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:63：Java 的 flatElement 在 C# 里写成 Any | `SELECT t.'id',t.'name',t.'create_time' FROM 't_company' t WHERE EXISTS(SELECT 1 FROM 't_user' t1 WHE…` |
 | QueryTest17.java#testFlatElement1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:126：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'f1',t.'f2',t.'parent_id' FROM 'MyObject' t LEFT JOIN 'MyObjectParent' t1 ON t1.'id'…` |
 | QueryTest17.java#testFlatElement2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:135：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'f1',t.'f2',t.'parent_id' FROM 'MyObject' t LEFT JOIN 'MyObjectParent' t1 ON t1.'id'…` |
 | QueryTest17.java#testNop2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:147：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t4.'value1' AS 'value1',SUM(t4.'value2') AS 'value2',COUNT(t5.'type') AS 'value3' FROM (SELEC…` |
@@ -1553,7 +1553,7 @@
 | QueryTest25.java#test11a | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest25.java#testToListFlat1 | 待做 |  |  |
 | QueryTest25.java#xxx22 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:150：用 Hikari 连本机 3306、替换多个内部服务另建客户端，属于 Java 的启动配置 |  |
-| QueryTest26.java#includeFlat | 待做 |  |  |
+| QueryTest26.java#includeFlat | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:314：Java 的 include2 按路径（flatElement 连接）声明多段带出；C# 写成嵌套的 Include，每段的条件写在各自的配置里 |  |
 | QueryTestRelationTest.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTestRelationTest.cs:13 | `SELECT t.'id',t.'com_id',t.'user_id',t.'gw' FROM 'my_com_user' t LEFT JOIN 'my_company_info' t1 ON t…` |
 | SubJoinTest.java#testSubJoinCaseWhen1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:53：Java 的 flatElement 在 C# 里写成 Any | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
 | mysql8/CTETest.java#cteTest4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:66：Java 的 flatElement 在 C# 里写成 Any | `WITH 'm8_user_temp' AS (SELECT t.'id',t.'name' FROM 'm8_user' t WHERE t.'age' IS NULL) SELECT t2.'id…` |
@@ -1751,11 +1751,11 @@
 | QueryTest12.java#testDoc9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.Part2.cs:54 | `SELECT t.'id',t.'create_time',t.'username',t.'phone',t.'id_card',t.'address' FROM 'easy-query-test'.…` |
 | QueryTest12.java#testNum2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:92 | `SELECT (SUM(t.'score') - SUM(t.'score')) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ?` |
 | QueryTest12.java#testNum3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:92 | `SELECT (SUM(t.'score') - SUM(t.'score')) FROM 't_blog' t WHERE t.'deleted' = ?` |
-| QueryTest16.java#docSub | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:71 | `SELECT t.'id' AS 'value1',(NOT (EXISTS(SELECT 1 FROM 't_user' t1 WHERE t1.'company_id' = t.'id' LIMI…` |
-| QueryTest16.java#test19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:85 | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t WHERE EXISTS(SELECT 1 …` |
-| QueryTest16.java#test20 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:101 | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN 't_company' …` |
-| QueryTest16.java#testSubSum | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:95 | `SELECT t1.'id' AS 'value1',IFNULL((SELECT SUM(t2.'age') FROM 't_user' t2 WHERE t2.'company_id' = t1.…` |
-| QueryTest16.java#testSubSumOracle | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:113 | `SELECT t1."id" AS "value1",NVL((SELECT SUM(t2."age") FROM "t_user" t2 WHERE t2."company_id" = t1."id…` |
+| QueryTest16.java#docSub | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:72 | `SELECT t.'id' AS 'value1',(NOT (EXISTS(SELECT 1 FROM 't_user' t1 WHERE t1.'company_id' = t.'id' LIMI…` |
+| QueryTest16.java#test19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:86 | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t WHERE EXISTS(SELECT 1 …` |
+| QueryTest16.java#test20 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:102 | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN 't_company' …` |
+| QueryTest16.java#testSubSum | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:96 | `SELECT t1.'id' AS 'value1',IFNULL((SELECT SUM(t2.'age') FROM 't_user' t2 WHERE t2.'company_id' = t1.…` |
+| QueryTest16.java#testSubSumOracle | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:137 | `SELECT t1."id" AS "value1",NVL((SELECT SUM(t2."age") FROM "t_user" t2 WHERE t2."company_id" = t1."id…` |
 | QueryTest17.java#testFlatElement5 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:158：Java 用例体全部注释掉了 | `SELECT t.'id',t.'f1',t.'f2',t.'parent_id' FROM 'MyObject' t LEFT JOIN 'MyObjectParent' t1 ON t1.'id'…` |
 | QueryTest18.java#testCount | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:68 |  |
 | QueryTest18.java#testSubCountLimitSelect1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.Encryption.cs:41 | `SELECT t1.'id' AS 'value1',t1.'phone' AS 'value2',(SELECT COUNT(*) FROM 't_blog' t2 WHERE t2.'delete…` |

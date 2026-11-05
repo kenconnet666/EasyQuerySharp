@@ -1,5 +1,6 @@
 using Company = EasyQuerySharp.Tests.Upstream.Entities.BlogTest.Company;
 using SysUser = EasyQuerySharp.Tests.Upstream.Entities.BlogTest.SysUser;
+using EasyQuerySharp.Metadata;
 
 namespace EasyQuerySharp.Tests.Upstream.Queries;
 
@@ -107,6 +108,29 @@ public sealed class QueryTest16(MySqlFixture fixture) : MySqlTest(fixture)
                 && user.Roles!.AsAlias("myRole").Any(role => role.Name!.Contains("查询的角色名") && role.CreateTime.RangeClosed(begin, end))).ToStatement(),
             "SELECT t.`id`,t.`company_id`,t.`name`,t.`age`,t.`create_time` FROM `t_user` t LEFT JOIN `t_company` t1 ON t1.`id` = t.`company_id` WHERE t1.`name` LIKE ? AND EXISTS(SELECT 1 FROM `t_role` myRole WHERE EXISTS(SELECT 1 FROM `t_user_role` t3 WHERE t3.`role_id` = myRole.`id` AND t3.`user_id` = t.`id` LIMIT 1) AND myRole.`name` LIKE ? AND (myRole.`create_time` >= ? AND myRole.`create_time` <= ?) LIMIT 1)",
             "%123%(String),%查询的角色名%(String),2020-01-01T01:02(LocalDateTime),2026-01-01T01:02(LocalDateTime)");
+    }
+
+    /// <summary>对应 Java：entity/navf/UVO（只有平铺属性：角色的权限、角色的资源标识、角色的路由）。</summary>
+    public sealed class UVO
+    {
+        [MapPath("Roles.Permission")]
+        public List<string?>? Roles { get; set; }
+
+        [MapPath("Roles.Resources.PermissionMark")]
+        public List<string?>? Resources { get; set; }
+
+        [MapPath("Roles.Routes")]
+        public List<NavfRoute>? Routes { get; set; }
+    }
+
+    // 只有平铺属性时主查询只取关联键；表不存在，执行到这一条就报错（与 Java 一致）
+    [Fact, Upstream("QueryTest16.java#test111")]
+    public async Task Test111()
+    {
+        using var listen = SqlCapture.Listen();
+        await Assert.ThrowsAnyAsync<Exception>(() => Db.Query<NavfUser>().SelectAutoInclude<UVO>().ToListAsync(Ct));
+        listen.AssertSql("SELECT t.`id` AS `__relation__id` FROM `sys_user` t WHERE t.`deleted` = ?");
+        listen.AssertParams("0(Integer)");
     }
 
     // Oracle：先按 ROWNUM 取段再在外层算子查询的合计（NVL 兜底）

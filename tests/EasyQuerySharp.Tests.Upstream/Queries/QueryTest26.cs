@@ -309,4 +309,21 @@ public sealed class QueryTest26(MySqlFixture fixture) : MySqlTest(fixture)
         SqlOnly.AssertStatement(ex.Statement!, "UPDATE `sys_user2` SET `phone` = to_base64(AES_ENCRYPT(?,?)) WHERE `id` = ?",
             "12333(String),1234567890123456(String),123eeddffrrttgga(String)");
     }
+
+    // Java 用例没有断言：include2 按路径写多段带出（经过集合的 flatElement），每段带自己的条件；C# 写成嵌套的 Include
+    [Fact, Upstream("QueryTest26.java#includeFlat", Deviation = "Java 的 include2 按路径（flatElement 连接）声明多段带出；C# 写成嵌套的 Include，每段的条件写在各自的配置里")]
+    public async Task IncludeFlat()
+    {
+        await Db.Query<SchoolClass>()
+            .Include(c => c.SchoolTeachers, t => t.Include(x => x.SchoolClasses, a => a.Where(a => a.Name!.Contains("123"))))
+            .Include(c => c.SchoolStudents, s => s.Where(x => x.Name == "123")
+                .Include(x => x.SchoolClass, sc => sc.Where(x => x.SchoolStudents!.Any(st => st.Name == "123"))))
+            .ToListAsync(Ct);
+        await Db.Query<SchoolClass>()
+            .Include(c => c.SchoolTeachers, t => t.Include(x => x.SchoolClasses, a => a.Where(a => a.Name!.Contains("123"))
+                .Include(x => x.SchoolStudents, st => st.Where(x => x.Name!.Contains("123")))))
+            .Include(c => c.SchoolStudents, s => s.Where(x => x.Name == "123")
+                .Include(x => x.SchoolClass, sc => sc.Where(x => x.SchoolStudents!.Any(st => st.Name == "123"))))
+            .ToListAsync(Ct);
+    }
 }

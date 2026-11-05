@@ -4,7 +4,7 @@ namespace EasyQuerySharp.Metadata;
 
 /// <summary>
 /// 逻辑删除策略（对应 Java 的 LogicDeleteStrategy）：决定"未删除"的条件，和删除时要写哪些列。
-/// 内置布尔与删除时间两种；其余实现后用 <see cref="EasyDbOptions.AddLogicDeleteStrategy"/> 按名字注册，
+/// 内置布尔、删除时间、删除时间戳三种；其余实现后用 <see cref="EasyDbOptions.AddLogicDeleteStrategy"/> 按名字注册，
 /// 实体上写 <c>[LogicDelete(LogicDeleteStrategy.Custom, StrategyName = "名字")]</c>。
 /// </summary>
 /// <example><code>
@@ -33,6 +33,7 @@ internal static class LogicDeleteStrategies
     {
         LogicDeleteStrategy.Boolean => BooleanStrategy.Instance,
         LogicDeleteStrategy.DeletedTime => DeletedTimeStrategy.Instance,
+        LogicDeleteStrategy.DeletedTimestamp => DeletedTimestampStrategy.Instance,
         _ => entity.LogicDelete.StrategyName is { } name && options.LogicDeleteStrategies.TryGetValue(name, out var custom)
             ? custom
             : throw new InvalidOperationException(
@@ -57,5 +58,16 @@ internal static class LogicDeleteStrategies
         public SqlExpr NotDeleted(ColumnExpr column) => new IsNullExpr(column, negated: false);
 
         public IEnumerable<(ColumnMetadata Column, object? Value)> DeletedValues(EntityMetadata entity, ColumnMetadata column) => [(column, DateTime.Now)];
+    }
+
+    // 删除时间戳：未删除为 0，删除时写当前的 Unix 毫秒数（与 Java 一致，条件里的 0 按整数传）
+    private sealed class DeletedTimestampStrategy : ILogicDeleteStrategy
+    {
+        public static readonly DeletedTimestampStrategy Instance = new();
+
+        public SqlExpr NotDeleted(ColumnExpr column) => new BinaryExpr(column, SqlBinaryOperator.Equal, new ParameterExpr(0, typeof(int)));
+
+        public IEnumerable<(ColumnMetadata Column, object? Value)> DeletedValues(EntityMetadata entity, ColumnMetadata column) =>
+            [(column, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())];
     }
 }
