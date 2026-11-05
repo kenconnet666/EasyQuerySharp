@@ -143,4 +143,75 @@ public sealed class QueryTest14(MySqlFixture fixture) : MySqlTest(fixture)
         SqlOnly.AssertStatement(db.Query<BlogEntity>().Where(b => b.Id == "123").OrderBy(b => b.Star).Limit(20, 10).ToStatement(), "SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS \"__rownum__\" FROM (SELECT \"id\",\"create_time\",\"update_time\",\"create_by\",\"update_by\",\"deleted\",\"title\",\"content\",\"url\",\"star\",\"publish_time\",\"score\",\"status\",\"order\",\"is_top\",\"top\" FROM \"t_blog\" WHERE \"deleted\" = ? AND \"id\" = ? ORDER BY \"star\" ASC) rt WHERE ROWNUM < 31) rt1 WHERE rt1.\"__rownum__\" > 20", "false(Boolean),123(String)");
         SqlOnly.AssertStatement(db.Query<BlogEntity>().Where(b => b.Id == "123").OrderBy(b => b.Star).Take(10).ToStatement(), "SELECT rt.* FROM (SELECT \"id\",\"create_time\",\"update_time\",\"create_by\",\"update_by\",\"deleted\",\"title\",\"content\",\"url\",\"star\",\"publish_time\",\"score\",\"status\",\"order\",\"is_top\",\"top\" FROM \"t_blog\" WHERE \"deleted\" = ? AND \"id\" = ? ORDER BY \"star\" ASC) rt WHERE ROWNUM < 11", "false(Boolean),123(String)");
     }
+
+    /// <summary>对应 Java：entity/testrelation/vo/TestUserDTO（用户 → 角色 → 路由）。</summary>
+    public sealed class TestUserDTO
+    {
+        public string? Id { get; set; }
+
+        public string? Name { get; set; }
+
+        public string? Password { get; set; }
+
+        public List<TestRoleDTO>? Roles { get; set; }
+
+        /// <summary>TestRoleEntity 的投影。</summary>
+        public sealed class TestRoleDTO
+        {
+            public string? Id { get; set; }
+
+            public string? Name { get; set; }
+
+            public string? Remark { get; set; }
+
+            public List<TestRouteDTO>? Routes { get; set; }
+        }
+
+        /// <summary>TestRouteEntity 的投影。</summary>
+        public sealed class TestRouteDTO
+        {
+            public string? Id { get; set; }
+
+            public string? Name { get; set; }
+
+            public string? RequestPath { get; set; }
+        }
+    }
+
+    // 两段多对多共用中间表，各自带上 type 条件；子数据按中间表的顺序挂回
+    [Fact, Upstream("QueryTest14.java#test1")]
+    public async Task Test1()
+    {
+        await Db.Delete<TestUserEntity>().WhereByIds(new[] { "u1", "u2", "u3" }).ExecuteAsync(Ct);
+        await Db.Delete<TestRoleEntity>().WhereByIds(new[] { "r1", "r2", "r3", "r4" }).ExecuteAsync(Ct);
+        await Db.Delete<TestRouteEntity>().WhereByIds(new[] { "ru1", "ru2", "ru3" }).ExecuteAsync(Ct);
+        await Db.Delete<TestJoinEntity>().Where(_ => Sql.Raw<bool>("1=1")).ExecuteAsync(Ct);
+        await Db.Insert(new[] { 1, 2, 3 }.Select(i => new TestUserEntity { Id = $"u{i}", Name = $"uname{i}", Password = $"upwd{i}" }).ToList()).ExecuteAsync(Ct);
+        await Db.Insert(new[] { 1, 2, 3, 4 }.Select(i => new TestRoleEntity { Id = $"r{i}", Name = $"rname{i}", Remark = $"rremark{i}" }).ToList()).ExecuteAsync(Ct);
+        await Db.Insert(new[] { 1, 2, 3 }.Select(i => new TestRouteEntity { Id = $"ru{i}", Name = $"runame{i}", RequestPath = $"/api/{i}" }).ToList()).ExecuteAsync(Ct);
+        await Db.Insert(new (string First, string Second, int Type)[]
+            {
+                ("u1", "r1", 1), ("u2", "r2", 1), ("u3", "r3", 1), ("u1", "r4", 1), ("u2", "r4", 1),
+                ("r1", "ru1", 2), ("r1", "ru2", 2), ("r2", "ru2", 2), ("r3", "ru3", 2),
+            }.Select(j => new TestJoinEntity { FirstId = j.First, SecondId = j.Second, Type = j.Type }).ToList()).ExecuteAsync(Ct);
+
+        using var listen = SqlCapture.Listen();
+        var list = await Db.Query<TestUserEntity>().SelectAutoInclude<TestUserDTO>().ToListAsync(Ct);
+        Assert.Equal(5, listen.Events.Count);
+        listen.AssertSql(0, "SELECT t.`id`,t.`name`,t.`password` FROM `t_test_user` t");
+        listen.AssertSql(1, "SELECT `first_id`,`second_id` FROM `t_test_join` WHERE `first_id` IN (?,?,?) AND `type` = ?");
+        listen.AssertParams(1, "u1(String),u2(String),u3(String),1(Integer)");
+        listen.AssertSql(2, "SELECT t.`id`,t.`name`,t.`remark` FROM `t_test_role` t WHERE t.`id` IN (?,?,?,?)");
+        listen.AssertParams(2, "r1(String),r4(String),r2(String),r3(String)");
+        listen.AssertSql(3, "SELECT `first_id`,`second_id` FROM `t_test_join` WHERE `first_id` IN (?,?,?,?) AND `type` = ?");
+        listen.AssertParams(3, "r1(String),r2(String),r3(String),r4(String),2(Integer)");
+        listen.AssertSql(4, "SELECT t.`id`,t.`name`,t.`request_path` FROM `t_test_route` t WHERE t.`id` IN (?,?,?)");
+        listen.AssertParams(4, "ru1(String),ru2(String),ru3(String)");
+
+        // 角色:路由,… 按顺序拼成一行比较
+        static string Shape(TestUserDTO u) => string.Join("|", u.Roles!.Select(r => r.Id + ":" + string.Join(",", r.Routes!.Select(x => x.Id))));
+        Assert.Equal("r1:ru1,ru2|r4:", Shape(list.Single(u => u.Id == "u1")));
+        Assert.Equal("r2:ru2|r4:", Shape(list.Single(u => u.Id == "u2")));
+        Assert.Equal("r3:ru3", Shape(list.Single(u => u.Id == "u3")));
+    }
 }

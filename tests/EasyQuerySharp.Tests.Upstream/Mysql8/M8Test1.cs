@@ -68,4 +68,55 @@ public sealed class M8Test1(Mysql8Fixture fixture) : Mysql8Test(fixture)
         Deviation = "Java 的异常来自 MySQL 驱动（Cannot determine value type from string 'u1'）；C# 在把父键转成目标列的类型时就抛出 FormatException")]
     public async Task TestSelfTargetTypeDiff() =>
         await Assert.ThrowsAnyAsync<FormatException>(() => Db.Query<SysUser>().Include(u => u.BankCardIntList).ToListAsync(Ct));
+
+    /// <summary>对应 Java：mysql8/dto/BankCardSelectAutoInclude（分组结果上带出用户）。</summary>
+    public sealed class BankCardSelectAutoInclude
+    {
+        public string? Uid { get; set; }
+
+        public long Count { get; set; }
+
+        public InternalUser? User { get; set; }
+
+        /// <summary>SysUser 的投影。</summary>
+        public sealed class InternalUser
+        {
+            public string? Id { get; set; }
+
+            public string? Name { get; set; }
+
+            public string? Phone { get; set; }
+
+            public int? Age { get; set; }
+        }
+    }
+
+    private const string GroupedCards = "SELECT t1.`uid` AS `uid`,t1.`count` AS `count` FROM (SELECT t.`uid` AS `uid`,COUNT(*) AS `count` FROM `t_bank_card` t GROUP BY t.`uid`) t1";
+    private const string UsersById = "SELECT t.`id`,t.`name`,t.`phone`,t.`age` FROM `t_sys_user` t WHERE t.`id` IN (?,?)";
+
+    // 分组结果（DTO 上声明了导航）再按结构带出用户；外层先按导航过滤
+    [Fact, Upstream("mysql8/M8Test1.java#test24")]
+    public async Task Test24()
+    {
+        using var listen = SqlCapture.Listen();
+        var list = await Db.Query<SysBankCard>().GroupBy(c => c.Uid).Select(g => new BankCardGroupBO { Uid = g.Key, Count = g.Count() })
+            .Where(b => b.User!.Name != null).SelectAutoInclude<BankCardSelectAutoInclude>().ToListAsync(Ct);
+        Assert.Equal(2, listen.Events.Count);
+        listen.AssertSql(0, GroupedCards + " LEFT JOIN `t_sys_user` t2 ON t2.`id` = t1.`uid` WHERE t2.`name` IS NOT NULL");
+        listen.AssertSql(1, UsersById);
+        listen.AssertParams(1, "u1(String),u2(String)");
+        Assert.All(list, b => Assert.Equal(b.Uid, b.User!.Id));
+    }
+
+    [Fact, Upstream("mysql8/M8Test1.java#test25")]
+    public async Task Test25()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysBankCard>().GroupBy(c => c.Uid).Select(g => new BankCardGroupBO { Uid = g.Key, Count = g.Count() })
+            .SelectAutoInclude<BankCardSelectAutoInclude>().ToListAsync(Ct);
+        Assert.Equal(2, listen.Events.Count);
+        listen.AssertSql(0, GroupedCards);
+        listen.AssertSql(1, UsersById);
+        listen.AssertParams(1, "u1(String),u2(String)");
+    }
 }

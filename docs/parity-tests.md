@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1662、偏离 205、不适用 77、骨架 6、待做 454。
+合计：已移植 1665、偏离 205、不适用 77、骨架 6、待做 451。
 
 ## 按能力
 
@@ -32,7 +32,7 @@
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 2 | 0 | 0 | 0 | 0 |
 | 流式读取 | `query.stream` | M3 | 9 | 6 | 2 | 1 | 0 | 0 |
 | union / union all | `query.union` | M3 | 18 | 14 | 4 | 0 | 0 | 0 |
-| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 27 | 1 | 0 | 1 | 7 |
+| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 30 | 1 | 0 | 1 | 4 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 23 | 25 | 3 | 0 | 5 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 60 | 1 | 2 | 2 | 2 |
@@ -728,10 +728,10 @@
 | UpdateTest.java#updateTest19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:176 | `UPDATE 'xxxxx' SET 'stars' = ifnull('stars',0)+?,'title' = ?,'create_time' = ? WHERE 'id' = ?` |
 | UpdateTest.java#updateTest19_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:176 | `UPDATE 'xxxxx' SET 'stars' = ifnull('stars',0)+?,'title' = ?,'create_time' = ? WHERE 'id' = ?` |
 | UpdateTest.java#updateTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:34 |  |
-| UpdateTest.java#updateTest25 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:53 | `UPDATE 'xxxxx' SET 'username' = ?,'phone' = to_base64(AES_ENCRYPT(?,?)),'id_card' = ?,'address' = ?,…` |
-| UpdateTest.java#updateTest25_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:53 | `UPDATE 'xxxxx' SET 'username' = ?,'phone' = to_base64(AES_ENCRYPT(?,?)),'id_card' = ?,'address' = ?,…` |
-| UpdateTest.java#updateTest27 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:58 | `UPDATE 'x123' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
-| UpdateTest.java#updateTest27_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:58 | `UPDATE 'x123' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
+| UpdateTest.java#updateTest25 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:54 | `UPDATE 'xxxxx' SET 'username' = ?,'phone' = to_base64(AES_ENCRYPT(?,?)),'id_card' = ?,'address' = ?,…` |
+| UpdateTest.java#updateTest25_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:54 | `UPDATE 'xxxxx' SET 'username' = ?,'phone' = to_base64(AES_ENCRYPT(?,?)),'id_card' = ?,'address' = ?,…` |
+| UpdateTest.java#updateTest27 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:59 | `UPDATE 'x123' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
+| UpdateTest.java#updateTest27_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:59 | `UPDATE 'x123' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
 | UpdateTest.java#updateTest29 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:239 | `UPDATE 't_topic' SET 'stars' = ?,'create_time' = ? WHERE 'id' = ?` |
 | UpdateTest.java#updateTest29_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:239 | `UPDATE 't_topic' SET 'stars' = ?,'create_time' = ? WHERE 'id' = ?` |
 | UpdateTest.java#updateTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:38 |  |
@@ -1490,7 +1490,7 @@
 | DirectRelationTest.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:81 | `SELECT t.'c1',t.'c2',t.'c3',t.'c4' FROM 'direct1' t` |
 | DirectRelationTest.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:102 | `SELECT t.'c1',t.'c2',t.'c3',t.'c4' FROM 'direct1' t` |
 | GeneralFunctionsTest.java#testKingbaseCte | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:250 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0+0 AS "deep",t1."id",t1."parent_id",t1."content",t1."user…` |
-| QueryTest14.java#test1 | 待做 |  | `SELECT t.'id',t.'name',t.'password' FROM 't_test_user' t` |
+| QueryTest14.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest14.cs:182 | `SELECT t.'id',t.'name',t.'password' FROM 't_test_user' t` |
 | QueryTest16.java#test111 | 待做 |  | `SELECT t.'id' AS '__relation__id' FROM 'sys_user' t WHERE t.'deleted' = ?` |
 | QueryTest19.java#testDoc100 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:80 | `SELECT t.'id',t.'name' FROM 't_user' t` |
 | QueryTest19.java#testDoc99 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:63 | `SELECT t.'id',t.'name' FROM 't_user' t` |
@@ -1506,8 +1506,8 @@
 | mysql8/M8PCABTest.java#testFlat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8PCABTest.cs:137 | `SELECT t.'id',t.'name' FROM 'm8_province' t` |
 | mysql8/M8PCABTest.java#testFlat1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8PCABTest.cs:149 | `SELECT t.'id',t.'name' FROM 'm8_province' t` |
 | mysql8/M8PCABTest.java#testFlat2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8PCABTest.cs:161 | `SELECT t.'id',t.'name' FROM 'm8_province' t` |
-| mysql8/M8Test1.java#test24 | 待做 |  | `SELECT t1.'uid' AS 'uid',t1.'count' AS 'count' FROM (SELECT t.'uid' AS 'uid',COUNT(*) AS 'count' FRO…` |
-| mysql8/M8Test1.java#test25 | 待做 |  | `SELECT t1.'uid' AS 'uid',t1.'count' AS 'count' FROM (SELECT t.'uid' AS 'uid',COUNT(*) AS 'count' FRO…` |
+| mysql8/M8Test1.java#test24 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Test1.cs:98 | `SELECT t1.'uid' AS 'uid',t1.'count' AS 'count' FROM (SELECT t.'uid' AS 'uid',COUNT(*) AS 'count' FRO…` |
+| mysql8/M8Test1.java#test25 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Test1.cs:111 | `SELECT t1.'uid' AS 'uid',t1.'count' AS 'count' FROM (SELECT t.'uid' AS 'uid',COUNT(*) AS 'count' FRO…` |
 | mysql8/ManyJoinTest.java#testFlatExtra | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.Flat.cs:32 | `SELECT t.'id',t.'name',t.'create_time' FROM 'm8_role' t` |
 | mysql8/ManyJoinTest.java#testFlatMenuOwner | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.Flat.cs:71 |  |
 | mysql8/ManyJoinTest.java#testFlatMenuOwner1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.Flat.cs:92 |  |
