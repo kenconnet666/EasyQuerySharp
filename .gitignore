@@ -8,3 +8,6 @@ riderModule.iml
 /.local/
 # 测试报告等构建产物
 /artifacts/
+/TestResults/
+# BenchmarkDotNet 的运行结果（本地看，不提交）
+BenchmarkDotNet.Artifacts/
