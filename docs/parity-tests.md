@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1427、偏离 155、不适用 34、骨架 15、待做 773。
+合计：已移植 1435、偏离 155、不适用 34、骨架 15、待做 765。
 
 ## 按能力
 
@@ -12,7 +12,7 @@
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
 | 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 343 | 33 | 13 | 0 | 46 |
 | 分页结果 | `query.page` | M1 | 22 | 17 | 2 | 0 | 0 | 3 |
-| 原生 SQL | `sql.native` | M1 | 50 | 33 | 6 | 1 | 0 | 10 |
+| 原生 SQL | `sql.native` | M1 | 50 | 34 | 6 | 1 | 0 | 9 |
 | 删除 | `write.delete` | M1 | 25 | 9 | 1 | 2 | 0 | 13 |
 | 插入 | `write.insert` | M1 | 50 | 33 | 0 | 0 | 1 | 16 |
 | 更新 | `write.update` | M1 | 59 | 28 | 4 | 0 | 0 | 27 |
@@ -27,7 +27,7 @@
 | 窗口函数 | `window` | M2 | 44 | 32 | 1 | 1 | 0 | 10 |
 | CTE | `query.cte` | M3 | 11 | 4 | 3 | 0 | 0 | 4 |
 | 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 69 | 2 | 1 | 2 | 9 |
-| 显式 join | `query.join` | M3 | 88 | 67 | 4 | 1 | 0 | 16 |
+| 显式 join | `query.join` | M3 | 88 | 74 | 4 | 1 | 0 | 9 |
 | 无实体的 Map 查询、toMap | `query.map` | M3 | 11 | 2 | 0 | 0 | 0 | 9 |
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 1 | 0 | 0 | 0 | 1 |
 | 流式读取 | `query.stream` | M3 | 9 | 5 | 2 | 1 | 0 | 1 |
@@ -591,7 +591,7 @@
 | QueryTest3.java#testSelectAs1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.Part2.cs:134 | `SELECT 100 - t.'id' AS 'stars' FROM 't_blog' t WHERE t.'deleted' = ? AND t.'id' = ?` |
 | QueryTest4.java#testSQLFuncExtension2 | 待做 |  | `SELECT t.'id' FROM 't_topic' t WHERE t.'id' = ? AND FIND_IN_SET(?,t.'id')` |
 | QueryTest5.java#test2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:127：Topic.Alias 在 C# 里不是列（ColumnIgnore），带 alias 的两段改为不含 alias；动态列清单用成员初始化表达 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t` |
-| QueryTest8.java#test4x | 待做 |  |  |
+| QueryTest8.java#test4x | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest8.cs:10 |  |
 | QueryTestRelationTest.java#relation10 | 待做 |  | `SELECT (SELECT COUNT(t1.'id') AS 'id' FROM 'school_student' t1 WHERE t1.'class_id' = t.'id') AS 'val…` |
 | mysql8/MySQL8Test2.java#testGroupConcat2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:277 | `SELECT t.'id' AS 'value1',GROUP_CONCAT(DISTINCT t.'content' SEPARATOR ?) AS 'value2' FROM 't_blog' t…` |
 | mysql8/MySQL8Test4.java#testToResultSet | 待做 |  |  |
@@ -1396,13 +1396,13 @@
 | QueryTest3.java#query125 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:52 | `SELECT t.'id',t1.'title',t2.'star' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'deleted' = ? AND t.…` |
 | QueryTest3.java#query126 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:57 |  |
 | QueryTest4.java#queryTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:130 |  |
-| QueryTest8.java#test1 | 待做 |  |  |
-| QueryTest8.java#testJoin10 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| QueryTest8.java#testJoin5 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| QueryTest8.java#testJoin6 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| QueryTest8.java#testJoin7 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| QueryTest8.java#testJoin8 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
-| QueryTest8.java#testJoin9 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| QueryTest8.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest8.cs:14 |  |
+| QueryTest8.java#testJoin10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest8.cs:77 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| QueryTest8.java#testJoin5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest8.cs:22 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| QueryTest8.java#testJoin6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest8.cs:31 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| QueryTest8.java#testJoin7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest8.cs:41 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| QueryTest8.java#testJoin8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest8.cs:52 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
+| QueryTest8.java#testJoin9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest8.cs:64 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' …` |
 | QueryTest9.java#selectCount2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest9.cs:25 | `SELECT COUNT(*) FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = ? AND t.'id' = t1.'id' WHE…` |
 | QueryTest9.java#selectCount3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest9.cs:25 | `SELECT COUNT(*) FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = ? AND t.'id' = t1.'id' WHE…` |
 | QueryTest9.java#selectThrow3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest9.cs:36 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'del…` |
