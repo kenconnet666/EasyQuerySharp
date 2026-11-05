@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1677、偏离 207、不适用 77、骨架 6、待做 437。
+合计：已移植 1687、偏离 207、不适用 77、骨架 6、待做 427。
 
 ## 按能力
 
@@ -44,11 +44,11 @@
 | 拦截器 | `interceptor` | M5 | 3 | 3 | 0 | 0 | 0 | 0 |
 | 逻辑删除 | `logicDelete` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
 | 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 0 | 0 | 0 | 0 | 39 |
-| 追踪与差异更新 | `tracking` | M5 | 62 | 39 | 17 | 0 | 0 | 6 |
+| 追踪与差异更新 | `tracking` | M5 | 62 | 44 | 17 | 0 | 0 | 1 |
 | 乐观锁版本 | `version` | M5 | 13 | 13 | 0 | 0 | 0 | 0 |
 | UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
 | 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 20 | 6 | 0 | 0 | 0 |
-| upsert | `write.upsert` | M5 | 13 | 4 | 0 | 0 | 2 | 7 |
+| upsert | `write.upsert` | M5 | 13 | 9 | 0 | 0 | 2 | 2 |
 | ClickHouse 方言 | `dialect.clickhouse` | M6 | 4 | 0 | 0 | 0 | 0 | 4 |
 | 达梦方言 | `dialect.dameng` | M6 | 51 | 0 | 0 | 0 | 0 | 51 |
 | DuckDB 方言 | `dialect.duckdb` | M6 | 16 | 0 | 0 | 0 | 0 | 16 |
@@ -2015,11 +2015,11 @@
 | QueryTest7.java#joinTest6 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:60：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
 | QueryTest7.java#joinTest7 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:70：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
 | RelationTest.java#testOneToOne | 待做 |  | `SELECT 'id','name' FROM 'school_class'` |
-| TrackTest.java#track1 | 待做 |  |  |
-| TrackTest.java#track2 | 待做 |  |  |
-| TrackTest.java#track3 | 待做 |  |  |
-| TrackTest.java#track4 | 待做 |  |  |
-| TrackTest.java#track5 | 待做 |  |  |
+| TrackTest.java#track1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/TrackTest.cs:21 |  |
+| TrackTest.java#track2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/TrackTest.cs:36 |  |
+| TrackTest.java#track3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/TrackTest.cs:51 |  |
+| TrackTest.java#track4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/TrackTest.cs:60 |  |
+| TrackTest.java#track5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/TrackTest.cs:73 |  |
 | UpdateTest.java#updateTest17 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:144 | `UPDATE 't_topic' SET 'title' = ? WHERE 'id' = ? AND 'title' IS NULL` |
 | UpdateTest.java#updateTest17_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:144 | `UPDATE 't_topic' SET 'title' = ? WHERE 'id' = ? AND 'title' IS NULL` |
 | UpdateTest.java#updateTest17_2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:157：C# 的 Topic.Alias 标了 ColumnIgnore（Java 映射了 alias 列），条件里少一个 'alias' IS NULL | `UPDATE 't_topic' SET 'title' = ? WHERE 'id' = ? AND 'stars' IS NULL AND 'create_time' IS NULL AND 'a…` |
@@ -2122,11 +2122,11 @@
 | InsertTest.java#insertTestx | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:84 |  |
 | InsertTest1.java#inertTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:26 | `INSERT INTO 't_topic_abc' ('id','stars','title','create_time') VALUES (?,?,?,?) ON DUPLICATE KEY UPD…` |
 | QueryTest14.java#testxxxxx | 待做 |  | `MERGE INTO "t_topic" t1 USING (SELECT ? AS "id",? AS "stars",? AS "title",? AS "create_time" FROM DU…` |
-| pgsql/InsertTest.java#insertDuplicateKeyIgnore2 | 待做 |  | `INSERT INTO "t_topic_auto" ("stars","title","create_time") VALUES (?,?,?) ON CONFLICT DO NOTHING` |
-| pgsql/InsertTest.java#insertDuplicateKeyUpdate2 | 待做 |  | `INSERT INTO "t_topic_auto" ("stars","title","create_time") VALUES (?,?,?) ON CONFLICT ("title") DO U…` |
-| pgsql/InsertTest.java#insertDuplicateKeyUpdate2_1 | 待做 |  | `INSERT INTO "t_topic_auto" ("stars","title","create_time") VALUES (?,?,?) ON CONFLICT ("title") DO N…` |
-| pgsql/InsertTest.java#insertDuplicateKeyUpdate3 | 待做 |  | `INSERT INTO "t_topic_auto" ("stars","title","create_time") VALUES (?,?,?) ON CONFLICT ("title") DO U…` |
-| pgsql/InsertTest.java#insertTest2 | 待做 |  |  |
+| pgsql/InsertTest.java#insertDuplicateKeyIgnore2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgInsertTest.cs:12 | `INSERT INTO "t_topic_auto" ("stars","title","create_time") VALUES (?,?,?) ON CONFLICT DO NOTHING` |
+| pgsql/InsertTest.java#insertDuplicateKeyUpdate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgInsertTest.cs:17 | `INSERT INTO "t_topic_auto" ("stars","title","create_time") VALUES (?,?,?) ON CONFLICT ("title") DO U…` |
+| pgsql/InsertTest.java#insertDuplicateKeyUpdate2_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgInsertTest.cs:22 | `INSERT INTO "t_topic_auto" ("stars","title","create_time") VALUES (?,?,?) ON CONFLICT ("title") DO N…` |
+| pgsql/InsertTest.java#insertDuplicateKeyUpdate3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgInsertTest.cs:26 | `INSERT INTO "t_topic_auto" ("stars","title","create_time") VALUES (?,?,?) ON CONFLICT ("title") DO U…` |
+| pgsql/InsertTest.java#insertTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgInsertTest.cs:38 |  |
 
 ### ClickHouse 方言（`dialect.clickhouse`，M6）
 

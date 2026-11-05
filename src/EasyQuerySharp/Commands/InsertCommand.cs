@@ -160,12 +160,12 @@ public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> wh
         return (SqlRenderer.Render(Db.Options.Dialect, insert), keyColumn);
     }
 
-    // 约束列：显式指定的，否则是非自增主键（忽略时不指定就不写约束列）；更新列：写入的列去掉主键和约束列（与 Java 一致）
+    // 约束列：显式指定且写入了的（自增主键不写入，不算），否则是非自增主键（忽略时不指定就不写约束列）；更新列：写入的列去掉主键和约束列（与 Java 一致）
     private InsertConflict BuildConflict(EntityTableSource table, List<ColumnMetadata> written)
     {
         var spec = _conflict!;
         var conflictOn = spec.ConflictColumns is { } names
-            ? Entity.Columns.Where(c => names.Contains(c.PropertyName)).ToList()
+            ? Entity.Columns.Where(c => names.Contains(c.PropertyName) && written.Contains(c)).ToList()
             : spec.Ignore ? [] : Entity.KeyColumns.Where(k => !k.IsGenerated).ToList();
         if (spec.Ignore) return new InsertConflict(conflictOn.Select(table.Column).ToList(), null);
         var update = written.Where(c => !c.IsPrimaryKey && !conflictOn.Contains(c) && (spec.UpdateColumns is null || spec.UpdateColumns.Contains(c.PropertyName)));

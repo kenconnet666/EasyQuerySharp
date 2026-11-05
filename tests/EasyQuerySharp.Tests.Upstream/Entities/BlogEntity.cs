@@ -59,3 +59,24 @@ public class SysUser : BaseEntity
     [Navigate(RelationType.OneToOne)]
     public BlogEntity? MyBlog { get; set; }
 }
+
+/// <summary>对应 Java：entity/SysUserTrack（追踪用例的用户表，手机号、身份证、地址是加密列）。</summary>
+[Table("t_sys_user_track")]
+public class SysUserTrack
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Username { get; set; }
+
+    [Encryption(typeof(DefaultAesEasyEncryptionStrategy), SupportQueryLike = true)]
+    public string? Phone { get; set; }
+
+    [Encryption(typeof(DefaultAesEasyEncryptionStrategy), SupportQueryLike = true)]
+    public string? IdCard { get; set; }
+
+    [Encryption(typeof(DefaultAesEasyEncryptionStrategy), SupportQueryLike = true)]
+    public string? Address { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+}

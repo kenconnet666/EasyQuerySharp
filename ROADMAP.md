@@ -175,7 +175,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [~] 4.9 填充：投影里写非导航的关联查询，规划器按键批量执行（`FillMany` / `FillOne` 已完成，带 Take 时按键 UNION ALL）。
 - [~] 4.10 树：`AsTreeCte`（递归 CTE，上下两个方向、层级上限、子节点条件）、`ToTreeAsync`、树结果投影到 DTO（手写投影或 `SelectAutoInclude`；DTO 自带或沿用实体的自关联导航）已完成；递归 DTO 由生成器诊断。
 - [ ] 4.11 `ToAsyncEnumerable(batchSize)` 按批流式读取对象树；`.AsSnapshot()` 保证多次查询的一致性。没有对应的 Java 用例，挪到 BACKLOG。
-- [!] 4.12 关联键的自定义比较（Java 的 `relationPropertyStrategy`，如 `find_in_set`：本表一列逗号分隔的 id 关联多行）。规划外的新公共概念（导航上的关联策略），待确认 API 再做；对应 M8Test1 testRelationColumns / testRelationColumns1。- [!] 4.13 沿导航路径拉平直接取列表（Java 的 `toList(t -> t.bList().flatElement().cList().flatElement().cname())`）。C# 目前用 `[MapPath]` DTO 表达，查询本身直接返回拉平值是规划外的新 API，待确认；对应 QueryTest25 testToListFlat1。
+- [!] 4.12 关联键的自定义比较（Java 的 `relationPropertyStrategy`，如 `find_in_set`：本表一列逗号分隔的 id 关联多行）。规划外的新公共概念（导航上的关联策略），待确认 API 再做；对应 M8Test1 testRelationColumns / testRelationColumns1。- [!] 4.13 沿导航路径拉平直接取列表（Java 的 `toList(t -> t.bList().flatElement().cList().flatElement().cname())`）。C# 目前用 `[MapPath]` DTO 表达，查询本身直接返回拉平值是规划外的新 API，待确认；对应 QueryTest25 testToListFlat1、RelationTest testOneToOne（后者还有 include2 + select(VO) 的组合）。
 
 ## M5 写入进阶与列规则
 
