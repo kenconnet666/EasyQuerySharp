@@ -52,6 +52,19 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
         return null;
     }
 
+    /// <summary>已经在内存里的实体（LoadIncludeAsync）：按导航的自身列取父键，集合属性先放一个空 List，对一属性登记回填。</summary>
+    public void RegisterLoaded(object entity, System.Reflection.PropertyInfo property)
+    {
+        var key = CompositeKey.Of(Navigation.SelfColumns.Select(c => c.Property.GetValue(entity)));
+        if (IsCollection)
+        {
+            var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(ChildType))!;
+            property.SetValue(entity, list);
+            if (key is not null) Add(key.Value, child => list.Add(child));
+        }
+        else if (key is not null) Add(key.Value, child => property.SetValue(entity, child));
+    }
+
     private void Add(CompositeKey key, Action<object?> sink)
     {
         if (!Pending.TryGetValue(key, out var sinks)) Pending[key] = sinks = [];
@@ -71,6 +84,19 @@ internal readonly record struct CompositeKey(object First, object? Second, objec
             values[i] = Normalize(reader.GetValue(ordinals[i]));
         }
         return new CompositeKey(values[0]!, values[1], values[2]);
+    }
+
+    /// <summary>由内存里的值组成键（与从结果集读出的键可比较）；任一值为 null 时返回 null。</summary>
+    public static CompositeKey? Of(IEnumerable<object?> values)
+    {
+        var normalized = new object?[3];
+        var i = 0;
+        foreach (var value in values)
+        {
+            if (value is null) return null;
+            normalized[i++] = Normalize(value);
+        }
+        return new CompositeKey(normalized[0]!, normalized[1], normalized[2]);
     }
 
     // 父表与子表的同一个键可能被驱动读成不同的整数类型（int / long / decimal），统一成 decimal 再比较

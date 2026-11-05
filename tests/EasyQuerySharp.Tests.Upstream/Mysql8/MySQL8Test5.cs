@@ -235,4 +235,62 @@ public sealed class MySQL8Test5(Mysql8Fixture fixture) : Mysql8Test(fixture)
         await Db.Query<M8UserProtect>().EnableInterceptors().DisableInterceptor(nameof(MyProtectInterceptor)).ToListAsync(Ct);
         listen.AssertSql(ProtectedUsers);
     }
+
+    // 多对多取前六个后拼接（Java 的 elements(0, 5) 含两端）：先按中间表的外键编号再截取
+    [Fact, Upstream("mysql8/MySQL8Test5.java#testManyLimit1")]
+    public async Task TestManyLimit1()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<M8User>().GroupJoinAll()
+            .Select(m => new Draft<string?, string>(m.Id,
+                string.Join(",", m.Roles!.Where(r => r.Name.LikeStartsWith("管理员")).OrderBy(s => s.Name).Take(6).Select(s => s.Name)))).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`id` AS `value1`,t6.`__joining2__` AS `value2` FROM `m8_user` t LEFT JOIN (SELECT t4.`__group_key1__`,GROUP_CONCAT(t4.`name` SEPARATOR ?) AS `__joining2__` FROM (SELECT t3.`id` AS `id`,t3.`name` AS `name`,t3.`create_time` AS `create_time`,t3.`__group_key1__` AS `__group_key1__` FROM (SELECT t1.`id`,t1.`name`,t1.`create_time`,t2.`user_id` AS `__group_key1__`,(ROW_NUMBER() OVER (PARTITION BY t2.`user_id` ORDER BY t1.`name` ASC)) AS `__row__` FROM `m8_role` t1 INNER JOIN `m8_user_role` t2 ON t1.`id` = t2.`role_id` WHERE t1.`name` LIKE CONCAT(?,'%')) t3 WHERE t3.`__row__` >= ? AND t3.`__row__` <= ?) t4 GROUP BY t4.`__group_key1__`) t6 ON t6.`__group_key1__` = t.`id`");
+        listen.AssertParams(",(String),管理员(String),1(Long),6(Long)");
+    }
+
+    // 不截取时组内排序写进 GROUP_CONCAT，拼接的值再连到角色的 M8SaveA
+    [Fact, Upstream("mysql8/MySQL8Test5.java#testManyLimit1_1")]
+    public async Task TestManyLimit1_1()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<M8User>().GroupJoinAll()
+            .Select(m => new Draft<string?, string>(m.Id,
+                string.Join(",", m.Roles!.Where(r => r.Name.LikeStartsWith("管理员")).OrderBy(s => s.Name).Select(s => s.M8SaveA!.Name)))).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`id` AS `value1`,t4.`__joining2__` AS `value2` FROM `m8_user` t LEFT JOIN (SELECT t2.`user_id` AS `__group_key1__`,GROUP_CONCAT(t5.`name` ORDER BY t1.`name` ASC SEPARATOR ?) AS `__joining2__` FROM `m8_role` t1 INNER JOIN `m8_user_role` t2 ON t1.`id` = t2.`role_id` LEFT JOIN `m8_save_a` t5 ON t5.`id` = t1.`id` WHERE t1.`name` LIKE CONCAT(?,'%') GROUP BY t2.`user_id`) t4 ON t4.`__group_key1__` = t.`id`");
+        listen.AssertParams(",(String),管理员(String)");
+    }
+
+    [Fact, Upstream("mysql8/MySQL8Test5.java#testManyLimit1_2")]
+    public async Task TestManyLimit1_2()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<M8User>().GroupJoinAll()
+            .Select(m => new Draft<string?, string>(m.Id,
+                string.Join(",", m.Roles!.Where(r => r.Name.LikeStartsWith("管理员")).OrderBy(s => s.Name).Take(6).Select(s => s.M8SaveA!.Name)))).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`id` AS `value1`,t6.`__joining2__` AS `value2` FROM `m8_user` t LEFT JOIN (SELECT t4.`__group_key1__`,GROUP_CONCAT(t7.`name` SEPARATOR ?) AS `__joining2__` FROM (SELECT t3.`id` AS `id`,t3.`name` AS `name`,t3.`create_time` AS `create_time`,t3.`__group_key1__` AS `__group_key1__` FROM (SELECT t1.`id`,t1.`name`,t1.`create_time`,t2.`user_id` AS `__group_key1__`,(ROW_NUMBER() OVER (PARTITION BY t2.`user_id` ORDER BY t1.`name` ASC)) AS `__row__` FROM `m8_role` t1 INNER JOIN `m8_user_role` t2 ON t1.`id` = t2.`role_id` WHERE t1.`name` LIKE CONCAT(?,'%')) t3 WHERE t3.`__row__` >= ? AND t3.`__row__` <= ?) t4 LEFT JOIN `m8_save_a` t7 ON t7.`id` = t4.`id` GROUP BY t4.`__group_key1__`) t6 ON t6.`__group_key1__` = t.`id`");
+        listen.AssertParams(",(String),管理员(String),1(Long),6(Long)");
+    }
+
+    // 两个相同的截取合并成一个分组
+    [Fact, Upstream("mysql8/MySQL8Test5.java#testManyLimit1_3")]
+    public async Task TestManyLimit1_3()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<M8User>().GroupJoinAll()
+            .Select(m => new Draft<string?, string, string>(m.Id,
+                string.Join(",", m.Roles!.Where(r => r.Name.LikeStartsWith("管理员")).OrderBy(s => s.Name).Take(6).Select(s => s.M8SaveA!.Name)),
+                string.Join(",", m.Roles!.Where(r => r.Name.LikeStartsWith("管理员")).OrderBy(s => s.Name).Take(6).Select(s => s.M8SaveA!.Id)))).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`id` AS `value1`,t6.`__joining2__` AS `value2`,t6.`__joining3__` AS `value3` FROM `m8_user` t LEFT JOIN (SELECT t4.`__group_key1__`,GROUP_CONCAT(t7.`name` SEPARATOR ?) AS `__joining2__`,GROUP_CONCAT(t7.`id` SEPARATOR ?) AS `__joining3__` FROM (SELECT t3.`id` AS `id`,t3.`name` AS `name`,t3.`create_time` AS `create_time`,t3.`__group_key1__` AS `__group_key1__` FROM (SELECT t1.`id`,t1.`name`,t1.`create_time`,t2.`user_id` AS `__group_key1__`,(ROW_NUMBER() OVER (PARTITION BY t2.`user_id` ORDER BY t1.`name` ASC)) AS `__row__` FROM `m8_role` t1 INNER JOIN `m8_user_role` t2 ON t1.`id` = t2.`role_id` WHERE t1.`name` LIKE CONCAT(?,'%')) t3 WHERE t3.`__row__` >= ? AND t3.`__row__` <= ?) t4 LEFT JOIN `m8_save_a` t7 ON t7.`id` = t4.`id` GROUP BY t4.`__group_key1__`) t6 ON t6.`__group_key1__` = t.`id`");
+        listen.AssertParams(",(String),,(String),管理员(String),1(Long),6(Long)");
+    }
+
+    // 逻辑删除由配置决定，实体上没有标注
+    [Fact, Upstream("mysql8/MySQL8Test5.java#configurationLogicDelete")]
+    public async Task ConfigurationLogicDelete()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<MyConfigLogicDelete>().ToListAsync(Ct);
+        listen.AssertSql("SELECT `id`,`name`,`deleted` FROM `my_config_logic` WHERE `deleted` = ?");
+        listen.AssertParams("false(Boolean)");
+    }
 }

@@ -78,12 +78,14 @@ internal sealed partial class TranslationContext
     /// 先取一段行再分组（Java 的 <c>orderBy(…).elements(i, j)</c>）：每组按排序编行号，再按行号取段，然后 GROUP BY（与 Java 逐字一致）：
     /// <c>FROM (SELECT t2.列 AS 列,…,t2.__row__ AS __row__ FROM (SELECT t1.列 AS 列,…,(ROW_NUMBER() OVER (PARTITION BY 外键 ORDER BY …)) AS __row__
     /// FROM 目标 t1 WHERE …) t2 WHERE t2.__row__ &gt;= ? AND t2.__row__ &lt;= ?) t3</c>。
+    /// 多对多时编号的那层 INNER JOIN 中间表，按中间表的外键分区，并把它带出来叫 <c>__group_keyN__</c>；
+    /// 这时 Java 内层的实体列不写 AS、取段那层不再带出 <c>__row__</c>。
     /// </summary>
     private GroupJoinPlan WindowedPlan(NavigationMetadata navigation, Querying.QueryState? configured, GroupJoinWindow window, NavigationTableOptions options)
     {
-        if (navigation.Mapping is not null) throw new NotSupportedException($"{navigation} 是多对多导航，分组合并时不支持先取一段行");
         var element = options.TableFor(navigation.Target);
         var numbered = new SelectQuery(element);
+        var link = navigation.Mapping is { } mapping ? JoinMapping(numbered, element, navigation, mapping) : null;
         var context = ForSubQuery(numbered);
         numbered.Where.AddRange(TargetFilters(navigation, configured, element, context, options));
         var translator = new ExpressionTranslator([]) { Context = context };
@@ -105,22 +107,30 @@ internal sealed partial class TranslationContext
         if (orders.Count == 0) orders.AddRange(translator.DefaultPartitionOrder(navigation, element));
 
         var columns = navigation.Target.Columns.Where(c => c.AutoSelect).ToList();
-        foreach (var c in columns) numbered.Columns.Add(new SelectColumn(element.Column(c), c.Name));
-        numbered.Columns.Add(new SelectColumn(
-            WindowExpr.RowNumber(navigation.TargetColumns.Select(c => (SqlExpr)element.Column(c)).ToList(), orders), "__row__"));
+        foreach (var c in columns) numbered.Columns.Add(new SelectColumn(element.Column(c), link is null ? c.Name : null));
+        // 分区键：一对多是目标表的外键，多对多是中间表里对应所属表的列（带出来作分组键）
+        var partition = link is null
+            ? navigation.TargetColumns.Select(c => (SqlExpr)element.Column(c)).ToList()
+            : navigation.SelfMappingColumns.Select(c => (SqlExpr)link.Column(c)).ToList();
+        var groupKeys = link is null ? [] : partition.Select((_, i) => "__group_key" + (i + 1) + "__").ToList();
+        for (var i = 0; i < groupKeys.Count; i++) numbered.Columns.Add(new SelectColumn(partition[i], groupKeys[i]));
+        numbered.Columns.Add(new SelectColumn(WindowExpr.RowNumber(partition, orders), "__row__"));
 
         var numberedTable = new DerivedTableSource(numbered);
         var ranged = new SelectQuery(numberedTable);
         foreach (var c in columns) ranged.Columns.Add(new SelectColumn(new ColumnExpr(numberedTable, c.Name, c), c.Name));
+        foreach (var key in groupKeys) ranged.Columns.Add(new SelectColumn(new ColumnExpr(numberedTable, key), key));
         var row = new ColumnExpr(numberedTable, "__row__");
-        ranged.Columns.Add(new SelectColumn(row, "__row__"));
+        if (link is null) ranged.Columns.Add(new SelectColumn(row, "__row__"));
         ranged.Where.Add(new BinaryExpr(row, SqlBinaryOperator.GreaterThanOrEqual, new ParameterExpr(window.Skip + 1, typeof(long))));
         if (window.Take is { } take) ranged.Where.Add(new BinaryExpr(row, SqlBinaryOperator.LessThanOrEqual, new ParameterExpr(window.Skip + take, typeof(long))));
 
         var rangedTable = new DerivedTableSource(ranged);
         var plan = new GroupJoinPlan(new SelectQuery(rangedTable),
             new DerivedBinding(rangedTable, columns.ToDictionary(c => c.PropertyName, c => c.Name, StringComparer.Ordinal), navigation.Target),
-            navigation.TargetColumns.Select(c => new ColumnExpr(rangedTable, c.Name, c)).ToList());
+            link is null
+                ? navigation.TargetColumns.Select(c => new ColumnExpr(rangedTable, c.Name, c)).ToList()
+                : groupKeys.Select(k => new ColumnExpr(rangedTable, k)).ToList());
         plan.InnerContext = ForSubQuery(plan.Inner, configured?.GroupJoins);
         return plan;
     }

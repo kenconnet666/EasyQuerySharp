@@ -173,7 +173,8 @@ internal sealed class GroupJoinPlan
         Inner.Columns.Clear();
         Inner.Where.Clear();
         Inner.Where.AddRange(_baseWhere);
-        foreach (var (column, alias) in _keyColumns) Inner.Columns.Add(new SelectColumn(column, alias));
+        // 键列已经叫 __group_keyN__（多对多先取一段行时内层就起了这个名字）就不再写 AS
+        foreach (var (column, alias) in _keyColumns) Inner.Columns.Add(new SelectColumn(column, column.Name == alias ? null : alias));
 
         var shared = MergeFilters && _entries.Count > 0 && _entries.All(e => e.Request.Filters.Count > 0)
             ? _entries[0].Request.Filters.Select(f => f.Key).Where(k => _entries.All(e => e.Request.Filters.Any(f => f.Key == k))).ToHashSet(StringComparer.Ordinal)

@@ -362,4 +362,42 @@ public sealed class MySQL8Test2(Mysql8Fixture fixture) : Mysql8Test(fixture)
         listen.AssertSql(0, "SELECT COUNT(*) FROM `m8_province` t LEFT JOIN (SELECT t1.`pid` AS `__group_key1__`,COUNT((CASE WHEN t1.`name` IS NOT NULL THEN ? ELSE NULL END)) AS `__count2__`,COUNT((CASE WHEN t1.`name` IS NULL THEN ? ELSE NULL END)) AS `__count3__` FROM `m8_city` t1 WHERE t1.`id` IS NOT NULL GROUP BY t1.`pid`) t2 ON t2.`__group_key1__` = t.`id` WHERE t.`name` LIKE CONCAT('%',?,'%') AND  t.`id` <= IFNULL(t2.`__count2__`,0) AND  t.`id` >= IFNULL(t2.`__count3__`,0)");
         listen.AssertParams(0, "1(Integer),1(Integer),浙江(String)");
     }
+
+    // 投影里的比较（Java 的 valueOf）：分页先计数，再取这一页（总数只有 1 时 LIMIT 1）
+    [Fact, Upstream("mysql8/MySQL8Test2.java#testMerge4")]
+    public async Task TestMerge4()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<M8Province>().UseValueFilter(ValueFilter.NotNullOrBlank, includeNavigations: true).GroupJoinAll()
+            .Where(m => m.Name.LikeContains("浙江"))
+            .Select(m => new Draft<bool>((long)(object)m.Id! <= m.Cities!.Where(c => c.Name != null && c.Id != null).Count()))
+            .ToPageAsync(1, 2, Ct);
+        Assert.Equal(2, listen.Events.Count);
+        listen.AssertSql(0, "SELECT COUNT(*) FROM `m8_province` t WHERE t.`name` LIKE CONCAT('%',?,'%')");
+        listen.AssertParams(0, "浙江(String)");
+        listen.AssertSql(1, "SELECT ( t.`id` <= IFNULL(t2.`__count2__`,0)) AS `value1` FROM `m8_province` t LEFT JOIN (SELECT t1.`pid` AS `__group_key1__`,COUNT(?) AS `__count2__` FROM `m8_city` t1 WHERE t1.`name` IS NOT NULL AND t1.`id` IS NOT NULL GROUP BY t1.`pid`) t2 ON t2.`__group_key1__` = t.`id` WHERE t.`name` LIKE CONCAT('%',?,'%') LIMIT 1");
+        listen.AssertParams(1, "1(Integer),浙江(String)");
+    }
+
+    // 视图实体上的树查询（Java 只执行不断言）
+    [Fact, Upstream("mysql8/MySQL8Test2.java#cteViewTree1")]
+    public async Task CteViewTree1()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<TreeC>().AsTreeCte().ToListAsync(Ct);
+        // 视图的 CTE 在递归 CTE 之前定义（递归部分要引用它）
+        Assert.StartsWith("WITH RECURSIVE `m8_treec` AS (", listen.Last.Statement.Text, StringComparison.Ordinal);
+        Assert.Contains(",`as_tree_cte` AS ( (", listen.Last.Statement.Text, StringComparison.Ordinal);
+    }
+
+    // 投影出的查询按指定的键列成树
+    [Fact, Upstream("mysql8/MySQL8Test2.java#cteViewTree2")]
+    public async Task CteViewTree2()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<TreeA>().LeftJoin<TreeB>((a, b) => a.Id == b.Aid)
+            .Select((a, b) => new TreeC { Id = a.Id, Name = a.Name, Pid = b.Aid })
+            .AsTreeCte(s => s.Id, s => s.Pid).ToListAsync(Ct);
+        Assert.StartsWith("WITH RECURSIVE `as_tree_cte` AS (", listen.Last.Statement.Text, StringComparison.Ordinal);
+    }
 }

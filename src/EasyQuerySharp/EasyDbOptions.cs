@@ -9,6 +9,9 @@ namespace EasyQuerySharp;
 /// <summary><see cref="EasyDb"/> 的配置。方言必填；数据源为 null 时只能生成 SQL（<c>ToSql()</c>），不能执行。</summary>
 public sealed class EasyDbOptions
 {
+    /// <summary>一条按类型配置的逻辑删除。</summary>
+    internal sealed record LogicDeleteRule(Func<Type, bool> AppliesTo, string Property, Metadata.LogicDeleteAttribute LogicDelete);
+
     /// <summary>方言。</summary>
     public SqlDialect Dialect { get; set; } = null!;
 
@@ -67,6 +70,9 @@ public sealed class EasyDbOptions
         return this;
     }
 
+    /// <summary>Include 的子数据带了 Take / Skip 时怎样按父对象各取一段（对应 Java 的 includeLimitMode），默认按父对象分区编行号。</summary>
+    public IncludeLimitMode IncludeLimitMode { get; set; } = IncludeLimitMode.Partition;
+
     /// <summary>添加拦截器。</summary>
     public EasyDbOptions AddInterceptor(IInterceptor interceptor)
     {
@@ -84,4 +90,30 @@ public sealed class EasyDbOptions
         LogicDeleteStrategies[name] = strategy ?? throw new ArgumentNullException(nameof(strategy));
         return this;
     }
+
+    /// <summary>按类型配置的逻辑删除（见 <see cref="ApplyLogicDelete"/>）。</summary>
+    internal List<LogicDeleteRule> LogicDeleteRules { get; } = [];
+
+    /// <summary>
+    /// 不改实体、用代码给命中的实体配置逻辑删除（对应 Java 的 AbstractConfigurationLogicDeleteStrategy）：
+    /// <paramref name="appliesTo"/> 命中、且实体自己没有标注 <see cref="Metadata.LogicDeleteAttribute"/> 时，把 <paramref name="property"/> 当作逻辑删除列。
+    /// </summary>
+    /// <example><code>options.ApplyLogicDelete(t =&gt; t == typeof(Config), nameof(Config.Deleted), new LogicDeleteAttribute());</code></example>
+    public EasyDbOptions ApplyLogicDelete(Func<Type, bool> appliesTo, string property, Metadata.LogicDeleteAttribute logicDelete)
+    {
+        ArgumentNullException.ThrowIfNull(appliesTo);
+        ArgumentException.ThrowIfNullOrEmpty(property);
+        LogicDeleteRules.Add(new LogicDeleteRule(appliesTo, property, logicDelete ?? throw new ArgumentNullException(nameof(logicDelete))));
+        return this;
+    }
+}
+
+/// <summary>Include 的子数据带了 Take / Skip 时按父对象取段的方式（对应 Java 的 IncludeLimitModeEnum）。</summary>
+public enum IncludeLimitMode
+{
+    /// <summary>一条查询，按关联键分区编行号再按行号取段（ROW_NUMBER，需要数据库支持窗口函数）。</summary>
+    Partition,
+
+    /// <summary>每个父对象一段带 LIMIT 的查询，UNION ALL 合并。</summary>
+    UnionAll,
 }

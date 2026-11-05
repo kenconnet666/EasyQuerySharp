@@ -73,6 +73,19 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
         return result;
     }
 
+    /// <summary>执行查询，把整个结果集交给 <paramref name="read"/> 读取。</summary>
+    public async Task<T> ReadAsync<T>(SqlStatement statement, Func<DbDataReader, CancellationToken, Task<T>> read, CancellationToken ct)
+    {
+        T result = default!;
+        await RunAsync(statement, async command =>
+        {
+            await using var reader = await command.ExecuteReaderAsync(ct).ConfigureAwait(false);
+            result = await read(reader, ct).ConfigureAwait(false);
+            return reader.RecordsAffected;
+        }).ConfigureAwait(false);
+        return result;
+    }
+
     /// <summary>执行写入，返回受影响的行数。</summary>
     public async Task<long> ExecuteAsync(SqlStatement statement, CancellationToken ct)
     {

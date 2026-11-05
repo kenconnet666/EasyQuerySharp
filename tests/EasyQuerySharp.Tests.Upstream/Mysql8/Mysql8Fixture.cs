@@ -1,3 +1,4 @@
+using EasyQuerySharp.Metadata;
 using EasyQuerySharp.TestKit.Databases;
 using MySqlConnector;
 
@@ -23,7 +24,7 @@ public sealed class Mysql8Fixture : IAsyncLifetime
         typeof(M8User), typeof(M8Role), typeof(M8UserRole), typeof(M8User2), typeof(M8Role2), typeof(M8UserRole2),
         typeof(M8UserBook), typeof(M8RoleMenu), typeof(M8Menu), typeof(M8Province), typeof(M8City), typeof(M8Area),
         typeof(M8AreaBuild), typeof(M8Parent), typeof(M8Child), typeof(M8ParentChild), typeof(BatchInsert),
-        typeof(TableNoKey), typeof(OffsetChunkTest), typeof(M8UserTest), typeof(Comment),
+        typeof(TableNoKey), typeof(OffsetChunkTest), typeof(M8UserTest), typeof(Comment), typeof(M8SaveA), typeof(MyConfigLogicDelete), typeof(M8IncludeLimitTopic), typeof(M8IncludeLimitChild), typeof(TreeA), typeof(TreeB),
     ];
 
     private EasyDb? _db;
@@ -56,7 +57,8 @@ public sealed class Mysql8Fixture : IAsyncLifetime
 
         _db = new EasyDb(o => o.UseMySql(new MySqlDataSource(TestDatabases.MySql.TryConnectionString(Database)!)).AddListener(SqlCapture.Instance)
             .AddInterceptor(new MyProtectInterceptor())
-            .AddInterceptor(new M8UserNameInterceptor()));
+            .AddInterceptor(new M8UserNameInterceptor())
+            .ApplyLogicDelete(t => t == typeof(MyConfigLogicDelete), nameof(MyConfigLogicDelete.Deleted), new LogicDeleteAttribute()));
         await _db.CodeFirst.CreateTablesAsync(Tables);
         await SeedAsync(_db);
     }

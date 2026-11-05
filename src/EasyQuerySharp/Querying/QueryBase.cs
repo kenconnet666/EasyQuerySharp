@@ -237,6 +237,18 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         return With(State with { ResultSizeLimit = rows });
     }
 
+    /// <summary>
+    /// 执行查询，自己读结果集（对应 Java 的 toResultSet）：<paramref name="read"/> 拿到的是这条查询的 <see cref="System.Data.Common.DbDataReader"/>，
+    /// 列按投影的顺序；读完即关闭。导航带出、追踪都不适用。
+    /// </summary>
+    /// <example><code>var ids = await db.Query&lt;User&gt;().ReadAsync(async (r, ct) =&gt; { var list = new List&lt;string&gt;(); while (await r.ReadAsync(ct)) list.Add(r.GetString(0)); return list; });</code></example>
+    public Task<TResult> ReadAsync<TResult>(Func<System.Data.Common.DbDataReader, CancellationToken, Task<TResult>> read, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(read);
+        var statement = ToStatement();
+        return Db.Executor.SessionAsync(s => s.ReadAsync(statement, read, cancellationToken), cancellationToken);
+    }
+
     /// <summary>执行并把每行读成 列名 → 值 的 <see cref="DynamicRow"/>（对应 Java 的 toMaps）；列名忽略大小写，重复的列名抛出异常。</summary>
     public Task<List<DynamicRow>> ToDictionariesAsync(CancellationToken cancellationToken = default) =>
         Db.Executor.QueryAsync(ToStatement(), Materialization.EntityMaterializer.ReadDictionary, cancellationToken);

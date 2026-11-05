@@ -14,6 +14,9 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
     /// <summary>当前的命名约定。</summary>
     public NameConversion NameConversion { get; } = nameConversion;
 
+    /// <summary>按类型配置的逻辑删除（<see cref="EasyDbOptions.ApplyLogicDelete"/>），实体没有标注时生效。</summary>
+    internal IReadOnlyList<EasyDbOptions.LogicDeleteRule> LogicDeleteRules { get; init; } = [];
+
     /// <summary>取实体元数据（首次访问时构建）。</summary>
     public EntityMetadata Get(Type type) => _cache.GetOrAdd(type, Build);
 
@@ -123,6 +126,12 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
                 version = v;
                 versionColumn = column;
             }
+        }
+        if (logicDelete is null && LogicDeleteRules.FirstOrDefault(r => r.AppliesTo(type)) is { } rule)
+        {
+            logicDelete = rule.LogicDelete;
+            logicDeleteColumn = columns.FirstOrDefault(c => c.Property.Name == rule.Property)
+                ?? throw new InvalidOperationException($"{type.Name} 没有属性 {rule.Property}，无法作为逻辑删除列");
         }
 
         return new EntityMetadata(type, table?.Name ?? NameConversion.Convert(type.Name), table?.Schema, table?.Comment, columns)

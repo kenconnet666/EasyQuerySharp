@@ -36,14 +36,28 @@ internal static class IncludeRunner
             }
 
             var baseState = new QueryState(db, [new EntitySource(nav.Target.Type)]) { Wheres = [.. plan.ChildFilters], Selector = plan.ChildSelector, Interceptors = interceptors };
-            var state = plan.Configure?.Invoke(baseState) ?? baseState;
-            state = state with
+            var state = (plan.Configure?.Invoke(baseState) ?? baseState) with { ForceAlias = true };
+            var targets = links.Select(l => l.Target.First).Distinct().ToList();
+            CompiledQuery<object?> CompileFor(QueryState s, IEnumerable<object> keys) => QueryCompiler.Compile<object?>(
+                s with { Wheres = s.Wheres.Add(WithExtraFilter(KeyIn(nav.Target.Type, nav.TargetColumns[0], keys), nav.ExtraFilter)) }, relationKeys: nav.TargetColumns);
+
+            CompiledQuery<object?> compiled;
+            SelectQuery sql;
+            // 子数据带了 Take / Skip：每个父对象各取一段，不是整体取一段
+            if (state.Limit is null && state.Offset is null)
+                sql = (compiled = CompileFor(state, targets)).Sql;
+            else if (db.Options.IncludeLimitMode == IncludeLimitMode.UnionAll)
             {
-                Wheres = state.Wheres.Add(WithExtraFilter(KeyIn(nav.Target.Type, nav.TargetColumns[0], links.Select(l => l.Target.First)), nav.ExtraFilter)),
-                ForceAlias = true,
-            };
-            var compiled = QueryCompiler.Compile<object?>(state, relationKeys: nav.TargetColumns);
-            var statement = SqlRenderer.Render(db.Options.Dialect, compiled.Sql);
+                var parts = targets.Select(t => CompileFor(state, [t])).ToList();
+                compiled = parts[0];
+                sql = SelectByName(new UnionTableSource([.. parts.Select(p => p.Sql)], all: true) { IndependentAliases = true }, ColumnNames(compiled.Sql));
+            }
+            else
+            {
+                compiled = CompileFor(state with { Limit = null, Offset = null }, targets);
+                sql = Partitioned(compiled.Sql, compiled.RelationOrdinals[0], state.Offset ?? 0, state.Limit);
+            }
+            var statement = SqlRenderer.Render(db.Options.Dialect, sql);
             var rows = await db.Executor.QueryAsync(statement, r => (Child: compiled.Shaper(r), Key: CompositeKey.Read(r, compiled.RelationOrdinals)), ct)
                 .ConfigureAwait(false);
 
@@ -64,6 +78,37 @@ internal static class IncludeRunner
             plan.Pending.Clear();
             await RunAsync(db, compiled.Includes, interceptors, ct).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>
+    /// 按父对象分区取段（Java 的 PARTITION 模式，与 Java 逐字一致）：子查询的排序挪进窗口，
+    /// <c>SELECT t2.列 AS 列,… FROM (SELECT t1.列 AS 列,… FROM (SELECT …,(ROW_NUMBER() OVER (PARTITION BY 关联键 ORDER BY …)) AS __row__ FROM …) t1
+    /// WHERE t1.__row__ &gt;= ? AND t1.__row__ &lt;= ?) t2</c>。
+    /// </summary>
+    private static SelectQuery Partitioned(SelectQuery inner, int keyOrdinal, long skip, long? take)
+    {
+        var names = ColumnNames(inner);
+        var orders = inner.OrderBy.ToList();
+        inner.OrderBy.Clear();
+        inner.Columns.Add(new SelectColumn(WindowExpr.RowNumber([inner.Columns[keyOrdinal].Expr], orders), "__row__"));
+        var numbered = new DerivedTableSource(inner);
+        var ranged = SelectByName(numbered, names);
+        var row = new ColumnExpr(numbered, "__row__");
+        ranged.Where.Add(new BinaryExpr(row, SqlBinaryOperator.GreaterThanOrEqual, new ParameterExpr(skip + 1, typeof(long))));
+        if (take is { } t) ranged.Where.Add(new BinaryExpr(row, SqlBinaryOperator.LessThanOrEqual, new ParameterExpr(skip + t, typeof(long))));
+        return SelectByName(new DerivedTableSource(ranged), names);
+    }
+
+    // 查询结果各列的名字（有别名用别名，否则是列名）
+    private static List<string> ColumnNames(SelectQuery query) =>
+        query.Columns.Select(c => c.Alias ?? (c.Expr as ColumnExpr)?.Name ?? throw new InvalidOperationException("带出的子查询有无名的列")).ToList();
+
+    // SELECT 表.列 AS 列,…：按名字原样取出来源的列（列序不变，形状器按序号读）
+    private static SelectQuery SelectByName(TableSource table, IEnumerable<string> names)
+    {
+        var query = new SelectQuery(table);
+        foreach (var name in names) query.Columns.Add(new SelectColumn(new ColumnExpr(table, name), name));
+        return query;
     }
 
     // 多对多的中间表：按父键取出 (父键, 目标键) 对

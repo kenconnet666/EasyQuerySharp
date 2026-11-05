@@ -114,4 +114,7 @@ public sealed class CteTableSource(string name, SelectQuery query) : TableSource
 
     /// <summary>递归部分用 UNION ALL（默认）还是 UNION 连接。</summary>
     public bool UnionAll { get; init; } = true;
+
+    /// <summary>定义编号完成时的位置，由 <see cref="Rendering.AliasAllocator"/> 写入：WITH 里按它排，定义里引用到的 CTE 在前。</summary>
+    internal int DefinedAt { get; set; }
 }

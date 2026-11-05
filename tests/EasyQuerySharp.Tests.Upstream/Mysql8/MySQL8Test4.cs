@@ -246,4 +246,84 @@ public sealed class MySQL8Test4(Mysql8Fixture fixture) : Mysql8Test(fixture)
         listen.AssertSql(SelectAsPhoneSql);
         listen.AssertParams("123(String)");
     }
+
+    private const string FirstCardInclude = "Java 的 firstCard 是 OneToOne + limit 1 + orderByProps 的导航；C# 写成 Include(BankCards, q => q.OrderBy(OpenTime).Take(1))，SQL 相同";
+
+    // 子数据带 Take：按用户分区编号后各取一张
+    [Fact, Upstream("mysql8/MySQL8Test4.java#includeOneTest1", Deviation = FirstCardInclude)]
+    public async Task IncludeOneTest1()
+    {
+        using var listen = SqlCapture.Listen();
+        var users = await Db.Query<SysUser>().Include(u => u.BankCards, q => q.OrderBy(c => c.OpenTime).Take(1)).ToListAsync(Ct);
+        Assert.Equal(2, listen.Events.Count);
+        listen.AssertSql(0, "SELECT `id`,`name`,`phone`,`age`,`create_time` FROM `t_sys_user`");
+        listen.AssertSql(1, "SELECT t2.`id` AS `id`,t2.`uid` AS `uid`,t2.`code` AS `code`,t2.`type` AS `type`,t2.`bank_id` AS `bank_id`,t2.`open_time` AS `open_time` FROM (SELECT t1.`id` AS `id`,t1.`uid` AS `uid`,t1.`code` AS `code`,t1.`type` AS `type`,t1.`bank_id` AS `bank_id`,t1.`open_time` AS `open_time` FROM (SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time`,(ROW_NUMBER() OVER (PARTITION BY t.`uid` ORDER BY t.`open_time` ASC)) AS `__row__` FROM `t_bank_card` t WHERE t.`uid` IN (?,?)) t1 WHERE t1.`__row__` >= ? AND t1.`__row__` <= ?) t2");
+        listen.AssertParams(1, "u1(String),u2(String),1(Long),1(Long)");
+        Assert.All(users, u => Assert.Single(u.BankCards!));
+    }
+
+    // 先查出用户，再给这些用户带出
+    [Fact, Upstream("mysql8/MySQL8Test4.java#includeOneTest2", Deviation = FirstCardInclude)]
+    public async Task IncludeOneTest2()
+    {
+        using var listen = SqlCapture.Listen();
+        var users = await Db.Query<SysUser>().ToListAsync(Ct);
+        await Db.LoadIncludeAsync(users, u => u.BankCards, q => q.OrderBy(c => c.OpenTime).Take(1), Ct);
+        Assert.Equal(2, listen.Events.Count);
+        listen.AssertSql(0, "SELECT `id`,`name`,`phone`,`age`,`create_time` FROM `t_sys_user`");
+        listen.AssertSql(1, "SELECT t2.`id` AS `id`,t2.`uid` AS `uid`,t2.`code` AS `code`,t2.`type` AS `type`,t2.`bank_id` AS `bank_id`,t2.`open_time` AS `open_time` FROM (SELECT t1.`id` AS `id`,t1.`uid` AS `uid`,t1.`code` AS `code`,t1.`type` AS `type`,t1.`bank_id` AS `bank_id`,t1.`open_time` AS `open_time` FROM (SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time`,(ROW_NUMBER() OVER (PARTITION BY t.`uid` ORDER BY t.`open_time` ASC)) AS `__row__` FROM `t_bank_card` t WHERE t.`uid` IN (?,?)) t1 WHERE t1.`__row__` >= ? AND t1.`__row__` <= ?) t2");
+        listen.AssertParams(1, "u1(String),u2(String),1(Long),1(Long)");
+        Assert.All(users, u => Assert.Single(u.BankCards!));
+    }
+
+    // 子数据只取主键：关联键另外带出
+    [Fact, Upstream("mysql8/MySQL8Test4.java#testIncludeIdOnly1")]
+    public async Task TestIncludeIdOnly1()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysUser>().Include(u => u.BankCards, q => q.Select(s => new SysBankCard { Id = s.Id })).ToListAsync(Ct);
+        Assert.Equal(2, listen.Events.Count);
+        listen.AssertSql(0, "SELECT `id`,`name`,`phone`,`age`,`create_time` FROM `t_sys_user`");
+        listen.AssertSql(1, "SELECT t.`id`,t.`uid` AS `__relation__uid` FROM `t_bank_card` t WHERE t.`uid` IN (?,?)");
+        listen.AssertParams(1, "u1(String),u2(String)");
+    }
+
+    [Fact, Upstream("mysql8/MySQL8Test4.java#testIncludeIdOnly2")]
+    public async Task TestIncludeIdOnly2()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysUser>().Include(u => u.BankCards, q => q.Select(s => new SysBankCard { Id = s.Id })).ToListAsync(Ct);
+        Assert.Equal(2, listen.Events.Count);
+        listen.AssertSql(0, "SELECT `id`,`name`,`phone`,`age`,`create_time` FROM `t_sys_user`");
+        listen.AssertSql(1, "SELECT t.`id`,t.`uid` AS `__relation__uid` FROM `t_bank_card` t WHERE t.`uid` IN (?,?)");
+        listen.AssertParams(1, "u1(String),u2(String)");
+    }
+
+    // 自己读结果集
+    [Fact, Upstream("mysql8/MySQL8Test4.java#testToResultSet")]
+    public async Task TestToResultSet()
+    {
+        var users = await Db.Query<SysUser>().ToListAsync(Ct);
+        var ids = await Db.Query<SysUser>().Where(s => s.Id != null).ReadAsync(async (reader, ct) =>
+        {
+            var list = new List<string>();
+            while (await reader.ReadAsync(ct)) list.Add(reader.GetString(0));
+            return list;
+        }, Ct);
+        Assert.Equal(users.Select(u => u.Id).Order(), ids.Order());
+    }
+
+    // ON 里引用了用户的第一张卡：那张卡的 JOIN 提到用户表的 JOIN 之前
+    [Fact, Upstream("mysql8/MySQL8Test4.java#testFilterAndDependency", Deviation = "Java 的 filter(…) 在 C# 里直接写条件，firstCard 写成 BankCards.OrderBy(OpenTime).First()；SQL 相同")]
+    public async Task TestFilterAndDependency()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysUser>()
+            .LeftJoin<SysUser>((u1, u2) => u1.BankCards!.OrderBy(c => c.OpenTime).First().Uid == u2.Id && u1.Id == u2.Id
+                && u1.Name.LikeContains("123") && u2.Name.LikeContains("456"))
+            .Where((u1, u2) => u1.Name.LikeContains("789") && u2.Name.LikeContains("987") && u1.BankCards!.OrderBy(c => c.OpenTime).First().Type == "123123")
+            .Select((u1, _) => u1).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`id`,t.`name`,t.`phone`,t.`age`,t.`create_time` FROM `t_sys_user` t LEFT JOIN (SELECT t2.`id`,t2.`uid`,t2.`code`,t2.`type`,t2.`bank_id`,t2.`open_time`,(ROW_NUMBER() OVER (PARTITION BY t2.`uid` ORDER BY t2.`open_time` ASC)) AS `__row__` FROM `t_bank_card` t2) t4 ON (t4.`uid` = t.`id` AND t4.`__row__` = ?) LEFT JOIN `t_sys_user` t1 ON t4.`uid` = t1.`id` AND t.`id` = t1.`id` AND t.`name` LIKE CONCAT('%',?,'%') AND t1.`name` LIKE CONCAT('%',?,'%') WHERE t.`name` LIKE CONCAT('%',?,'%') AND t1.`name` LIKE CONCAT('%',?,'%') AND t4.`type` = ?");
+        listen.AssertParams("1(Integer),123(String),456(String),789(String),987(String),123123(String)");
+    }
 }

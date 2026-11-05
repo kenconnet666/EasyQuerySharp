@@ -55,6 +55,9 @@ public class M8Role
     [Navigate(RelationType.ManyToMany, SelfProperties = [nameof(Id)], SelfMappingProperties = [nameof(M8RoleMenu.RoleId)], Mapping = typeof(M8RoleMenu),
         TargetProperties = [nameof(M8Menu.Id)], TargetMappingProperties = [nameof(M8RoleMenu.MenuId)])]
     public List<M8Menu>? Menus { get; set; }
+
+    [Navigate(RelationType.ManyToOne, SelfProperties = [nameof(Id)], TargetProperties = [nameof(Mysql8.M8SaveA.Id)])]
+    public M8SaveA? M8SaveA { get; set; }
 }
 
 /// <summary>对应 Java：mysql8/entity/M8Role2。</summary>
@@ -374,4 +377,96 @@ public class M8UserTemp2 : ICteView<M8UserTemp2>
     {
         Id = m.Id, Name = m.Name, Age = m.Age, RowNumber = Sql.Over.RowNumber(w => w.PartitionBy(m.Age).OrderByDescending(m.CreateTime)),
     });
+}
+
+/// <summary>对应 Java：mysql8/entity/save/M8SaveA（聚合保存的根；这里先用到 id、name）。</summary>
+[Table("m8_save_a")]
+public class M8SaveA
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+}
+
+/// <summary>对应 Java：dto/MyConfigLogicDelete（实体上不标注，逻辑删除由夹具里的 ApplyLogicDelete 配置）。</summary>
+[Table("my_config_logic")]
+public class MyConfigLogicDelete
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    public bool? Deleted { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/M8IncludeLimitTopic（Include 带 Take 的场景）。</summary>
+[Table("m8_include_limit_topic")]
+public class M8IncludeLimitTopic
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(M8IncludeLimitChild.ParentId)], OrderBy = nameof(M8IncludeLimitChild.Order))]
+    public List<M8IncludeLimitChild>? Children { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/M8IncludeLimitChild（deleted 列不自动查询）。</summary>
+[Table("m8_include_limit_child")]
+public class M8IncludeLimitChild
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? ParentId { get; set; }
+
+    public string? Name { get; set; }
+
+    public int? Order { get; set; }
+
+    [Column(AutoSelect = false)]
+    public bool? Deleted { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/TreeA（视图 TreeC 的来源）。</summary>
+[Table("m8_treea")]
+public class TreeA
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/TreeB（TreeA 的父子关系）。</summary>
+[Table("m8_treeb")]
+public class TreeB
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Aid { get; set; }
+
+    public string? Apid { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/view/TreeC（由 TreeA LEFT JOIN TreeB 定义的视图实体，自引用成树）。</summary>
+[Table("m8_treec")]
+public class TreeC : ICteView<TreeC>
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    public string? Pid { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(Pid)])]
+    public List<TreeC>? TreeCList { get; set; }
+
+    public static Query<TreeC> View(EasyDb db) => db.Query<TreeA>().LeftJoin<TreeB>((a, b) => a.Id == b.Aid)
+        .Select((a, b) => new TreeC { Id = a.Id, Name = a.Name, Pid = b.Apid });
 }

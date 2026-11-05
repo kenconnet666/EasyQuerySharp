@@ -144,25 +144,28 @@ internal static class QueryCompiler
         start.Columns.Insert(0, new SelectColumn(new LiteralExpr("0"), options.DeepColumnName));
 
         var walked = new CteTableSource(options.CteTableName, start);
-        var child = new EntityTableSource(entity);
+        // 子节点来源：基础查询是实体（含视图实体）时连它的表，投影过的查询连它的投影（不带基础查询的条件）
+        var child = tree.Base is { Sources: [EntitySource e], Selector: null }
+            ? CreateBinding(db, e with { Alias = null })
+            : CreateBinding(db, new SubQuerySource(tree.Base with { Wheres = [] }));
         // 往下走：子节点的上级 = 已走到的节点；往上走：上级节点的键 = 已走到的节点的上级
         var keys = tree.SelfColumns.Select((self, i) => (SqlExpr)(options.Up
-            ? new BinaryExpr(child.Column(self), SqlBinaryOperator.Equal, new ColumnExpr(walked, tree.ParentColumns[i].Name, tree.ParentColumns[i]))
-            : new BinaryExpr(child.Column(tree.ParentColumns[i]), SqlBinaryOperator.Equal, new ColumnExpr(walked, self.Name, self)))).ToList();
-        var on = Filters(db, tree.Base, new EntityBinding(child)).Concat(keys).ToList();
+            ? new BinaryExpr(child.OwnerColumn(self), SqlBinaryOperator.Equal, new ColumnExpr(walked, tree.ParentColumns[i].Name, tree.ParentColumns[i]))
+            : new BinaryExpr(child.OwnerColumn(tree.ParentColumns[i]), SqlBinaryOperator.Equal, new ColumnExpr(walked, self.Name, self)))).ToList();
+        var on = Filters(db, tree.Base, child).Concat(keys).ToList();
         var recursive = new SelectQuery(walked);
-        recursive.Joins.Add(new JoinClause(JoinKind.Inner, child, LogicalExpr.And(on)));
+        recursive.Joins.Add(new JoinClause(JoinKind.Inner, child.Table, LogicalExpr.And(on)));
         // 递归部分里引用自己的 CTE 同样当实体表加条件（与 Java 一致）
         var walkedRow = new DerivedBinding(walked, entity.Columns.ToDictionary(c => c.PropertyName, c => c.Name), entity);
         recursive.Where.AddRange(CteFilters(db, walked, entity, walkedRow, !tree.Base.DisableLogicDelete, tree.Base.Interceptors));
         if (tree.ChildFilter is { } childFilter)
         {
             var translator = new ExpressionTranslator([]);
-            translator.Bind(childFilter, [new EntityBinding(child)]);
+            translator.Bind(childFilter, [child]);
             recursive.Where.Add(translator.TranslatePredicate(childFilter.Body));
         }
         recursive.Columns.Add(new SelectColumn(new FragmentExpr("{0} + 1", [new ColumnExpr(walked, options.DeepColumnName)]), options.DeepColumnName));
-        foreach (var c in entity.Columns.Where(c => c.AutoSelect)) recursive.Columns.Add(new SelectColumn(child.Column(c), null));
+        foreach (var c in entity.Columns.Where(c => c.AutoSelect)) recursive.Columns.Add(new SelectColumn(child.OwnerColumn(c), null));
 
         var table = new CteTableSource(options.CteTableName, start) { ExplicitAlias = tree.Alias, RecursivePart = recursive, UnionAll = options.UnionAll };
         return new DerivedBinding(table, entity.Columns.ToDictionary(c => c.PropertyName, c => c.Name), entity);

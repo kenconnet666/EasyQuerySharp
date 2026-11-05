@@ -18,7 +18,8 @@ internal static class AliasAllocator
         var tables = new List<TableSource>();
         Collect(query, tables);
         Assign(tables, query.ExplicitProjection);
-        return tables.OfType<CteTableSource>().DistinctBy(c => c.Name, StringComparer.Ordinal).ToList();
+        // 递归 CTE 的引用先于它的定义编号，定义里又可能引用别的 CTE（如视图实体）：按定义完成的先后写
+        return tables.OfType<CteTableSource>().DistinctBy(c => c.Name, StringComparer.Ordinal).OrderBy(c => c.DefinedAt).ToList();
     }
 
     /// <summary>UPDATE / DELETE：目标表、连接的表（含 ON 里的子查询），再是 SET / WHERE 里的子查询。</summary>
@@ -86,6 +87,7 @@ internal static class AliasAllocator
             tables.Add(tree);
             Collect(tree.Query, tables);
             Collect(recursive, tables);
+            tree.DefinedAt = tables.Count;
             // Java 拼树时内部还建了 UNION 与 CTE 两层匿名表：之后的表从 t6 起编号
             Reserve(2, tables);
             return;
@@ -108,6 +110,7 @@ internal static class AliasAllocator
                 Collect(cte.Query, tables);
                 if (cte.ReserveExtraAlias) tables.Add(Placeholder.Instance);
             }
+            cte.DefinedAt = tables.Count;
         }
         if (table is UnionTableSource { IndependentAliases: true } independent)
         {

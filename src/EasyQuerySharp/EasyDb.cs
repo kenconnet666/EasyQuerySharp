@@ -27,7 +27,7 @@ public sealed class EasyDb
     {
         if (options.Dialect is null) throw new ArgumentException("必须指定方言，如 options.UseMySql(...)", nameof(options));
         Options = options;
-        Metadata = new MetadataRegistry(options.NameConversion);
+        Metadata = new MetadataRegistry(options.NameConversion) { LogicDeleteRules = options.LogicDeleteRules };
         Executor = new SqlExecutor(this);
         CodeFirst = new Schema.CodeFirst(this);
         Tracker = new Tracking.Tracker(Metadata);
@@ -51,6 +51,32 @@ public sealed class EasyDb
 
     /// <summary>从实体 <typeparamref name="T"/> 开始一条查询。</summary>
     public Query<T> Query<T>() => new(new QueryState(this, [new EntitySource(typeof(T))]));
+
+    /// <summary>
+    /// 给已经查出来的实体再带出导航（对应 Java 的 loadInclude），与查询时 Include 相同：一条 <c>WHERE 键 IN (…)</c> 查询，挂到导航属性上。
+    /// <c>await db.LoadIncludeAsync(users, u =&gt; u.BankCards)</c>
+    /// </summary>
+    public Task LoadIncludeAsync<T, TProperty>(IEnumerable<T> entities, System.Linq.Expressions.Expression<Func<T, TProperty>> navigation,
+        CancellationToken cancellationToken = default) where T : class =>
+        LoadInclude(entities, navigation, null, cancellationToken);
+
+    /// <summary>给已经查出来的实体带出集合导航，并配置子查询（条件、排序、Take 等，与 <c>Include(nav, q =&gt; …)</c> 相同）。</summary>
+    public Task LoadIncludeAsync<T, TChild>(IEnumerable<T> entities, System.Linq.Expressions.Expression<Func<T, IEnumerable<TChild>?>> navigation,
+        Func<Query<TChild>, Query<TChild>> configure, CancellationToken cancellationToken = default) where T : class where TChild : class =>
+        LoadInclude(entities, navigation, s => configure(new Query<TChild>(s)).State, cancellationToken);
+
+    private Task LoadInclude<T>(IEnumerable<T> entities, System.Linq.Expressions.LambdaExpression navigation, Func<QueryState, QueryState>? configure,
+        CancellationToken cancellationToken) where T : class
+    {
+        ArgumentNullException.ThrowIfNull(entities);
+        if (Translation.ExpressionTranslator.StripConvert(navigation.Body) is not System.Linq.Expressions.MemberExpression { Expression: System.Linq.Expressions.ParameterExpression, Member: System.Reflection.PropertyInfo property })
+            throw new ArgumentException($"LoadIncludeAsync 需要直接的导航属性，如 u => u.Posts：{navigation}", nameof(navigation));
+        var nav = Metadata.FindNavigation(Metadata.Get<T>(), property.Name) ?? throw new ArgumentException($"{typeof(T).Name}.{property.Name} 不是导航属性", nameof(navigation));
+        var plan = new IncludePlan(nav, nav.Target.Type, null, [], nav.IsCollection) { Configure = configure };
+        foreach (var entity in entities)
+            if (entity is not null) plan.RegisterLoaded(entity, property);
+        return IncludeRunner.RunAsync(this, [plan], InterceptorSelection.Default, cancellationToken);
+    }
 
     /// <summary>
     /// 不经实体查询表 <paramref name="tableName"/>（对应 Java 的 queryable(Map.class).asTable(..) / mapQueryable()）：
