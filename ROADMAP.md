@@ -228,7 +228,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 ## M9 TS 版独有的能力（按需）
 
 - [ ] 9.1 多态（判别列加子类）。
-- [ ] 9.2 计算属性 `[Computed]`。
+- [x] 9.2 计算属性 `[Computed(nameof(静态表达式))]`（对应 Java 的 sqlConversion 计算列）：SELECT 里写成表达式 AS 列名，条件、排序、分组、JOIN 里展开，插入更新跳过；`[Column(AutoSelect = false)]` 时只在显式投影里出现。
 - [ ] 9.3 只读库 `AsReadOnly()`、开发期 N+1 检测。
 - [ ] 9.4 用 interceptors 做编译期预翻译。等官方文档不再标为实验性再做，在此之前先依赖运行时缓存。
 - [ ] 9.5 `dotnet eqs pull`：从库反向生成实体；多个模型程序集注册到同一个库。

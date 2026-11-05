@@ -63,7 +63,8 @@ internal sealed partial class ExpressionTranslator
         _scope[parameter] = owner;
         try
         {
-            return Translate(computed.Body);
+            // 包一层：渲染不变，比较时按列看待（Java 的计算列不触发"列 比较 函数"的多余空格）
+            return new ComputedExpr(Translate(computed.Body));
         }
         finally
         {

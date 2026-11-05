@@ -134,6 +134,7 @@ public sealed class SqlRenderer
             case WindowExpr w: WriteWindow(w); break;
             case OrderedStringJoinExpr j: Dialect.WriteOrderedStringJoin(this, j); break;
             case CastExpr c: WriteFragment(new FragmentExpr(Dialect.CastTemplate(c.TargetType), [c.Operand])); break;
+            case ComputedExpr c: Write(c.Inner); break;
             case BlankCheckExpr b: WriteBlankCheck(b); break;
             case CaseExpr c: WriteCase(c); break;
             case ExistsExpr e: Append(e.Negated ? "NOT EXISTS(" : "EXISTS(").WriteSelect(e.Query).Append(")"); break;

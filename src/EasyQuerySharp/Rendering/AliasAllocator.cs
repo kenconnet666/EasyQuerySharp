@@ -160,6 +160,7 @@ internal static class AliasAllocator
                 foreach (var o in j.Orders) CollectExpr(o.Expr, tables);
                 break;
             case CastExpr c: CollectExpr(c.Operand, tables); break;
+            case ComputedExpr c: CollectExpr(c.Inner, tables); break;
             case BlankCheckExpr b: CollectExpr(b.Operand, tables); break;
             case CaseExpr c:
                 foreach (var (when, then) in c.Branches) { CollectExpr(when, tables); CollectExpr(then, tables); }

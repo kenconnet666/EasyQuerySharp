@@ -367,3 +367,13 @@ public sealed class OrderedStringJoinExpr(SqlExpr value, SqlExpr separator, bool
     /// <summary>组内排序，至少一项。</summary>
     public IReadOnlyList<OrderByItem> Orders { get; } = orders;
 }
+
+/// <summary>
+/// 计算列（<see cref="Metadata.ComputedAttribute"/>）展开后的表达式：渲染与 <see cref="Inner"/> 相同；
+/// 比较时按普通列看待（Java 的计算列不触发"列 比较 函数"时的多余空格）。
+/// </summary>
+public sealed class ComputedExpr(SqlExpr inner) : SqlExpr
+{
+    /// <summary>展开后的表达式。</summary>
+    public SqlExpr Inner { get; } = inner;
+}
