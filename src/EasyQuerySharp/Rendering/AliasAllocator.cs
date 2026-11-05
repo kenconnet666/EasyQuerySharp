@@ -83,8 +83,18 @@ internal static class AliasAllocator
         // CTE：定义只编号一次（第一次引用时），之后的引用只编自己
         if (table is CteTableSource cte && !tables.OfType<CteTableSource>().Any(c => c.Name == cte.Name))
         {
-            Collect(cte.Query, tables);
-            if (cte.ReserveExtraAlias) tables.Add(Placeholder.Instance);
+            // 第一个 CTE 的定义按出现位置编号；之后不同名的 CTE 定义各自从同一个编号起单独编号，不占外层编号（与 Java 一致）
+            if (tables.OfType<CteTableSource>().FirstOrDefault() is { } first && tables.IndexOf(first.Query.From) is var start and >= 0)
+            {
+                var own = Enumerable.Repeat<TableSource>(Placeholder.Instance, start).ToList();
+                Collect(cte.Query, own);
+                Assign(own, forceAlias: true);
+            }
+            else
+            {
+                Collect(cte.Query, tables);
+                if (cte.ReserveExtraAlias) tables.Add(Placeholder.Instance);
+            }
         }
         if (table is UnionTableSource { IndependentAliases: true } independent)
         {

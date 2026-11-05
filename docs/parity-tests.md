@@ -3,29 +3,29 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1136、偏离 134、不适用 21、骨架 15、待做 1098。
+合计：已移植 1171、偏离 134、不适用 21、骨架 15、待做 1063。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 241 | 30 | 4 | 0 | 160 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 249 | 30 | 4 | 0 | 152 |
 | 分页结果 | `query.page` | M1 | 22 | 15 | 2 | 0 | 0 | 5 |
 | 原生 SQL | `sql.native` | M1 | 50 | 25 | 6 | 1 | 0 | 18 |
 | 删除 | `write.delete` | M1 | 25 | 9 | 1 | 2 | 0 | 13 |
-| 插入 | `write.insert` | M1 | 50 | 29 | 0 | 0 | 1 | 20 |
+| 插入 | `write.insert` | M1 | 50 | 31 | 0 | 0 | 1 | 18 |
 | 更新 | `write.update` | M1 | 59 | 26 | 4 | 0 | 0 | 29 |
 | CASE WHEN | `expr.case` | M2 | 27 | 14 | 6 | 0 | 0 | 7 |
-| 日期函数 | `func.date` | M2 | 101 | 46 | 7 | 5 | 0 | 43 |
-| 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 43 | 2 | 0 | 0 | 14 |
+| 日期函数 | `func.date` | M2 | 101 | 49 | 7 | 5 | 0 | 40 |
+| 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 45 | 2 | 0 | 0 | 12 |
 | 字符串聚合（joining） | `func.joining` | M2 | 29 | 13 | 3 | 0 | 5 | 8 |
 | JSON 函数 | `func.json` | M2 | 12 | 0 | 0 | 0 | 0 | 12 |
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
 | 字符串函数 | `func.string` | M2 | 131 | 111 | 2 | 0 | 1 | 17 |
 | 行锁 | `lock` | M2 | 28 | 21 | 1 | 0 | 0 | 6 |
-| 窗口函数 | `window` | M2 | 44 | 13 | 1 | 1 | 0 | 29 |
-| CTE | `query.cte` | M3 | 11 | 3 | 3 | 0 | 0 | 5 |
+| 窗口函数 | `window` | M2 | 44 | 32 | 1 | 1 | 0 | 10 |
+| CTE | `query.cte` | M3 | 11 | 4 | 3 | 0 | 0 | 4 |
 | 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 51 | 2 | 1 | 2 | 27 |
 | 显式 join | `query.join` | M3 | 88 | 55 | 2 | 1 | 0 | 30 |
 | 无实体的 Map 查询、toMap | `query.map` | M3 | 11 | 2 | 0 | 0 | 0 | 9 |
@@ -502,14 +502,14 @@
 | mysql8/MySQL8Test5.java#interceptorTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:223 | `SELECT 'id','name','age','create_time' FROM 'm8_user'` |
 | mysql8/MySQL8Test5.java#interceptorTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:231 | `SELECT 'id','name','age','create_time' FROM 'm8_user'` |
 | pgsql/NamedEnumTest.java#test1 | 待做 |  | `SELECT "id","name","type" FROM "t_named_enum" WHERE "type" = ?` |
-| pgsql/QueryTest.java#query1 | 待做 |  | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
-| pgsql/QueryTest.java#query2 | 待做 |  | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
-| pgsql/QueryTest.java#query3 | 待做 |  | `SELECT 1 FROM "t_blog" WHERE "deleted" = ? AND "id" = ? LIMIT 1` |
-| pgsql/QueryTest.java#query4 | 待做 |  | `SELECT 1 as id FROM "t_blog" WHERE "deleted" = ? AND "id" = ? LIMIT 1` |
-| pgsql/QueryTest.java#query5 | 待做 |  | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
-| pgsql/QueryTest.java#query6 | 待做 |  | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
-| pgsql/QueryTest.java#query8 | 待做 |  | `SELECT CONCAT(t."id",t."id") FROM "t_blog" t WHERE t."deleted" = ? AND t."id" = ?` |
-| pgsql/QueryTest.java#query9 | 待做 |  | `SELECT CONCAT(t."id",t."title") FROM "t_blog" t WHERE t."deleted" = ? AND t."id" = ?` |
+| pgsql/QueryTest.java#query1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:9 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
+| pgsql/QueryTest.java#query2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:17 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
+| pgsql/QueryTest.java#query3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:26 | `SELECT 1 FROM "t_blog" WHERE "deleted" = ? AND "id" = ? LIMIT 1` |
+| pgsql/QueryTest.java#query4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:36 | `SELECT 1 as id FROM "t_blog" WHERE "deleted" = ? AND "id" = ? LIMIT 1` |
+| pgsql/QueryTest.java#query5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:44 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
+| pgsql/QueryTest.java#query6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:58 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
+| pgsql/QueryTest.java#query8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:96 | `SELECT CONCAT(t."id",t."id") FROM "t_blog" t WHERE t."deleted" = ? AND t."id" = ?` |
+| pgsql/QueryTest.java#query9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:104 | `SELECT CONCAT(t."id",t."title") FROM "t_blog" t WHERE t."deleted" = ? AND t."id" = ?` |
 | pgsql/QueryTest19.java#testMapChain | 待做 |  | `SELECT t1."aaa" AS "aaa",t1."bbb" AS "bbb" FROM (SELECT t."score" AS "aaa",t."star" AS "bbb" FROM "t…` |
 | pgsql/QueryTest19.java#testMapChain2 | 待做 |  | `SELECT t1."aaa" AS "aaa",t1."bbb" AS "bbb" FROM (SELECT (t."score" * ?) AS "aaa",t."star" AS "bbb" F…` |
 | sqlite/SQLiteTest.java#testQuery | 待做 |  |  |
@@ -677,8 +677,8 @@
 | fork/insert/InsertSelectSqlTest.java#mysqlCopiesEntityColumnsPlusExtraColumn | 待做 |  | `INSERT INTO 't_fork_post_archive' ('id','user_id','title','amount','archived_at') SELECT eq_src.'id'…` |
 | fork/live/InsertSelectLiveTest.java#copyMatchingRowsWithArchiveTime | 待做 |  | `CREATE COLUMN TABLE` |
 | mysql8/MySQL8Test5.java#testLikeStartsWith | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:129 | `SELECT 'column1','column2','column3' FROM 'no_key_table' WHERE 'column2' LIKE CONCAT(?,'%') ESCAPE '…` |
-| pgsql/QueryTest.java#testDraft9 | 待做 |  |  |
-| pgsql/QueryTest.java#testDraft9_1 | 待做 |  |  |
+| pgsql/QueryTest.java#testDraft9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:119 |  |
+| pgsql/QueryTest.java#testDraft9_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:119 |  |
 | pgsql/QueryTest18.java#testLikeStartsWith | 待做 |  | `SELECT "column1","column2","column3" FROM "no_key_table" WHERE "column2" LIKE CONCAT((?)::TEXT,'%') …` |
 | pgsql/QueryTest19.java#testUUId | 待做 |  |  |
 
@@ -879,9 +879,9 @@
 | fork/functions/DateTruncSqlTest.java#unsupportedDialectSaysSo | 待做 |  |  |
 | fork/live/DateTruncLiveTest.java#truncatesToEachUnit | 待做 |  | `DROP TABLE {…}t_fork_user` |
 | mysql8/M8BankTest.java#includeSubQuery4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:61 | `SELECT t.'name' AS 'vo1',t.'id' AS 'vo2',t.'phone' AS 'vo3',t.'id' AS '__relation__id' FROM 't_sys_u…` |
-| pgsql/QueryTest.java#query7 | 待做 |  |  |
-| pgsql/QueryTest.java#test123 | 待做 |  | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
-| pgsql/QueryTest.java#testDuration | 待做 |  |  |
+| pgsql/QueryTest.java#query7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:70 |  |
+| pgsql/QueryTest.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:166 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
+| pgsql/QueryTest.java#testDuration | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:356 |  |
 | pgsql/QueryTest19.java#datetimeformat | 待做 |  | `SELECT t."create_time" AS "value1",TO_CHAR((t."create_time")::TIMESTAMP,'YYYY年MM-01 HH24:MI分SS秒') AS…` |
 
 ### 通用函数（nullOrDefault、greatest、nullif、null-safe）（`func.general`，M2）
@@ -945,8 +945,8 @@
 | mysql8/ManyJoinTest.java#testElement5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:33 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'co…` |
 | mysql8/ManyJoinTest.java#testElement6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:43 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'co…` |
 | mysql8/ManyJoinTest.java#testElement7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:55 | `SELECT t3.'type' AS 'value1',t3.'code' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'u…` |
-| pgsql/QueryTest.java#query10 | 待做 |  | `SELECT COALESCE(t."id",?) FROM "t_blog" t WHERE t."deleted" = ? AND t."id" = ?` |
-| pgsql/QueryTest.java#testNullDefault | 待做 |  | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
+| pgsql/QueryTest.java#query10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:112 | `SELECT COALESCE(t."id",?) FROM "t_blog" t WHERE t."deleted" = ? AND t."id" = ?` |
+| pgsql/QueryTest.java#testNullDefault | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:332 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
 
 ### 字符串聚合（joining）（`func.joining`，M2）
 
@@ -1206,25 +1206,25 @@
 | pgsql/PartitionByTest.java#testPartitionBy16_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PartitionByTest.cs:18 | `SELECT t1."__part__column1" AS "value1",t1."__part__column2" AS "value2",t1."id" AS "value3" FROM (S…` |
 | pgsql/PartitionByTest.java#testPartitionBy16_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PartitionByTest.cs:31 | `SELECT t1."__part__column1" AS "value1",t1."__part__column2" AS "value2",t1."id" AS "value3" FROM (S…` |
 | pgsql/PartitionByTest.java#testPartitionBy16_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PartitionByTest.cs:43 | `SELECT t1."__part__column1" AS "value1",t1."__part__column2" AS "value2",t1."id" AS "value3" FROM (S…` |
-| pgsql/QueryTest.java#testPartitionBy1 | 待做 |  | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
-| pgsql/QueryTest.java#testPartitionBy10 | 待做 |  | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
-| pgsql/QueryTest.java#testPartitionBy11 | 待做 |  | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
-| pgsql/QueryTest.java#testPartitionBy12 | 待做 |  | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
-| pgsql/QueryTest.java#testPartitionBy13 | 待做 |  | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
-| pgsql/QueryTest.java#testPartitionBy14 | 待做 |  | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
-| pgsql/QueryTest.java#testPartitionBy15 | 待做 |  | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
-| pgsql/QueryTest.java#testPartitionBy16 | 待做 |  | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
-| pgsql/QueryTest.java#testPartitionBy16_1 | 待做 |  | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
-| pgsql/QueryTest.java#testPartitionBy2 | 待做 |  | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
-| pgsql/QueryTest.java#testPartitionBy3 | 待做 |  | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
-| pgsql/QueryTest.java#testPartitionBy3_1 | 待做 |  | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
-| pgsql/QueryTest.java#testPartitionBy3_2 | 待做 |  | `SELECT t1."title",t1."url",t1."__part__column1" AS "rank" FROM (SELECT t."id",t."create_time",t."upd…` |
-| pgsql/QueryTest.java#testPartitionBy4 | 待做 |  | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
-| pgsql/QueryTest.java#testPartitionBy5 | 待做 |  | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
-| pgsql/QueryTest.java#testPartitionBy6 | 待做 |  | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
-| pgsql/QueryTest.java#testPartitionBy7 | 待做 |  | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
-| pgsql/QueryTest.java#testPartitionBy8 | 待做 |  | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
-| pgsql/QueryTest.java#testPartitionBy9 | 待做 |  | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
+| pgsql/QueryTest.java#testPartitionBy1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:237 | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
+| pgsql/QueryTest.java#testPartitionBy10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:300 | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
+| pgsql/QueryTest.java#testPartitionBy11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:304 | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
+| pgsql/QueryTest.java#testPartitionBy12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:308 | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
+| pgsql/QueryTest.java#testPartitionBy13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:312 | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
+| pgsql/QueryTest.java#testPartitionBy14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:316 | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
+| pgsql/QueryTest.java#testPartitionBy15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:320 | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
+| pgsql/QueryTest.java#testPartitionBy16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:324 | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
+| pgsql/QueryTest.java#testPartitionBy16_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:328 | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
+| pgsql/QueryTest.java#testPartitionBy2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:241 | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
+| pgsql/QueryTest.java#testPartitionBy3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:245 | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
+| pgsql/QueryTest.java#testPartitionBy3_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:249 | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
+| pgsql/QueryTest.java#testPartitionBy3_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:264 | `SELECT t1."title",t1."url",t1."__part__column1" AS "rank" FROM (SELECT t."id",t."create_time",t."upd…` |
+| pgsql/QueryTest.java#testPartitionBy4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:276 | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
+| pgsql/QueryTest.java#testPartitionBy5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:280 | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
+| pgsql/QueryTest.java#testPartitionBy6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:284 | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
+| pgsql/QueryTest.java#testPartitionBy7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:288 | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
+| pgsql/QueryTest.java#testPartitionBy8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:292 | `SELECT t1."__part__column1" AS "value1",t1."id" AS "value2" FROM (SELECT t."id",t."create_time",t."u…` |
+| pgsql/QueryTest.java#testPartitionBy9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:296 | `SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."deleted",t1."titl…` |
 
 ### CTE（`query.cte`，M3）
 
@@ -1240,7 +1240,7 @@
 | mysql8/CTETest.java#cteJoinTest8 | 待做 |  | `WITH 'ttt' AS (SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t WHERE t.'age' = ?) ,'…` |
 | mysql8/CTETest.java#cteTest1 | 待做 |  | `WITH 'ttt' AS (SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t WHERE t.'age' = ?) SE…` |
 | mysql8/M8BankTest.java#testExtraFilter4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:113 | `WITH 'with_Draft2' AS (SELECT t1.'bank_id' AS 'value1',COUNT(*) AS 'value2' FROM 't_bank_card' t1 GR…` |
-| pgsql/QueryTest.java#testToWithAs2 | 待做 |  | `WITH "aa" AS (SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."del…` |
+| pgsql/QueryTest.java#testToWithAs2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:342 | `WITH "aa" AS (SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."del…` |
 
 ### 分组与 having（含 rollup / cube）（`query.group`，M3）
 
