@@ -41,27 +41,33 @@ internal static partial class UpstreamScanner
                 var rest = m.Groups["rest"].Value;
                 var line = text[..m.Index].Count(c => c == '\n') + 1;
                 var location = $"{Path.GetRelativePath(repoRoot, path).Replace('\\', '/')}:{line}";
-                marks.Add(Parse(m.Groups["id"].Value, rest, location));
+                marks.Add(Parse(m.Groups["id"].Value, rest, location, text));
             }
         }
         return marks;
     }
 
-    private static UpstreamMark Parse(string id, string rest, string location)
+    private static UpstreamMark Parse(string id, string rest, string location, string fileText)
     {
-        var na = Named(rest, "NotApplicable");
+        var na = Named(rest, "NotApplicable", fileText);
         if (na is not null) return new(id, PortStatus.NotApplicable, na, location);
         if (Regex.IsMatch(rest, @"Pending\s*=\s*true")) return new(id, PortStatus.Pending, null, location);
-        var deviation = Named(rest, "Deviation");
+        var deviation = Named(rest, "Deviation", fileText);
         return deviation is not null
             ? new(id, PortStatus.Deviation, deviation, location)
             : new(id, PortStatus.Ported, null, location);
     }
 
-    private static string? Named(string rest, string name)
+    // 命名参数的值：字符串字面量，或同一文件里 const string 常量的名字（如 NotApplicable = JavaUtility）
+    private static string? Named(string rest, string name, string fileText)
     {
         var m = Regex.Match(rest, name + @"\s*=\s*""((?:[^""\\]|\\.)*)""");
-        return m.Success ? m.Groups[1].Value : null;
+        if (m.Success) return m.Groups[1].Value;
+        var constant = Regex.Match(rest, name + @"\s*=\s*(?<id>[A-Za-z_]\w*)");
+        if (!constant.Success) return null;
+        var id = constant.Groups["id"].Value;
+        var definition = Regex.Match(fileText, @"const\s+string\s+" + id + @"\s*=\s*""((?:[^""\\]|\\.)*)""");
+        return definition.Success ? definition.Groups[1].Value : throw new InvalidOperationException($"找不到 {name} 引用的常量 {id}（要定义在同一个文件里）");
     }
 
     // [Upstream("A.java#m")]、[Upstream("A.java#m", Deviation = "…")]、[assembly: Upstream(…)]
