@@ -147,7 +147,7 @@ internal static class IncludeRunner
             // 经过的是多对多：先经它的中间表换成目标键
             if (step.Mapping is { } stepMapping)
                 links = Compose(links, await LoadLinksAsync(db, step, stepMapping, links.Select(l => l.Target), ct).ConfigureAwait(false));
-            links = Compose(links, await LoadViaAsync(db, step, next, links.Select(l => l.Target), ct).ConfigureAwait(false));
+            links = Compose(links, await LoadViaAsync(db, step, next, links.Select(l => l.Target), plan.DirectVia, ct).ConfigureAwait(false));
         }
         if (plan.Navigation.Mapping is { } mapping && links.Count > 0)
             links = Compose(links, await LoadLinksAsync(db, plan.Navigation, mapping, links.Select(l => l.Target), ct).ConfigureAwait(false));
@@ -161,24 +161,55 @@ internal static class IncludeRunner
         }
     }
 
-    // 经过的一段导航：SELECT 下一段的自身列 AS __relation__…, 本段的目标列 AS __relation__… FROM 本段目标表 WHERE 本段目标列 IN (…)（与 Java 一致，不写别名）
+    /// <summary>
+    /// 经过的一段导航：按本段的目标列查本段目标表，取出下一段的自身列（与 Java 一致，单表不写别名）。
+    /// 平铺路径（@NavigateFlat）写成 <c>SELECT 下一段自身列 AS __relation__…, 本段目标列 AS __relation__… FROM 表 WHERE 本段目标列 IN (…)</c>；
+    /// 直达导航（DirectMapping）写成 <c>SELECT 本段目标列, 下一段自身列 FROM 表 WHERE …</c>，复合键写成 <c>((a =? AND b =?) OR …)</c>。
+    /// </summary>
     private static async Task<List<(CompositeKey From, CompositeKey To)>> LoadViaAsync(
-        EasyDb db, NavigationMetadata step, NavigationMetadata next, IEnumerable<CompositeKey> keys, CancellationToken ct)
+        EasyDb db, NavigationMetadata step, NavigationMetadata next, IEnumerable<CompositeKey> keys, bool direct, CancellationToken ct)
     {
-        if (step.TargetColumns.Count != 1) throw new NotSupportedException($"平铺路径经过的 {step} 只支持单列的目标键");
         var table = new EntityTableSource(step.Target);
-        var from = step.TargetColumns[0];
         var query = new SelectQuery(table);
-        foreach (var to in next.SelfColumns) query.Columns.Add(new SelectColumn(table.Column(to), ProjectionCompiler.RelationAlias(to)));
-        query.Columns.Add(new SelectColumn(table.Column(from), ProjectionCompiler.RelationAlias(from)));
-        var values = keys.Select(k => k.First).Distinct()
-            .Select(v => (SqlExpr)ExpressionTranslator.Parameter(ValueReader.ConvertTo(v, from.ClrType), from.ClrType)).ToList();
-        query.Where.Add(new InExpr(table.Column(from), values, negated: false));
+        int Select(ColumnMetadata column, bool alias)
+        {
+            var existing = query.Columns.FindIndex(c => c.Expr is ColumnExpr ce && ce.Name == column.Name);
+            if (existing >= 0) return existing;
+            query.Columns.Add(new SelectColumn(table.Column(column), alias ? ProjectionCompiler.RelationAlias(column) : null));
+            return query.Columns.Count - 1;
+        }
+        int[] fromOrdinals, toOrdinals;
+        if (direct)
+        {
+            fromOrdinals = step.TargetColumns.Select(c => Select(c, alias: false)).ToArray();
+            toOrdinals = next.SelfColumns.Select(c => Select(c, alias: false)).ToArray();
+        }
+        else
+        {
+            toOrdinals = next.SelfColumns.Select(c => Select(c, alias: true)).ToArray();
+            fromOrdinals = step.TargetColumns.Select(c => Select(c, alias: true)).ToArray();
+        }
+        query.Where.Add(KeysIn(table, step.TargetColumns, keys.Distinct().ToList()));
         var statement = SqlRenderer.Render(db.Options.Dialect, query);
-        var toOrdinals = Enumerable.Range(0, next.SelfColumns.Count).ToArray();
-        var rows = await db.Executor.QueryAsync(statement, r => (From: CompositeKey.Read(r, [toOrdinals.Length]), To: CompositeKey.Read(r, toOrdinals)), ct)
+        var rows = await db.Executor.QueryAsync(statement, r => (From: CompositeKey.Read(r, fromOrdinals), To: CompositeKey.Read(r, toOrdinals)), ct)
             .ConfigureAwait(false);
         return rows.Where(r => r.From is not null && r.To is not null).Select(r => (r.From!.Value, r.To!.Value)).ToList();
+    }
+
+
+    // 复合键的模板：先是各列 {0}…{n-1}，再是每组键的值，写成 (({0} ={n} AND {1} ={n+1}) OR (…))（与 Java 一致，= 后面不留空格）
+    private static string TupleInTemplate(int columns, int keys) =>
+        "(" + string.Join(" OR ", Enumerable.Range(0, keys).Select(k =>
+            "(" + string.Join(" AND ", Enumerable.Range(0, columns).Select(i => $"{{{i}}} ={{{columns + k * columns + i}}}")) + ")")) + ")";
+    // 单列键：列 IN (…)；复合键：((a =? AND b =?) OR (…))（与 Java 一致，= 后面不留空格）。键值先转成列的 CLR 类型
+    private static SqlExpr KeysIn(EntityTableSource table, IReadOnlyList<ColumnMetadata> columns, IReadOnlyList<CompositeKey> keys)
+    {
+        SqlExpr Value(object value, ColumnMetadata column) => ExpressionTranslator.Parameter(ValueReader.ConvertTo(value, column.ClrType), column.ClrType);
+        if (columns.Count == 1)
+            return new InExpr(table.Column(columns[0]), keys.Select(k => k.First).Distinct().Select(v => Value(v, columns[0])).ToList(), negated: false);
+        var arguments = columns.Select(c => (SqlExpr)table.Column(c)).ToList();
+        foreach (var key in keys) arguments.AddRange(columns.Zip(key.Values(columns.Count), (c, v) => Value(v, c)));
+        return new FragmentExpr(TupleInTemplate(columns.Count, keys.Count), arguments, isPredicate: true);
     }
 
     // 多对多的中间表：按父键取出 (父键, 目标键) 对
@@ -228,15 +259,10 @@ internal static class IncludeRunner
             return Expression.Lambda(Expression.Call(Expression.Constant(list), listType.GetMethod("Contains")!, Expression.Property(p, column.Property)), p);
         }
         var arguments = columns.Select(c => (Expression)Expression.Convert(Expression.Property(p, c.Property), typeof(object))).ToList();
-        var groups = new List<string>();
         foreach (var key in keys)
-        {
-            var values = key.Values(columns.Count).ToList();
-            groups.Add("(" + string.Join(" AND ", columns.Select((c, i) => $"{{{i}}} ={{{arguments.Count + i}}}")) + ")");
-            arguments.AddRange(columns.Select((c, i) => (Expression)Expression.Constant(ValueReader.ConvertTo(values[i], c.ClrType), typeof(object))));
-        }
+            arguments.AddRange(columns.Zip(key.Values(columns.Count), (c, v) => (Expression)Expression.Constant(ValueReader.ConvertTo(v, c.ClrType), typeof(object))));
         var raw = Expression.Call(typeof(Sql).GetMethod(nameof(Sql.Raw))!.MakeGenericMethod(typeof(bool)),
-            Expression.Constant("(" + string.Join(" OR ", groups) + ")"), Expression.NewArrayInit(typeof(object), arguments));
+            Expression.Constant(TupleInTemplate(columns.Count, keys.Count)), Expression.NewArrayInit(typeof(object), arguments));
         return Expression.Lambda(raw, p);
     }
 }

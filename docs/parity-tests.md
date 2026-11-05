@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1652、偏离 204、不适用 77、骨架 6、待做 465。
+合计：已移植 1657、偏离 204、不适用 77、骨架 6、待做 460。
 
 ## 按能力
 
@@ -36,7 +36,7 @@
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 23 | 25 | 3 | 0 | 5 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 60 | 1 | 2 | 2 | 2 |
-| include 带出导航 | `nav.include` | M4 | 37 | 24 | 1 | 0 | 0 | 12 |
+| include 带出导航 | `nav.include` | M4 | 37 | 29 | 1 | 0 | 0 | 7 |
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 133 | 3 | 1 | 0 | 5 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 22 | 2 | 0 | 0 | 1 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
@@ -1670,18 +1670,18 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| DirectRelationTest.java#test | 待做 |  | `SELECT 'c1','c2','c3','c4','c5' FROM 'direct1'` |
-| DirectRelationTest.java#test2 | 待做 |  | `SELECT 'c1','c2','c3','c4','c5' FROM 'direct1'` |
+| DirectRelationTest.java#test | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:120 | `SELECT 'c1','c2','c3','c4','c5' FROM 'direct1'` |
+| DirectRelationTest.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:137 | `SELECT 'c1','c2','c3','c4','c5' FROM 'direct1'` |
 | QueryTest18.java#esss | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.Includes.cs:23 |  |
 | QueryTest18.java#test14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.Includes.cs:6 | `SELECT COUNT(*) FROM (SELECT DISTINCT t.'id',t.'stars',t1.'create_time' FROM 't_topic' t LEFT JOIN '…` |
-| QueryTest2.java#query26 | 待做 |  |  |
+| QueryTest2.java#query26 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest2.cs:394 |  |
 | QueryTest28.java#testInterceptor3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest28.cs:39 | `SELECT 'id','name' FROM 'm8_interceptor'` |
-| RelationNullValueTest.java#one2oneTest | 待做 |  |  |
+| RelationNullValueTest.java#one2oneTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationNullValueTest.cs:7 |  |
 | RelationTest.java#provinceTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:23 |  |
 | RelationTest.java#provinceTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:42 |  |
 | RelationTest.java#provinceTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:57 |  |
 | RelationTest.java#provinceTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:31 |  |
-| RelationTest.java#provinceTest61 | 待做 |  |  |
+| RelationTest.java#provinceTest61 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:226 |  |
 | RelationTest.java#provinceTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:31 |  |
 | mysql8/M8CommentTest.java#testPartitionBy | 待做 |  | `SELECT 'id','parent_id','content','username','time' FROM 'comment'` |
 | mysql8/M8IncludeLimitTest.java#testIncludeLimit | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8IncludeLimitTest.cs:24 |  |

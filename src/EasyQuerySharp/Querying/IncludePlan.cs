@@ -40,8 +40,34 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     /// </summary>
     public IReadOnlyList<NavigationMetadata> Via { get; init; } = [];
 
+    /// <summary>经过的导航来自直达导航（<see cref="NavigationMetadata.DirectPath"/>）：中间表按 Java 直达导航的格式查（见 IncludeRunner）。</summary>
+    public bool DirectVia { get; init; }
+
     /// <summary>平铺带出（Java 的 @NavigateFlat：平铺值或经中间导航的路径）：父键列在投影里排在关联键之后。</summary>
-    public bool IsFlat => FlatPaths is not null || Via.Count > 0;
+    public bool IsFlat => FlatPaths is not null || (Via.Count > 0 && !DirectVia);
+
+    /// <summary>
+    /// 带出整个导航（Include / LoadIncludeAsync）的计划；直达导航展开成沿路径的各段导航，最后一段是带出的导航。
+    /// </summary>
+    public static IncludePlan ForNavigation(MetadataRegistry registry, NavigationMetadata navigation, Func<QueryState, QueryState>? configure)
+    {
+        if (navigation.DirectPath.Count == 0)
+            return new IncludePlan(navigation, navigation.Target.Type, null, [], navigation.IsCollection) { Configure = configure };
+        var chain = new List<NavigationMetadata>();
+        var entity = navigation.Self;
+        foreach (var name in navigation.DirectPath)
+        {
+            var step = registry.FindNavigation(entity, name) ?? throw new InvalidOperationException($"直达导航 {navigation} 的路径上 {entity.Type.Name}.{name} 不是导航属性");
+            chain.Add(step);
+            entity = step.Target;
+        }
+        return new IncludePlan(chain[^1], chain[^1].Target.Type, null, [], navigation.IsCollection)
+        {
+            Configure = configure,
+            Via = chain[..^1],
+            DirectVia = true,
+        };
+    }
 
     /// <summary>父对象上的关联列：经过中间导航时是第一段导航的自身列。</summary>
     public IReadOnlyList<ColumnMetadata> ParentColumns => Via.Count > 0 ? Via[0].SelfColumns : Navigation.SelfColumns;

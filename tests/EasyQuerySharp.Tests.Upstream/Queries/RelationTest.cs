@@ -221,4 +221,14 @@ public sealed class RelationTest(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertSql("SELECT LOWER(t1.`name`) FROM `school_student` t LEFT JOIN `school_class` t1 ON t1.`id` = t.`class_id` WHERE t.`name` LIKE ?");
         listen.AssertParams("%123%(String)");
     }
+
+    // 带出查询里连表过滤：城市连主题、按主题标题过滤后投影回城市
+    [Fact, Upstream("RelationTest.java#provinceTest61")]
+    public async Task ProvinceTest61()
+    {
+        var list = await Db.Query<Province>().WhereById("33")
+            .Include(p => p.Cities, cq => cq.LeftJoin<Topic>((x, y) => x.Code == y.Id).Where((c, t) => t.Title!.Contains("title")).Select((c, t) => c))
+            .ToListAsync(Ct);
+        Assert.Single(list);
+    }
 }

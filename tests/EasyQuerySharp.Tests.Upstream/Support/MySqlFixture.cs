@@ -20,7 +20,7 @@ public sealed class MySqlFixture : IAsyncLifetime
     private static readonly Type[] CodeFirstTables =
         [typeof(SubJoinUser), typeof(SubJoinBook), typeof(SubJoinAuthor), typeof(InterceptorEntity), typeof(Interceptor2Entity),
         typeof(OnRelationA), typeof(OnRelationB), typeof(OnRelationC), typeof(OnRelationD),
-        typeof(Direct1), typeof(Direct2), typeof(Direct3), typeof(Direct4), typeof(Direct5)];
+        typeof(Direct1), typeof(Direct2), typeof(Direct3), typeof(Direct4), typeof(Direct5), typeof(One1), typeof(One2)];
 
     private EasyDb? _db;
     private string? _skipReason;
@@ -168,6 +168,10 @@ public sealed class MySqlFixture : IAsyncLifetime
         await db.Insert(new[] { new Direct3 { C11 = "11", C12 = "12", C13 = "8", C14 = "9", C15 = "15" }, new Direct3 { C11 = "13", C12 = "14", C13 = "15", C14 = "16", C15 = "17" } }).ExecuteAsync();
         await db.Insert(new[] { new Direct4 { C16 = "20", C17 = "21", C18 = "22", C19 = "23", C20 = "15" }, new Direct4 { C16 = "29", C17 = "30", C18 = "32", C19 = "33", C20 = "35" } }).ExecuteAsync();
         await db.Insert(new[] { new Direct5 { C21 = "22", C22 = "20", C23 = "44", C24 = "55", C25 = "66" }, new Direct5 { C21 = "77", C22 = "88", C23 = "99", C24 = "00", C25 = "11" } }).ExecuteAsync();
+
+        // RelationNullValueTest 的 @Before：关联键都是空字符串
+        await db.Insert(new[] { new One1 { Id = "1", Oid = "", Oname = "one1" }, new One1 { Id = "11", Oid = "", Oname = "one11" } }).ExecuteAsync();
+        await db.Insert(new[] { new One2 { Id = "2", Oid = "", Oname = "one2" }, new One2 { Id = "22", Oid = "", Oname = "one22" } }).ExecuteAsync();
     }
 }
 

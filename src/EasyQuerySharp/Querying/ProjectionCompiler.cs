@@ -286,7 +286,7 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
         foreach (var spec in includes)
         {
             var nav = translator.FindNavigation(owner, spec.Member) ?? throw new NotSupportedException($"{owner.Entity.Type.Name}.{spec.Member} 不是导航属性");
-            var plan = new IncludePlan(nav, nav.Target.Type, null, [], nav.IsCollection) { Configure = spec.Configure };
+            var plan = IncludePlan.ForNavigation(translator.Context!.Metadata, nav, spec.Configure);
             _includes.Add((plan, owner));
             var property = owner.Entity.Type.GetProperty(spec.Member)!;
             var register = typeof(IncludePlan).GetMethod(nameof(IncludePlan.Register))!;

@@ -259,3 +259,20 @@ public class MyALLTYPE
 
     public string? IsValue { get; set; }
 }
+
+/// <summary>对应 Java：entity/TopicY（同表 t_topic，按主键一对一到 Topic）。</summary>
+[Table("t_topic")]
+public class TopicY
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public int? Stars { get; set; }
+
+    public string? Title { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+
+    [Navigate(RelationType.OneToOne, TargetProperties = [nameof(Entities.Topic.Id)])]
+    public Topic? Topic { get; set; }
+}

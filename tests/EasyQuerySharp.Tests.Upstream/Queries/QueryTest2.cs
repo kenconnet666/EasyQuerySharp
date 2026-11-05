@@ -389,4 +389,13 @@ public sealed class QueryTest2(MySqlFixture fixture) : MySqlTest(fixture)
             Db.Query<BlogEntity>().InnerJoin<Topic>((t, t1) => t.Id == t1.Id).SortBy(request)
                 .Select((t, t1) => new BlogEntity { Id = t.Id, Title = t.Title, Content = t.Content }).ToSql());
     }
+
+    // 只写目标属性的一对一（自身属性默认主键）：同表的 TopicY 按 id 带出 Topic
+    [Fact, Upstream("QueryTest2.java#query26")]
+    public async Task Query26()
+    {
+        var list = await Db.Query<TopicY>().Include(t => t.Topic).ToListAsync(Ct);
+        Assert.NotEmpty(list);
+        Assert.All(list, t => Assert.Equal(t.Id, t.Topic!.Id));
+    }
 }

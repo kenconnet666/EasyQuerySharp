@@ -113,4 +113,42 @@ public sealed class DirectRelationTest(MySqlFixture fixture) : MySqlTest(fixture
             else Assert.Null(dto.Direct3);
         }
     }
+
+    private const string Direct1All = "SELECT `c1`,`c2`,`c3`,`c4`,`c5` FROM `direct1`";
+
+    // 直达导航的带出：沿路径逐段查中间表（本段目标列在前、下一段自身列在后，不写别名），最后按目标键查 Direct4
+    [Fact, Upstream("DirectRelationTest.java#test")]
+    public async Task Test()
+    {
+        using var listen = SqlCapture.Listen();
+        var list = await Db.Query<Direct1>().Include(d => d.Direct4).ToListAsync(Ct);
+        listen.AssertSql(0, Direct1All);
+        listen.AssertSql(1, "SELECT `c7`,`c8`,`c9` FROM `direct2` WHERE `c7` IN (?,?)");
+        listen.AssertParams(1, "1(String),2(String)");
+        listen.AssertSql(2, "SELECT `c13`,`c14`,`c15` FROM `direct3` WHERE ((`c13` =? AND `c14` =?))");
+        listen.AssertParams(2, "8(String),9(String)");
+        listen.AssertSql(3, "SELECT t.`c16`,t.`c17`,t.`c18`,t.`c19`,t.`c20` FROM `direct4` t WHERE t.`c20` IN (?)");
+        listen.AssertParams(3, "15(String)");
+        Assert.NotNull(list.Single(d => d.C1 == "1").Direct4);
+        Assert.Null(list.Single(d => d.C1 == "2").Direct4);
+    }
+
+    // 再多走一段：Direct4 → Direct5 是复合键
+    [Fact, Upstream("DirectRelationTest.java#test2")]
+    public async Task Test2()
+    {
+        using var listen = SqlCapture.Listen();
+        var list = await Db.Query<Direct1>().Include(d => d.Direct5).ToListAsync(Ct);
+        listen.AssertSql(0, Direct1All);
+        listen.AssertSql(1, "SELECT `c7`,`c8`,`c9` FROM `direct2` WHERE `c7` IN (?,?)");
+        listen.AssertParams(1, "1(String),2(String)");
+        listen.AssertSql(2, "SELECT `c13`,`c14`,`c15` FROM `direct3` WHERE ((`c13` =? AND `c14` =?))");
+        listen.AssertParams(2, "8(String),9(String)");
+        listen.AssertSql(3, "SELECT `c20`,`c16`,`c18` FROM `direct4` WHERE `c20` IN (?)");
+        listen.AssertParams(3, "15(String)");
+        listen.AssertSql(4, "SELECT t.`c21`,t.`c22`,t.`c23`,t.`c24`,t.`c25` FROM `direct5` t WHERE ((t.`c22` =? AND t.`c21` =?))");
+        listen.AssertParams(4, "20(String),22(String)");
+        Assert.NotNull(list.Single(d => d.C1 == "1").Direct5);
+        Assert.Null(list.Single(d => d.C1 == "2").Direct5);
+    }
 }
