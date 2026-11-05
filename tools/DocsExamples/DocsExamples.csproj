@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+      文档卡片：docs/examples 下标了 [Example] 的方法。每张卡片在 SQLite 上实跑（记下结果），再在其余每种方言上
+      用回放的结果跑一遍，记下这个方言发出的 SQL，写成 docs/sql-snapshots 下的快照；加 check 参数时只校验不写入（CI 用）。
+      见 docs/design/docs-site.md。
+    -->
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <IsPackable>false</IsPackable>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\EasyQuerySharp\EasyQuerySharp.csproj" />
+        <ProjectReference Include="..\..\samples\EasyQuerySharp.Samples\EasyQuerySharp.Samples.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Data.Sqlite" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="..\..\docs\examples\*.cs" Link="Examples\%(Filename)%(Extension)" />
+    </ItemGroup>
+
+</Project>

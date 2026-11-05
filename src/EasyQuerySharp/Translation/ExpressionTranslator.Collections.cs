@@ -15,7 +15,8 @@ internal sealed partial class ExpressionTranslator
     {
         result = null!;
         Expression source, item;
-        if (call.Object is null && call.Arguments.Count == 2)
+        // 元素类型没实现 IEquatable 时（如枚举）绑定到带比较器的重载，比较器是默认的 null，按两个参数处理
+        if (call.Object is null && (call.Arguments.Count == 2 || call.Arguments is [_, _, ConstantExpression { Value: null }]))
         {
             source = UnwrapSpan(call.Arguments[0]);
             item = call.Arguments[1];

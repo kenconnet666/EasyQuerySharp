@@ -79,7 +79,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
   - 移植 Java 的实体模型（先移 `BaseTest` 用到的那些）；
   - `MySqlFixture`：建表并写入种子数据，code-first 做好之前先执行 Java 的 SQL 脚本；
   - 对照表的初始状态是 2404 条全部待做。
-- [ ] 0.10 示例模型 `samples/EasyQuerySharp.Samples`：TS 文档站的 17 张表和种子数据原样移植。
+- [x] 0.10 示例模型 `samples/EasyQuerySharp.Samples`：TS 文档站的表与种子数据（15 张；门店的值对象、支付的多态随 5.4 / 9.1 补上）。
 
 ## M1 内核与单表
 
@@ -116,7 +116,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
   - 写入一律以 `ExecuteAsync` 结束。
 - [x] 1.9 原生 SQL：`db.Sql<T>($"...")`（插值处理器，值自动参数化）和 `Sql.Raw<T>`。
 - [x] 1.10 `ToPageAsync`。
-- [ ] 1.11 `tools/DocsExamples` 首版：在 SQLite 上实跑、回放驱动、SQL 快照、`--check`；首批页面是"查询 / 基础""写入"。
+- [x] 1.11 `tools/DocsExamples` 首版：卡片写在 `docs/examples`，在 SQLite 上实跑、录下结果后在其余五种方言上回放，写出 `docs/sql-snapshots`；`--check` 进 CI。首批"查询 / 基础""写入" 23 张。站点用的 examples.json 与代码截取随文档站（M8）做。
 - [x] 1.12 L3 `LiveSuite` 基类和 `LiveSuiteOptions`，首批用例组：queries、writes、native SQL（每个数据库一个薄子类，每个用例 code-first 重建表与种子；已在 SQLite、MySQL 8.4、PG 17 全部通过）。
 
 ## M2 表达式与函数

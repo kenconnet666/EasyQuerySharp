@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+      示例模型：一个技术社区（公司、部门、用户、帖子、评论、商店、订单…），表、类名、种子数据与 TS 版文档站一致，
+      两边的同一张卡片可以直接对比 SQL 与结果。文档卡片（tools/DocsExamples）、README、入门教程都用它。
+    -->
+
+    <PropertyGroup>
+        <IsPackable>false</IsPackable>
+        <!-- 示例模型的属性一看就懂，不要求逐个写文档注释 -->
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\EasyQuerySharp\EasyQuerySharp.csproj" />
+    </ItemGroup>
+
+</Project>
