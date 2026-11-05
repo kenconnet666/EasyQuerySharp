@@ -3,20 +3,20 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1271、偏离 145、不适用 34、骨架 15、待做 939。
+合计：已移植 1289、偏离 146、不适用 34、骨架 15、待做 920。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 287 | 30 | 13 | 0 | 105 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 291 | 30 | 13 | 0 | 101 |
 | 分页结果 | `query.page` | M1 | 22 | 17 | 2 | 0 | 0 | 3 |
 | 原生 SQL | `sql.native` | M1 | 50 | 31 | 6 | 1 | 0 | 12 |
 | 删除 | `write.delete` | M1 | 25 | 9 | 1 | 2 | 0 | 13 |
 | 插入 | `write.insert` | M1 | 50 | 33 | 0 | 0 | 1 | 16 |
 | 更新 | `write.update` | M1 | 59 | 26 | 4 | 0 | 0 | 29 |
-| CASE WHEN | `expr.case` | M2 | 27 | 17 | 6 | 0 | 0 | 4 |
+| CASE WHEN | `expr.case` | M2 | 27 | 19 | 6 | 0 | 0 | 2 |
 | 日期函数 | `func.date` | M2 | 101 | 67 | 13 | 7 | 0 | 14 |
 | 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 47 | 3 | 0 | 0 | 9 |
 | 字符串聚合（joining） | `func.joining` | M2 | 29 | 15 | 3 | 0 | 5 | 6 |
@@ -34,10 +34,10 @@
 | union / union all | `query.union` | M3 | 18 | 13 | 4 | 0 | 1 | 0 |
 | 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 2 | 0 | 0 | 1 | 33 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
-| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 36 | 1 | 3 | 0 | 16 |
+| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 36 | 2 | 3 | 0 | 15 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 59 | 1 | 2 | 2 | 3 |
 | include 带出导航 | `nav.include` | M4 | 37 | 13 | 0 | 0 | 0 | 24 |
-| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 106 | 2 | 1 | 0 | 33 |
+| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 118 | 2 | 1 | 0 | 21 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 0 | 0 | 0 | 0 | 25 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
 | 列加密 | `column.encryption` | M5 | 8 | 7 | 0 | 0 | 0 | 1 |
@@ -440,10 +440,10 @@
 | RelationTest.java#testSub1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:199 | `SELECT t1.'name' FROM 'school_student' t LEFT JOIN 'school_class' t1 ON t1.'id' = t.'class_id' WHERE…` |
 | RelationTest.java#testSub2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:207 | `SELECT t2.'id',t2.'class_id',t2.'name' FROM 'school_student' t LEFT JOIN 'school_student_address' t1…` |
 | SkipTest.java#testEasyQueryConcurrentException | 待做 |  |  |
-| SubJoinTest.java#testSubJoinSumBigDecimal | 待做 |  | `SELECT IFNULL((SELECT SUM(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id…` |
-| SubJoinTest.java#testSubJoinSumBigDecimal2 | 待做 |  | `SELECT IFNULL((SELECT SUM(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id…` |
-| SubJoinTest.java#testSubJoinSumBigDecimalDistinct | 待做 |  | `SELECT IFNULL((SELECT SUM(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
-| SubJoinTest.java#testSubJoinSumBigDecimalDistinct2 | 待做 |  | `SELECT IFNULL((SELECT SUM(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
+| SubJoinTest.java#testSubJoinSumBigDecimal | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:34 | `SELECT IFNULL((SELECT SUM(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id…` |
+| SubJoinTest.java#testSubJoinSumBigDecimal2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:34 | `SELECT IFNULL((SELECT SUM(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id…` |
+| SubJoinTest.java#testSubJoinSumBigDecimalDistinct | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:37 | `SELECT IFNULL((SELECT SUM(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
+| SubJoinTest.java#testSubJoinSumBigDecimalDistinct2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:37 | `SELECT IFNULL((SELECT SUM(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
 | UpdateTest2.java#test11 | 待做 |  | `SELECT t."id",t."abc" AS "title" FROM "t_topic" t WHERE t."abc" = ?` |
 | doc/DocTest.java#testDoc3x | 待做 |  |  |
 | doc/DocTest1.java#test1 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
@@ -772,8 +772,8 @@
 | QueryTest25.java#testOrderCaseWhen | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:10 |  |
 | QueryTest3.java#propertyCaseWhen | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:187 | `SELECT (CASE WHEN t.'title' = ? THEN ? WHEN t.'title' = ? THEN ? ELSE ? END) AS 'title',t.'id' FROM …` |
 | QueryTest3.java#testCaseWhen | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:175 | `SELECT (CASE WHEN t.'title' = ? AND t.'stars' >= ? THEN ? WHEN t.'title' = ? THEN ? WHEN t.'title' =…` |
-| SubJoinTest.java#testSubJoinCaseWhen1_1 | 待做 |  | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
-| SubJoinTest.java#testSubJoinCaseWhen2 | 待做 |  | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
+| SubJoinTest.java#testSubJoinCaseWhen1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:53 | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
+| SubJoinTest.java#testSubJoinCaseWhen2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:53 | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
 | mysql8/MySQL8Test2.java#abc | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:129 |  |
 | pgsql/MathQueryTest.java#testPropertyMath | 待做 |  | `SELECT t."test_value" AS "test_value",ABS(t."test_value") AS "test_abs",SIGN(t."test_value") AS "tes…` |
 | pgsql/QueryTest19.java#testItem | 待做 |  |  |
@@ -1555,7 +1555,7 @@
 | QueryTest25.java#xxx22 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:150：用 Hikari 连本机 3306、替换多个内部服务另建客户端，属于 Java 的启动配置 |  |
 | QueryTest26.java#includeFlat | 待做 |  |  |
 | QueryTestRelationTest.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTestRelationTest.cs:13 | `SELECT t.'id',t.'com_id',t.'user_id',t.'gw' FROM 'my_com_user' t LEFT JOIN 'my_company_info' t1 ON t…` |
-| SubJoinTest.java#testSubJoinCaseWhen1 | 待做 |  | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
+| SubJoinTest.java#testSubJoinCaseWhen1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:53：Java 的 flatElement 在 C# 里写成 Any | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
 | mysql8/CTETest.java#cteTest4 | 待做 |  | `WITH 'm8_user_temp' AS (SELECT t.'id',t.'name' FROM 'm8_user' t WHERE t.'age' IS NULL) SELECT t2.'id…` |
 | mysql8/CTETest.java#cteTest6 | 待做 |  | `WITH 'm8_user_temp2' AS (SELECT t.'id',t.'name',t.'age',(ROW_NUMBER() OVER (PARTITION BY t.'age' ORD…` |
 | mysql8/M8BankTest.java#test11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.GroupJoinWindows.cs:9 | `SELECT t.'name' AS 'value1',t4.'__joining3__' AS 'value2' FROM 't_sys_user' t LEFT JOIN (SELECT t3.'…` |
@@ -1808,18 +1808,18 @@
 | RelationTest.java#schoolTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:158 | `SELECT t.'id',t.'name' FROM 'school_class' t WHERE (SELECT COUNT(*) FROM 'school_student' t1 WHERE t…` |
 | RelationTest.java#schoolTest8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:168 | `SELECT t.'id',t.'name' FROM 'school_class' t WHERE NOT (EXISTS(SELECT 1 FROM 'school_student' t1 WHE…` |
 | RelationTest.java#schoolTest8_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.cs:180 | `SELECT t.'id',t.'name' FROM 'school_class' t WHERE EXISTS(SELECT 1 FROM 'school_student' t1 WHERE t1…` |
-| SubJoinTest.java#testSubJoinAvg | 待做 |  | `SELECT IFNULL((SELECT AVG(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id…` |
-| SubJoinTest.java#testSubJoinAvg2 | 待做 |  | `SELECT IFNULL((SELECT AVG(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id…` |
-| SubJoinTest.java#testSubJoinAvgDistinct | 待做 |  | `SELECT IFNULL((SELECT AVG(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
-| SubJoinTest.java#testSubJoinAvgDistinct2 | 待做 |  | `SELECT IFNULL((SELECT AVG(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
-| SubJoinTest.java#testSubJoinMax | 待做 |  | `SELECT (SELECT MAX(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id' = t1.…` |
-| SubJoinTest.java#testSubJoinMax2 | 待做 |  | `SELECT (SELECT MAX(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id' = t1.…` |
-| SubJoinTest.java#testSubJoinMin | 待做 |  | `SELECT (SELECT MIN(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id' = t1.…` |
-| SubJoinTest.java#testSubJoinMin2 | 待做 |  | `SELECT (SELECT MIN(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id' = t1.…` |
-| SubJoinTest.java#testSubJoinSum | 待做 |  | `SELECT IFNULL((SELECT SUM(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id…` |
-| SubJoinTest.java#testSubJoinSum2 | 待做 |  | `SELECT IFNULL((SELECT SUM(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id…` |
-| SubJoinTest.java#testSubJoinSumDistinct | 待做 |  | `SELECT IFNULL((SELECT SUM(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
-| SubJoinTest.java#testSubJoinSumDistinct2 | 待做 |  | `SELECT IFNULL((SELECT SUM(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
+| SubJoinTest.java#testSubJoinAvg | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:40 | `SELECT IFNULL((SELECT AVG(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id…` |
+| SubJoinTest.java#testSubJoinAvg2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:40 | `SELECT IFNULL((SELECT AVG(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id…` |
+| SubJoinTest.java#testSubJoinAvgDistinct | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:43 | `SELECT IFNULL((SELECT AVG(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
+| SubJoinTest.java#testSubJoinAvgDistinct2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:43 | `SELECT IFNULL((SELECT AVG(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
+| SubJoinTest.java#testSubJoinMax | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:46 | `SELECT (SELECT MAX(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id' = t1.…` |
+| SubJoinTest.java#testSubJoinMax2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:46 | `SELECT (SELECT MAX(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id' = t1.…` |
+| SubJoinTest.java#testSubJoinMin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:49 | `SELECT (SELECT MIN(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id' = t1.…` |
+| SubJoinTest.java#testSubJoinMin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:49 | `SELECT (SELECT MIN(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id' = t1.…` |
+| SubJoinTest.java#testSubJoinSum | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:28 | `SELECT IFNULL((SELECT SUM(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id…` |
+| SubJoinTest.java#testSubJoinSum2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:28 | `SELECT IFNULL((SELECT SUM(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id…` |
+| SubJoinTest.java#testSubJoinSumDistinct | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:31 | `SELECT IFNULL((SELECT SUM(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
+| SubJoinTest.java#testSubJoinSumDistinct2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:31 | `SELECT IFNULL((SELECT SUM(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
 | mysql8/M8BankTest.java#fromSubQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:136 | `SELECT t2.'vo1' AS 'vo1',t2.'vo2' AS 'vo2',t2.'vo3' AS 'vo3',t2.'bank_card_count' AS 'bank_card_coun…` |
 | mysql8/M8BankTest.java#testQueryBankAndCardExplicitCountTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:36 | `SELECT t.'id',t.'name',t.'create_time',(SELECT COUNT(t1.'id') FROM 't_bank_card' t1 WHERE t1.'bank_i…` |
 | mysql8/M8BankTest.java#testQueryBankAndCardExplicitCountTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:68 | `SELECT t.'id',t.'name',t.'create_time',(SELECT COUNT(t1.'id') FROM 't_bank_card' t1 WHERE t1.'bank_i…` |

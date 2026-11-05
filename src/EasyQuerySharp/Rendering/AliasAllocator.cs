@@ -7,7 +7,7 @@ namespace EasyQuerySharp.Rendering;
 /// <list type="bullet">
 /// <item>整条语句（含子查询）只有一个表来源、且没有指定别名时，不加别名；</item>
 /// <item>否则按遍历顺序编号为 <c>t</c>、<c>t1</c>、<c>t2</c>…，用户指定的别名优先但仍占用编号；</item>
-/// <item>遍历顺序：FROM、各 JOIN（派生表先编号内部的表，再编号自己），然后 WHERE、SELECT、GROUP BY、HAVING、ORDER BY 里的子查询。</item>
+/// <item>遍历顺序：FROM、各 JOIN（派生表先编号内部的表，再编号自己），然后 WHERE、GROUP BY、HAVING、ORDER BY、SELECT 里的子查询（Java 按调用顺序建表，投影总在最后）。</item>
 /// </list>
 /// </summary>
 internal static class AliasAllocator
@@ -61,10 +61,10 @@ internal static class AliasAllocator
         if (owner is not null && !tables.Contains(owner)) AddOwner(owner, tables);
         foreach (var e in query.Where) CollectExpr(e, tables);
         foreach (var join in afterWhere) CollectJoin(join, tables);
-        foreach (var c in query.Columns) CollectExpr(c.Expr, tables);
         foreach (var e in query.GroupBy) CollectExpr(e, tables);
         foreach (var e in query.Having) CollectExpr(e, tables);
         foreach (var o in query.OrderBy) CollectExpr(o.Expr, tables);
+        foreach (var c in query.Columns) CollectExpr(c.Expr, tables);
     }
 
     private static void CollectJoin(JoinClause join, List<TableSource> tables)

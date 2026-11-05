@@ -16,6 +16,9 @@ public sealed class MySqlFixture : IAsyncLifetime
 
     private static readonly string[] Scripts = ["mysql-init-sqk-easy.sql", "relation.sql", "doc.sql"];
 
+    // 不在建表脚本里、由 Java 用例在 @Before 里 syncTable 创建的表
+    private static readonly Type[] CodeFirstTables = [typeof(SubJoinUser), typeof(SubJoinBook), typeof(SubJoinAuthor)];
+
     private EasyDb? _db;
     private string? _skipReason;
 
@@ -67,6 +70,7 @@ public sealed class MySqlFixture : IAsyncLifetime
                 .AddInterceptor(new TopicUpdateInterceptor())
                 .AddLogicDeleteStrategy(nameof(MyLogicDelStrategy), new MyLogicDelStrategy());
         });
+        await _db.CodeFirst.CreateTablesAsync(CodeFirstTables);
         await SeedAsync(_db);
     }
 
