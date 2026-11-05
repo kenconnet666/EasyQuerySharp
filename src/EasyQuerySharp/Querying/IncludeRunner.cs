@@ -42,6 +42,10 @@ internal static class IncludeRunner
             // 平铺带出（Java 的 @NavigateFlat）单表不写别名；其余带出的子查询在 Java 里总带别名 t
             var flat = plan.FlatPaths is not null;
             var state = (plan.Configure?.Invoke(baseState) ?? baseState) with { ForceAlias = !flat };
+            // 带出的子数据没写排序、条数时按导航声明的（Java 的 orderByProps、limit）
+            if (state.OrderBys.IsEmpty && nav.DefaultOrder.Count > 0)
+                state = state with { OrderBys = [.. nav.DefaultOrder.Select(o => new OrderSpec(o.Key, o.Descending))] };
+            if (state.Limit is null && nav.Limit is { } navLimit) state = state with { Limit = navLimit };
             if (plan.ChildSelector is not null) state = state with { Selector = plan.ChildSelector, ImplicitSelector = flat };
 
             var childrenByKey = new Dictionary<CompositeKey, List<object?>>();
@@ -93,10 +97,10 @@ internal static class IncludeRunner
         var ranged = Ranged(whole.Sql, whole.RelationOrdinals[0], state.Offset ?? 0, state.Limit);
         var target = nav.Target;
         var columns = target.Columns.Where(c => c.AutoSelect).ToDictionary(c => c.PropertyName, c => c.Name, StringComparer.Ordinal);
-        // 外层从匿名的派生表取列，Java 都写 AS
-        var binding = new DerivedBinding(ranged, columns, target, columns.Keys.ToHashSet(StringComparer.Ordinal));
+        // 外层从匿名的派生表取列：Java 都写 AS，平铺带出（单表不写别名的风格）不写
+        var binding = new DerivedBinding(ranged, columns, target, state.ForceAlias ? columns.Keys.ToHashSet(StringComparer.Ordinal) : null);
         var outer = QueryCompiler.Compile<object?>(
-            new QueryState(db, [new BoundSource(binding, target.Type)]) { Selector = state.Selector, ForceAlias = true, Interceptors = context.Interceptors },
+            new QueryState(db, [new BoundSource(binding, target.Type)]) { Selector = state.Selector, ForceAlias = state.ForceAlias, ImplicitSelector = state.ImplicitSelector, Interceptors = context.Interceptors },
             relationKeys: nav.TargetColumns);
         return (outer, outer.Sql);
     }

@@ -618,3 +618,22 @@ public class MyTask2Ext
 
     public string? Name { get; set; }
 }
+
+/// <summary>对应 Java：mysql8/entity/M8Comment（表 comment，子评论按 parent_id 自关联）。</summary>
+[Table("comment")]
+public class M8Comment
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? ParentId { get; set; }
+
+    public string? Content { get; set; }
+
+    public string? Username { get; set; }
+
+    public DateTime? Time { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(ParentId)])]
+    public List<M8Comment>? SubComments { get; set; }
+}

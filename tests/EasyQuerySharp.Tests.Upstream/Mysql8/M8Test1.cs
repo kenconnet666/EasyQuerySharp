@@ -62,4 +62,10 @@ public sealed class M8Test1(Mysql8Fixture fixture) : Mysql8Test(fixture)
         listen.AssertSql("SELECT t1.`uid` AS `uid`,t1.`count` AS `count` FROM (SELECT t.`uid` AS `uid`,COUNT(*) AS `count` FROM `t_bank_card` t GROUP BY t.`uid`) t1 LEFT JOIN `t_sys_user` t2 ON t2.`id` = t1.`uid` WHERE t2.`name` LIKE CONCAT('%',?,'%')");
         listen.AssertParams("123(String)");
     }
+
+    // 本表键是字符串、目标键是整数：父键转成目标列类型时报错，不会悄悄查不到
+    [Fact, Upstream("mysql8/M8Test1.java#testSelfTargetTypeDiff",
+        Deviation = "Java 的异常来自 MySQL 驱动（Cannot determine value type from string 'u1'）；C# 在把父键转成目标列的类型时就抛出 FormatException")]
+    public async Task TestSelfTargetTypeDiff() =>
+        await Assert.ThrowsAnyAsync<FormatException>(() => Db.Query<SysUser>().Include(u => u.BankCardIntList).ToListAsync(Ct));
 }

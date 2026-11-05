@@ -1,3 +1,4 @@
+using EasyQuerySharp.Metadata;
 using EasyQuerySharp.Filtering;
 
 namespace EasyQuerySharp.Tests.Upstream.Mysql8;
@@ -365,5 +366,51 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
         using var listen = SqlCapture.Listen();
         await Db.Query<SysBankCard>().CrossJoin<SysBankCard>((c1, c2) => c1.Id == c2.Id).ToListAsync(Ct);
         listen.AssertSql("SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time` FROM `t_bank_card` t CROSS JOIN `t_bank_card` t1 ON t.`id` = t1.`id`");
+    }
+
+    private const string FirstCardRanged = " FROM (SELECT t1.`id` AS `id`,t1.`uid` AS `uid`,t1.`code` AS `code`,t1.`type` AS `type`,t1.`bank_id` AS `bank_id`,t1.`open_time` AS `open_time` FROM (SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time`,(ROW_NUMBER() OVER (PARTITION BY t.`uid` ORDER BY t.`open_time` ASC)) AS `__row__` FROM `t_bank_card` t WHERE t.`uid` IN (?,?)) t1 WHERE t1.`__row__` >= ? AND t1.`__row__` <= ?) t2";
+
+    // 一对一带 Limit 的导航：每个用户按开户时间取第一张卡
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testQueryFirstLimit1")]
+    public async Task TestQueryFirstLimit1()
+    {
+        using var listen = SqlCapture.Listen();
+        var list = await Db.Query<SysUser>().Include(s => s.FirstCard).ToListAsync(Ct);
+        listen.AssertSql(1, "SELECT t2.`id` AS `id`,t2.`uid` AS `uid`,t2.`code` AS `code`,t2.`type` AS `type`,t2.`bank_id` AS `bank_id`,t2.`open_time` AS `open_time`" + FirstCardRanged);
+        listen.AssertParams(1, "u1(String),u2(String),1(Long),1(Long)");
+        Assert.All(list.Where(u => u.FirstCard is not null), u => Assert.Equal(u.Id, u.FirstCard!.Uid));
+    }
+
+    /// <summary>对应 Java：mysql8/vo/SysUserFirstCardDTO（平铺第一张卡的卡号、类型、开户时间）。</summary>
+    public sealed class SysUserFirstCardDTO
+    {
+        public string? Id { get; set; }
+
+        public string? Name { get; set; }
+
+        public string? Phone { get; set; }
+
+        public int? Age { get; set; }
+
+        public DateTime? CreateTime { get; set; }
+
+        [MapPath("FirstCard.Code")]
+        public string? CardCode { get; set; }
+
+        [MapPath("FirstCard.Type")]
+        public string? Type { get; set; }
+
+        [MapPath("FirstCard.OpenTime")]
+        public DateTime? OpenTime { get; set; }
+    }
+
+    // 平铺同样按导航的 Limit 取段，外层只取平铺的列（不写别名）
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testQueryFirstLimit2")]
+    public async Task TestQueryFirstLimit2()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysUser>().SelectAutoInclude<SysUserFirstCardDTO>().ToListAsync(Ct);
+        listen.AssertSql(1, "SELECT t2.`code`,t2.`type`,t2.`open_time`,t2.`uid` AS `__relation__uid`" + FirstCardRanged);
+        listen.AssertParams(1, "u1(String),u2(String),1(Long),1(Long)");
     }
 }

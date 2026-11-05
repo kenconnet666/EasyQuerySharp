@@ -24,7 +24,7 @@ public sealed class Mysql8Fixture : IAsyncLifetime
         typeof(M8User), typeof(M8Role), typeof(M8UserRole), typeof(M8User2), typeof(M8Role2), typeof(M8UserRole2),
         typeof(M8UserBook), typeof(M8RoleMenu), typeof(M8Menu), typeof(M8Province), typeof(M8City), typeof(M8Area),
         typeof(M8AreaBuild), typeof(M8AreaBuildLicense), typeof(M8Parent), typeof(M8Child), typeof(M8ParentChild), typeof(BatchInsert),
-        typeof(TableNoKey), typeof(OffsetChunkTest), typeof(M8UserTest), typeof(Comment), typeof(M8SaveA), typeof(MyConfigLogicDelete), typeof(M8IncludeLimitTopic), typeof(M8IncludeLimitChild), typeof(TreeA), typeof(TreeB),
+        typeof(TableNoKey), typeof(OffsetChunkTest), typeof(M8UserTest), typeof(Comment), typeof(M8SaveA), typeof(MyConfigLogicDelete), typeof(M8IncludeLimitTopic), typeof(M8IncludeLimitChild), typeof(TreeA), typeof(TreeB), typeof(M8Comment),
     ];
 
     private EasyDb? _db;
@@ -135,6 +135,25 @@ public sealed class Mysql8Fixture : IAsyncLifetime
 
         // 与 Java 相同的 1000 行按偏移分批读取的数据
         await db.Insert(Enumerable.Range(0, 1000).Select(i => new OffsetChunkTest { Id = i.ToString(System.Globalization.CultureInfo.InvariantCulture), Seq = i }).ToList()).ExecuteAsync();
+
+        // Java BaseTest 的评论：一条主评论和四条子评论
+        await db.Insert(new[]
+        {
+            new M8Comment { Id = "1", Content = "我是主评论", Username = "小明", Time = new DateTime(2020, 1, 1, 0, 0, 0) },
+            new M8Comment { Id = "2", ParentId = "1", Content = "我是子评论", Username = "小明1", Time = new DateTime(2020, 1, 1, 1, 0, 0) },
+            new M8Comment { Id = "3", ParentId = "1", Content = "我是子评论", Username = "小明2", Time = new DateTime(2020, 1, 1, 2, 0, 0) },
+            new M8Comment { Id = "4", ParentId = "1", Content = "我是子评论", Username = "小明4", Time = new DateTime(2020, 1, 1, 3, 0, 0) },
+            new M8Comment { Id = "5", ParentId = "1", Content = "我是子评论", Username = "小明5", Time = new DateTime(2020, 1, 1, 7, 0, 0) },
+        }).ExecuteAsync();
+
+        // Java BaseTest 的父子表（300 × 300 缩成 3 × 3，子项的 order 打乱写入）：一对多按 parent_id，多对多经中间表
+        for (var i = 0; i < 3; i++)
+        {
+            var parent = $"p{i}";
+            await db.Insert(new M8Parent { Id = parent, Name = "name" + i, Order = i }).ExecuteAsync();
+            await db.Insert(new[] { 2, 0, 1 }.Select(j => new M8Child { Id = $"{parent}c{j}", ParentId = parent, Name = "child" + j, Order = j }).ToList()).ExecuteAsync();
+            await db.Insert(new[] { 1, 2, 0 }.Select(j => new M8ParentChild { Id = $"{parent}pc{j}", ParentId = parent, ChildId = $"{parent}c{j}" }).ToList()).ExecuteAsync();
+        }
     }
 }
 

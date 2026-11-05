@@ -98,4 +98,10 @@ public sealed class NavigateAttribute(RelationType relation) : Attribute
 
     /// <summary>取第几个元素、取一段行而链上没写排序时组内按什么排，默认按主键。</summary>
     public PartitionOrder PartitionOrder { get; init; }
+
+    /// <summary>
+    /// 带出时每个父对象最多取几条（对应 Java 的 limit；0 为不限），按 <see cref="OrderBy"/> 排序后取。
+    /// 常用于一对一取"第一张卡"：<c>[Navigate(RelationType.OneToOne, TargetProperties = [nameof(Card.Uid)], OrderBy = nameof(Card.OpenTime), Limit = 1)]</c>。
+    /// </summary>
+    public int Limit { get; init; }
 }

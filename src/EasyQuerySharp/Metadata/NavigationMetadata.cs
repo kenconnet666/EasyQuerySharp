@@ -26,8 +26,12 @@ public sealed class NavigationMetadata
         DirectPath = attribute.DirectMapping;
         GroupJoin = attribute.GroupJoin;
         PartitionOrder = attribute.PartitionOrder;
+        Limit = attribute.Limit > 0 ? attribute.Limit : null;
         DefaultOrder = ParseOrder(attribute.OrderBy, target.Type);
     }
+
+    /// <summary>带出时每个父对象最多取几条（<see cref="NavigateAttribute.Limit"/>）；不限时为 null。</summary>
+    public int? Limit { get; }
 
     /// <summary>取元素、取一段行而链上没写排序时组内按什么排。</summary>
     public PartitionOrder PartitionOrder { get; }

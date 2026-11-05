@@ -90,6 +90,15 @@ public class SysUser
     [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(SysBankCard.Uid)], PartitionOrder = PartitionOrder.None)]
     public List<SysBankCard>? BankCards { get; set; }
 
+    /// <summary>最早开户的那张卡（Java 的 firstCard：一对一、按开户时间排序取 1 条）。</summary>
+    [Navigate(RelationType.OneToOne, SelfProperties = [nameof(Id)], TargetProperties = [nameof(SysBankCard.Uid)], PartitionOrder = PartitionOrder.Navigation,
+        OrderBy = nameof(SysBankCard.OpenTime), Limit = 1)]
+    public SysBankCard? FirstCard { get; set; }
+
+    /// <summary>目标键类型与本表键类型不一致的导航（Java 的 bankCardIntList）。</summary>
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(SysBankCardInt.Uid)], PartitionOrder = PartitionOrder.None)]
+    public List<SysBankCardInt>? BankCardIntList { get; set; }
+
     /// <summary>默认合并成分组 JOIN 的银行卡（Java 的 subQueryToGroupJoin = true）。</summary>
     [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(SysBankCard.Uid)], GroupJoin = true)]
     public List<SysBankCard>? BankCards2 { get; set; }
@@ -120,4 +129,22 @@ public class SysUserBook
     public string? Uid { get; set; }
 
     public decimal? Price { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/bank/SysBankCardInt（同表 t_bank_card，uid 声明成整数，用来验证关联键类型不一致时报错）。</summary>
+[Table("t_bank_card")]
+public class SysBankCardInt
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public int? Uid { get; set; }
+
+    public string? Code { get; set; }
+
+    public string? Type { get; set; }
+
+    public string? BankId { get; set; }
+
+    public DateTime? OpenTime { get; set; }
 }
