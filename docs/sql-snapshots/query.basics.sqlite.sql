@@ -8,6 +8,10 @@ SELECT "id","name","age","company_id","department_id","manager_id","level","join
 SELECT "id","name","age","company_id","department_id","manager_id","level","joined_at" FROM "t_user" WHERE "id" = ?;
 -- params: [999]
 
+-- DynamicTable：无实体的表：按列名查询
+SELECT "name" AS "name","age" AS "age" FROM "t_user" WHERE "age" >= ? ORDER BY "age" ASC LIMIT 3;
+-- params: [30]
+
 -- CountAndAny：按条件计数与判断存在
 SELECT COUNT(*) FROM "t_user" WHERE "age" >= ?;
 -- params: [18]

@@ -96,4 +96,15 @@ public sealed class QueryTest16(MySqlFixture fixture) : MySqlTest(fixture)
     public void TestSubSum() =>
         AssertStatement(Db.Query<Company>().Where(com => com.Name!.Contains("xx公司")).LimitSelect(10, 20, com => new Draft<string?, int?>(com.Id, com.Users!.Sum(x => x.Age))).ToStatement(),
             "SELECT t1.`id` AS `value1`,IFNULL((SELECT SUM(t2.`age`) FROM `t_user` t2 WHERE t2.`company_id` = t1.`id`),0) AS `value2` FROM (SELECT t.`id`,t.`name`,t.`create_time` FROM `t_company` t WHERE t.`name` LIKE ? LIMIT 20 OFFSET 10) t1", "%xx公司%(String)");
+
+    // 无实体的表各自选列后 UNION / UNION ALL，外层包一层派生表
+    [Fact, Upstream("QueryTest16.java#test16", Deviation = "Java 的 Map 查询 select 之后每个 UNION 分支多占一个别名编号（t、t2，外层 t4）；C# 按实际出现的表连续编号")]
+    public void Test16()
+    {
+        Query<DynamicRow> Users(string table) => Db.Table(table).SelectColumns("a", "b");
+        Assert.Equal("SELECT t2.`a` AS `a`,t2.`b` AS `b` FROM ( (SELECT t.`a` AS `a`,t.`b` AS `b` FROM `t_user` t)  UNION  (SELECT t1.`a` AS `a`,t1.`b` AS `b` FROM `t_user1` t1) ) t2",
+            Users("t_user").Union(Users("t_user1")).ToSql());
+        Assert.Equal("SELECT t2.`a` AS `a`,t2.`b` AS `b` FROM ( (SELECT t.`a` AS `a`,t.`b` AS `b` FROM `t_user` t)  UNION ALL  (SELECT t1.`a` AS `a`,t1.`b` AS `b` FROM `t_user1` t1) ) t2",
+            Users("t_user").UnionAll(Users("t_user1")).ToSql());
+    }
 }

@@ -30,6 +30,14 @@ public static class QueryBasicsExamples
         }
     }
 
+    [Example("query/basics", "无实体的表：按列名查询")]
+    public static async Task<object> DynamicTable(EasyDb db)
+    {
+        var rows = await db.Table("t_user").Where(u => u.Get<int>("age") >= 30).OrderBy(u => u.Get<int>("age"))
+            .SelectColumns("name", "age").Take(3).ToListAsync();
+        return rows.Select(r => new { Name = r.Get<string>("name"), Age = r.Get<int>("age") }).ToList();
+    }
+
     [Example("query/basics", "按条件计数与判断存在")]
     public static async Task<object> CountAndAny(EasyDb db) => new
     {

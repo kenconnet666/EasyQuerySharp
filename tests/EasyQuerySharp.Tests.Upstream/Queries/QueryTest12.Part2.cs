@@ -151,4 +151,16 @@ public sealed partial class QueryTest12
     public void TestDoc24() =>
         Assert.Equal("DELETE FROM `relation_user` t WHERE " + TeachersAny.Replace("小学", "小明"),
             Db.Delete<RelationUser>().Where(user => user.Teachers!.Any(t => t.Name!.Contains("小明"))).ToSql());
+
+    // Java 用例没有断言：无实体的表 JOIN 另一个无实体查询（派生表），各自选列后再 JOIN 一次
+    [Fact, Upstream("QueryTest12.java#testDoc21")]
+    public void TestDoc21()
+    {
+        Query<DynamicRow> Select() => Db.Table("t_topic").LeftJoin(Db.Table("t_topic1"), (t1, t2) => t1.Get<object>("id") == t2.Get<object>("id"))
+            .Select((t1, t2) => new DynamicRow { { "id", t1.Get<object>("id") }, { "name", t1.Get<object>("name") }, { "age", t2.Get<object>("age") } });
+        var sql = Select().LeftJoin(Select(), (t1, t2) => t1.Get<object>("id") == t2.Get<object>("id"))
+            .Where((t1, _) => t1.Get<int>("name") == 2)
+            .Select((t1, t2) => new DynamicRow { { "name", t2.Get<object>("name") }, { "id", t1.Get<object>("id") } }).ToSql();
+        Assert.StartsWith("SELECT t", sql);
+    }
 }

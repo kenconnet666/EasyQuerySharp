@@ -130,7 +130,7 @@ internal static class QueryCompiler
             // 标量（如 QuerySql<int>("select 1")）取第一列，其余按列名映射
             if (ScalarTypes.IsScalar(typeof(T)))
                 return new CompiledQuery<T>(raw, r => Materialization.ValueReader.Read<T>(r, 0, null));
-            if (typeof(T) == typeof(Dictionary<string, object?>))
+            if (typeof(T) == typeof(Dictionary<string, object?>) || typeof(T) == typeof(DynamicRow))
                 return new CompiledQuery<T>(raw, r => (T)(object)Materialization.EntityMaterializer.ReadDictionary(r));
             var entity = state.Db.Metadata.Get<T>();
             return new CompiledQuery<T>(raw, r => Materialization.EntityMaterializer.ReadByName<T>(r, entity));
@@ -184,7 +184,8 @@ internal static class QueryCompiler
         frame.Query.Columns.AddRange(projection.Columns);
         // 分组合并的派生表要等整条查询（含投影）翻译完才知道全部聚合
         frame.Translator.Context?.CompleteGroupJoins();
-        frame.Query.ExplicitProjection = (state.Selector is not null && !state.ImplicitSelector) || state.ForceAlias;
+        // 无实体的表（db.Table）单表选列时不加别名（与 Java 的 Map 查询一致）；联表、UNION 时照常编号
+        frame.Query.ExplicitProjection = (state.Selector is not null && !state.ImplicitSelector && !state.IsDynamicTable) || state.ForceAlias;
         return (frame, projection);
     }
 

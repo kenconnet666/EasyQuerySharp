@@ -73,6 +73,8 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
 
     private EntityMetadata Build(Type type)
     {
+        // 无实体查询：表名由 db.Table(..) 给出，列在查询里按名字引用
+        if (type == typeof(DynamicRow)) return new EntityMetadata(type, "", null, null, []);
         var table = type.GetCustomAttribute<TableAttribute>();
         var columns = new List<ColumnMetadata>();
         LogicDeleteAttribute? logicDelete = null;

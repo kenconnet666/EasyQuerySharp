@@ -22,6 +22,11 @@ internal sealed partial class ExpressionTranslator
             return derived.MemberColumns.TryGetValue(key, out var mapColumn)
                 ? new ColumnExpr(derived.Table, mapColumn)
                 : throw Unsupported(call, $"Map 投影里没有键 {key}");
+        // 无实体的表上按名字引用列：row.Get<T>("列名")（Java 的 m.get("id") / eq("id", ..)）
+        if (method.DeclaringType == typeof(DynamicRow) && method.Name == nameof(DynamicRow.Get) && call.Object is { } row)
+            return BindingOf(row) is { } rowBinding && ClientEvaluator.Evaluate(call.Arguments[0]) is string column
+                ? new ColumnExpr(rowBinding.Table, column)
+                : throw Unsupported(call, "Get 的列名必须是能在客户端求值的字符串，且只能用在 db.Table(..) 的行上");
         if (TryTranslateCollection(call, out var collection)) return collection;
         if (TryTranslateCollectionStringJoin(call, out var joined)) return joined;
         if (method.DeclaringType == typeof(string) && method.Name is nameof(string.Contains) or nameof(string.StartsWith) or nameof(string.EndsWith) && call.Object is not null)

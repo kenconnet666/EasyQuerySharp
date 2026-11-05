@@ -237,12 +237,12 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         return With(State with { ResultSizeLimit = rows });
     }
 
-    /// <summary>执行并把每行读成 列名 → 值 的字典（对应 Java 的 toMaps）；列名忽略大小写，重复的列名抛出异常。</summary>
-    public Task<List<Dictionary<string, object?>>> ToDictionariesAsync(CancellationToken cancellationToken = default) =>
+    /// <summary>执行并把每行读成 列名 → 值 的 <see cref="DynamicRow"/>（对应 Java 的 toMaps）；列名忽略大小写，重复的列名抛出异常。</summary>
+    public Task<List<DynamicRow>> ToDictionariesAsync(CancellationToken cancellationToken = default) =>
         Db.Executor.QueryAsync(ToStatement(), Materialization.EntityMaterializer.ReadDictionary, cancellationToken);
 
-    /// <summary>第一行读成字典（追加 LIMIT 1）；没有时返回 null（对应 Java 的 toMap）。</summary>
-    public async Task<Dictionary<string, object?>?> FirstDictionaryOrDefaultAsync(CancellationToken cancellationToken = default)
+    /// <summary>第一行读成 <see cref="DynamicRow"/>（追加 LIMIT 1）；没有时返回 null（对应 Java 的 toMap）。</summary>
+    public async Task<DynamicRow?> FirstDictionaryOrDefaultAsync(CancellationToken cancellationToken = default)
     {
         var list = await With(State with { Limit = 1 }).ToDictionariesAsync(cancellationToken).ConfigureAwait(false);
         return list.Count == 0 ? null : list[0];

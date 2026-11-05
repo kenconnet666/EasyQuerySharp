@@ -241,6 +241,12 @@ internal sealed class ProjectionCompiler(ExpressionTranslator translator, NameCo
     // 整个实体：顶层时（u => u）记下实体元数据与成员列；嵌在 DTO 里时（new { u, … }）LEFT JOIN 没连上的行读成 null
     private Expression ShapeEntity(SourceBinding binding, Type type, bool topLevel, MemberInfo? member = null)
     {
+        // 无实体的表（db.Table(..)）：列未知，SELECT * 后按列名读成行（与 Java 的 Map 查询一致）
+        if (type == typeof(DynamicRow))
+        {
+            _columns.Add(new SelectColumn(new FragmentExpr("*", []), null));
+            return Expression.Call(ReadMapMethod, _reader);
+        }
         var start = _columns.Count;
         var (entity, columns) = binding switch
         {

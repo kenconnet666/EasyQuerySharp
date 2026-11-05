@@ -315,4 +315,38 @@ public sealed class QueryTest15(MySqlFixture fixture) : MySqlTest(fixture)
     public void Test12234()
     {
     }
+
+    // ---------- 无实体的表（Java 的 Map 查询）----------
+
+    [Fact, Upstream("QueryTest15.java#test1223")]
+    public void Test1223() =>
+        Assert.Equal("SELECT * FROM `123` WHERE `name` = ?", Db.Table("123").Where(x => x.Get<string>("name") == "123").ToSql());
+
+    // Java 的 join(INNER_JOIN, ..).asTable("table2")：InnerJoin<DynamicRow>(..).AsTable(..)，不投影时 SELECT *
+    [Fact, Upstream("QueryTest15.java#testxxx")]
+    public async Task Testxxx()
+    {
+        using var listen = SqlCapture.Listen();
+        await Assert.ThrowsAsync<EasyQueryException>(() =>
+            Db.Table("table1").InnerJoin<DynamicRow>((t1, t2) => t1.Get<string>("id1") == t2.Get<string>("id2")).AsTable("table2").ToListAsync(Ct));
+        listen.AssertSql("SELECT * FROM `table1` t INNER JOIN `table2` t1 ON t.`id1` = t1.`id2`");
+    }
+
+    // Java 用例没有断言：两个无实体查询各自选列后再 JOIN（派生表套派生表），投影里带 SUM(CASE WHEN ..)；再跑两条实体查询
+    [Fact, Upstream("QueryTest15.java#test8")]
+    public async Task Test8()
+    {
+        var language = Db.Table("language").SelectColumns("language_id", "name");
+        var query1 = Db.Table("film").LeftJoin(language, (f, l) => f.Get<object>("language_id") == l.Get<object>("language_id"))
+            .Select((f, l) => new DynamicRow { { "film_id", f.Get<object>("film_id") }, { "title", f.Get<object>("title") }, { "name", l.Get<object>("name") } });
+        var query2 = Db.Table("film").LeftJoin(language, (f, l) => f.Get<object>("film_id") == l.Get<object>("film_id"))
+            .Select((f, _) => new DynamicRow
+            {
+                { "film_id", f.Get<object>("film_id") }, { "text", f.Get<object>("text") },
+                { "sum", Sql.Sum(Sql.Raw<int?>("(CASE WHEN {0} = '1' THEN 1 ELSE NULL END)", f.Get<object>("id"))) },
+            });
+        Assert.NotEmpty(query1.LeftJoin(query2, (a, b) => a.Get<object>("film_id") == b.Get<object>("film_id")).ToSql());
+        await Db.Query<Topic>().Where(t => Sql.Raw<bool>("{0} in ({1})", t.Id, new[] { "1", "2" })).ToListAsync(Ct);
+        await Db.Query<Topic>().Select(t => Sql.Sum(t.Stars)).ToListAsync(Ct);
+    }
 }

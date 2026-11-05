@@ -36,7 +36,8 @@ public sealed class QueryTest14(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("2020-01-01 01:01:00(String),1(Long)");
     }
 
-    [Fact, Upstream("QueryTest14.java#testPropertyFunc", Deviation = "Java 后半段是无实体的 queryable(Map.class).asTable(..)：C# 没有 Map 查询，原生 SQL 用 QuerySql")]
+    // 后半段是无实体的表（Java 的 queryable(Map.class).asTable(..)）：常量写成 SQL 字面量用 Sql.Raw
+    [Fact, Upstream("QueryTest14.java#testPropertyFunc")]
     public async Task TestPropertyFunc()
     {
         var format = new DateTime(2020, 1, 1, 1, 1, 0).ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
@@ -44,7 +45,36 @@ public sealed class QueryTest14(MySqlFixture fixture) : MySqlTest(fixture)
         await Db.Query<Topic>().Where(t => t.CreateTime < Sql.Cast<DateTime>(Sql.Constant(format))).ToListAsync(Ct);
         listen.AssertSql("SELECT `id`,`stars`,`title`,`create_time` FROM `t_topic` WHERE  `create_time` < CAST(? AS DATETIME)");
         listen.AssertParams("2020-01-01 01:01:00(String)");
+        Assert.Equal("SELECT * FROM `my_table` WHERE  `create_time` < CAST('2020-01-01 01:01:00' AS DATETIME)",
+            Db.Table("my_table").Where(t => t.Get<DateTime?>("create_time") < Sql.Cast<DateTime>(Sql.Raw<string>("'" + format + "'"))).ToSql());
     }
+
+    // 无实体的表：选列并改名、格式化、计数；按列分组拼接；按列过滤读成行
+    [Fact, Upstream("QueryTest14.java#testMapQuery")]
+    public async Task TestMapQuery()
+    {
+        Assert.Equal("SELECT `col001` AS `姓名`,`col002` AS `年龄`,DATE_FORMAT(`create_time`,'%Y-%m-%d') AS `创建时间`,COUNT(1) AS `c1`,COUNT(`id`) AS `c2` FROM `t_topic`",
+            Db.Table("t_topic").Select(t => new DynamicRow
+            {
+                { "姓名", t.Get<object>("col001") }, { "年龄", t.Get<object>("col002") }, { "创建时间", t.Get<DateTime>("create_time").ToString("yyyy-MM-dd") },
+                { "c1", Sql.Count(Sql.Raw<int>("1")) }, { "c2", Sql.Count(t.Get<object>("id")) },
+            }).ToSql());
+        Assert.Equal("SELECT `col001` AS `姓名`,GROUP_CONCAT(`col002` SEPARATOR ?) AS `年龄集合` FROM `t_topic` GROUP BY `col001`",
+            Db.Table("t_topic").GroupBy(t => t.Get<object>("col001"))
+                .Select(g => new DynamicRow { { "姓名", g.Key }, { "年龄集合", g.StringJoin(x => x.Get<string>("col002"), ",") } }).ToSql());
+        await Db.Query<Topic>().GroupBy(t => t.Title).Select(g => new Draft<string?, string>(g.Key, g.StringJoin(x => x.Id, ","))).ToListAsync(Ct);
+
+        using var listen = SqlCapture.Listen();
+        await Db.Table("t_topic").Where(m => m.Get<int>("id") == 1).ToListAsync(Ct);
+        listen.AssertSql("SELECT * FROM `t_topic` WHERE `id` = ?");
+        listen.AssertParams("1(Integer)");
+    }
+
+    // 先选列再 JOIN 另一个无实体的查询：两边都作为派生表
+    [Fact, Upstream("QueryTest14.java#testDynamicTable2")]
+    public void TestDynamicTable2() =>
+        Assert.Equal("SELECT t1.`id` AS `id` FROM (SELECT t.`id` AS `id` FROM `aaa` t) t1 LEFT JOIN (SELECT * FROM `bbb` t2) t3 ON t1.`id` = t3.`id`",
+            Db.Table("aaa").SelectColumns("id").LeftJoin(Db.Table("bbb"), (a, b) => a.Get<string>("id") == b.Get<string>("id")).ToSql());
 
     private Query<BlogEntity, Topic> BlogWithTopic => Db.Query<BlogEntity>().LeftJoin<Topic>((b, t2) => b.Id == t2.Id);
 

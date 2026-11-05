@@ -157,13 +157,17 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>
     /// 只有一个表来源、没有加任何条件、投影、排序等的查询（<c>db.Query&lt;T&gt;()</c>、AsCte 之后直接引用）：
     /// 作为 JOIN 来源时直接用这个表来源，不再包一层派生表（与 Java 一致）。
+    /// 无实体的表（db.Table）除外：Java 的 Map 查询作为 JOIN 来源总是 <c>(SELECT * FROM 表 t) t1</c>。
     /// </summary>
     private QuerySource? BareSource =>
-        Sources is [EntitySource or CteSource] && Wheres.IsEmpty && OrderBys.IsEmpty && Selector is null && RawSelect is null && GroupKey is null
+        Sources is [EntitySource or CteSource] && !IsDynamicTable && Wheres.IsEmpty && OrderBys.IsEmpty && Selector is null && RawSelect is null && GroupKey is null
         && !Distinct && Offset is null && Limit is null && Includes.IsEmpty && Fills.IsEmpty && !DisableLogicDelete && Lock == RowLock.None
         && Interceptors == InterceptorSelection.Default
             ? Sources[0]
             : null;
+
+    /// <summary>第一个来源是无实体的表（<see cref="EasyDb.Table"/>）。</summary>
+    public bool IsDynamicTable => Sources[0] is EntitySource { EntityType: var type } && type == typeof(DynamicRow);
 
     /// <summary>作为 JOIN 来源：裸的实体表 / CTE 引用直接用，其余包成派生表。</summary>
     public QuerySource AsJoinSource() => BareSource is { } source ? source with { } : new SubQuerySource(this);

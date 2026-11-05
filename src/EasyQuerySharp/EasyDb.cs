@@ -53,6 +53,18 @@ public sealed class EasyDb
     public Query<T> Query<T>() => new(new QueryState(this, [new EntitySource(typeof(T))]));
 
     /// <summary>
+    /// 不经实体查询表 <paramref name="tableName"/>（对应 Java 的 queryable(Map.class).asTable(..) / mapQueryable()）：
+    /// 列用 <see cref="DynamicRow.Get{T}"/> 按名字引用，不投影时 <c>SELECT *</c> 读成 <see cref="DynamicRow"/>。
+    /// 联表写 <c>.LeftJoin&lt;DynamicRow&gt;((a, b) => …).AsTable("t2")</c>；Join 另一个 <c>db.Table(..)</c> 查询时它作为派生表。
+    /// </summary>
+    /// <example><code>await db.Table("t_topic").Where(t => t.Get&lt;string&gt;("id") == "1").ToListAsync();</code></example>
+    public Query<DynamicRow> Table(string tableName)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(tableName);
+        return new(new QueryState(this, [new EntitySource(typeof(DynamicRow)) { TableName = tableName }]));
+    }
+
+    /// <summary>
     /// 以原生 SQL 为来源开始一条查询（对应 Java 的 queryable(sql, Class, params)）：它作为派生表 <c>(sql) t</c>，
     /// 列按 <typeparamref name="T"/> 的列名访问，之后可以照常 Where / Select / 分页；<c>?</c> 依次对应 <paramref name="parameters"/>。
     /// <typeparamref name="T"/> 也可以是标量（取第一列）或 <c>Dictionary&lt;string, object?&gt;</c>（整行）。
@@ -83,7 +95,7 @@ public sealed class EasyDb
     private Func<DbDataReader, T> RowReader<T>()
     {
         if (ScalarTypes.IsScalar(typeof(T))) return r => Materialization.ValueReader.Read<T>(r, 0, null);
-        if (typeof(T) == typeof(Dictionary<string, object?>)) return r => (T)(object)Materialization.EntityMaterializer.ReadDictionary(r);
+        if (typeof(T) == typeof(Dictionary<string, object?>) || typeof(T) == typeof(DynamicRow)) return r => (T)(object)Materialization.EntityMaterializer.ReadDictionary(r);
         var entity = Metadata.Get<T>();
         return r => Materialization.EntityMaterializer.ReadByName<T>(r, entity);
     }

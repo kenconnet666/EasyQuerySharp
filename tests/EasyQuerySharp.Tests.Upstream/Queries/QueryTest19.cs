@@ -173,9 +173,11 @@ public sealed class QueryTest19(MySqlFixture fixture) : MySqlTest(fixture)
     }
 
     // Java 的 maxOrDefault(o -> o.id().toNumber(Long.class), 0L)
-    [Fact, Upstream("QueryTest19.java#testNow", Deviation = "前半段无实体的 Map 查询取 NOW() 未移植；只比较两种取最大值的写法")]
+    // 无实体的表上只取 NOW()；再比较两种取最大值的写法
+    [Fact, Upstream("QueryTest19.java#testNow")]
     public async Task TestNow()
     {
+        Assert.True(await Db.Table("t_topic").Select(_ => Sql.Now()).Take(1).SingleAsync(Ct) > DateTime.MinValue);
         var max = await Db.Query<Topic>().MaxAsync(o => (long?)Sql.Cast<long>(o.Id), Ct) ?? 0L;
         var max1 = await Db.Query<Topic>().Select(t => (long?)Sql.Max(Sql.Cast<long>(t.Id))).SingleOrDefaultAsync(Ct) ?? 0L;
         Assert.Equal(max, max1);
@@ -265,5 +267,68 @@ public sealed class QueryTest19(MySqlFixture fixture) : MySqlTest(fixture)
         await Assert.ThrowsAsync<EasyQueryException>(() => Db.UpdateMap("xxxxx", Row()).WhereColumns("id").ExecuteAsync(Ct));
         listen.AssertSql("UPDATE `xxxxx` SET `stars` = ? WHERE `id` = ?");
         listen.AssertParams("2(String),1(String)");
+    }
+
+    // ---------- 无实体的表（Java 的 Map 查询）：db.Table(..)，列用 Get<T>("列名") ----------
+
+    // Java 的 queryable(Map.class).asTable(..).leftJoin(Map.class, ..).asTable(..)：LeftJoin<DynamicRow>(..).AsTable(..)
+    [Fact, Upstream("QueryTest19.java#mapJoinFixed")]
+    public void MapJoinFixed() =>
+        SqlOnly.AssertStatement(Db.Table("table1")
+                .LeftJoin<DynamicRow>((t1, t2) => t1.Get<string>("table1Id") == t2.Get<string>("table2Id")).AsTable("table2")
+                .Where((t1, t2) => t1.Get<string>("name1") == "123" && t2.Get<string>("name2") == "123")
+                .Select((t1, t2) => new DynamicRow
+                {
+                    { "id1", t1.Get<object>("id1") }, { "name1", t1.Get<object>("name1") }, { "id2", t2.Get<object>("id2") }, { "name2", t2.Get<object>("name2") },
+                }).ToStatement(),
+            "SELECT t.`id1` AS `id1`,t.`name1` AS `name1`,t1.`id2` AS `id2`,t1.`name2` AS `name2` FROM `table1` t LEFT JOIN `table2` t1 ON t.`table1Id` = t1.`table2Id` WHERE t.`name1` = ? AND t1.`name2` = ?",
+            "123(String),123(String)");
+
+    // 表名与过滤列来自运行时的列表：逐张表 JOIN，ON 里带被连表的条件，WHERE 按列循环追加
+    [Fact, Upstream("QueryTest19.java#mapJoin")]
+    public void MapJoin()
+    {
+        string[] filterColumns = ["id", "name"];
+        var query = Db.Table("table1")
+            .LeftJoin<DynamicRow>((t1, t2) => t1.Get<string>("id") == t2.Get<string>("id") && t2.Get<string>("name") == "aaa").AsTable("table2")
+            .LeftJoin<DynamicRow>((t1, _, t3) => t1.Get<string>("id") == t3.Get<string>("id") && t3.Get<string>("name") == "aaa").AsTable("table3");
+        foreach (var column in filterColumns)
+            query = query.Where((t1, t2, t3) => t1.Get<string>(column) == "123" && t2.Get<string>(column) == "123" && t3.Get<string>(column) == "123");
+        SqlOnly.AssertStatement(query.Select((t1, t2, t3) => new DynamicRow
+            {
+                { "table1Column", t1.Get<object>("table1Column") }, { "table2Column", t2.Get<object>("table2Column") }, { "table3Column", t3.Get<object>("table3Column") },
+            }).ToStatement(),
+            "SELECT t.`table1Column` AS `table1Column`,t1.`table2Column` AS `table2Column`,t2.`table3Column` AS `table3Column` FROM `table1` t LEFT JOIN `table2` t1 ON t.`id` = t1.`id` AND t1.`name` = ? LEFT JOIN `table3` t2 ON t.`id` = t2.`id` AND t2.`name` = ? WHERE t.`id` = ? AND t1.`id` = ? AND t2.`id` = ? AND t.`name` = ? AND t1.`name` = ? AND t2.`name` = ?",
+            "aaa(String),aaa(String),123(String),123(String),123(String),123(String),123(String),123(String)");
+    }
+
+    // 过滤列与选列都来自运行时的列表：SelectColumns(..)
+    [Fact, Upstream("QueryTest19.java#mapQuery")]
+    public void MapQuery()
+    {
+        string[] filterColumns = ["id", "name"];
+        string[] selectColumns = ["id", "age", "id_card"];
+        var query = Db.Table("aaa");
+        foreach (var column in filterColumns) query = query.Where(m => m.Get<string>(column) == "123");
+        SqlOnly.AssertStatement(query.SelectColumns(selectColumns).ToStatement(),
+            "SELECT `id` AS `id`,`age` AS `age`,`id_card` AS `id_card` FROM `aaa` WHERE `id` = ? AND `name` = ?", "123(String),123(String)");
+    }
+
+    // Java 按一份 JSON 描述（表、ON、WHERE）拼查询：C# 同样按描述循环拼
+    [Fact, Upstream("QueryTest19.java#testMapJson")]
+    public void TestMapJson()
+    {
+        (string Column, string Compare)[] where1 = [("id1", "123"), ("name1", "456")];
+        (string Column, string Compare)[] where2 = [("id1", "123"), ("name1", "456")];
+        (string Column, string Compare)[] where3 = [("id3", "123"), ("name3", "456")];
+        var query = Db.Table("table1")
+            .LeftJoin<DynamicRow>((t1, t2) => t2.Get<string>("id1") == t1.Get<string>("id2")).AsTable("table2")
+            .LeftJoin<DynamicRow>((t1, _, t3) => t3.Get<string>("id1") == t1.Get<string>("id3")).AsTable("table3");
+        foreach (var (column, compare) in where1) query = query.Where((t1, _, _) => t1.Get<string>(column) == compare);
+        foreach (var (column, compare) in where2) query = query.Where((_, t2, _) => t2.Get<string>(column) == compare);
+        foreach (var (column, compare) in where3) query = query.Where((_, _, t3) => t3.Get<string>(column) == compare);
+        SqlOnly.AssertStatement(query.ToStatement(),
+            "SELECT * FROM `table1` t LEFT JOIN `table2` t1 ON t1.`id1` = t.`id2` LEFT JOIN `table3` t2 ON t2.`id1` = t.`id3` WHERE t.`id1` = ? AND t.`name1` = ? AND t1.`id1` = ? AND t1.`name1` = ? AND t2.`id3` = ? AND t2.`name3` = ?",
+            "123(String),456(String),123(String),456(String),123(String),456(String)");
     }
 }

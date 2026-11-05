@@ -54,15 +54,15 @@ public static class EntityMaterializer
     }
 
     /// <summary>
-    /// 把当前行读成 列名 → 值 的字典（对应 Java 的 toMap / sqlQueryMap），列名忽略大小写，NULL 读成 null。
+    /// 把当前行读成 列名 → 值 的 <see cref="DynamicRow"/>（对应 Java 的 toMap / sqlQueryMap），列名忽略大小写，NULL 读成 null。
     /// 列名重复时抛出异常（与 Java 一致，避免后一列静默覆盖前一列）。
     /// </summary>
-    public static Dictionary<string, object?> ReadDictionary(DbDataReader reader) => ReadDictionary(reader, 0, reader.FieldCount);
+    public static DynamicRow ReadDictionary(DbDataReader reader) => ReadDictionary(reader, 0, reader.FieldCount);
 
     /// <summary>只把 [<paramref name="start"/>, start + <paramref name="count"/>) 这几列读成字典（Map 投影里实体的全部列，后面还可能有别的键）。</summary>
-    public static Dictionary<string, object?> ReadDictionary(DbDataReader reader, int start, int count)
+    public static DynamicRow ReadDictionary(DbDataReader reader, int start, int count)
     {
-        var row = new Dictionary<string, object?>(count, StringComparer.OrdinalIgnoreCase);
+        var row = new DynamicRow(count);
         for (var i = start; i < start + count; i++)
         {
             var name = reader.GetName(i);

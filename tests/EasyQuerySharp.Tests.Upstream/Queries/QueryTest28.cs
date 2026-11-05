@@ -120,4 +120,31 @@ public sealed class QueryTest28(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertSql("SELECT COUNT(*) AS `value1`,SUM((CASE WHEN t.`title` LIKE CONCAT('%',?,'%') THEN t.`stars` ELSE ? END)) AS `value2` FROM `t_topic` t LEFT JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` WHERE t.`title` IS NOT NULL AND t.`create_time` <= ?");
         listen.AssertParams("123(String),0(Long),false(Boolean),2021-03-04T05:06(LocalDateTime)");
     }
+
+    // Java 的 mapQueryable("t_topic") / t.get("id")：db.Table(..) / Get<T>("id")
+    [Fact, Upstream("QueryTest28.java#testQueryMap")]
+    public async Task TestQueryMap()
+    {
+        using var listen = SqlCapture.Listen();
+        var rows = await Db.Table("t_topic").Where(t => t.Get<string>("id") == "123").ToListAsync(Ct);
+        listen.AssertSql("SELECT * FROM `t_topic` WHERE `id` = ?");
+        listen.AssertParams("123(String)");
+        Assert.All(rows, row => Assert.Equal("123", row.Get<string>("id")));
+    }
+
+    /// <summary>对应 Java：QueryTest28.TypeA（没有 @Table 的类，用 asTable 指定表）。</summary>
+    public sealed class TypeA
+    {
+        public string? Id { get; set; }
+    }
+
+    // Java 的 queryable(ClassProxy.of(TypeA.class)).asTable(..)：没有 [Table] 的类同样能查，AsTable 指定表名
+    [Fact, Upstream("QueryTest28.java#testQueryMap2")]
+    public async Task TestQueryMap2()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<TypeA>().AsTable("t_topic").Where(t => t.Id == "123").ToListAsync(Ct);
+        listen.AssertSql("SELECT `id` FROM `t_topic` WHERE `id` = ?");
+        listen.AssertParams("123(String)");
+    }
 }

@@ -151,4 +151,18 @@ public sealed partial class QueryTest18
         listen.AssertParams("false(Boolean),1(Integer),1(String)");
         Assert.All(list, b => Assert.Equal("1", b.StarStr));
     }
+
+    // Java 用例没有断言（表不存在，执行错误被吞掉）：无实体的表按列与原生片段分组、投影分组键与计数；
+    // 再按 id 更新这张表（Java 的 updatable(Map.class).asTable(..).set(..).where(..)，C# 用 UpdateMap(..).WhereColumns("id")）
+    [Fact, Upstream("QueryTest18.java#testClient")]
+    public async Task TestClient()
+    {
+        Assert.Equal("SELECT `age` AS `ageKey`,IFNULL(`city`,?) AS `addressKey`,COUNT(`id`) AS `id` FROM `t_test` WHERE `name` = ? GROUP BY `age`,IFNULL(`city`,?)",
+            Db.Table("t_test").Where(m => m.Get<string>("name") == "123")
+                .GroupBy(m => new { Age = m.Get<object>("age"), City = Sql.Raw<string>("IFNULL({0},{1})", m.Get<object>("city"), "杭州") })
+                .Select(g => new DynamicRow { { "ageKey", g.Key.Age }, { "addressKey", g.Key.City }, { "id", g.Count(x => x.Get<object>("id")) } }).ToSql());
+        var row = new Dictionary<string, object?>(StringComparer.Ordinal) { ["age"] = 1, ["id"] = "4567" };
+        Assert.Equal("UPDATE `t_delete` SET `age` = ? WHERE `id` = ?", Db.UpdateMap("t_delete", row).WhereColumns("id").ToSql());
+        await Assert.ThrowsAsync<EasyQueryException>(() => Db.UpdateMap("t_delete", row).WhereColumns("id").ExecuteAsync(Ct));
+    }
 }
