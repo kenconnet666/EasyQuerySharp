@@ -57,6 +57,8 @@ public sealed class SqlServerLiveSuite : LiveSuite
 {
     protected override TestDatabase Database => TestDatabases.SqlServer;
     protected override SqlDialect Dialect => SqlServerDialect.Instance;
+    // SQL Server 没有 FOR UPDATE（要用表提示），与 Java 一样直接报错
+    protected override LiveSuiteOptions Options { get; } = new() { RowLocks = false };
     protected override Task<string> ConnectionStringAsync() =>
         LiveDatabase.EnsureAsync(Database, "IF DB_ID('eqs_live') IS NULL CREATE DATABASE eqs_live");
 }

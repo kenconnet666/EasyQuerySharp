@@ -30,7 +30,11 @@ public sealed class SqlRenderer
         for (var i = 0; i < ctes.Count; i++)
         {
             r.Append(i > 0 ? " ," : ctes.Any(c => c.RecursivePart is not null) ? dialect.RecursiveWith : "WITH ")
-                .Append(dialect.QuoteIdentifier(ctes[i].Name)).Append(" AS ");
+                .Append(dialect.QuoteIdentifier(ctes[i].Name));
+            // 递归 CTE 要写列名清单的库（Oracle）：列名取锚点部分的输出列
+            if (ctes[i].RecursivePart is not null && dialect.RecursiveCteColumnList)
+                r.Append(" (" + string.Join(",", ctes[i].Query.Columns.Select(c => dialect.QuoteIdentifier(c.Alias ?? (c.Expr as ColumnExpr)?.Name ?? throw new InvalidOperationException("递归 CTE 的列没有名字")))) + ")");
+            r.Append(" AS ");
             if (ctes[i].RecursivePart is { } recursive)
                 r.WriteCompound([ctes[i].Query, recursive], ctes[i].UnionAll);
             else r.Append("(").WriteSelect(ctes[i].Query).Append(")");
@@ -73,7 +77,7 @@ public sealed class SqlRenderer
     {
         AliasAllocator.Allocate(update.Table, update.Joins, update.Sets.Select(s => s.Value).Concat(update.Where));
         var r = new SqlRenderer(dialect);
-        if (update.Joins.Count > 0) dialect.WriteJoinedUpdate(r, update);
+        if (update.Joins.Count > 0 || (dialect.AliasedWriteUsesFrom && update.Table.Alias is not null)) dialect.WriteJoinedUpdate(r, update);
         else r.Append("UPDATE ").WriteWriteTarget(update.Table).Append(" SET ").WriteSets(update.Sets).WriteWhere(update.Where);
         return r.Build();
     }
@@ -83,7 +87,7 @@ public sealed class SqlRenderer
     {
         AliasAllocator.Allocate(delete.Table, delete.Joins, delete.Where);
         var r = new SqlRenderer(dialect);
-        if (delete.Joins.Count > 0) dialect.WriteJoinedDelete(r, delete);
+        if (delete.Joins.Count > 0 || (dialect.AliasedWriteUsesFrom && delete.Table.Alias is not null)) dialect.WriteJoinedDelete(r, delete);
         else r.Append("DELETE FROM ").WriteWriteTarget(delete.Table).WriteWhere(delete.Where);
         return r.Build();
     }
@@ -164,6 +168,7 @@ public sealed class SqlRenderer
     {
         if (q.Columns.Count == 0) throw new InvalidOperationException("SELECT 列表为空");
         Append(q.Distinct ? "SELECT DISTINCT " : "SELECT ");
+        Dialect.WriteSelectHead(this, q);
         for (var i = 0; i < q.Columns.Count; i++)
         {
             if (i > 0) Append(",");

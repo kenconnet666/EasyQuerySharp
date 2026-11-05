@@ -13,7 +13,7 @@ UPDATE [t_post] SET [views] = ([views] + ?),[title] = CONCAT([title],?) WHERE [i
 -- params: [100, '（修订）', 1]
 
 -- UpdateThroughNavigation：条件里用集合导航
-UPDATE [t_user] t SET t.[level] = ? WHERE EXISTS(SELECT 1 FROM [t_post] t1 WHERE t1.[author_id] = t.[id] AND t1.[views] >= ? ORDER BY (SELECT 1) OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY);
+UPDATE t SET t.[level] = ? FROM [t_user] t WHERE EXISTS(SELECT TOP 1 1 FROM [t_post] t1 WHERE t1.[author_id] = t.[id] AND t1.[views] >= ?);
 -- params: ['senior', 2000]
 
 -- UpdateEntity：按实体更新：按主键写全部列

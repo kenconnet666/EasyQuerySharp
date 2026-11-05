@@ -216,6 +216,7 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
                 p.DbType = OutputDbType(parameter.ClrType);
             }
             else p.Value = parameter.Value ?? DBNull.Value;
+            db.Options.Dialect.ConfigureParameter(p, parameter);
             command.Parameters.Add(p);
         }
         return command;

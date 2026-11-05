@@ -65,12 +65,71 @@ public class SqlServerDialect : SqlDialect
     public override void WriteLock(SqlRenderer renderer, RowLock rowLock) =>
         throw new NotSupportedException("SQL Server 不支持 FOR UPDATE 语法，请改用表提示 WITH (UPDLOCK, ROWLOCK)");
 
-    /// <summary>OFFSET … ROWS FETCH NEXT … ROWS ONLY；SQL Server 要求有 ORDER BY，没有时补 <c>ORDER BY (SELECT 1)</c>。</summary>
+    /// <summary>没有跳过行数时只取前几行写成 <c>SELECT TOP n</c>（与 Java 一致，如 EXISTS 里的 <c>SELECT TOP 1 1</c>）。</summary>
+    public override void WriteSelectHead(SqlRenderer renderer, SelectQuery query)
+    {
+        if (query.Offset is null or <= 0 && query.Limit is { } limit) renderer.Append("TOP " + limit.ToString(CultureInfo.InvariantCulture) + " ");
+    }
+
+    /// <summary>
+    /// 有跳过行数时写 <c>OFFSET … ROWS FETCH NEXT … ROWS ONLY</c>。SQL Server 要求有 ORDER BY：没有时按分组键，再不然按主键排序，
+    /// 都没有时补 <c>ORDER BY (SELECT 1)</c>（与 Java 一致，Java 在最后一种情况下报错）。
+    /// </summary>
     public override void WritePaging(SqlRenderer renderer, SelectQuery query)
     {
-        if (query.OrderBy.Count == 0) renderer.Append(" ORDER BY (SELECT 1)");
-        renderer.Append(" OFFSET ").Append((query.Offset ?? 0).ToString(CultureInfo.InvariantCulture)).Append(" ROWS");
+        if (query.Offset is null or <= 0) return;
+        if (query.OrderBy.Count == 0)
+        {
+            if (query.GroupBy.Count > 0) renderer.Append(" ORDER BY ").WriteList(query.GroupBy, ",");
+            else if (query.From is EntityTableSource { Entity.KeyColumns: { Count: > 0 } keys } table)
+                renderer.Append(" ORDER BY ").WriteList(keys.Select(k => (SqlExpr)table.Column(k)).ToList(), ",");
+            else renderer.Append(" ORDER BY (SELECT 1)");
+        }
+        renderer.Append(" OFFSET ").Append(query.Offset.Value.ToString(CultureInfo.InvariantCulture)).Append(" ROWS");
         if (query.Limit is { } limit) renderer.Append(" FETCH NEXT ").Append(limit.ToString(CultureInfo.InvariantCulture)).Append(" ROWS ONLY");
+    }
+
+    /// <inheritdoc />
+    public override bool AliasedWriteUsesFrom => true;
+
+    /// <summary>带别名或连接的更新：<c>UPDATE t SET t.[a] = ? FROM [表] t [JOIN …] WHERE …</c>（与 Java 一致）。</summary>
+    public override void WriteJoinedUpdate(SqlRenderer renderer, UpdateStatement update)
+    {
+        renderer.Append("UPDATE ").Append(update.Table.Alias!).Append(" SET ").WriteSets(update.Sets).Append(" FROM ").WriteTable(update.Table);
+        foreach (var join in update.Joins) renderer.WriteJoin(join);
+        renderer.WriteWhere(update.Where);
+    }
+
+    /// <summary>带别名或连接的删除：<c>DELETE t FROM [表] t [JOIN …] WHERE …</c>（与 Java 一致）。</summary>
+    public override void WriteJoinedDelete(SqlRenderer renderer, DeleteStatement statement)
+    {
+        renderer.Append("DELETE ").Append(statement.Table.Alias!).Append(" FROM ").WriteTable(statement.Table);
+        foreach (var join in statement.Joins) renderer.WriteJoin(join);
+        renderer.WriteWhere(statement.Where);
+    }
+
+    /// <summary>值里含 % 或 _ 时转义后写 <c>ESCAPE '\'</c>，按字面匹配（SQL Server 的 LIKE 还把 <c>[</c> 当通配符，一并转义）。</summary>
+    public override void WriteLike(SqlRenderer renderer, LikeExpr predicate)
+    {
+        if (!predicate.HasWildcardValue || predicate.Value is not ParameterExpr { Value: string text })
+        {
+            base.WriteLike(renderer, predicate);
+            return;
+        }
+        var escaped = EscapeLike(text).Replace("[", "\\[");
+        var pattern = predicate.Mode switch
+        {
+            LikeMode.StartsWith => escaped + "%",
+            LikeMode.EndsWith => "%" + escaped,
+            _ => "%" + escaped + "%",
+        };
+        renderer.Write(predicate.Operand).Append(predicate.Negated ? " NOT LIKE " : " LIKE ").Write(new ParameterExpr(pattern, typeof(string))).Append(" ESCAPE '\\'");
+    }
+
+    /// <summary>DateTime 参数按 datetime2 传（驱动默认按 datetime，只精确到约 3 毫秒）。</summary>
+    public override void ConfigureParameter(System.Data.Common.DbParameter parameter, SqlParameterValue value)
+    {
+        if ((Nullable.GetUnderlyingType(value.ClrType) ?? value.ClrType) == typeof(DateTime)) parameter.DbType = System.Data.DbType.DateTime2;
     }
 
     /// <summary>冲突处理要用 MERGE 改写整条语句，计划在 M6 方言铺开时实现；在此之前明确报错，避免生成错误的 SQL。</summary>

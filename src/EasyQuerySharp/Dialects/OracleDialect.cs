@@ -46,6 +46,9 @@ public class OracleDialect : SqlDialect
     /// <inheritdoc />
     public override string RecursiveWith => "WITH ";
 
+    /// <summary>递归 CTE 必须写列名清单（否则 ORA-32039）。</summary>
+    public override bool RecursiveCteColumnList => true;
+
     /// <summary>
     /// <c>SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS "__rownum__" FROM (…) rt WHERE ROWNUM &lt; 末行+1) rt1 WHERE rt1."__rownum__" &gt; 跳过行数</c>；
     /// 只有 LIMIT 时省掉外层。

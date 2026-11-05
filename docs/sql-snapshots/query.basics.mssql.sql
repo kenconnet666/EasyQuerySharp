@@ -1,5 +1,5 @@
 -- FirstMissing：查不到时返回 null
-SELECT [id],[name],[age],[company_id],[department_id],[manager_id],[level],[joined_at] FROM [t_user] WHERE [name] = ? ORDER BY (SELECT 1) OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY;
+SELECT TOP 1 [id],[name],[age],[company_id],[department_id],[manager_id],[level],[joined_at] FROM [t_user] WHERE [name] = ?;
 -- params: ['不存在的人']
 SELECT [id],[name],[age],[company_id],[department_id],[manager_id],[level],[joined_at] FROM [t_user] WHERE [id] = ?;
 -- params: [999]
@@ -9,7 +9,7 @@ SELECT [id],[name],[age],[company_id],[department_id],[manager_id],[level],[join
 -- params: [999]
 
 -- DynamicTable：无实体的表：按列名查询
-SELECT [name] AS [name],[age] AS [age] FROM [t_user] WHERE [age] >= ? ORDER BY [age] ASC OFFSET 0 ROWS FETCH NEXT 3 ROWS ONLY;
+SELECT TOP 3 [name] AS [name],[age] AS [age] FROM [t_user] WHERE [age] >= ? ORDER BY [age] ASC;
 -- params: [30]
 
 -- DepartmentTree：树：取全部下级并拼成树
@@ -19,18 +19,18 @@ WITH [as_tree_cte] AS ( (SELECT 0 AS [cte_deep],t1.[id],t1.[company_id],t1.[pare
 -- CountAndAny：按条件计数与判断存在
 SELECT COUNT(*) FROM [t_user] WHERE [age] >= ?;
 -- params: [18]
-SELECT  1  FROM [t_post] WHERE [status] = ? ORDER BY (SELECT 1) OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY;
+SELECT TOP 1  1  FROM [t_post] WHERE [status] = ?;
 -- params: ['draft']
 
 -- SelectExpressions：选表达式
-SELECT UPPER(t.[title]) AS [title],(t.[views] + ?) AS [next_views],(t.[views] >= ?) AS [is_hot] FROM [t_post] t WHERE t.[status] = ? ORDER BY (SELECT 1) OFFSET 0 ROWS FETCH NEXT 3 ROWS ONLY;
+SELECT TOP 3 UPPER(t.[title]) AS [title],(t.[views] + ?) AS [next_views],(t.[views] >= ?) AS [is_hot] FROM [t_post] t WHERE t.[status] = ?;
 -- params: [1, 2000, 'published']
 
 -- SelectNavigation：经导航取关联表的列
-SELECT t.[title],t.[views],t1.[name] AS [author],t2.[name] AS [company] FROM [t_post] t LEFT JOIN [t_user] t1 ON t1.[id] = t.[author_id] LEFT JOIN [t_company] t2 ON t2.[id] = t1.[company_id] ORDER BY t.[id] ASC OFFSET 0 ROWS FETCH NEXT 2 ROWS ONLY;
+SELECT TOP 2 t.[title],t.[views],t1.[name] AS [author],t2.[name] AS [company] FROM [t_post] t LEFT JOIN [t_user] t1 ON t1.[id] = t.[author_id] LEFT JOIN [t_company] t2 ON t2.[id] = t1.[company_id] ORDER BY t.[id] ASC;
 
 -- DistinctRows：去重
-SELECT t1.[author_id],t1.[status] FROM (SELECT DISTINCT t.[author_id],t.[status] FROM [t_post] t) t1 ORDER BY t1.[author_id] ASC OFFSET 0 ROWS FETCH NEXT 4 ROWS ONLY;
+SELECT TOP 4 t1.[author_id],t1.[status] FROM (SELECT DISTINCT t.[author_id],t.[status] FROM [t_post] t) t1 ORDER BY t1.[author_id] ASC;
 
 -- WhereChain：多个 Where 之间是 AND
 SELECT t.[name] FROM [t_user] t WHERE t.[age] >= ? AND t.[company_id] = ?;

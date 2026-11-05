@@ -34,6 +34,16 @@ public abstract class SqlDialect
     /// </summary>
     public virtual string? LastInsertIdQuery => null;
 
+    /// <summary>驱动参数的补充设置（如 SQL Server 把 DateTime 按 datetime2 传）；默认不改。</summary>
+    public virtual void ConfigureParameter(System.Data.Common.DbParameter parameter, SqlParameterValue value)
+    {
+    }
+
+    /// <summary>写在 <c>SELECT [DISTINCT]</c> 与列清单之间的部分（SQL Server 的 <c>TOP n</c>）；默认不写。</summary>
+    public virtual void WriteSelectHead(SqlRenderer renderer, SelectQuery query)
+    {
+    }
+
     /// <summary>写分页子句（追加在 ORDER BY 之后）。默认 <c>LIMIT n OFFSET m</c>。</summary>
     public virtual void WritePaging(SqlRenderer renderer, SelectQuery query)
     {
@@ -54,11 +64,20 @@ public abstract class SqlDialect
     /// <summary>UNION 的各分支是否加括号 <c>( (q1)  UNION  (q2) )</c>；SQLite 不允许，覆盖成 false。</summary>
     public virtual bool ParenthesizeCompoundParts => true;
 
+    /// <summary>递归 CTE 是否要在名字后写列名清单 <c>"cte" ("a","b") AS (…)</c>（Oracle 必须写）；默认不写。</summary>
+    public virtual bool RecursiveCteColumnList => false;
+
     /// <summary>递归 CTE 的开头（树查询 AsTreeCte）：默认 <c>WITH RECURSIVE </c>；SQL Server、Oracle 不写 RECURSIVE。</summary>
     public virtual string RecursiveWith => "WITH RECURSIVE ";
 
     /// <summary>UPDATE 的 SET 列是否带表别名（<c>t.`a` = ?</c>）；PostgreSQL 不允许，覆盖成 false。</summary>
     public virtual bool QualifySetColumns => true;
+
+    /// <summary>
+    /// UPDATE / DELETE 的目标表带别名时（条件里有关联子查询等）不能直接写 <c>UPDATE 表 别名</c>，要改写成带 FROM 的形式，
+    /// 交给 <see cref="WriteJoinedUpdate"/> / <see cref="WriteJoinedDelete"/>（SQL Server：<c>UPDATE t SET … FROM [表] t</c>、<c>DELETE t FROM [表] t</c>）。
+    /// </summary>
+    public virtual bool AliasedWriteUsesFrom => false;
 
     /// <summary>UPDATE / DELETE 目标表与别名之间的分隔；默认一个空格，SQLite 要求 <c> AS </c>。</summary>
     public virtual string WriteTargetAliasSeparator => " ";
