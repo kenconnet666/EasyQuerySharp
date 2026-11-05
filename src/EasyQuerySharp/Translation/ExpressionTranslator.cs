@@ -84,7 +84,7 @@ internal sealed partial class ExpressionTranslator
         // 对一导航 x.User → 隐式 JOIN 的目标表
         MemberExpression m => ToOneNavigation(m),
         // 带配置的对一导航 Sql.AsTable(x.User, "..") → 按配置单独 JOIN 的目标表
-        MethodCallExpression { Method.Name: nameof(Sql.DisableLogicDelete) or nameof(Sql.AsTable) } call when call.Method.DeclaringType == typeof(Sql)
+        MethodCallExpression { Method.Name: nameof(Sql.DisableLogicDelete) or nameof(Sql.AsTable) or nameof(Sql.AsAlias) } call when call.Method.DeclaringType == typeof(Sql)
             => StripNavigationOptions(call, out var options) is MemberExpression nav ? ToOneNavigation(nav, options) : null,
         // 集合导航里的某一行 x.Cards.First() → 派生表
         MethodCallExpression call => ElementBinding(call),

@@ -182,6 +182,15 @@ public static partial class Sql
     /// </summary>
     public static T AsTable<T>(T navigation, string tableName) where T : class? => throw OnlyInQuery();
 
+    /// <summary>
+    /// 这个集合导航的隐式子查询（或分组合并）里目标表用别名 <paramref name="alias"/>（对应 Java 的 nav().configure(r -> r.asAlias(..))），
+    /// 别名仍占用自动编号：<c>.Where(u => u.Roles!.AsAlias("myRole").Any(r => …))</c>。
+    /// </summary>
+    public static IEnumerable<T> AsAlias<T>(this IEnumerable<T> navigation, string alias) => throw OnlyInQuery();
+
+    /// <summary>这个对一导航的隐式 JOIN 用别名 <paramref name="alias"/>：<c>Sql.AsAlias(u.Company, "c")!.Name</c>。同一导航带不同配置时各自 JOIN 一次。</summary>
+    public static T AsAlias<T>(T navigation, string alias) where T : class? => throw OnlyInQuery();
+
     // ---------- Map 投影 ----------
 
     /// <summary>

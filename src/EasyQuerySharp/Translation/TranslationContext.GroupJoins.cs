@@ -26,9 +26,10 @@ internal sealed partial class TranslationContext
         var configured = spec?.Configure is { } configure && Db is not null
             ? configure(new Querying.QueryState(Db, [new Querying.EntitySource(navigation.Target.Type)]))
             : null;
-        // 导航上的表配置与 GroupJoin(…, q => q.AsTable(..) / DisableLogicDelete()) 配的合在一起
+        // 导航上的表配置与 GroupJoin(…, q => q.AsTable(..) / AsAlias(..) / DisableLogicDelete()) 配的合在一起
+        var source = configured?.Sources[0];
         options = new NavigationTableOptions(options.NoLogicDelete || configured?.DisableLogicDelete == true,
-            options.TableName ?? (configured?.Sources[0] as Querying.EntitySource)?.TableName);
+            options.TableName ?? (source as Querying.EntitySource)?.TableName, options.Alias ?? source?.Alias);
         var plan = window is null ? WholePlan(navigation, configured, options) : WindowedPlan(navigation, configured, window, options);
         plan.Required = navigation.Required;
         plan.MergeFilters = MergeGroupFilters;
@@ -49,7 +50,7 @@ internal sealed partial class TranslationContext
     // 整个集合分组：FROM 目标表（多对多时 INNER JOIN 中间表）GROUP BY 关联键
     private GroupJoinPlan WholePlan(NavigationMetadata navigation, Querying.QueryState? configured, NavigationTableOptions options)
     {
-        var element = new EntityTableSource(navigation.Target) { TableNameOverride = options.TableName };
+        var element = options.TableFor(navigation.Target);
         var inner = new SelectQuery(element);
         var groupKeys = navigation.Mapping is { } mapping
             ? navigation.SelfMappingColumns.Select(JoinMapping(inner, element, navigation, mapping).Column).ToList()
@@ -81,7 +82,7 @@ internal sealed partial class TranslationContext
     private GroupJoinPlan WindowedPlan(NavigationMetadata navigation, Querying.QueryState? configured, GroupJoinWindow window, NavigationTableOptions options)
     {
         if (navigation.Mapping is not null) throw new NotSupportedException($"{navigation} 是多对多导航，分组合并时不支持先取一段行");
-        var element = new EntityTableSource(navigation.Target) { TableNameOverride = options.TableName };
+        var element = options.TableFor(navigation.Target);
         var numbered = new SelectQuery(element);
         var context = ForSubQuery(numbered);
         numbered.Where.AddRange(TargetFilters(navigation, configured, element, context, options));

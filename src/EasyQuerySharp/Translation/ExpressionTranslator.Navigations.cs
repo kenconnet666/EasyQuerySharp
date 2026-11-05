@@ -15,18 +15,22 @@ internal sealed partial class ExpressionTranslator
     internal NavigationMetadata? FindNavigation(EntityBinding owner, string member) => Navigation(owner, member);
 
     /// <summary>
-    /// 剥掉导航外面的配置标记（<see cref="Sql.DisableLogicDelete{T}(T)"/>、<see cref="Sql.AsTable{T}(T, string)"/> 及集合上的同名扩展），
-    /// 返回导航本身的表达式；没有标记时原样返回、<paramref name="options"/> 为默认值。
+    /// 剥掉导航外面的配置标记（<see cref="Sql.DisableLogicDelete{T}(T)"/>、<see cref="Sql.AsTable{T}(T, string)"/>、<see cref="Sql.AsAlias{T}(T, string)"/>
+    /// 及集合上的同名扩展），返回导航本身的表达式；没有标记时原样返回、<paramref name="options"/> 为默认值。
     /// </summary>
     private static Expression StripNavigationOptions(Expression e, out NavigationTableOptions options)
     {
         options = default;
-        while (StripConvert(e) is MethodCallExpression { Method.Name: nameof(Sql.DisableLogicDelete) or nameof(Sql.AsTable) } call && call.Method.DeclaringType == typeof(Sql))
+        while (StripConvert(e) is MethodCallExpression { Method.Name: nameof(Sql.DisableLogicDelete) or nameof(Sql.AsTable) or nameof(Sql.AsAlias) } call
+               && call.Method.DeclaringType == typeof(Sql))
         {
-            options = call.Method.Name == nameof(Sql.DisableLogicDelete)
-                ? options with { NoLogicDelete = true }
-                // 外层的标记先剥到，内层的同类标记不覆盖它
-                : options with { TableName = options.TableName ?? ClientEvaluator.Evaluate(call.Arguments[1]) as string };
+            // 外层的标记先剥到，内层的同类标记不覆盖它
+            options = call.Method.Name switch
+            {
+                nameof(Sql.DisableLogicDelete) => options with { NoLogicDelete = true },
+                nameof(Sql.AsTable) => options with { TableName = options.TableName ?? ClientEvaluator.Evaluate(call.Arguments[1]) as string },
+                _ => options with { Alias = options.Alias ?? ClientEvaluator.Evaluate(call.Arguments[1]) as string },
+            };
             e = call.Arguments[0];
         }
         return e;
@@ -207,7 +211,7 @@ internal sealed partial class ExpressionTranslator
     /// </summary>
     private CollectionSubQuery NewCollectionSubQuery(SourceBinding owner, NavigationMetadata nav, NavigationTableOptions options = default)
     {
-        var table = new EntityTableSource(nav.Target) { TableNameOverride = options.TableName };
+        var table = options.TableFor(nav.Target);
         var sub = new SelectQuery(table);
         var context = Context!.ForSubQuery(sub);
         var translator = new ExpressionTranslator(new Dictionary<ParameterExpression, SourceBinding>(_scope)) { Context = context };

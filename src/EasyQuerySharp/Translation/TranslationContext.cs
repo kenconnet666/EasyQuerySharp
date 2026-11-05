@@ -75,7 +75,7 @@ internal sealed partial class TranslationContext(
         var key = (owner.Table, navigation.Property.Name + options.Key);
         if (_joins.TryGetValue(key, out var existing)) return existing;
 
-        var target = new EntityTableSource(navigation.Target) { TableNameOverride = options.TableName };
+        var target = options.TableFor(navigation.Target);
         var conditions = new List<SqlExpr>(TableFilters(target, !options.NoLogicDelete));
         var keys = navigation.SelfColumns
             .Select((self, i) => (SqlExpr)new BinaryExpr(target.Column(navigation.TargetColumns[i]), SqlBinaryOperator.Equal, owner.OwnerColumn(self)))
@@ -102,11 +102,14 @@ internal sealed partial class TranslationContext(
 }
 
 /// <summary>
-/// 导航上的表配置（<see cref="Sql.DisableLogicDelete{T}(T)"/>、<see cref="Sql.AsTable{T}(T, string)"/>，对应 Java 的 nav().configure(..)）；
-/// 默认值表示没有配置。
+/// 导航上的表配置（<see cref="Sql.DisableLogicDelete{T}(T)"/>、<see cref="Sql.AsTable{T}(T, string)"/>、<see cref="Sql.AsAlias{T}(T, string)"/>，
+/// 对应 Java 的 nav().configure(..)）；默认值表示没有配置。
 /// </summary>
-internal readonly record struct NavigationTableOptions(bool NoLogicDelete, string? TableName)
+internal readonly record struct NavigationTableOptions(bool NoLogicDelete, string? TableName, string? Alias)
 {
     /// <summary>区分同一导航不同配置的缓存键后缀；没有配置时为空串。</summary>
-    public string Key => this == default ? "" : $"|{NoLogicDelete}|{TableName}";
+    public string Key => this == default ? "" : $"|{NoLogicDelete}|{TableName}|{Alias}";
+
+    /// <summary>导航目标实体的表来源，带上配置的表名与别名。</summary>
+    public EntityTableSource TableFor(EntityMetadata target) => new(target) { TableNameOverride = TableName, ExplicitAlias = Alias };
 }
