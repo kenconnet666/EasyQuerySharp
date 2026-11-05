@@ -53,7 +53,10 @@ public abstract class MapCommandBase<TSelf> where TSelf : MapCommandBase<TSelf>
     }
 
     /// <summary>渲染第一行的语句，不执行。</summary>
-    public string ToSql() => Render(Rows.Count > 0 ? Rows[0] : throw new InvalidOperationException("没有要写入的行")).Text;
+    public string ToSql() => ToStatement().Text;
+
+    /// <summary>同 <see cref="ToSql"/>，连同参数。</summary>
+    public SqlStatement ToStatement() => Render(Rows.Count > 0 ? Rows[0] : throw new InvalidOperationException("没有要写入的行"));
 
     /// <summary>执行，返回受影响的总行数（每行一条语句，在同一连接上依次执行）。</summary>
     public Task<long> ExecuteAsync(CancellationToken cancellationToken = default) =>
@@ -69,7 +72,8 @@ public abstract class MapCommandBase<TSelf> where TSelf : MapCommandBase<TSelf>
     private protected bool Skip(object? value) =>
         (Strategy == ColumnStrategy.OnlyNotNull && value is null) || (Strategy == ColumnStrategy.OnlyNull && value is not null);
 
-    private protected ColumnExpr Column(string name) => new(Table, name);
+    // 字典的键按配置换算成列名
+    private protected ColumnExpr Column(string name) => new(Table, Db.Options.MapKeyConversion(name));
 
     private protected SqlExpr Value(string column, object? value)
     {

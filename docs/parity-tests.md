@@ -3,18 +3,18 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1621、偏离 200、不适用 76、骨架 7、待做 500。
+合计：已移植 1626、偏离 201、不适用 77、骨架 7、待做 493。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 349 | 43 | 34 | 0 | 9 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 349 | 43 | 35 | 0 | 8 |
 | 分页结果 | `query.page` | M1 | 22 | 18 | 3 | 0 | 0 | 1 |
 | 原生 SQL | `sql.native` | M1 | 50 | 40 | 9 | 1 | 0 | 0 |
 | 删除 | `write.delete` | M1 | 25 | 13 | 1 | 10 | 0 | 1 |
-| 插入 | `write.insert` | M1 | 50 | 39 | 0 | 0 | 1 | 10 |
+| 插入 | `write.insert` | M1 | 50 | 41 | 1 | 0 | 1 | 7 |
 | 更新 | `write.update` | M1 | 59 | 46 | 5 | 8 | 0 | 0 |
 | CASE WHEN | `expr.case` | M2 | 27 | 19 | 6 | 0 | 0 | 2 |
 | 日期函数 | `func.date` | M2 | 101 | 79 | 15 | 7 | 0 | 0 |
@@ -47,8 +47,8 @@
 | 追踪与差异更新 | `tracking` | M5 | 62 | 39 | 17 | 0 | 0 | 6 |
 | 乐观锁版本 | `version` | M5 | 13 | 13 | 0 | 0 | 0 | 0 |
 | UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
-| 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 19 | 6 | 0 | 0 | 1 |
-| upsert | `write.upsert` | M5 | 13 | 3 | 0 | 0 | 2 | 8 |
+| 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 20 | 6 | 0 | 0 | 0 |
+| upsert | `write.upsert` | M5 | 13 | 4 | 0 | 0 | 2 | 7 |
 | ClickHouse 方言 | `dialect.clickhouse` | M6 | 4 | 0 | 0 | 0 | 0 | 4 |
 | 达梦方言 | `dialect.dameng` | M6 | 51 | 0 | 0 | 0 | 0 | 51 |
 | DuckDB 方言 | `dialect.duckdb` | M6 | 16 | 0 | 0 | 0 | 0 | 16 |
@@ -64,7 +64,7 @@
 | search 扩展 | `search` | M7 | 45 | 0 | 0 | 0 | 0 | 45 |
 | 分库分表 | `sharding` | M7 | 48 | 0 | 0 | 0 | 0 | 48 |
 | 跨库链接（asTableLink） | `table.link` | M7 | 13 | 9 | 0 | 0 | 0 | 4 |
-| 换表名（asTable / 表名映射） | `table.rename` | M7 | 52 | 33 | 9 | 0 | 0 | 10 |
+| 换表名（asTable / 表名映射） | `table.rename` | M7 | 52 | 34 | 9 | 0 | 0 | 9 |
 | 换 schema（asSchema） | `table.schema` | M7 | 25 | 22 | 2 | 0 | 0 | 1 |
 
 ## 逐条
@@ -168,7 +168,7 @@
 | InjectTest.java#injectTest1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/InjectTest.cs:11：测的是 Java 自带的依赖注入容器；C# 用 Microsoft.Extensions.DependencyInjection，没有对应的内部容器 |  |
 | InjectTest.java#injectTest2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/InjectTest.cs:13：测的是 Java 自带的依赖注入容器；C# 用 Microsoft.Extensions.DependencyInjection，没有对应的内部容器 |  |
 | InjectTest.java#injectTest3 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/InjectTest.cs:15：测的是 Java 自带的依赖注入容器；C# 用 Microsoft.Extensions.DependencyInjection，没有对应的内部容器 |  |
-| InsertTest1.java#testColumnConfigure | 待做 |  |  |
+| InsertTest1.java#testColumnConfigure | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:14：Java 用例体是空的 |  |
 | MyTest1.java#testDraft3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:59 | `SELECT date_add(t.'create_time', interval (?) day) AS 'value1' FROM 't_blog' t WHERE t.'deleted' = ?…` |
 | MyTest1.java#testSelect1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:152 | `SELECT ? AS 'title',t.'title' AS 'id' FROM 't_topic' t WHERE t.'title' IS NOT NULL` |
 | MyTest1.java#testSelect10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:254 | `SELECT t.'id',t.'stars',t.'title',t.'create_time',(SELECT COUNT(*) FROM 't_blog' t1 WHERE t1.'delete…` |
@@ -648,7 +648,7 @@
 | InsertTest.java#insertSQLConvert2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:23 |  |
 | InsertTest.java#insertSQLConvert3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:32 |  |
 | InsertTest.java#insertTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:21 |  |
-| InsertTest1.java#inertTest1 | 待做 |  | `INSERT INTO 't_topic_abc' ('id','stars','title','create_time') VALUES (?,?,?,?)` |
+| InsertTest1.java#inertTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:17 | `INSERT INTO 't_topic_abc' ('id','stars','title','create_time') VALUES (?,?,?,?)` |
 | MyTest1.java#testDraft11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:123 | `SELECT timestampdiff(DAY, t.'create_time', t.'update_time') AS 'value1',timestampdiff(HOUR, t.'creat…` |
 | MyTest1.java#testDraft6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:78 | `SELECT date_add(date_add(t.'create_time', interval (?) month), interval (?) day) AS 'value1',date_ad…` |
 | MyTest1.java#testDraft7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:91 | `SELECT YEAR(t.'create_time') AS 'value1',MONTH(t.'create_time') AS 'value2',DAYOFMONTH(t.'create_tim…` |
@@ -670,8 +670,8 @@
 | QueryTest4.java#testJson1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:42 |  |
 | QueryTest4.java#testJson2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:52 |  |
 | QueryTest4.java#testJson2Jackson | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:52 |  |
-| UpperPropertyTest.java#test1 | 待做 |  |  |
-| UpperPropertyTest.java#test2 | 待做 |  |  |
+| UpperPropertyTest.java#test1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpperPropertyTest.cs:9：Java 的库是宽松模式，MyTopicTestDTO 不写 create_time 也能插入；MySQL 8.4 严格模式下改为比对插入 SQL、读取已有的行 |  |
+| UpperPropertyTest.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpperPropertyTest.cs:46 |  |
 | fork/insert/InsertSelectSqlTest.java#defaultTargetIsTheEntityTable | 待做 |  | `INSERT INTO "t_fork_post" ("id","user_id","title","amount") SELECT eq_src."id",eq_src."user_id",eq_s…` |
 | fork/insert/InsertSelectSqlTest.java#hanaUsesQuotedNames | 待做 |  | `INSERT INTO "t_fork_post_archive" ("id","user_id","title","amount") SELECT eq_src."id",eq_src."user_…` |
 | fork/insert/InsertSelectSqlTest.java#mysqlCopiesEntityColumnsPlusExtraColumn | 待做 |  | `INSERT INTO 't_fork_post_archive' ('id','user_id','title','amount','archived_at') SELECT eq_src.'id'…` |
@@ -2096,7 +2096,7 @@
 | InsertTest.java#mapInsertTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:141 | `INSERT INTO 'aaaaa' ('id','name','name1') VALUES (?,?,?)` |
 | InsertTest.java#mapInsertTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:146 | `INSERT INTO 'aaaaa' ('id','name','name1','name2') VALUES (?,?,?,?)` |
 | InsertTest.java#testIncrement | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:152：批量规模缩小（Java 共 1.8 万行，验证的是自增键逐行回填）；C# 每行一条语句，批量写入见 M5.7 | `truncate table t_test_inc;` |
-| InsertTest1.java#tesInsertMapKey2 | 待做 |  | `INSERT INTO "xxx" ("ID","STARS","USERNAME") VALUES (?,ifnull("STARS",0)+?,?)` |
+| InsertTest1.java#tesInsertMapKey2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:45 | `INSERT INTO "xxx" ("ID","STARS","USERNAME") VALUES (?,ifnull("STARS",0)+?,?)` |
 | UpdateTest.java#mapUpdateTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:267 | `UPDATE 'aaa' SET 'name' = ? WHERE 'id' = ?` |
 | UpdateTest.java#mapUpdateTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:272 | `UPDATE 'aaa' SET 'name' = ?,'name1' = ? WHERE 'id' = ?` |
 | UpdateTest.java#mapUpdateTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:277 |  |
@@ -2120,7 +2120,7 @@
 | InsertTest.java#insertDuplicateKeyUpdate1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:62 | `INSERT INTO 't_topic_auto' ('stars','title','create_time') VALUES (?,?,?) ON DUPLICATE KEY UPDATE 's…` |
 | InsertTest.java#insertDuplicateKeyUpdate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:67 | `INSERT INTO 't_topic_auto' ('stars','title','create_time') VALUES (?,?,?) ON DUPLICATE KEY UPDATE 's…` |
 | InsertTest.java#insertTestx | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:84 |  |
-| InsertTest1.java#inertTest2 | 待做 |  | `INSERT INTO 't_topic_abc' ('id','stars','title','create_time') VALUES (?,?,?,?) ON DUPLICATE KEY UPD…` |
+| InsertTest1.java#inertTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:26 | `INSERT INTO 't_topic_abc' ('id','stars','title','create_time') VALUES (?,?,?,?) ON DUPLICATE KEY UPD…` |
 | QueryTest14.java#testxxxxx | 待做 |  | `MERGE INTO "t_topic" t1 USING (SELECT ? AS "id",? AS "stars",? AS "title",? AS "create_time" FROM DU…` |
 | pgsql/InsertTest.java#insertDuplicateKeyIgnore2 | 待做 |  | `INSERT INTO "t_topic_auto" ("stars","title","create_time") VALUES (?,?,?) ON CONFLICT DO NOTHING` |
 | pgsql/InsertTest.java#insertDuplicateKeyUpdate2 | 待做 |  | `INSERT INTO "t_topic_auto" ("stars","title","create_time") VALUES (?,?,?) ON CONFLICT ("title") DO U…` |
@@ -2675,7 +2675,7 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| InsertTest1.java#testColumnConfigure2 | 待做 |  | `INSERT INTO 'xxx' ('id','stars') VALUES (?,ifnull('stars',0)+?)` |
+| InsertTest1.java#testColumnConfigure2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:36 | `INSERT INTO 'xxx' ('id','stars') VALUES (?,ifnull('stars',0)+?)` |
 | QueryAggregateTest1.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:250 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
 | QueryAggregateTest1.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:269 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
 | QueryAggregateTest1.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:288 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |

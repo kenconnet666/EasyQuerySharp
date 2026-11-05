@@ -209,3 +209,53 @@ public class Topic2DTO
     [ColumnIgnore]
     public string? Title1 { get; set; }
 }
+
+/// <summary>对应 Java：entity/UpperTopic（属性名大写开头，主键属性叫 ID、列名 id）。</summary>
+[Table("t_topic")]
+public class UpperTopic
+{
+    [Column("id", PrimaryKey = true)]
+    public string? ID { get; set; }
+
+    public int? Stars { get; set; }
+
+    public string? Title { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+}
+
+/// <summary>对应 Java：testvo/MyTopicTestDTO（属性名与列名完全不同：eCgi → id、SQL → title）。</summary>
+[Table("t_topic")]
+public class MyTopicTestDTO
+{
+    [Column("id", PrimaryKey = true)]
+    public string? ECgi { get; set; }
+
+    [Column("title")]
+    public string? SQL { get; set; }
+
+    [Column("stars")]
+    public int? Stars { get; set; }
+}
+
+/// <summary>对应 Java：entity/MyALLTYPE（is 开头的属性名，含值类型的 int / bool）。</summary>
+[Table("my_all_type")]
+public class MyALLTYPE
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public decimal? IsNumberDecimal { get; set; }
+
+    public int? IsNumberInteger { get; set; }
+
+    public bool? IsEnable { get; set; }
+
+    public int IsNumberIntegerBasic { get; set; }
+
+    public bool IsEnableBasic { get; set; }
+
+    public DateTime? IsTimeLocalDateTime { get; set; }
+
+    public string? IsValue { get; set; }
+}

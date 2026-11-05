@@ -47,6 +47,12 @@ public sealed class EasyDbOptions
     public Filtering.ValueFilter QueryValueFilter { get; set; } = Filtering.ValueFilter.All;
 
     /// <summary>
+    /// 按字典写入（<c>InsertMap</c> / <c>UpdateMap</c>）时键到列名的换算（对应 Java 的 MapKeyNameConversion）：默认键就是列名，
+    /// 如 Oracle 上要全大写可设成 <c>key =&gt; key.ToUpperInvariant()</c>。
+    /// </summary>
+    public Func<string, string> MapKeyConversion { get; set; } = key => key;
+
+    /// <summary>
     /// IN 值列表的上限（对应 Java 的 maxInClauseSize）：超过时按上限拆成多个 IN 用 OR 连接；0（默认）表示不拆。
     /// Oracle 单个 IN 最多 1000 个值，需要时设成 1000。
     /// </summary>
