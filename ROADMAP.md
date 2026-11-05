@@ -169,12 +169,13 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [x] 4.3 隐式子查询：`Any` / `!Any` / `Count` / `Sum` / `Max` / `Min` / `Average` / `Where(..).聚合`，以及分组合并：`GroupJoin(nav, q => …)`（一对多、多对多、嵌套、导航级条件与值过滤）、`GroupJoinAll()` 全部合并、`GroupJoinNoMerge()` 不提取共有条件；UPDATE / DELETE 的条件里同样可用。
 - [~] 4.4 归一管线：内联器、规划器、按叶子往根构造的物化器。对多集合每层一次批量 IN 查询；IN 列表按方言上限分批，PG 用 `ANY`。
 - [~] 4.5 投影里的嵌套集合：`Where` / `OrderBy` / `Take`（ROW_NUMBER）、`First` / `ElementAt`；`oneOfMany`（导航上的 `First` / `ElementAt` 已完成）。
-- [ ] 4.6 可复用投影：`Project(map)`，以及 `[Projection]` 方法由生成器产出表达式。
+- [x] 4.6 可复用投影：`Project(map)`（对一套用、对多等同 `Select`）与 `[Projection]` 方法（生成器在编译期产出表达式并登记，查询里内联成方法体；投影结果上取成员会折回原来的列），写法不受支持时报 EQ0006。
 - [~] 4.7 自动映射（Java 的 selectAutoInclude）：`SelectAutoInclude<TDto>()` 按 DTO 结构带出导航（嵌套 DTO 列表 / 对象走带出查询）、`IAutoIncludeConfigure<T>`（带出条件、根查询配置）、`[MapExpression]`（额外列）、`[MapPath]`（平铺：对一路径默认走共用的带出查询，`Join = true` 时主查询 JOIN）、经过集合再沿导航走的平铺路径（逐段查中间表）、`IncludeGroupSize` / `WithConfigureArgument`、树形 DTO 拼树已完成（运行时构造表达式）；编译期生成与分析器 EQ0003 / EQ0005 待做。
 - [~] 4.8 `Include(nav, q => …)` 可以嵌套；ExtraFilter 的分析器 EQ0004（Include、嵌套、多对多经中间表、ExtraFilter / ExtraMappingFilter、子数据 Take 按父对象分段（`IncludeLimitMode` 分区 / UNION ALL）、`LoadIncludeAsync`、复合键、直达导航（逐段查中间表）、导航声明的排序与条数（`OrderBy` / `Limit`）已完成；分析器待做）。
 - [~] 4.9 填充：投影里写非导航的关联查询，规划器按键批量执行（`FillMany` / `FillOne` 已完成，带 Take 时按键 UNION ALL）。
 - [~] 4.10 树：`AsTreeCte`（递归 CTE，上下两个方向、层级上限、子节点条件）、`ToTreeAsync`、树结果投影到 DTO（手写投影或 `SelectAutoInclude`；DTO 自带或沿用实体的自关联导航）已完成；递归 DTO 由生成器诊断。
 - [ ] 4.11 `ToAsyncEnumerable(batchSize)` 按批流式读取对象树；`.AsSnapshot()` 保证多次查询的一致性。没有对应的 Java 用例，挪到 BACKLOG。
+- [!] 4.12 关联键的自定义比较（Java 的 `relationPropertyStrategy`，如 `find_in_set`：本表一列逗号分隔的 id 关联多行）。规划外的新公共概念（导航上的关联策略），待确认 API 再做；对应 M8Test1 testRelationColumns / testRelationColumns1。- [!] 4.13 沿导航路径拉平直接取列表（Java 的 `toList(t -> t.bList().flatElement().cList().flatElement().cname())`）。C# 目前用 `[MapPath]` DTO 表达，查询本身直接返回拉平值是规划外的新 API，待确认；对应 QueryTest25 testToListFlat1。
 
 ## M5 写入进阶与列规则
 

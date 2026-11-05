@@ -35,6 +35,21 @@ internal static class AnalyzerHarness
         MetadataReference.CreateFromFile(typeof(EasyDb).Assembly.Location),
     ];
 
+    /// <summary>
+    /// 编译 <paramref name="types"/>（顶层类型声明）并运行生成器 <typeparamref name="TGenerator"/>：返回生成器报出的诊断、
+    /// 加入生成代码之后的编译错误，以及生成的源码。
+    /// </summary>
+    public static (ImmutableArray<Diagnostic> Generator, ImmutableArray<Diagnostic> Errors, string[] Sources) Generate<TGenerator>(string types)
+        where TGenerator : IIncrementalGenerator, new()
+    {
+        var compilation = CSharpCompilation.Create("Snippet", [CSharpSyntaxTree.ParseText(Prelude + types, path: "Snippet.cs")], References,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, nullableContextOptions: NullableContextOptions.Enable));
+        var driver = CSharpGeneratorDriver.Create(new TGenerator()).RunGeneratorsAndUpdateCompilation(compilation, out var output, out var diagnostics,
+            TestContext.Current.CancellationToken);
+        var sources = driver.GetRunResult().GeneratedTrees.Select(t => t.ToString()).ToArray();
+        return (diagnostics, [.. output.GetDiagnostics(TestContext.Current.CancellationToken).Where(d => d.Severity == DiagnosticSeverity.Error)], sources);
+    }
+
     /// <summary>编译 <paramref name="body"/>（类成员，放在 <c>Snippet</c> 类里），返回 <typeparamref name="TAnalyzer"/> 报出的诊断。</summary>
     public static async Task<ImmutableArray<Diagnostic>> AnalyzeAsync<TAnalyzer>(string body) where TAnalyzer : DiagnosticAnalyzer, new()
     {

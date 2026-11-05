@@ -58,6 +58,10 @@ SELECT t.`name` FROM `t_user` t WHERE (t.`age` IS NULL OR t.`company_id` IS NULL
 SELECT t.`title` FROM `t_post` t WHERE t.`title` LIKE ?;
 -- params: ['%数据%']
 
+-- ProjectMap：可复用投影：Project(map)
+SELECT t1.`name`,t1.`age` FROM `t_post` t LEFT JOIN `t_user` t1 ON t1.`id` = t.`author_id` WHERE t.`status` = ? ORDER BY t.`id` ASC LIMIT 3;
+-- params: ['published']
+
 -- OrderByColumns：多列排序
 SELECT t.`name`,t.`age` FROM `t_user` t ORDER BY t.`level` DESC,t.`age` ASC;
 

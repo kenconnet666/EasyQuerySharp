@@ -26,4 +26,14 @@ internal static class Descriptors
         DiagnosticSeverity.Info,
         isEnabledByDefault: true,
         description: "查询里的导航翻译成 LEFT JOIN 或子查询，取不到时值就是 NULL，不需要 ?. 来防空引用；写成 !. 即可。");
+
+    /// <summary>[Projection] 方法的写法生成器处理不了。</summary>
+    public static readonly DiagnosticDescriptor UnsupportedProjection = new(
+        "EQ0006",
+        "[Projection] 方法写法不受支持",
+        "[Projection] 方法 {0} {1}",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "生成器把 [Projection] 方法的方法体原样搬进一个表达式树 lambda：方法要是静态、非泛型，放在 partial 的非泛型类型里，方法体只有一个表达式（=> 表达式，或只有一句 return）。");
 }

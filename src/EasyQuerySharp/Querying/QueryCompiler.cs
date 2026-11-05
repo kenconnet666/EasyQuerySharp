@@ -230,7 +230,8 @@ internal static class QueryCompiler
         // 分组查询、开了条件下推（Java 的 SMART_PREDICATE）的投影总是写列别名（与 Java 一致）
         var projection = new ProjectionCompiler(frame.Translator, state.Db.Options.NameConversion, alwaysAlias: state.GroupKey is not null || state.SmartPredicate, neverAlias: state.ImplicitSelector, aliasScalar: state.AliasScalar, uniqueNames: state.UniqueColumnNames);
         LambdaExpression selector;
-        if (state.Selector is not null) selector = state.Selector;
+        // 可复用投影（Project、[Projection] 方法）先内联成普通的投影表达式
+        if (state.Selector is not null) selector = ProjectionInliner.Expand(state.Selector);
         else
         {
             var root = Expression.Parameter(state.ElementType, "root");

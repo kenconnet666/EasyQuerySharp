@@ -7,3 +7,4 @@ Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
 EQ0001 | EasyQuerySharp | Warning | Descriptors
 EQ0002 | EasyQuerySharp | Info | Descriptors
+EQ0006 | EasyQuerySharp | Error | Descriptors

@@ -143,6 +143,8 @@ internal sealed partial class ExpressionTranslator
 
     private SqlExpr TranslateMember(MemberExpression m)
     {
+        // 投影结果上的成员（c.Bank!.ToVo().Name）：内联后折回原来的列
+        if (m.Expression is MethodCallExpression or NewExpression or MemberInitExpression && Querying.ProjectionInliner.FoldMember(m) is { } folded) return Translate(folded);
         if (TryTranslateGroupKey(m) is { } key) return key;
         if (TryTranslateCollectionCount(m) is { } count) return count;
         if (m.Expression is not null && BindingOf(m.Expression) is EntityBinding entity && entity.Entity.FindColumn(m.Member.Name) is { Computed: { } computed })

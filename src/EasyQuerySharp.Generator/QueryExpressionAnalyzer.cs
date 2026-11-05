@@ -48,7 +48,7 @@ public sealed class QueryExpressionAnalyzer : DiagnosticAnalyzer
         }
     }
 
-    // 用到查询参数、又不是 BCL / 核心库 / [SqlFunction] 的方法：翻译器认不得，运行时报"不支持翻译成 SQL"
+    // 用到查询参数、又不是 BCL / 核心库 / [SqlFunction] / [Projection] 的方法：翻译器认不得，运行时报"不支持翻译成 SQL"
     private static bool IsUntranslatable(InvocationExpressionSyntax invocation, SemanticModel model, System.Collections.Generic.HashSet<IParameterSymbol> parameters, out string name)
     {
         name = "";
@@ -69,5 +69,5 @@ public sealed class QueryExpressionAnalyzer : DiagnosticAnalyzer
     }
 
     private static bool HasSqlFunction(IMethodSymbol method) =>
-        (method.ReducedFrom ?? method).GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "EasyQuerySharp.SqlFunctionAttribute");
+        (method.ReducedFrom ?? method).GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() is "EasyQuerySharp.SqlFunctionAttribute" or "EasyQuerySharp.ProjectionAttribute");
 }

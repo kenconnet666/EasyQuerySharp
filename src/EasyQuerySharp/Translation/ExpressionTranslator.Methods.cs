@@ -8,6 +8,8 @@ internal sealed partial class ExpressionTranslator
 {
     private SqlExpr TranslateCall(MethodCallExpression call)
     {
+        // 条件、排序里的可复用投影（投影里的已在编译前内联）
+        if (Querying.ProjectionInliner.TryExpand(call) is { } inlined) return Translate(inlined);
         var method = call.Method;
 
         if (method.DeclaringType == typeof(JsonNode) || (method.DeclaringType == typeof(Sql) && method.Name == nameof(Sql.Json))) return TranslateJson(call);

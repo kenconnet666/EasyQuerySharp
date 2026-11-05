@@ -123,6 +123,16 @@ public static class QueryBasicsExamples
             .Select(p => p.Title).ToListAsync();
     }
 
+    /// <summary>可复用的投影：作者名片。</summary>
+    public sealed record AuthorCard(string Name, int? Age);
+
+    /// <summary>投影写成表达式字段，多处共用；查询里用 Project 套到导航上，等同于把它写在原地。</summary>
+    private static readonly System.Linq.Expressions.Expression<Func<User, AuthorCard>> AuthorMap = u => new AuthorCard(u.Name, u.Age);
+
+    [Example("query/basics", "可复用投影：Project(map)")]
+    public static Task<List<AuthorCard>> ProjectMap(EasyDb db) =>
+        db.Query<Post>().Where(p => p.Status == PostStatus.Published).OrderBy(p => p.Id).Take(3).Select(p => p.Author!.Project(AuthorMap)).ToListAsync();
+
     // ---- 排序与分页
 
     /// <summary>名字与年龄。</summary>
