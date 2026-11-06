@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <!--
-      性能基准（BenchmarkDotNet）：查询翻译与渲染、读取物化。只在本地按需跑，不进 CI：
+      性能基准（BenchmarkDotNet）：和 EF Core、Dapper、FreeSql、SqlSugar 比较查询翻译、物化、对象树三项，结果见 docs/benchmarks.md。
+      只在本地按需跑，不进 CI：
         dotnet run -c Release (项目 benchmarks/EasyQuerySharp.Benchmarks，参数 filter 选基准)
-      BenchmarkDotNet 只在这个项目里引用，核心包仍零依赖。
+      BenchmarkDotNet 和对比用的 ORM 只在这个项目里引用，核心包仍零依赖。
     -->
 
     <PropertyGroup>
@@ -20,6 +21,10 @@
     <ItemGroup>
         <PackageReference Include="BenchmarkDotNet" />
         <PackageReference Include="Microsoft.Data.Sqlite" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+        <PackageReference Include="Dapper" />
+        <PackageReference Include="FreeSql.Provider.SqliteCore" />
+        <PackageReference Include="SqlSugarCore" />
     </ItemGroup>
 
 </Project>

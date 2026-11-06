@@ -20,9 +20,13 @@
         <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="4.14.0" />
     </ItemGroup>
 
-    <!-- 基准 -->
+    <!-- 基准；对比用的 ORM 只在 benchmarks/EasyQuerySharp.Benchmarks 里引用（ROADMAP 5.2） -->
     <ItemGroup>
         <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
+        <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.14" />
+        <PackageVersion Include="Dapper" Version="2.1.89" />
+        <PackageVersion Include="FreeSql.Provider.SqliteCore" Version="3.5.311" />
+        <PackageVersion Include="SqlSugarCore" Version="5.1.4.221" />
     </ItemGroup>
 
     <!-- 依赖注入：扩展包只引用抽象包，容器本身只在测试里引用 -->
