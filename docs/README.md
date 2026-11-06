@@ -10,10 +10,10 @@
 | [parity.md](parity.md) | 能力对照总表：Java 的每种能力、用例数、计划的 C# 写法、所属里程碑 |
 | parity-tests.md | 逐条用例对照，由 `tools/ParityTests` 生成，ROADMAP 0.7 完成后才有 |
 | [BACKLOG.md](BACKLOG.md) | 记下但暂时不做的事 |
+| [HANDOFF.md](HANDOFF.md) | 交接记录：换机器继续时先读 |
 
 ## 设计决定
 
-- [交接记录](HANDOFF.md)：换机器继续时先读
 - [0001 查询 API 路线](decisions/0001-query-api-route.md)：POCO 实体加表达式树，不复刻 Java Proxy；表达式树里不能写的语法和对策；性能对策。
 - [0002 对象树与 DTO](decisions/0002-object-tree-and-dto.md)：所有写法归一成投影表达式；对一用 JOIN、对多分层批量查询；三种 DTO 写法；Include、级联保存、树。
 - [0003 测试对标](decisions/0003-testing-and-parity.md)：逐条移植 Java 用例；SQL 文本与 Java 对齐；测试分四层；本地与 CI 的分工。
