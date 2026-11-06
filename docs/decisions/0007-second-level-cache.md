@@ -1,6 +1,6 @@
 # 0007 二级缓存
 
-状态：草案（2026-11-06），对应 ROADMAP 4.5。末尾“待定”一节的几点确认后改为已定。
+状态：已定（2026-11-06），对应 ROADMAP 4.5。
 
 ## 背景
 
@@ -149,15 +149,15 @@ C# 独有的用例覆盖每种写入的失效、主键提取的各种 WHERE 形�
 - 透明的查询缓存，投影 / DTO / 聚合 / 分页 / 对象树结果的缓存。
 - Java 的 Multi、`toMap`、复合主键；多实例本机层的失效通知；写入前预读受影响的行；自造的存储接口与 Redis 驱动。
 
-## 待定
+## 已定的取舍
 
-1. 存储直接绑定 `HybridCache`，缓存包因此带上它的传递依赖（Caching.Abstractions、Caching.Memory、Options、Logging.Abstractions、System.Text.Json）。
-2. 核心新增公共概念 `IWriteListener` / `WriteEvent` / `WriteKind` / `AddWriteListener` / `EasyDb.InTransaction`；监听器异常抛出。
+1. 存储直接绑定 `HybridCache`，缓存包带上它的传递依赖（Caching.Abstractions、Caching.Memory、Options、Logging.Abstractions、System.Text.Json）。
+2. 核心新增公共概念 `IWriteListener` / `WriteEvent` / `WriteKind` / `AddWriteListener` / `EasyDb.InTransaction`；监听器异常抛出（消息写明数据库已写入）。
 3. 主键不明的条件写入整表失效，不做写前预读。
 4. 事务里的读绕过缓存。
-5. 1.0 不自带多实例本机层失效通知。
-6. 默认值：`Expiration` 5 分钟（Java 3 小时）、`LocalCacheExpiration` 同 `Expiration`、`NullExpiration` 10 秒、`LateEvictDelay` 关闭。
+5. 1.0 不自带多实例本机层失效通知，靠 `LocalCacheExpiration` 兜底，或换带 backplane 的 HybridCache 实现。
+6. 默认值：`Expiration` 5 分钟、`LocalCacheExpiration` 同 `Expiration`、`NullExpiration` 10 秒、`LateEvictDelay` 关闭。
 7. 缓存的实体集中登记，不加特性；id 用 `object`。
-8. 与 Java 的行为差异：All 分页先分页再取行、UPDATE 也清索引、All 增加排序。
-9. ROADMAP 4.5 的文案改成“kv、all 两种”。
-10. L2 测试先用内存版 `IDistributedCache` 模拟两实例；真 Redis 冒烟是否要做。
+8. 与 Java 的行为差异照第 5–7 节：All 分页先分页再取行、UPDATE 也清索引、All 增加排序。
+9. ROADMAP 4.5 的文案是“kv、all 两种”（Java 的 Multi 是注释掉的死代码）。
+10. L2 的测试先用内存版 `IDistributedCache` 模拟两实例，不做真 Redis 冒烟。

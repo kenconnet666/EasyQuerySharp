@@ -19,7 +19,7 @@
 - [0004 聚合根保存](decisions/0004-aggregate-save.md)：按追踪快照的差异保存整个聚合；级联声明、导航分类、差异与语句顺序。
 - [0005 关联键的匹配方式](decisions/0005-relation-key-match.md)：`KeyMatch.SelfCsv`（本表一列存逗号分隔的目标键）与 `Sql.InCsv` 的各方言写法、三种场景与限制。
 - [0006 分库分表](decisions/0006-sharding.md)：节点与规则、按 WHERE 裁剪、库内 UNION ALL 与跨库归并、写入路由、事务，以及 48 个 Java 用例的归属。
-- [0007 二级缓存](decisions/0007-second-level-cache.md)（草案）：显式的 kv / all 缓存包、核心的写入监听、HybridCache 上的键与桶、失效规则与一致性限制。
+- [0007 二级缓存](decisions/0007-second-level-cache.md)：显式的 kv / all 缓存包、核心的写入监听、HybridCache 上的键与桶、失效规则与一致性限制。
 
 ## 指南
 
