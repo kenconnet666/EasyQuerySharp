@@ -1,8 +1,11 @@
+using EasyQuerySharp.Metadata;
+
 namespace EasyQuerySharp.Tests.Upstream.Extras;
 
 /// <summary>
 /// Kingbase、GaussDB / openGauss 方言与 PostgreSQL 不同的写法（逐字对应 Java 的 sql-kingbase-es、sql-gauss-db）。
-/// Java 只有 testDoubleConcat、testKingbaseCte 两个用例，其余差异在这里按 Java 的函数模板核对；没有实库，只比对 SQL。
+/// Java 只有 testDoubleConcat、testKingbaseCte 两个用例，其余差异在这里按 Java 的函数模板核对；
+/// GaussDB 另有 openGauss 实库上改掉的写法（upsert、自增列、LOG），实库验证在 Tests.Live 的 OpenGaussLiveSuite。
 /// </summary>
 public sealed class PgFamilyDialectTest
 {
@@ -52,7 +55,7 @@ public sealed class PgFamilyDialectTest
             "2(Long),3(Long),4(Long),2025-01-01T00:00(LocalDateTime),2025-01-01T00:00(LocalDateTime),false(Boolean)");
     }
 
-    // 其余与 PG 相同：分页、RETURNING、ON CONFLICT 都沿用
+    // 其余与 PG 相同：分页沿用；Kingbase 的 upsert 也是 ON CONFLICT
     [Theory]
     [InlineData("kingbase"), InlineData("gauss")]
     public void InheritsPostgreSql(string dialect)
@@ -60,7 +63,38 @@ public sealed class PgFamilyDialectTest
         var db = SqlOnly.Db(dialect);
         Assert.Equal(SqlOnly.Db("pgsql").Query<DocBankCard>().Where(c => c.Id != null).OrderBy(c => c.Id).Skip(1).Take(2).ToSql(),
             db.Query<DocBankCard>().Where(c => c.Id != null).OrderBy(c => c.Id).Skip(1).Take(2).ToSql());
-        Assert.Equal(SqlOnly.Db("pgsql").Insert(new DocBankCard { Id = "1", Code = "c" }).OnConflictIgnore().ToSql(),
+        if (dialect == "kingbase")
+            Assert.Equal(SqlOnly.Db("pgsql").Insert(new DocBankCard { Id = "1", Code = "c" }).OnConflictIgnore().ToSql(),
+                db.Insert(new DocBankCard { Id = "1", Code = "c" }).OnConflictIgnore().ToSql());
+    }
+
+    // openGauss 7 没有 ON CONFLICT（Java 照 PG 写，实库报语法错误）：写 ON DUPLICATE KEY UPDATE，冲突由表上的主键 / 唯一约束决定
+    [Fact]
+    public void GaussUpsertsWithOnDuplicateKey()
+    {
+        var db = SqlOnly.Db("gauss");
+        Assert.Equal("INSERT INTO \"doc_bank_card\" (\"id\",\"code\") VALUES (?,?) ON DUPLICATE KEY UPDATE NOTHING",
             db.Insert(new DocBankCard { Id = "1", Code = "c" }).OnConflictIgnore().ToSql());
+        Assert.Equal("INSERT INTO \"doc_bank_card\" (\"id\",\"code\") VALUES (?,?) ON DUPLICATE KEY UPDATE \"code\" = EXCLUDED.\"code\"",
+            db.Insert(new DocBankCard { Id = "1", Code = "c" }).OnConflictUpdate(c => new { c.Code }).ToSql());
+    }
+
+    // openGauss 没有 IDENTITY 列，自增列写 BIGSERIAL；没有 LOG10，以 10 为底写单参数 LOG
+    [Fact]
+    public void GaussSerialColumnsAndLog()
+    {
+        var db = SqlOnly.Db("gauss");
+        var create = db.CodeFirst.CreateTableSql(typeof(GaussCounter));
+        Assert.Contains("\"id\" BIGSERIAL NOT NULL", create);
+        Assert.DoesNotContain("IDENTITY", create);
+        SqlOnly.AssertStatement(db.Query<GaussCounter>().Select(c => new Draft<double>(Math.Log10(c.Id))).ToStatement(),
+            "SELECT LOG(t.\"id\") AS \"value1\" FROM \"gauss_counter\" t", "");
+    }
+
+    [Table("gauss_counter")]
+    private sealed class GaussCounter
+    {
+        [Column(PrimaryKey = true, Generated = true)]
+        public long Id { get; set; }
     }
 }

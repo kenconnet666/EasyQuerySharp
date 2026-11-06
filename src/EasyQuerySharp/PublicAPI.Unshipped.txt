@@ -2034,7 +2034,9 @@ override EasyQuerySharp.Dialects.DuckDbDialect.RegisterFunctions(System.Collecti
 override EasyQuerySharp.Dialects.DuckDbDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
 override EasyQuerySharp.Dialects.DuckDbDialect.WriteLock(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.RowLock rowLock) -> void
 override EasyQuerySharp.Dialects.DuckDbDialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
+override EasyQuerySharp.Dialects.GaussDbDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
 override EasyQuerySharp.Dialects.GaussDbDialect.Name.get -> string!
+override EasyQuerySharp.Dialects.GaussDbDialect.WriteInsertConflict(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.InsertStatement! insert) -> void
 override EasyQuerySharp.Dialects.GaussDbDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
 override EasyQuerySharp.Dialects.GaussDbDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
 override EasyQuerySharp.Dialects.HanaDialect.CastTemplate(System.Type! targetType) -> string!
