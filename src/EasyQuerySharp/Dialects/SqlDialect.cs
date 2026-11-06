@@ -195,6 +195,12 @@ public abstract partial class SqlDialect
     protected virtual bool NativeNullsOrder => false;
 
     /// <summary>
+    /// 没有指定 NULL 位置时，数据库把 NULL 排在哪里（分库分表跨单元归并时按它在内存里排序）。
+    /// 默认 NULL 最小：升序在前、降序在后（MySQL、SQLite、SQL Server、HANA）；PostgreSQL、Oracle、Db2 相反；DuckDB、ClickHouse 总在最后。
+    /// </summary>
+    public virtual NullsOrder DefaultNullsOrder(bool descending) => descending ? NullsOrder.Last : NullsOrder.First;
+
+    /// <summary>
     /// 写 ORDER BY 的一项。指定了 NULL 位置时按 <see cref="NativeNullsOrder"/> 写成 <c>x ASC NULLS LAST</c>，
     /// 或 <c>CASE WHEN x IS NULL THEN 1 ELSE 0 END ASC,x ASC</c>；原生片段不追加方向。
     /// </summary>

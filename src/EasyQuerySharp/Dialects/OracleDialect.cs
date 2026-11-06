@@ -205,6 +205,9 @@ public class OracleDialect : SqlDialect
     /// <summary>Oracle 原生支持 NULLS FIRST / LAST（Java 的 OracleOrderByNullsModeSQLFunction）。</summary>
     protected override bool NativeNullsOrder => true;
 
+    /// <inheritdoc />
+    public override NullsOrder DefaultNullsOrder(bool descending) => descending ? NullsOrder.First : NullsOrder.Last;
+
     /// <summary><c>LISTAGG(TO_CHAR(x), ?) WITHIN GROUP(ORDER BY …)</c>（与 Java 的 OracleJoiningSQLFunction 一致，达梦沿用）。</summary>
     public override void WriteOrderedStringJoin(SqlRenderer renderer, OrderedStringJoinExpr join)
     {

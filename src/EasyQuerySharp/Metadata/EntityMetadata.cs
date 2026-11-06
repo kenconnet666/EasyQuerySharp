@@ -17,6 +17,42 @@ public sealed class EntityMetadata
         Factory = CreateFactory(type);
     }
 
+    // 同一实体的另一张表（分片的节点）：列、键、读取委托共用
+    private EntityMetadata(EntityMetadata source, string tableName)
+    {
+        Type = source.Type;
+        TableName = tableName;
+        Schema = source.Schema;
+        Comment = source.Comment;
+        Columns = source.Columns;
+        KeyColumns = source.KeyColumns;
+        _byProperty = source._byProperty;
+        Factory = source.Factory;
+    }
+
+    /// <summary>
+    /// 同一实体换成表 <paramref name="tableName"/>（分库分表的节点，code-first 逐张建表、同步时用）：默认的索引名、外键名以表名开头，跟着换成新表名
+    /// （PostgreSQL 等库的索引名在 schema 里唯一）；没有改名来源。
+    /// </summary>
+    internal EntityMetadata ForTable(string tableName)
+    {
+        string Rename(string name) => name.StartsWith(TableName + "_", StringComparison.Ordinal) ? tableName + name[TableName.Length..] : name;
+        var copy = new EntityMetadata(this, tableName)
+        {
+            NotFoundMessage = NotFoundMessage,
+            LogicDeleteColumn = LogicDeleteColumn,
+            LogicDelete = LogicDelete,
+            VersionColumn = VersionColumn,
+            VersionStrategy = VersionStrategy,
+            NavigationProperties = NavigationProperties,
+            ValueObjects = ValueObjects,
+            IsValueObject = IsValueObject,
+            Indexes = [.. Indexes.Select(i => i with { Name = Rename(i.Name) })],
+        };
+        copy._foreignKeys = new Lazy<IReadOnlyList<ForeignKeyMetadata>>(() => [.. ForeignKeys.Select(f => f with { Name = Rename(f.Name), Entity = copy })]);
+        return copy;
+    }
+
     /// <summary>实体类型。</summary>
     public Type Type { get; }
 

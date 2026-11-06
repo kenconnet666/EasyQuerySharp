@@ -16,6 +16,9 @@ public class DuckDbDialect : PostgreSqlDialect
     public new static DuckDbDialect Instance { get; } = new();
 
     /// <inheritdoc />
+    public override NullsOrder DefaultNullsOrder(bool descending) => NullsOrder.Last;
+
+    /// <inheritdoc />
     public override string Name => "duckdb";
 
     /// <summary>DuckDB.NET 认 <c>$name</c> / <c>$1</c> 形式的参数，不认 <c>@name</c>。</summary>

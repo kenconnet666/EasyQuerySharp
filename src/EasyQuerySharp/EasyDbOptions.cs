@@ -18,6 +18,8 @@ public sealed class EasyDbOptions
     private readonly List<IExecutionListener> _listeners = [];
     private readonly Dictionary<string, ILogicDeleteStrategy> _logicDeleteStrategies = new(StringComparer.Ordinal);
     private readonly List<LogicDeleteRule> _logicDeleteRules = [];
+    private readonly Dictionary<string, DbDataSource> _dataSources = new(StringComparer.Ordinal);
+    private readonly Dictionary<Type, Func<EntityMetadata, string, Sharding.IShardRule>> _shardRules = [];
     private bool _frozen;
 
     /// <summary>方言。</summary>
@@ -119,6 +121,53 @@ public sealed class EasyDbOptions
         set => field = Mutable(value);
     } = 512;
 
+    /// <summary>
+    /// <see cref="DataSource"/> 的名字（对应 Java 的 defaultDataSourceName），默认 <c>ds0</c>。分库时节点按名字引用数据源，
+    /// 不分片的表都在这个数据源里。
+    /// </summary>
+    public string DefaultDataSourceName
+    {
+        get;
+        set
+        {
+            ArgumentException.ThrowIfNullOrEmpty(value);
+            field = Mutable(value);
+        }
+    } = "ds0";
+
+    /// <summary>默认数据源之外、按名字登记的数据源（用 <see cref="AddDataSource"/> 添加），分库时节点按名字落在其中。</summary>
+    public IReadOnlyDictionary<string, DbDataSource> DataSources => _dataSources;
+
+    /// <summary>
+    /// 同一数据源里一条语句最多把几张分表写成 <c>(SELECT * FROM a UNION ALL SELECT * FROM b) t</c>（对应 Java 的 SHARDING_UNION_ALL），默认 64：
+    /// 排序、分页、分组、聚合都交给数据库；超出的再分成几条语句，在内存里归并。设成 1 时每张表一条语句（Java 的默认做法）。
+    /// </summary>
+    public int MaxUnionTables
+    {
+        get;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
+            field = Mutable(value);
+        }
+    } = 64;
+
+    /// <summary>
+    /// 一条语句裁剪之后最多命中多少个分片节点（对应 Java 的 maxShardingRouteCount），默认 128；超出时报错，防止条件漏写时扫遍全部分表。
+    /// </summary>
+    public int MaxShardNodes
+    {
+        get;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
+            field = Mutable(value);
+        }
+    } = 128;
+
+    /// <summary>按实体登记的分片规则（创建 EasyDb 时按实体元数据建出）。</summary>
+    internal IReadOnlyDictionary<Type, Func<EntityMetadata, string, Sharding.IShardRule>> ShardRules => _shardRules;
+
     /// <summary>执行监听器（用 <see cref="AddListener"/> 添加）。</summary>
     public IReadOnlyList<IExecutionListener> Listeners => _listeners;
 
@@ -213,6 +262,56 @@ public sealed class EasyDbOptions
         ArgumentException.ThrowIfNullOrEmpty(property);
         ArgumentNullException.ThrowIfNull(logicDelete);
         _logicDeleteRules.Add(Mutable(new LogicDeleteRule(appliesTo, property, logicDelete)));
+        return this;
+    }
+
+    /// <summary>给默认数据源起名字（对应 Java 的 setDefaultDataSourceName），分库规则按名字引用它，见 <see cref="DefaultDataSourceName"/>。</summary>
+    public EasyDbOptions WithDefaultDataSourceName(string name)
+    {
+        DefaultDataSourceName = name;
+        return this;
+    }
+
+    /// <summary>
+    /// 按名字登记一个数据源（对应 Java 的 ShardingDataSource），分库规则的节点按名字落在其中；方言与默认数据源相同。
+    /// 名字不能与 <see cref="DefaultDataSourceName"/> 或已登记的重复。
+    /// </summary>
+    /// <example><code>options.UseMySql(ds2020).WithDefaultDataSourceName("ds2020").AddDataSource("ds2021", ds2021)</code></example>
+    public EasyDbOptions AddDataSource(string name, DbDataSource dataSource)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        ArgumentNullException.ThrowIfNull(dataSource);
+        Mutable(name);
+        if (name == DefaultDataSourceName || !_dataSources.TryAdd(name, dataSource)) throw new InvalidOperationException($"数据源 {name} 重复登记");
+        return this;
+    }
+
+    /// <summary>
+    /// 实体 <typeparamref name="T"/> 分库分表（见 0006）：用内置规则 <see cref="Sharding.ShardRuleBuilder{T}.Mod"/>、
+    /// <see cref="Sharding.ShardRuleBuilder{T}.ByMonth"/> 等登记。查询按条件裁剪出要查的表，写入按分片键落到各自的表。
+    /// </summary>
+    /// <example><code>
+    /// options.Shard&lt;Order&gt;(r =&gt; r.Mod(o =&gt; o.Id, 3))
+    ///        .Shard&lt;Log&gt;(r =&gt; r.ByMonth(l =&gt; l.CreateTime, from: new(2024, 1, 1)).DefaultOrder(l =&gt; l.CreateTime, descending: true));
+    /// </code></example>
+    public EasyDbOptions Shard<T>(Action<Sharding.ShardRuleBuilder<T>> configure) where T : class
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        var builder = new Sharding.ShardRuleBuilder<T>();
+        configure(builder);
+        return AddShardRule(typeof(T), builder.Build);
+    }
+
+    /// <summary>实体 <typeparamref name="T"/> 按自定义规则分库分表（照 Java 的路由类实现 <see cref="Sharding.IShardRule"/>）。</summary>
+    public EasyDbOptions Shard<T>(Sharding.IShardRule rule) where T : class
+    {
+        ArgumentNullException.ThrowIfNull(rule);
+        return AddShardRule(typeof(T), (_, _) => rule);
+    }
+
+    private EasyDbOptions AddShardRule(Type type, Func<EntityMetadata, string, Sharding.IShardRule> rule)
+    {
+        if (!_shardRules.TryAdd(type, Mutable(rule))) throw new InvalidOperationException($"{type.Name} 的分片规则重复登记");
         return this;
     }
 

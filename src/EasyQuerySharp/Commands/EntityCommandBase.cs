@@ -131,4 +131,29 @@ public abstract class EntityCommandBase<TSelf, T>
     }
 
     private protected EntityTableSource NewTable() => new(Entity) { TableNameOverride = _tableName, SchemaOverride = _schema, ExplicitAlias = _alias, Link = _link };
+
+    /// <summary>目标表的分片规则；实体不分片或显式 AsTable 时为 null（显式换表的写入不走分片）。</summary>
+    private protected Sharding.IShardRule? ShardRule => _tableName is null ? Db.Shards.RuleOf(typeof(T)) : null;
+
+    /// <summary>
+    /// 写入语句按落点渲染（见 0006 §6）：分片的目标表按实体的节点（<paramref name="entity"/> 不为 null 时）或按条件裁剪出的节点，每个节点一条、带上数据源；
+    /// 条件、SET 里的子查询用到分片表时内联成 UNION ALL。语句里没有分片表时原样渲染一条。
+    /// </summary>
+    private protected List<SqlStatement> Routed(EntityTableSource table, IReadOnlyList<SqlExpr> where, IEnumerable<JoinClause> joins, IEnumerable<SqlExpr> expressions, T? entity,
+        Func<Sharding.TableRoutes?, SqlStatement> render)
+    {
+        var node = entity is not null && ShardRule is { } rule ? rule.NodeOf(entity) : null;
+        var plan = Db.Shards.Enabled ? Sharding.ShardPlanner.PlanWrite(Db, table, where, joins, expressions, node) : null;
+        return plan is null ? [render(null)] : [.. plan.Units.Select(u => render(u.Routes) with { DataSource = u.DataSource })];
+    }
+
+    /// <summary>按语句的数据源分组执行：每个数据源一个会话（事务里是该数据源的事务连接），组内保持原顺序，分片的写入逐个节点串行。返回各组行数之和。</summary>
+    private protected async Task<long> ExecuteRoutedAsync<TItem>(IReadOnlyList<TItem> items, Func<TItem, SqlStatement> statement,
+        Func<Execution.SqlSession, IReadOnlyList<TItem>, Task<long>> run, CancellationToken ct)
+    {
+        long rows = 0;
+        foreach (var group in items.GroupBy(i => statement(i).DataSource))
+            rows += await Db.Executor.SessionAsync(group.Key, s => run(s, [.. group]), ct).ConfigureAwait(false);
+        return rows;
+    }
 }

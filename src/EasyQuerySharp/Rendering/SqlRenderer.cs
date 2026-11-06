@@ -16,16 +16,26 @@ public sealed class SqlRenderer
     private readonly StringBuilder _text = new();
     private readonly List<SqlParameterValue> _parameters = [];
 
-    private SqlRenderer(SqlDialect dialect) => Dialect = dialect;
+    // 分库分表路由后分片表的实际表名；为 null 时写逻辑表名（ToSql）
+    private readonly Sharding.TableRoutes? _routes;
+
+    private SqlRenderer(SqlDialect dialect, Sharding.TableRoutes? routes = null)
+    {
+        Dialect = dialect;
+        _routes = routes;
+    }
 
     /// <summary>当前方言。</summary>
     public SqlDialect Dialect { get; }
 
     /// <summary>渲染一条查询。</summary>
-    public static SqlStatement Render(SqlDialect dialect, SelectQuery query)
+    public static SqlStatement Render(SqlDialect dialect, SelectQuery query) => Render(dialect, query, null);
+
+    /// <summary>渲染一条查询，分片表按 <paramref name="routes"/> 写实际表名。</summary>
+    internal static SqlStatement Render(SqlDialect dialect, SelectQuery query, Sharding.TableRoutes? routes)
     {
-        var ctes = AliasAllocator.Allocate(query);
-        var r = new SqlRenderer(dialect);
+        var ctes = AliasAllocator.Allocate(query, routes);
+        var r = new SqlRenderer(dialect, routes);
         // WITH `a` AS (…) ,`b` AS (…) SELECT …（与 Java 逐字一致）
         for (var i = 0; i < ctes.Count; i++)
         {
@@ -49,10 +59,13 @@ public sealed class SqlRenderer
     }
 
     /// <summary>渲染一条插入。</summary>
-    public static SqlStatement Render(SqlDialect dialect, InsertStatement insert)
+    public static SqlStatement Render(SqlDialect dialect, InsertStatement insert) => Render(dialect, insert, null);
+
+    /// <summary>渲染一条插入，分片的目标表按 <paramref name="routes"/> 写实际表名。</summary>
+    internal static SqlStatement Render(SqlDialect dialect, InsertStatement insert, Sharding.TableRoutes? routes)
     {
         insert.Table.Alias = null;
-        var r = new SqlRenderer(dialect);
+        var r = new SqlRenderer(dialect, routes);
         if (insert.Conflict is not null && dialect.InsertConflictUsesMerge)
         {
             dialect.WriteMerge(r, insert);
@@ -93,10 +106,13 @@ public sealed class SqlRenderer
     }
 
     /// <summary>渲染一条更新。</summary>
-    public static SqlStatement Render(SqlDialect dialect, UpdateStatement update)
+    public static SqlStatement Render(SqlDialect dialect, UpdateStatement update) => Render(dialect, update, null);
+
+    /// <summary>渲染一条更新，分片表按 <paramref name="routes"/> 写实际表名。</summary>
+    internal static SqlStatement Render(SqlDialect dialect, UpdateStatement update, Sharding.TableRoutes? routes)
     {
         AliasAllocator.Allocate(update.Table, update.Joins, update.Sets.Select(s => s.Value).Concat(update.Where));
-        var r = new SqlRenderer(dialect);
+        var r = new SqlRenderer(dialect, routes);
         if (update.Joins.Count > 0 || (dialect.AliasedWriteUsesFrom && update.Table.Alias is not null))
         {
             RejectJoinedReturning(update.Returning);
@@ -112,10 +128,13 @@ public sealed class SqlRenderer
     }
 
     /// <summary>渲染一条删除。</summary>
-    public static SqlStatement Render(SqlDialect dialect, DeleteStatement delete)
+    public static SqlStatement Render(SqlDialect dialect, DeleteStatement delete) => Render(dialect, delete, null);
+
+    /// <summary>渲染一条删除，分片表按 <paramref name="routes"/> 写实际表名。</summary>
+    internal static SqlStatement Render(SqlDialect dialect, DeleteStatement delete, Sharding.TableRoutes? routes)
     {
         AliasAllocator.Allocate(delete.Table, delete.Joins, delete.Where);
-        var r = new SqlRenderer(dialect);
+        var r = new SqlRenderer(dialect, routes);
         if (delete.Joins.Count > 0 || (dialect.AliasedWriteUsesFrom && delete.Table.Alias is not null))
         {
             RejectJoinedReturning(delete.Returning);
@@ -301,6 +320,10 @@ public sealed class SqlRenderer
         {
             case EntityTableSource { Segment: { } segment } e:
                 return Append(segment(QualifiedName(e), e.Alias));
+            case EntityTableSource e when _routes is not null && _routes.TryGetValue(e, out var tables) && tables.Count > 1:
+                // 同库的几张分表在库内合并（与 Java 的 SHARDING_UNION_ALL 逐字一致），排序、分页、分组交给数据库
+                Append("(").Append(string.Join(" UNION ALL ", tables.Order(StringComparer.Ordinal).Select(t => "SELECT * FROM " + Dialect.QualifiedName(e.Schema, t)))).Append(")");
+                break;
             case EntityTableSource e: Append(QualifiedName(e)); break;
             case DerivedTableSource d: Append("(").WriteSelect(d.Query).Append(")"); break;
             case CteTableSource c: Append(Dialect.QuoteIdentifier(c.Name)); break;
@@ -329,7 +352,9 @@ public sealed class SqlRenderer
     /// </summary>
     public SqlRenderer WriteTableName(EntityTableSource e) => Append(e.Link?.Invoke("") ?? "").Append(QualifiedName(e));
 
-    private string QualifiedName(EntityTableSource e) => Dialect.QualifiedName(e.Schema, e.TableName);
+    // 分片表路由到一张分表时换成它的表名
+    private string QualifiedName(EntityTableSource e) =>
+        Dialect.QualifiedName(e.Schema, _routes is not null && _routes.TryGetValue(e, out var tables) && tables.Count == 1 ? tables[0] : e.TableName);
 
     /// <summary>写一个输出参数的占位（执行后读回，如 Oracle 的 <c>RETURNING id INTO :p</c>）。</summary>
     public SqlRenderer WriteOutputParameter(Type clrType)

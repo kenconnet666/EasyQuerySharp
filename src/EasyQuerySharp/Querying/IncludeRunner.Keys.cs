@@ -2,7 +2,6 @@ using System.Collections;
 using System.Linq.Expressions;
 using EasyQuerySharp.Materialization;
 using EasyQuerySharp.Metadata;
-using EasyQuerySharp.Rendering;
 using EasyQuerySharp.SqlAst;
 using EasyQuerySharp.Translation;
 
@@ -101,8 +100,7 @@ internal static partial class IncludeRunner
             fromOrdinals = step.TargetColumns.Select(c => Select(c, alias: true)).ToArray();
         }
         query.Where.Add(KeysIn(table, step.TargetColumns, keys.Distinct().ToList(), groupSize));
-        var statement = SqlRenderer.Render(db.Options.Dialect, query);
-        var rows = await db.Executor.QueryAsync(statement, r => (From: CompositeKey.Read(r, fromOrdinals), To: CompositeKey.Read(r, toOrdinals)), ct)
+        var rows = await db.Executor.QueryAsync(query, r => (From: CompositeKey.Read(r, fromOrdinals), To: CompositeKey.Read(r, toOrdinals)), ct)
             .ConfigureAwait(false);
         return rows.Where(r => r.From is not null && r.To is not null).Select(r => (r.From!.Value, r.To!.Value)).ToList();
     }
@@ -145,8 +143,7 @@ internal static partial class IncludeRunner
             translator.Bind(mappingFilter, [new EntityBinding(table)]);
             query.Where.Add(translator.TranslatePredicate(mappingFilter.Body));
         }
-        var statement = SqlRenderer.Render(db.Options.Dialect, query);
-        var rows = await db.Executor.QueryAsync(statement, r => (Parent: CompositeKey.Read(r, [0]), Target: CompositeKey.Read(r, [1])), ct).ConfigureAwait(false);
+        var rows = await db.Executor.QueryAsync(query, r => (Parent: CompositeKey.Read(r, [0]), Target: CompositeKey.Read(r, [1])), ct).ConfigureAwait(false);
         return rows.Where(r => r.Parent is not null && r.Target is not null).Select(r => (r.Parent!.Value, r.Target!.Value)).ToList();
     }
 

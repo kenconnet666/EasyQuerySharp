@@ -1,6 +1,5 @@
 using EasyQuerySharp.Interceptors;
 using EasyQuerySharp.Metadata;
-using EasyQuerySharp.Rendering;
 using EasyQuerySharp.SqlAst;
 using EasyQuerySharp.Translation;
 
@@ -66,8 +65,7 @@ internal static partial class IncludeRunner
             foreach (var targets in chunks)
             {
                 var compiled = CompileChunk(db, nav, state, targets, groupSize, context);
-                var statement = SqlRenderer.Render(db.Options.Dialect, compiled.Sql);
-                var rows = await db.Executor.QueryAsync(statement, r => (Child: compiled.Query.Shaper(r), Key: CompositeKey.Read(r, compiled.Query.RelationOrdinals)), ct)
+                var rows = await db.Executor.QueryAsync(compiled.Sql, r => (Child: compiled.Query.Shaper(r), Key: CompositeKey.Read(r, compiled.Query.RelationOrdinals)), ct)
                     .ConfigureAwait(false);
                 foreach (var (child, key) in rows)
                 {

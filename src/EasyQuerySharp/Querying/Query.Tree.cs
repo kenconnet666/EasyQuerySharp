@@ -2,7 +2,6 @@ using System.Collections;
 using System.Linq.Expressions;
 using System.Reflection;
 using EasyQuerySharp.Metadata;
-using EasyQuerySharp.Rendering;
 
 namespace EasyQuerySharp.Querying;
 
@@ -87,9 +86,8 @@ public sealed partial class Query<T>
                 .Cast<T>().ToList();
         }
         var compiled = QueryCompiler.Compile<T>(State with { AppendTreeDeep = true });
-        var statement = SqlRenderer.Render(Db.Options.Dialect, compiled.Sql);
         var deepOrdinal = compiled.Sql.Columns.Count - 1;
-        var rows = await Db.Executor.QueryAsync(statement,
+        var rows = await Db.Executor.QueryAsync(compiled.Sql,
             r => (Row: compiled.Shaper(r), Deep: Convert.ToInt64(r.GetValue(deepOrdinal), System.Globalization.CultureInfo.InvariantCulture)), cancellationToken).ConfigureAwait(false);
         // DTO 上与层级列同名的属性填上层级（与 Java 按列名映射一致）
         if (State.HasSelector && Db.Metadata.Get<T>().Columns.FirstOrDefault(c => c.Name == tree.Options.DeepColumnName) is { } deepColumn)

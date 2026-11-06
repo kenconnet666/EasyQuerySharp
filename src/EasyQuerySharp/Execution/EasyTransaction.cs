@@ -7,6 +7,8 @@ namespace EasyQuerySharp.Execution;
 /// 环境事务：<see cref="EasyDb.BeginTransaction"/> 开启后，同一异步流程里该 <see cref="EasyDb"/> 的所有执行都走这个事务的连接，
 /// 不必把事务对象到处传。连接在第一次执行时才打开。释放时若没有提交就回滚。
 /// 已经在事务里时不能再开（与 Java 的 repeat begin transaction 一致）。
+/// 分库时每个用到的数据源各开一个连接与事务（用到哪个才开哪个），提交时依次提交：这不是分布式事务，
+/// 中途提交失败时已经提交的数据源不会回滚（与 Java 一致）。
 /// </summary>
 /// <example><code>
 /// await using var tx = db.BeginTransaction();
@@ -18,8 +20,9 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
 {
     private readonly EasyDb _db;
     private readonly IsolationLevel _isolation;
-    private DbConnection? _connection;
-    private DbTransaction? _transaction;
+    // 用到的数据源，按首次使用的顺序；并行执行的单元同时取同一个数据源时只开一次
+    private readonly List<Branch> _branches = [];
+    private readonly Lock _lock = new();
     private bool _completed;
 
     internal EasyTransaction(EasyDb db, IsolationLevel isolation)
@@ -35,31 +38,78 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
     /// <summary>事务是否已经结束（提交或回滚）。</summary>
     public bool IsCompleted => _completed;
 
-    /// <summary>取事务的连接与事务对象（首次调用时打开连接并开始事务）。</summary>
-    internal async ValueTask<(DbConnection Connection, DbTransaction Transaction)> EnsureStartedAsync(CancellationToken ct)
+    /// <summary>取数据源 <paramref name="dataSource"/>（null 是默认数据源）上的连接与事务对象，首次用到时打开连接并开始事务。</summary>
+    internal async ValueTask<(DbConnection Connection, DbTransaction Transaction)> EnsureStartedAsync(string? dataSource, CancellationToken ct)
     {
-        if (_connection is null)
+        var name = dataSource ?? _db.Options.DefaultDataSourceName;
+        Task<(DbConnection Connection, DbTransaction Transaction)> started;
+        lock (_lock)
         {
-            _connection = await _db.OpenConnectionAsync(ct).ConfigureAwait(false);
-            _transaction = await _connection.BeginTransactionAsync(_isolation, ct).ConfigureAwait(false);
+            if (_branches.Find(b => b.DataSource == name) is { } branch) started = branch.Started;
+            else
+            {
+                started = StartAsync(name, ct);
+                _branches.Add(new Branch(name, started));
+            }
         }
-        return (_connection, _transaction!);
+        return await started.ConfigureAwait(false);
     }
 
-    /// <summary>提交。没有执行过任何语句时什么也不做。</summary>
+    private async Task<(DbConnection Connection, DbTransaction Transaction)> StartAsync(string dataSource, CancellationToken ct)
+    {
+        var connection = await _db.OpenConnectionAsync(dataSource, ct).ConfigureAwait(false);
+        try
+        {
+            return (connection, await connection.BeginTransactionAsync(_isolation, ct).ConfigureAwait(false));
+        }
+        catch
+        {
+            await connection.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    /// <summary>提交（分库时各数据源依次提交）。没有执行过任何语句时什么也不做。</summary>
     public async Task CommitAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_completed, this);
-        if (_transaction is not null) await _transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-        await EndAsync().ConfigureAwait(false);
+        // 提交成功的分支随即释放、移出：中途失败时，释放事务只回滚还没提交的
+        while (_branches.Count > 0)
+        {
+            var (connection, transaction) = await _branches[0].Started.ConfigureAwait(false);
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            _branches.RemoveAt(0);
+            await transaction.DisposeAsync().ConfigureAwait(false);
+            await connection.DisposeAsync().ConfigureAwait(false);
+        }
+        End();
     }
 
-    /// <summary>回滚。</summary>
+    /// <summary>回滚（分库时每个用到的数据源都回滚）。</summary>
     public async Task RollbackAsync(CancellationToken cancellationToken = default)
     {
         if (_completed) return;
-        if (_transaction is not null) await _transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
-        await EndAsync().ConfigureAwait(false);
+        try
+        {
+            foreach (var branch in _branches)
+            {
+                if (await branch.OpenedAsync().ConfigureAwait(false) is not var (connection, transaction)) continue;
+                try
+                {
+                    await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    await transaction.DisposeAsync().ConfigureAwait(false);
+                    await connection.DisposeAsync().ConfigureAwait(false);
+                }
+            }
+        }
+        finally
+        {
+            _branches.Clear();
+            End();
+        }
     }
 
     /// <inheritdoc />
@@ -74,27 +124,48 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
         if (_completed) return;
         try
         {
-            _transaction?.Rollback();
+            foreach (var branch in _branches)
+            {
+                if (!branch.Started.IsCompletedSuccessfully) continue;
+                var (connection, transaction) = branch.Started.Result;
+                try
+                {
+                    transaction.Rollback();
+                }
+                finally
+                {
+                    transaction.Dispose();
+                    connection.Dispose();
+                }
+            }
         }
         finally
         {
+            _branches.Clear();
             End();
-            _transaction?.Dispose();
-            _connection?.Dispose();
         }
-    }
-
-    private async ValueTask EndAsync()
-    {
-        End();
-        if (_transaction is not null) await _transaction.DisposeAsync().ConfigureAwait(false);
-        if (_connection is not null) await _connection.DisposeAsync().ConfigureAwait(false);
     }
 
     private void End()
     {
         _completed = true;
         _db.AmbientTransaction.Exit(this);
+    }
+
+    // 一个数据源上的连接与事务；打开失败的分支没有要回滚的
+    private sealed record Branch(string DataSource, Task<(DbConnection Connection, DbTransaction Transaction)> Started)
+    {
+        public async Task<(DbConnection Connection, DbTransaction Transaction)?> OpenedAsync()
+        {
+            try
+            {
+                return await Started.ConfigureAwait(false);
+            }
+            catch (Exception) when (!Started.IsCompletedSuccessfully)
+            {
+                return null;
+            }
+        }
     }
 }
 

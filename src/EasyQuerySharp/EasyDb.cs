@@ -36,6 +36,7 @@ public sealed class EasyDb
         options.Freeze();
         Options = options;
         Metadata = new MetadataRegistry(options.NameConversion) { LogicDeleteRules = options.LogicDeleteRules };
+        Shards = new Sharding.ShardRegistry(options, Metadata);
         Executor = new SqlExecutor(this);
         CodeFirst = new Schema.CodeFirst(this);
         Tracker = new Tracking.Tracker(Metadata);
@@ -58,6 +59,14 @@ public sealed class EasyDb
     public InterceptorRegistry Interceptors => Options.Interceptors;
 
     internal SqlExecutor Executor { get; }
+
+    internal Sharding.ShardRegistry Shards { get; }
+
+    /// <summary>
+    /// 实体 <typeparamref name="T"/> 的分片规则（<see cref="EasyDbOptions.Shard{T}(Action{Sharding.ShardRuleBuilder{T}})"/> 登记的），
+    /// 可以读它的节点、分片键（对应 Java 的 EntityMetadata.getShardingTablePropertyNames 等）；不分片时为 null。
+    /// </summary>
+    public Sharding.IShardRule? GetShardRule<T>() => Shards.RuleOf(typeof(T));
 
     /// <summary>从实体 <typeparamref name="T"/> 开始一条查询。</summary>
     public Query<T> Query<T>() => new(new QueryState(this, [new EntitySource(typeof(T))]) { ValueFilter = Options.QueryValueFilter });
@@ -213,11 +222,12 @@ public sealed class EasyDb
         await tx.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>打开一个新连接（调用方负责释放）。</summary>
-    internal async Task<DbConnection> OpenConnectionAsync(CancellationToken ct)
+    /// <summary>在数据源 <paramref name="dataSource"/>（null 是默认数据源）上打开一个新连接（调用方负责释放）。</summary>
+    internal async Task<DbConnection> OpenConnectionAsync(string? dataSource, CancellationToken ct)
     {
-        var source = Options.DataSource
-                     ?? throw new InvalidOperationException("没有配置数据源，只能生成 SQL（ToSql）。请在 EasyDbOptions 里传入 DbDataSource");
+        var source = dataSource is null || dataSource == Options.DefaultDataSourceName
+            ? Options.DataSource ?? throw new InvalidOperationException("没有配置数据源，只能生成 SQL（ToSql）。请在 EasyDbOptions 里传入 DbDataSource")
+            : Options.DataSources.GetValueOrDefault(dataSource) ?? throw new InvalidOperationException($"没有登记数据源 {dataSource}：用 options.AddDataSource(\"{dataSource}\", …) 登记");
         return await source.OpenConnectionAsync(ct).ConfigureAwait(false);
     }
 

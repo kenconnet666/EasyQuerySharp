@@ -38,28 +38,25 @@ public sealed class DeleteCommand<T> : WriteCommandBase<DeleteCommand<T>, T> whe
 
     /// <inheritdoc />
     public override async Task<long> ExecuteAsync(CancellationToken cancellationToken = default) =>
-        await Db.Executor.SessionAsync(async session =>
+        await ExecuteRoutedAsync(Statements(routed: true).ToList(), s => s, async (session, statements) =>
         {
             long rows = 0;
-            foreach (var batch in WriteBatches.Of(Statements(), s => s, UseBatch))
+            foreach (var batch in WriteBatches.Of(statements, s => s, UseBatch))
                 rows += (await session.ExecuteBatchAsync(batch, cancellationToken).ConfigureAwait(false)).Total;
             return rows;
         }, cancellationToken).ConfigureAwait(false);
 
-    private IEnumerable<SqlStatement> Statements()
+    // routed 为 true 时分片实体按落点每个节点一条（按条件删除时是条件裁剪出的各节点）
+    private IEnumerable<SqlStatement> Statements(bool routed = false)
     {
-        if (Entities is null)
-        {
-            yield return Render(null);
-            yield break;
-        }
-        foreach (var entity in Entities) yield return Render(entity);
+        if (Entities is null) return Render(null, routed: routed);
+        return Entities.SelectMany(entity => Render(entity, routed: routed));
     }
 
-    private protected override SqlStatement RenderReturning(IReadOnlyList<ColumnMetadata> columns) => Render(null, columns);
+    private protected override SqlStatement RenderReturning(IReadOnlyList<ColumnMetadata> columns) => Render(null, columns).Single();
 
     // returning 不为 null 时带 RETURNING（逻辑删除返回被标记的行）
-    private SqlStatement Render(T? entity, IReadOnlyList<ColumnMetadata>? returning = null)
+    private List<SqlStatement> Render(T? entity, IReadOnlyList<ColumnMetadata>? returning = null, bool routed = false)
     {
         var scope = NewScope();
         var table = scope.Table;
@@ -72,7 +69,9 @@ public sealed class DeleteCommand<T> : WriteCommandBase<DeleteCommand<T>, T> whe
             var delete = new DeleteStatement(table) { Returning = returned };
             delete.Where.AddRange(BuildWhere(scope, entity, applyLogicDelete: false));
             delete.Joins.AddRange(scope.Joins);
-            return SqlRenderer.Render(Db.Options.Dialect, delete);
+            return routed
+                ? Routed(table, delete.Where, delete.Joins, [], entity, routes => SqlRenderer.Render(Db.Options.Dialect, delete, routes))
+                : [SqlRenderer.Render(Db.Options.Dialect, delete)];
         }
 
         var update = new UpdateStatement(table) { Returning = returned };
@@ -82,6 +81,8 @@ public sealed class DeleteCommand<T> : WriteCommandBase<DeleteCommand<T>, T> whe
         AddVersionSet(update, table, entity);
         update.Where.AddRange(BuildWhere(scope, entity, applyLogicDelete: true));
         update.Joins.AddRange(scope.Joins);
-        return SqlRenderer.Render(Db.Options.Dialect, update);
+        return routed
+            ? Routed(table, update.Where, update.Joins, update.Sets.Select(s => s.Value), entity, routes => SqlRenderer.Render(Db.Options.Dialect, update, routes))
+            : [SqlRenderer.Render(Db.Options.Dialect, update)];
     }
 }

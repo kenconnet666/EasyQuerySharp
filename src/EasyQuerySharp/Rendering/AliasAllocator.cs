@@ -12,12 +12,15 @@ namespace EasyQuerySharp.Rendering;
 /// </summary>
 internal static class AliasAllocator
 {
-    /// <summary>分配别名，返回语句里引用到的 CTE（按定义应出现的顺序：被依赖的在前，同名只留第一个）。</summary>
-    public static IReadOnlyList<CteTableSource> Allocate(SelectQuery query)
+    /// <summary>
+    /// 分配别名，返回语句里引用到的 CTE（按定义应出现的顺序：被依赖的在前，同名只留第一个）。
+    /// 分片表路由成几张分表的 UNION ALL 派生表时（<paramref name="routes"/>），单表也要有别名。
+    /// </summary>
+    public static IReadOnlyList<CteTableSource> Allocate(SelectQuery query, Sharding.TableRoutes? routes = null)
     {
         var tables = new List<TableSource>();
         Collect(query, tables);
-        Assign(tables, query.ExplicitProjection);
+        Assign(tables, query.ExplicitProjection || (tables.Count == 1 && routes?.IsUnion(tables[0]) == true));
         // 递归 CTE 的引用先于它的定义编号，定义里又可能引用别的 CTE（如视图实体）：按定义完成的先后写
         return tables.OfType<CteTableSource>().DistinctBy(c => c.Name, StringComparer.Ordinal).OrderBy(c => c.DefinedAt).ToList();
     }

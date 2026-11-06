@@ -21,6 +21,9 @@ public class ClickHouseDialect : SqlDialect
     public static ClickHouseDialect Instance { get; } = new();
 
     /// <inheritdoc />
+    public override NullsOrder DefaultNullsOrder(bool descending) => NullsOrder.Last;
+
+    /// <inheritdoc />
     public override string Name => "clickhouse";
 
     /// <inheritdoc />

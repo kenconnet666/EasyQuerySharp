@@ -85,11 +85,12 @@ public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> wh
             FillKeys(e);
             Db.Interceptors.BeforeWrite(e, insert: true, Interceptors);
         }
-        var rendered = _entities.Select(e => (Entity: e, Statement: Render(e))).ToList();
-        return await Db.Executor.SessionAsync(async session =>
+        // 分片实体按 NodeOf(实体) 落到各自的表与数据源
+        var rendered = _entities.Select(e => (Entity: e, Statement: Render(e, routed: true))).ToList();
+        return await ExecuteRoutedAsync(rendered, r => r.Statement, async (session, items) =>
         {
             long rows = 0;
-            foreach (var batch in WriteBatches.Of(rendered, r => r.Statement, UseBatch))
+            foreach (var batch in WriteBatches.Of(items, r => r.Statement, UseBatch))
             {
                 List<SqlStatement> statements = [.. batch.Select(r => r.Statement)];
                 if (FilledKey is not { } keyColumn)
@@ -115,7 +116,8 @@ public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> wh
             if (key.KeyGenerator is { } generator && key.Getter(entity) is null) key.Setter?.Invoke(entity, generator.NewKey(key));
     }
 
-    private SqlStatement Render(T entity)
+    // routed 为 false 时写逻辑表名（ToSql），为 true 时分片实体写它落到的分表
+    private SqlStatement Render(T entity, bool routed = false)
     {
         var table = NewTable();
         var written = new List<ColumnMetadata>();
@@ -150,7 +152,9 @@ public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> wh
             Returning = FilledKey is { } keyColumn && Db.Options.Dialect.LastInsertIdQuery is null ? [table.Column(keyColumn)] : [],
             Conflict = _conflict is null ? null : BuildConflict(table, written),
         };
-        return SqlRenderer.Render(Db.Options.Dialect, insert);
+        return routed
+            ? Routed(table, [], [], [], entity, routes => SqlRenderer.Render(Db.Options.Dialect, insert, routes)).Single()
+            : SqlRenderer.Render(Db.Options.Dialect, insert);
     }
 
     // 约束列：显式指定且写入了的（自增主键不写入，不算），否则是非自增主键（忽略时不指定就不写约束列）；更新列：写入的列去掉主键和约束列（与 Java 一致）

@@ -197,11 +197,11 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     {
         if (Entities is not null)
             foreach (var e in Entities) Db.Interceptors.BeforeWrite(e, insert: false, Interceptors);
-        var statements = Statements().ToList();
-        var rows = await Db.Executor.SessionAsync(async session =>
+        var statements = Statements(routed: true).ToList();
+        var rows = await ExecuteRoutedAsync(statements, s => s.Statement, async (session, items) =>
         {
             long total = 0;
-            foreach (var batch in WriteBatches.Of(statements, s => s.Statement, UseBatch))
+            foreach (var batch in WriteBatches.Of(items, s => s.Statement, UseBatch))
             {
                 var rows = await session.ExecuteBatchAsync([.. batch.Select(s => s.Statement)], cancellationToken).ConfigureAwait(false);
                 // 乐观锁：写成功才把新版本写回实体，冲突（0 行）时实体保持原版本
@@ -216,21 +216,17 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         return rows;
     }
 
-    private IEnumerable<RenderedUpdate> Statements()
+    // routed 为 true 时分片实体按落点每个节点一条（按条件更新时是条件裁剪出的各节点）
+    private IEnumerable<RenderedUpdate> Statements(bool routed = false)
     {
-        if (Entities is null)
-        {
-            yield return Render(null)!;
-            yield break;
-        }
-        foreach (var entity in Entities)
-            if (Render(entity) is { } rendered) yield return rendered;
+        if (Entities is null) return Render(null, routed: routed);
+        return Entities.SelectMany(entity => Render(entity, routed: routed));
     }
 
-    private protected override SqlStatement RenderReturning(IReadOnlyList<ColumnMetadata> columns) => Render(null, columns)!.Statement;
+    private protected override SqlStatement RenderReturning(IReadOnlyList<ColumnMetadata> columns) => Render(null, columns).Single().Statement;
 
-    // 按实体更新时，追踪的实体没有变化返回 null（不发语句）；returning 不为 null 时带 RETURNING
-    private RenderedUpdate? Render(T? entity, IReadOnlyList<ColumnMetadata>? returning = null)
+    // 按实体更新时，追踪的实体没有变化返回空（不发语句）；returning 不为 null 时带 RETURNING
+    private List<RenderedUpdate> Render(T? entity, IReadOnlyList<ColumnMetadata>? returning = null, bool routed = false)
     {
         var scope = NewScope();
         var table = scope.Table;
@@ -242,14 +238,19 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         if (update.Sets.Count == 0)
         {
             // 按实体更新时没有要写的列（追踪无变化、按列策略全被筛掉）不发语句，受影响 0 行（与 Java 一致）
-            if (entity is not null) return null;
+            if (entity is not null) return [];
             throw new InvalidOperationException($"{typeof(T).Name} 的更新没有要写的列");
         }
         var newVersion = AddVersionSet(update, table, entity);
         update.Where.AddRange(BuildWhere(scope, entity, applyLogicDelete: true));
         update.Joins.AddRange(scope.Joins);
         update.Returning = returning?.Select(table.Column).ToList();
-        return new RenderedUpdate(SqlRenderer.Render(Db.Options.Dialect, update), tracked, entity, newVersion);
+        if (!routed) return [new RenderedUpdate(SqlRenderer.Render(Db.Options.Dialect, update), tracked, entity, newVersion)];
+        // 行按旧的分片键所在的表定位，改了分片键也不会迁移到新表
+        if (tracked is not null && ShardRule is { } rule && tracked.ChangedColumns().FirstOrDefault(c => rule.KeyProperties.Contains(c.PropertyName)) is { } changedKey)
+            throw new InvalidOperationException($"{typeof(T).Name} 的分片键 {changedKey.PropertyName} 改了：分库分表不会把行迁移到新的表，请先删除再插入");
+        return [.. Routed(table, update.Where, update.Joins, update.Sets.Select(s => s.Value), entity, routes => SqlRenderer.Render(Db.Options.Dialect, update, routes))
+            .Select(statement => new RenderedUpdate(statement, tracked, entity, newVersion))];
     }
 
     private void AddEntitySets(UpdateStatement update, EntityTableSource table, T entity, Tracking.TrackedEntry? tracked)
@@ -319,6 +320,8 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     {
         foreach (var set in _sets)
         {
+            if (ShardRule is { } rule && rule.KeyProperties.Contains(set.Column))
+                throw new InvalidOperationException($"{typeof(T).Name}.{set.Column} 是分片键，不能在 Set 里改：分库分表不会把行迁移到新的表，请先删除再插入");
             var column = scope.Table.Column(Entity.GetColumn(set.Column));
             var value = ExpressionTranslator.ApplyConverter(scope.Translate(set.Value, predicate: false), column, write: true);
             update.Sets.Add((column, set.Kind switch

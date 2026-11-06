@@ -13,6 +13,9 @@ public class PostgreSqlDialect : SqlDialect
     public static PostgreSqlDialect Instance { get; } = new();
 
     /// <inheritdoc />
+    public override NullsOrder DefaultNullsOrder(bool descending) => descending ? NullsOrder.First : NullsOrder.Last;
+
+    /// <inheritdoc />
     public override string Name => "pgsql";
 
     /// <inheritdoc />

@@ -59,10 +59,16 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
 
     // ---------- 规划 ----------
 
+    // 聚合里的对象的元数据；分片实体不支持聚合保存（一个聚合的行可能落在几个数据源，写不成一个事务）
+    private Metadata.EntityMetadata Meta(object entity) =>
+        db.Shards.RuleOf(entity.GetType()) is null
+            ? db.Metadata.Get(entity.GetType())
+            : throw new NotSupportedException($"{entity.GetType().Name} 分库分表了，聚合保存不支持分片实体：请用 db.Insert / Update / Delete 分别写入");
+
     // 一个对象的各条导航：已追踪的只看追踪查询里加载过的导航，新对象看全部导航
     private void SaveChildren(object entity, bool tracked, int depth)
     {
-        var meta = db.Metadata.Get(entity.GetType());
+        var meta = Meta(entity);
         foreach (var name in NavigationOrder(entity, meta, tracked))
         {
             var nav = db.Metadata.FindNavigation(meta, name)!;
@@ -244,7 +250,7 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
     // 删除一个对象时，它已加载的、级联 Delete 的子对象一并删除（从深到浅执行）
     private void DeleteChildren(object entity, int depth)
     {
-        var meta = db.Metadata.Get(entity.GetType());
+        var meta = Meta(entity);
         foreach (var name in db.Tracker.LoadedNavigations(entity))
         {
             var nav = db.Metadata.FindNavigation(meta, name)!;
