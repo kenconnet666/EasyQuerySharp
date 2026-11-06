@@ -44,7 +44,12 @@ public sealed class InsertSelectCommand<T>
     /// <summary>生成的 SQL 文本。</summary>
     public string ToSql() => ToStatement().Text;
 
-    /// <summary>执行，返回写入的行数。</summary>
-    public Task<long> ExecuteAsync(CancellationToken cancellationToken = default) =>
-        _source.Db.Executor.ExecuteAsync(ToStatement(), cancellationToken);
+    /// <summary>执行，返回写入的行数。目标表或来源查询是分片实体时不支持（各节点的行要分别写进各自的表）。</summary>
+    public Task<long> ExecuteAsync(CancellationToken cancellationToken = default)
+    {
+        var db = _source.Db;
+        if ((_table is null && db.Shards.RuleOf(typeof(T)) is not null) || Sharding.ShardPlanner.HasSharded(db, QueryCompiler.CompileSql(_source)))
+            throw new NotSupportedException($"INSERT … SELECT 不支持分片实体（{typeof(T).Name}）：查出来后用 db.Insert(..) 写入，各行按分片键落到各自的表");
+        return db.Executor.ExecuteAsync(ToStatement(), cancellationToken);
+    }
 }

@@ -7,14 +7,14 @@ namespace EasyQuerySharp.Schema;
 /// <summary>执行方言的 <see cref="CatalogQueries"/>，把四组平铺的行拼成 <see cref="DbTableInfo"/>（同 TS 版的 assembleTables）。</summary>
 internal static class SchemaReader
 {
-    public static async Task<IReadOnlyList<DbTableInfo>> ReadAsync(EasyDb db, CancellationToken ct)
+    public static async Task<IReadOnlyList<DbTableInfo>> ReadAsync(EasyDb db, string? dataSource, CancellationToken ct)
     {
         var dialect = db.Options.Dialect;
         var queries = dialect.CatalogQueries ?? throw new NotSupportedException($"{dialect.Name} 方言不支持读取库结构");
-        var tables = await RowsAsync(db, queries.Tables, ct).ConfigureAwait(false);
-        var columns = await RowsAsync(db, queries.Columns, ct).ConfigureAwait(false);
-        var indexes = await RowsAsync(db, queries.Indexes, ct).ConfigureAwait(false);
-        var foreignKeys = queries.ForeignKeys is null ? [] : await RowsAsync(db, queries.ForeignKeys, ct).ConfigureAwait(false);
+        var tables = await RowsAsync(db, dataSource, queries.Tables, ct).ConfigureAwait(false);
+        var columns = await RowsAsync(db, dataSource, queries.Columns, ct).ConfigureAwait(false);
+        var indexes = await RowsAsync(db, dataSource, queries.Indexes, ct).ConfigureAwait(false);
+        var foreignKeys = queries.ForeignKeys is null ? [] : await RowsAsync(db, dataSource, queries.ForeignKeys, ct).ConfigureAwait(false);
 
         var columnsOf = columns.ToLookup(r => Text(r, "table_name"));
         var indexesOf = indexes.ToLookup(r => Text(r, "table_name"));
@@ -35,8 +35,8 @@ internal static class SchemaReader
         }).ToList();
     }
 
-    private static Task<List<Dictionary<string, object?>>> RowsAsync(EasyDb db, string sql, CancellationToken ct) =>
-        db.Executor.QueryAsync(new SqlStatement(sql, sql, []), ReadRow, ct);
+    private static Task<List<Dictionary<string, object?>>> RowsAsync(EasyDb db, string? dataSource, string sql, CancellationToken ct) =>
+        db.Executor.QueryAsync(new SqlStatement(sql, sql, []) { DataSource = dataSource }, ReadRow, ct);
 
     // 列名不分大小写：Oracle、Db2 不加引号的别名读出来是大写
     private static Dictionary<string, object?> ReadRow(DbDataReader reader)

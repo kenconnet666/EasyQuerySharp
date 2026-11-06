@@ -18,6 +18,9 @@ public sealed record SqlStatement(string CommandText, string Text, IReadOnlyList
     /// <summary>语句带行锁（FOR UPDATE），只能在事务里执行。</summary>
     public bool RequiresTransaction { get; init; }
 
+    /// <summary>在哪个数据源上执行（分库分表路由后写入，见 <see cref="EasyDbOptions.AddDataSource"/>）；null 是默认数据源。</summary>
+    public string? DataSource { get; init; }
+
     /// <inheritdoc />
     public override string ToString() => Text;
 }

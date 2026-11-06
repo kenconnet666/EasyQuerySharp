@@ -98,6 +98,7 @@ public abstract class WriteCommandBase<TSelf, T> : EntityCommandBase<TSelf, T>
     {
         ArgumentNullException.ThrowIfNull(selector);
         if (Entities is not null) throw new InvalidOperationException("Returning 只能用在按条件更新 / 删除上：按实体写入时实体本身就是结果");
+        if (ShardRule is not null) throw new NotSupportedException($"{typeof(T).Name} 分库分表了，Returning 不支持分片实体：先查出要改的行，再按实体写入");
         return new ReturningCommand<T, TResult>(Db, Entity, RenderReturning, selector);
     }
 

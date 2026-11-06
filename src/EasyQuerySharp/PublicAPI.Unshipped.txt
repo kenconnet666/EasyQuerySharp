@@ -2456,3 +2456,92 @@ virtual EasyQuerySharp.Metadata.ColumnSqlConversion.CompareValue.get -> string?
 ~override EasyQuerySharp.Filtering.TableSort.ToString() -> string
 ~override EasyQuerySharp.WindowBound.Equals(object obj) -> bool
 ~override EasyQuerySharp.WindowBound.ToString() -> string
+EasyQuerySharp.EasyDb.GetShardRule<T>() -> EasyQuerySharp.Sharding.IShardRule?
+EasyQuerySharp.EasyDbOptions.AddDataSource(string! name, System.Data.Common.DbDataSource! dataSource) -> EasyQuerySharp.EasyDbOptions!
+EasyQuerySharp.EasyDbOptions.DataSources.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Data.Common.DbDataSource!>!
+EasyQuerySharp.EasyDbOptions.DefaultDataSourceName.get -> string!
+EasyQuerySharp.EasyDbOptions.DefaultDataSourceName.set -> void
+EasyQuerySharp.EasyDbOptions.MaxShardNodes.get -> int
+EasyQuerySharp.EasyDbOptions.MaxShardNodes.set -> void
+EasyQuerySharp.EasyDbOptions.MaxUnionTables.get -> int
+EasyQuerySharp.EasyDbOptions.MaxUnionTables.set -> void
+EasyQuerySharp.EasyDbOptions.Shard<T>(EasyQuerySharp.Sharding.IShardRule! rule) -> EasyQuerySharp.EasyDbOptions!
+EasyQuerySharp.EasyDbOptions.Shard<T>(System.Action<EasyQuerySharp.Sharding.ShardRuleBuilder<T!>!>! configure) -> EasyQuerySharp.EasyDbOptions!
+EasyQuerySharp.EasyDbOptions.WithDefaultDataSourceName(string! name) -> EasyQuerySharp.EasyDbOptions!
+EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToShardingPageAsync(long page, long size, System.Collections.Generic.IReadOnlyList<long>? totalLines = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<EasyQuerySharp.Querying.ShardingPage<TElement>!>!
+EasyQuerySharp.Querying.ShardingPage<T>
+EasyQuerySharp.Querying.ShardingPage<T>.<Clone>$() -> EasyQuerySharp.Querying.ShardingPage<T>!
+EasyQuerySharp.Querying.ShardingPage<T>.Deconstruct(out System.Collections.Generic.IReadOnlyList<T>! Rows, out long Total, out long PageIndex, out long PageSize, out System.Collections.Generic.IReadOnlyList<long>! TotalLines) -> void
+EasyQuerySharp.Querying.ShardingPage<T>.Equals(EasyQuerySharp.Querying.ShardingPage<T>? other) -> bool
+EasyQuerySharp.Querying.ShardingPage<T>.PageCount.get -> long
+EasyQuerySharp.Querying.ShardingPage<T>.PageIndex.get -> long
+EasyQuerySharp.Querying.ShardingPage<T>.PageIndex.init -> void
+EasyQuerySharp.Querying.ShardingPage<T>.PageSize.get -> long
+EasyQuerySharp.Querying.ShardingPage<T>.PageSize.init -> void
+EasyQuerySharp.Querying.ShardingPage<T>.Rows.get -> System.Collections.Generic.IReadOnlyList<T>!
+EasyQuerySharp.Querying.ShardingPage<T>.Rows.init -> void
+EasyQuerySharp.Querying.ShardingPage<T>.ShardingPage(System.Collections.Generic.IReadOnlyList<T>! Rows, long Total, long PageIndex, long PageSize, System.Collections.Generic.IReadOnlyList<long>! TotalLines) -> void
+EasyQuerySharp.Querying.ShardingPage<T>.Total.get -> long
+EasyQuerySharp.Querying.ShardingPage<T>.Total.init -> void
+EasyQuerySharp.Querying.ShardingPage<T>.TotalLines.get -> System.Collections.Generic.IReadOnlyList<long>!
+EasyQuerySharp.Querying.ShardingPage<T>.TotalLines.init -> void
+EasyQuerySharp.Sharding.IShardRule
+EasyQuerySharp.Sharding.IShardRule.DefaultOrder.get -> EasyQuerySharp.Sharding.ShardOrder?
+EasyQuerySharp.Sharding.IShardRule.KeyProperties.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+EasyQuerySharp.Sharding.IShardRule.NodeOf(object! entity) -> EasyQuerySharp.Sharding.ShardNode!
+EasyQuerySharp.Sharding.IShardRule.Nodes.get -> System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Sharding.ShardNode!>!
+EasyQuerySharp.Sharding.IShardRule.Prune(string! propertyName, EasyQuerySharp.Sharding.ShardOperator op, object? value) -> System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Sharding.ShardNode!>!
+EasyQuerySharp.Sharding.ShardNode
+EasyQuerySharp.Sharding.ShardNode.<Clone>$() -> EasyQuerySharp.Sharding.ShardNode!
+EasyQuerySharp.Sharding.ShardNode.DataSource.get -> string!
+EasyQuerySharp.Sharding.ShardNode.DataSource.init -> void
+EasyQuerySharp.Sharding.ShardNode.Deconstruct(out string! DataSource, out string! Table) -> void
+EasyQuerySharp.Sharding.ShardNode.Equals(EasyQuerySharp.Sharding.ShardNode? other) -> bool
+EasyQuerySharp.Sharding.ShardNode.ShardNode(string! DataSource, string! Table) -> void
+EasyQuerySharp.Sharding.ShardNode.Table.get -> string!
+EasyQuerySharp.Sharding.ShardNode.Table.init -> void
+EasyQuerySharp.Sharding.ShardOperator
+EasyQuerySharp.Sharding.ShardOperator.Equal = 0 -> EasyQuerySharp.Sharding.ShardOperator
+EasyQuerySharp.Sharding.ShardOperator.GreaterThan = 1 -> EasyQuerySharp.Sharding.ShardOperator
+EasyQuerySharp.Sharding.ShardOperator.GreaterThanOrEqual = 2 -> EasyQuerySharp.Sharding.ShardOperator
+EasyQuerySharp.Sharding.ShardOperator.LessThan = 3 -> EasyQuerySharp.Sharding.ShardOperator
+EasyQuerySharp.Sharding.ShardOperator.LessThanOrEqual = 4 -> EasyQuerySharp.Sharding.ShardOperator
+EasyQuerySharp.Sharding.ShardOrder
+EasyQuerySharp.Sharding.ShardOrder.<Clone>$() -> EasyQuerySharp.Sharding.ShardOrder!
+EasyQuerySharp.Sharding.ShardOrder.Deconstruct(out string! Property, out bool Descending) -> void
+EasyQuerySharp.Sharding.ShardOrder.Descending.get -> bool
+EasyQuerySharp.Sharding.ShardOrder.Descending.init -> void
+EasyQuerySharp.Sharding.ShardOrder.Equals(EasyQuerySharp.Sharding.ShardOrder? other) -> bool
+EasyQuerySharp.Sharding.ShardOrder.Property.get -> string!
+EasyQuerySharp.Sharding.ShardOrder.Property.init -> void
+EasyQuerySharp.Sharding.ShardOrder.ShardOrder(string! Property, bool Descending) -> void
+EasyQuerySharp.Sharding.ShardRuleBuilder<T>
+EasyQuerySharp.Sharding.ShardRuleBuilder<T>.ByDay(System.Linq.Expressions.Expression<System.Func<T!, System.DateTime?>!>! key, System.DateTime from, System.Func<System.DateTime>? to = null, string! separator = "_", System.Func<System.DateTime, string!>? dataSource = null, bool splitTable = true) -> EasyQuerySharp.Sharding.ShardRuleBuilder<T!>!
+EasyQuerySharp.Sharding.ShardRuleBuilder<T>.ByMonth(System.Linq.Expressions.Expression<System.Func<T!, System.DateTime?>!>! key, System.DateTime from, System.Func<System.DateTime>? to = null, string! separator = "_", System.Func<System.DateTime, string!>? dataSource = null, bool splitTable = true) -> EasyQuerySharp.Sharding.ShardRuleBuilder<T!>!
+EasyQuerySharp.Sharding.ShardRuleBuilder<T>.ByYear(System.Linq.Expressions.Expression<System.Func<T!, System.DateTime?>!>! key, System.DateTime from, System.Func<System.DateTime>? to = null, string! separator = "_", System.Func<System.DateTime, string!>? dataSource = null, bool splitTable = true) -> EasyQuerySharp.Sharding.ShardRuleBuilder<T!>!
+EasyQuerySharp.Sharding.ShardRuleBuilder<T>.DefaultOrder<TKey>(System.Linq.Expressions.Expression<System.Func<T!, TKey>!>! property, bool descending = false) -> EasyQuerySharp.Sharding.ShardRuleBuilder<T!>!
+EasyQuerySharp.Sharding.ShardRuleBuilder<T>.ExtraKey<TKey>(System.Linq.Expressions.Expression<System.Func<T!, TKey>!>! key, System.Func<TKey, object?>! toShardKey) -> EasyQuerySharp.Sharding.ShardRuleBuilder<T!>!
+EasyQuerySharp.Sharding.ShardRuleBuilder<T>.Mod(System.Linq.Expressions.Expression<System.Func<T!, object?>!>! key, int count, int tailLength = 1, string! separator = "_", string? dataSource = null) -> EasyQuerySharp.Sharding.ShardRuleBuilder<T!>!
+EasyQuerySharp.SqlStatement.DataSource.get -> string?
+EasyQuerySharp.SqlStatement.DataSource.init -> void
+override EasyQuerySharp.Dialects.ClickHouseDialect.DefaultNullsOrder(bool descending) -> EasyQuerySharp.SqlAst.NullsOrder
+override EasyQuerySharp.Dialects.Db2Dialect.DefaultNullsOrder(bool descending) -> EasyQuerySharp.SqlAst.NullsOrder
+override EasyQuerySharp.Dialects.DuckDbDialect.DefaultNullsOrder(bool descending) -> EasyQuerySharp.SqlAst.NullsOrder
+override EasyQuerySharp.Dialects.OracleDialect.DefaultNullsOrder(bool descending) -> EasyQuerySharp.SqlAst.NullsOrder
+override EasyQuerySharp.Dialects.PostgreSqlDialect.DefaultNullsOrder(bool descending) -> EasyQuerySharp.SqlAst.NullsOrder
+override EasyQuerySharp.Querying.ShardingPage<T>.Equals(object? obj) -> bool
+override EasyQuerySharp.Querying.ShardingPage<T>.GetHashCode() -> int
+override EasyQuerySharp.Querying.ShardingPage<T>.ToString() -> string!
+override EasyQuerySharp.Sharding.ShardNode.Equals(object? obj) -> bool
+override EasyQuerySharp.Sharding.ShardNode.GetHashCode() -> int
+override EasyQuerySharp.Sharding.ShardNode.ToString() -> string!
+override EasyQuerySharp.Sharding.ShardOrder.Equals(object? obj) -> bool
+override EasyQuerySharp.Sharding.ShardOrder.GetHashCode() -> int
+override EasyQuerySharp.Sharding.ShardOrder.ToString() -> string!
+static EasyQuerySharp.Querying.ShardingPage<T>.operator !=(EasyQuerySharp.Querying.ShardingPage<T>? left, EasyQuerySharp.Querying.ShardingPage<T>? right) -> bool
+static EasyQuerySharp.Querying.ShardingPage<T>.operator ==(EasyQuerySharp.Querying.ShardingPage<T>? left, EasyQuerySharp.Querying.ShardingPage<T>? right) -> bool
+static EasyQuerySharp.Sharding.ShardNode.operator !=(EasyQuerySharp.Sharding.ShardNode? left, EasyQuerySharp.Sharding.ShardNode? right) -> bool
+static EasyQuerySharp.Sharding.ShardNode.operator ==(EasyQuerySharp.Sharding.ShardNode? left, EasyQuerySharp.Sharding.ShardNode? right) -> bool
+static EasyQuerySharp.Sharding.ShardOrder.operator !=(EasyQuerySharp.Sharding.ShardOrder? left, EasyQuerySharp.Sharding.ShardOrder? right) -> bool
+static EasyQuerySharp.Sharding.ShardOrder.operator ==(EasyQuerySharp.Sharding.ShardOrder? left, EasyQuerySharp.Sharding.ShardOrder? right) -> bool
+virtual EasyQuerySharp.Dialects.SqlDialect.DefaultNullsOrder(bool descending) -> EasyQuerySharp.SqlAst.NullsOrder

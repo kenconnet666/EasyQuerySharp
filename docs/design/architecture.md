@@ -50,6 +50,7 @@ docs/
 | `Dialects/` | `SqlDialect`（通用渲染、upsert、函数表、DDL 四个分部文件）与各库的 `XxxDialect`（MySQL、PostgreSQL、SQLite、SQL Server、Oracle、达梦、DuckDB、HANA、Kingbase、GaussDB、ClickHouse、Db2、TDengine） |
 | `Commands/` | 插入、更新、删除、聚合保存：`EntityCommandBase` → `WriteCommandBase`，`WriteScope` 是一条写入语句的翻译作用域，`SavePlan` 是一次聚合保存的计划 |
 | `Execution/` `Tracking/` `Interceptors/` `Filtering/` `Encryption/` `Materialization/` `Schema/` | 执行与环境事务、追踪、拦截器、按对象筛选与列表页请求、列加密（AES、SM4）、读取结果、code-first |
+| `Sharding/` | 分库分表（见 [0006](../decisions/0006-sharding.md)）：`IShardRule` 与内置规则（取模、按年 / 月 / 日）、按 WHERE 裁剪（`ShardRouter`）、拆成执行单元（`ShardPlanner`）、跨单元归并（`ShardQueries`） |
 
 模块边界的规则：
 
@@ -68,10 +69,12 @@ db.Query<User>().Where(..).Select(..).ToListAsync()
    │                  拦截器注入的条件（租户、逻辑删除）在这里合并
    │                  实体表按查询级的换表（MapTable / InSchema，TableMapping）取表名与 schema，子查询、带出查询沿用
    ├─ 4. 规划       ProjectionCompiler：投影里的对多集合、带出拆成按键批量的子查询（见 0002）
-   ├─ 5. 渲染       SqlRenderer + SqlDialect → SqlStatement { Text, Parameters }
-   │                  标识符引用、分页、upsert、函数表；参数到这一步才绑定
-   ├─ 6. 执行       SqlExecutor → DbCommand / DbBatch（批量写入）；环境事务、执行监听（IExecutionListener）、ActivitySource
-   └─ 7. 物化       读取委托：按读取树的结构缓存（ShaperCache），同形状只编译一次；值转换器在这里生效
+   ├─ 5. 路由       有分片实体时（ShardPlanner）：按 WHERE 裁剪出节点，按数据源分成执行单元；不分片时跳过
+   ├─ 6. 渲染       SqlRenderer + SqlDialect → SqlStatement { Text, Parameters, DataSource }
+   │                  标识符引用、分页、upsert、函数表；参数到这一步才绑定；分片表按单元写实际表名或 UNION ALL 派生表
+   ├─ 7. 执行       SqlExecutor → DbCommand / DbBatch（批量写入）；环境事务（每个数据源一个连接）、执行监听（IExecutionListener）、ActivitySource
+   │                  几个单元并行执行再归并（ShardQueries：k 路归并、分页、count / sum / min / max）
+   └─ 8. 物化       读取委托：按读取树的结构缓存（ShaperCache），同形状只编译一次；值转换器在这里生效
 ```
 
 翻译结果不缓存（阶段 5 基准对比的结论）：翻译、生成读取委托、渲染合起来，简单查询约 6 µs、复杂查询约 20 µs，比 EF Core 命中查询缓存的开销还低，只占一条 10 行查询的约 8%。开销真正大的是编译读取委托（约 1 ms），已经由 ShaperCache 按形状缓存。数据与理由见 [基准对比](../benchmarks.md)。
@@ -85,7 +88,8 @@ db.Query<User>().Where(..).Select(..).ToListAsync()
 | `Query<T>`、`Query<T1, T2>` … `Query<T1..T10>` | 查询构建，不可变 | `EntityQueryable` / `Queryable` |
 | `SqlExpr` / `SelectQuery` / `InsertStatement` / `UpdateStatement` / `DeleteStatement` | SQL AST，与方言无关 | `SQLExpression` / `ast.ts` |
 | `SqlDialect` | AST 渲染成文本、函数表、标识符引用、分页、upsert、建表类型 | `ExpressionFactory` + `SQLFunc` / `Dialect` |
-| `SqlExecutor` / `EasyTransaction` | 执行 SQL、批量写入（按 SQL 分组，有 `DbBatch` 时交给它）、环境事务（每个库一个，不能嵌套）、取消 | `JdbcExecutor` / `session.ts` |
+| `SqlExecutor` / `EasyTransaction` | 执行 SQL、批量写入（按 SQL 分组，有 `DbBatch` 时交给它）、环境事务（每个库一个，不能嵌套；分库时每个数据源一个连接，依次提交）、取消 | `JdbcExecutor` / `session.ts` |
+| `IShardRule` / `ShardNode` | 分片规则：节点（数据源 + 表名）、写入落点、按单个条件裁剪 | `ShardingInitializer` + `TableRoute` / `DataSourceRoute` |
 | `QueryFilter<T>` / `EntityInterceptor<T>` | 查询条件过滤、写入前改实体、按条件更新追加 SET | `EntityInterceptor` 等 / `interceptor.ts` |
 | `ValueConverter<TModel, TProvider>` | 属性值和数据库值互转 | `ValueConverter` |
 | `ColumnSqlConversion` | 在 SQL 侧包一层，例如库端加解密 | `ColumnValueSQLConverter` |
@@ -140,6 +144,7 @@ db.Query<User>().Where(..).Select(..).ToListAsync()
 5. 逻辑删除策略：实现 `ILogicDeleteStrategy`，`options.AddLogicDeleteStrategy("名字", 策略)` 注册。
 6. 方言：继承已有方言，覆盖差异，用 `options.Use(方言, 数据源)`。
 7. 依赖注入：`services.AddEasyQuery(..)` 注册 `EasyDb`，容器里登记的数据源、监听器、拦截器自动接上，见 [依赖注入指南](../guide/dependency-injection.md)。
+8. 分片规则：实现 `IShardRule`（节点、写入落点、按单个条件裁剪），用 `options.Shard<T>(rule)` 登记，见 [分库分表指南](../guide/sharding.md)。
 
 ## 命名
 

@@ -13,11 +13,14 @@ namespace EasyQuerySharp.Schema;
 public sealed class CodeFirstCommand
 {
     private readonly EasyDb _db;
+    // 每条语句在哪个数据源上执行（分库的实体按节点所在的数据源）；null 是默认数据源
+    private readonly IReadOnlyList<string?> _dataSources;
 
-    internal CodeFirstCommand(EasyDb db, IReadOnlyList<string> statements, IReadOnlyList<string> differences)
+    internal CodeFirstCommand(EasyDb db, IReadOnlyList<(string? DataSource, string Sql)> statements, IReadOnlyList<string> differences)
     {
         _db = db;
-        Statements = statements;
+        Statements = [.. statements.Select(s => s.Sql)];
+        _dataSources = [.. statements.Select(s => s.DataSource)];
         Differences = differences;
     }
 
@@ -33,11 +36,14 @@ public sealed class CodeFirstCommand
     /// <summary>全部语句，一条一行（与 Java 版 <c>getSQL()</c> 的语句文本一致，只是开头不带换行）；没有要执行的语句时是空串。</summary>
     public string ToSql() => string.Join("\n", Statements);
 
-    /// <summary>依次执行全部语句（在环境事务里时加入它；要整体回滚请自己开事务，MySQL、Oracle 的 DDL 会隐式提交）。</summary>
+    /// <summary>
+    /// 依次执行全部语句（在环境事务里时加入它；要整体回滚请自己开事务，MySQL、Oracle 的 DDL 会隐式提交）。
+    /// 分库的实体的语句在各节点所在的数据源上执行。
+    /// </summary>
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        foreach (var sql in Statements)
-            await _db.Executor.ExecuteAsync(new SqlStatement(sql, sql, []), cancellationToken).ConfigureAwait(false);
+        for (var i = 0; i < Statements.Count; i++)
+            await _db.Executor.ExecuteAsync(new SqlStatement(Statements[i], Statements[i], []) { DataSource = _dataSources[i] }, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />

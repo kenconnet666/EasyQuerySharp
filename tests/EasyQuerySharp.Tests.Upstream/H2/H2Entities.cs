@@ -356,3 +356,22 @@ public class MultiPrimaryEntity
     [Column(PrimaryKey = true)]
     public string? Id2 { get; set; }
 }
+
+/// <summary>
+/// 对应 Java：h2/domain/ALLTYPESharding（列与 <see cref="ALLTYPE"/> 相同，按 id 取模分成 t_all_type_sharding_0、_1，
+/// Java 的 AllTYPEShardingInitializer + AllTypeRoute，规则在 <see cref="H2Fixture"/> 里登记）。
+/// </summary>
+[Table("t_all_type_sharding")]
+public class ALLTYPESharding : ALLTYPE;
+
+/// <summary>对应 Java：h2/domain/H2Order（按 id 取模分成 t_order_0 … t_order_4，Java 的 H2OrderShardingInitializer + H2OrderRoute）。</summary>
+[Table("t_order")]
+public class H2Order
+{
+    [Column(PrimaryKey = true)]
+    public int? Id { get; set; }
+
+    public int? Status { get; set; }
+
+    public string? Created { get; set; }
+}

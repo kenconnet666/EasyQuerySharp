@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 2011、偏离 193、不适用 141、骨架 7、待做 52。
+合计：已移植 2058、偏离 196、不适用 142、骨架 4、待做 4。
 
 ## 按能力
 
@@ -54,7 +54,7 @@
 | 达梦方言 | `dialect.dameng` | M6 | 51 | 30 | 20 | 0 | 1 | 0 |
 | DuckDB 方言 | `dialect.duckdb` | M6 | 16 | 10 | 6 | 0 | 0 | 0 |
 | 方言静态入口与专属函数 | `dialect.functions` | M6 | 25 | 24 | 1 | 0 | 0 | 0 |
-| H2 方言 | `dialect.h2` | M6 | 74 | 64 | 3 | 4 | 3 | 0 |
+| H2 方言 | `dialect.h2` | M6 | 74 | 67 | 3 | 4 | 0 | 0 |
 | SAP HANA 方言 | `dialect.hana` | M6 | 18 | 6 | 10 | 0 | 2 | 0 |
 | 人大金仓方言 | `dialect.kingbase` | M6 | 2 | 0 | 2 | 0 | 0 | 0 |
 | SQL Server 方言 | `dialect.mssql` | M6 | 38 | 37 | 1 | 0 | 0 | 0 |
@@ -63,7 +63,7 @@
 | 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 13 | 3 | 0 | 1 | 0 |
 | 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 98 | 3 | 0 | 0 | 0 |
 | search 扩展 | `search` | M7 | 45 | 0 | 0 | 45 | 0 | 0 |
-| 分库分表 | `sharding` | M7 | 48 | 0 | 0 | 0 | 0 | 48 |
+| 分库分表 | `sharding` | M7 | 48 | 44 | 3 | 1 | 0 | 0 |
 | 跨库链接（asTableLink） | `table.link` | M7 | 13 | 11 | 2 | 0 | 0 | 0 |
 | 换表名（asTable / 表名映射） | `table.rename` | M7 | 52 | 51 | 1 | 0 | 0 | 0 |
 | 换 schema（asSchema） | `table.schema` | M7 | 25 | 23 | 2 | 0 | 0 | 0 |
@@ -2298,8 +2298,8 @@
 | h2/H2ForUpdateTest.java#testForUpdateJoinNotSupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2ForUpdateTest.cs:24 |  |
 | h2/H2ForUpdateTest.java#testForUpdateSqlAppendInTransaction | 不适用 | tests/EasyQuerySharp.Tests.Upstream/H2/H2ForUpdateTest.cs:12：测 H2 渲染的 FOR UPDATE 与行锁；SQLite 没有行锁语法，同样的用例在 mysql8/ForUpdateTest、pgsql/PgSQLForUpdateTest 已移植 |  |
 | h2/H2ForUpdateTest.java#testForUpdateWithoutTransactionThrows | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2ForUpdateTest.cs:17 |  |
-| h2/H2OrderTest.java#test1 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/H2/H2OrderTest.cs:10 |  |
-| h2/H2OrderTest.java#test2 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/H2/H2OrderTest.cs:14 |  |
+| h2/H2OrderTest.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2OrderTest.cs:18 |  |
+| h2/H2OrderTest.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2OrderTest.cs:27 |  |
 | h2/H2QueryRelationTest.java#tbTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryRelationTest.cs:11 | `SELECT id,uid,uname,price FROM t_tb_order` |
 | h2/H2QueryTest.java#allTypeTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:110 |  |
 | h2/H2QueryTest.java#allTypeTest1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:113 |  |
@@ -2307,8 +2307,8 @@
 | h2/H2QueryTest.java#allTypeTest1_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:116 |  |
 | h2/H2QueryTest.java#allTypeTest1_2_proxy | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:125 |  |
 | h2/H2QueryTest.java#allTypeTest1_proxy | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:119 |  |
-| h2/H2QueryTest.java#allTypeTestSharding1 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:129 |  |
-| h2/H2QueryTest.java#conditionTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:134 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
+| h2/H2QueryTest.java#allTypeTestSharding1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:130 |  |
+| h2/H2QueryTest.java#conditionTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:160 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
 | h2/H2QueryTest.java#leftJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:18 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
 | h2/H2QueryTest.java#leftJoin1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:26 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
 | h2/H2QueryTest.java#leftJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:34 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
@@ -2317,9 +2317,9 @@
 | h2/H2QueryTest.java#leftJoin3_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:61 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
 | h2/H2QueryTest.java#leftJoin4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:70 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
 | h2/H2QueryTest.java#leftJoin4_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:80 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
-| h2/H2QueryTest.java#testDDL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:158：建表语句由 SQLite 方言生成，格式与 Java 的 H2 一致，类型是 SQLite 的（integer、TEXT）；Java 是 H2 的类型（INT、TIMESTAMP(3)） | `CREATE TABLE IF NOT EXISTS t_topic ( id VARCHAR(255) NOT NULL , stars INT NULL , title VARCHAR(255) …` |
-| h2/H2QueryTest.java#testDDL2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:167 | `CREATE TABLE IF NOT EXISTS t_multi_primary ( id1 VARCHAR(255) NOT NULL , id2 VARCHAR(255) NOT NULL ,…` |
-| h2/H2QueryTest.java#testTableCommentDDL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:178：SQLite 不支持表注释与列注释，建表语句里没有 COMMENT；Java 断言 H2 的 COMMENT ON TABLE 语句 | `CREATE TABLE IF NOT EXISTS t_h2_table_comment ( id VARCHAR(255) NOT NULL COMMENT '主键ID', name VARCHA…` |
+| h2/H2QueryTest.java#testDDL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:184：建表语句由 SQLite 方言生成，格式与 Java 的 H2 一致，类型是 SQLite 的（integer、TEXT）；Java 是 H2 的类型（INT、TIMESTAMP(3)） | `CREATE TABLE IF NOT EXISTS t_topic ( id VARCHAR(255) NOT NULL , stars INT NULL , title VARCHAR(255) …` |
+| h2/H2QueryTest.java#testDDL2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:193 | `CREATE TABLE IF NOT EXISTS t_multi_primary ( id1 VARCHAR(255) NOT NULL , id2 VARCHAR(255) NOT NULL ,…` |
+| h2/H2QueryTest.java#testTableCommentDDL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:204：SQLite 不支持表注释与列注释，建表语句里没有 COMMENT；Java 断言 H2 的 COMMENT ON TABLE 语句 | `CREATE TABLE IF NOT EXISTS t_h2_table_comment ( id VARCHAR(255) NOT NULL COMMENT '主键ID', name VARCHA…` |
 | h2/TreeCTETest.java#tree8 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/H2/TreeCTETest.cs:9：SQLite 的复合查询分支不能加括号，递归 CTE 也不写列名清单；Java 的 H2 写成 as_tree_cte(cte_deep,id,parent_id,name) AS ( (…)  UNION ALL  (…) ) | `WITH RECURSIVE as_tree_cte(cte_deep,id,parent_id,name) AS ( (SELECT 0 AS cte_deep,t1.id,t1.parent_id…` |
 | h2/v2/H2V2Test.java#testAllType | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2V2Test.cs:29 |  |
 | h2/v2/H2V2Test.java#testAllType1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2V2Test.cs:40 |  |
@@ -2605,54 +2605,54 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| ShardingTest.java#sharding1 | 待做 |  |  |
-| ShardingTest.java#sharding10 | 待做 |  |  |
-| ShardingTest.java#sharding11 | 待做 |  |  |
-| ShardingTest.java#sharding12 | 待做 |  |  |
-| ShardingTest.java#sharding18 | 待做 |  |  |
-| ShardingTest.java#sharding19 | 待做 |  |  |
-| ShardingTest.java#sharding2 | 待做 |  |  |
-| ShardingTest.java#sharding20 | 待做 |  |  |
-| ShardingTest.java#sharding21 | 待做 |  |  |
-| ShardingTest.java#sharding26 | 待做 |  |  |
-| ShardingTest.java#sharding27 | 待做 |  |  |
-| ShardingTest.java#sharding28 | 待做 |  |  |
-| ShardingTest.java#sharding29 | 待做 |  |  |
-| ShardingTest.java#sharding3 | 待做 |  |  |
-| ShardingTest.java#sharding30 | 待做 |  |  |
-| ShardingTest.java#sharding31 | 待做 |  |  |
-| ShardingTest.java#sharding32 | 待做 |  |  |
-| ShardingTest.java#sharding33 | 待做 |  |  |
-| ShardingTest.java#sharding34 | 待做 |  |  |
-| ShardingTest.java#sharding35 | 待做 |  |  |
-| ShardingTest.java#sharding36 | 待做 |  |  |
-| ShardingTest.java#sharding37 | 待做 |  |  |
-| ShardingTest.java#sharding38 | 待做 |  |  |
-| ShardingTest.java#sharding39 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE t.'id' = ? AND EXISTS(SELEC…` |
-| ShardingTest.java#sharding4 | 待做 |  |  |
-| ShardingTest.java#sharding40 | 待做 |  |  |
-| ShardingTest.java#sharding41 | 待做 |  |  |
-| ShardingTest.java#sharding42 | 待做 |  |  |
-| ShardingTest.java#sharding43 | 待做 |  |  |
-| ShardingTest.java#sharding44 | 待做 |  |  |
-| ShardingTest.java#sharding45 | 待做 |  |  |
-| ShardingTest.java#sharding46 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',(SELECT COUNT(t1.'id') FROM 't_topic_sharding_time' t1 WHERE (t1.'…` |
-| ShardingTest.java#sharding47 | 待做 |  | `SELECT t.'id',t.'stars',t.'title',(SELECT COUNT(t1.'id') FROM 't_topic_sharding_time' t1 WHERE (t1.'…` |
-| ShardingTest.java#sharding5 | 待做 |  |  |
-| ShardingTest.java#sharding6 | 待做 |  |  |
-| ShardingTest.java#sharding7 | 待做 |  |  |
-| ShardingTest.java#sharding8 | 待做 |  |  |
-| ShardingTest.java#sharding9 | 待做 |  |  |
-| ShardingTest.java#shardingTest48 | 待做 |  |  |
-| ShardingTest.java#shardingTest49 | 待做 |  |  |
-| ShardingTest.java#shardingTest50 | 待做 |  |  |
-| ShardingTest.java#shardingTest51 | 待做 |  |  |
-| ShardingTest.java#shardingTest51_1 | 待做 |  |  |
-| ShardingTest.java#shardingTestMap | 待做 |  | `SELECT t.'create_time' AS 'createTime',COUNT(t.'id') AS 'idCount' FROM (SELECT * FROM 't_topic_shard…` |
-| ShardingTest.java#shardingTestMap1 | 待做 |  | `SELECT t.'create_time' AS 'createTime',COUNT(t.'id') AS 'idCount' FROM (SELECT * FROM 't_topic_shard…` |
-| ShardingTest.java#shardingTestMap2 | 待做 |  | `SELECT t.'create_time' AS 'createTime',COUNT(t.'id') AS 'idCount' FROM (SELECT * FROM 't_topic_shard…` |
-| ShardingTest.java#shardingTestMap3 | 待做 |  | `SELECT t.'create_time' AS 'createTime',COUNT(t.'id') AS 'idCount' FROM (SELECT * FROM 't_topic_shard…` |
-| ShardingTest.java#test111 | 待做 |  |  |
+| ShardingTest.java#sharding1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:24 |  |
+| ShardingTest.java#sharding10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:21 |  |
+| ShardingTest.java#sharding11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:24 |  |
+| ShardingTest.java#sharding12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:27 |  |
+| ShardingTest.java#sharding18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:38 |  |
+| ShardingTest.java#sharding19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:45 |  |
+| ShardingTest.java#sharding2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:32 |  |
+| ShardingTest.java#sharding20 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:48 |  |
+| ShardingTest.java#sharding21 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:51 |  |
+| ShardingTest.java#sharding26 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:63 |  |
+| ShardingTest.java#sharding27 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:71 |  |
+| ShardingTest.java#sharding28 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:147 |  |
+| ShardingTest.java#sharding29 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:90 |  |
+| ShardingTest.java#sharding3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:44 |  |
+| ShardingTest.java#sharding30 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:93 |  |
+| ShardingTest.java#sharding31 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:97 |  |
+| ShardingTest.java#sharding32 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:101 |  |
+| ShardingTest.java#sharding33 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:104 |  |
+| ShardingTest.java#sharding34 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:118 |  |
+| ShardingTest.java#sharding35 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:131 |  |
+| ShardingTest.java#sharding36 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:143 |  |
+| ShardingTest.java#sharding37 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:155 |  |
+| ShardingTest.java#sharding38 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:165 |  |
+| ShardingTest.java#sharding39 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:174 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE t.'id' = ? AND EXISTS(SELEC…` |
+| ShardingTest.java#sharding4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:63 |  |
+| ShardingTest.java#sharding40 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:187：Java 对两个分片查询做 union 时把两边的路由做笛卡尔积，行数是 (2n−1) × 正确行数（90 / 290 / 15972）；C# 每个分支只展开自己的节点，期望用正确语义：UNION 去重后 30 / 58 / 484 行，UNION ALL 是两倍（Java 第二个断言误写成了第一个列表） |  |
+| ShardingTest.java#sharding41 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:190：Java 对两个分片查询做 union 时把两边的路由做笛卡尔积，行数是 (2n−1) × 正确行数（90 / 290 / 15972）；C# 每个分支只展开自己的节点，期望用正确语义：UNION 去重后 30 / 58 / 484 行，UNION ALL 是两倍（Java 第二个断言误写成了第一个列表） |  |
+| ShardingTest.java#sharding42 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:193：Java 对两个分片查询做 union 时把两边的路由做笛卡尔积，行数是 (2n−1) × 正确行数（90 / 290 / 15972）；C# 每个分支只展开自己的节点，期望用正确语义：UNION 去重后 30 / 58 / 484 行，UNION ALL 是两倍（Java 第二个断言误写成了第一个列表） |  |
+| ShardingTest.java#sharding43 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:207 |  |
+| ShardingTest.java#sharding44 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:214 |  |
+| ShardingTest.java#sharding45 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:223 |  |
+| ShardingTest.java#sharding46 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:232 | `SELECT t.'id',t.'stars',t.'title',(SELECT COUNT(t1.'id') FROM 't_topic_sharding_time' t1 WHERE (t1.'…` |
+| ShardingTest.java#sharding47 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:247 | `SELECT t.'id',t.'stars',t.'title',(SELECT COUNT(t1.'id') FROM 't_topic_sharding_time' t1 WHERE (t1.'…` |
+| ShardingTest.java#sharding5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:70 |  |
+| ShardingTest.java#sharding6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:86 |  |
+| ShardingTest.java#sharding7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:116 |  |
+| ShardingTest.java#sharding8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:131 |  |
+| ShardingTest.java#sharding9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.Time.cs:14 |  |
+| ShardingTest.java#shardingTest48 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:164 |  |
+| ShardingTest.java#shardingTest49 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:174 |  |
+| ShardingTest.java#shardingTest50 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:184 |  |
+| ShardingTest.java#shardingTest51 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:190 |  |
+| ShardingTest.java#shardingTest51_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:196 |  |
+| ShardingTest.java#shardingTestMap | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:218 | `SELECT t.'create_time' AS 'createTime',COUNT(t.'id') AS 'idCount' FROM (SELECT * FROM 't_topic_shard…` |
+| ShardingTest.java#shardingTestMap1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:229 | `SELECT t.'create_time' AS 'createTime',COUNT(t.'id') AS 'idCount' FROM (SELECT * FROM 't_topic_shard…` |
+| ShardingTest.java#shardingTestMap2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:222 | `SELECT t.'create_time' AS 'createTime',COUNT(t.'id') AS 'idCount' FROM (SELECT * FROM 't_topic_shard…` |
+| ShardingTest.java#shardingTestMap3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:225 | `SELECT t.'create_time' AS 'createTime',COUNT(t.'id') AS 'idCount' FROM (SELECT * FROM 't_topic_shard…` |
+| ShardingTest.java#test111 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Sharding/ShardingTest.cs:18：只打印实体元数据，没有断言；分片规则的元数据见 shardingTest48 / 49 |  |
 
 ### 跨库链接（asTableLink）（`table.link`，M7）
 

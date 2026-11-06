@@ -44,8 +44,9 @@
 | [方言](guide/dialects.md) | 13 个方言的档位、实库验证情况、能力矩阵、自定义方言 |
 | [从 Java / TS 迁移](guide/migration.md) | 写法差别，Java → C#、TS → C# 的 API 对照表 |
 | [依赖注入](guide/dependency-injection.md) | `services.AddEasyQuery(..)`，多个库按名字注入，从容器取数据源、监听器、拦截器，生命周期 |
+| [分库分表](guide/sharding.md) | 登记规则与数据源、按条件裁剪、同库分表的 UNION ALL 与跨库归并、写入路由、事务、code-first、限制 |
 
-开发中、还没有指南的能力：建表与迁移（code-first，ROADMAP 4.1）、分库分表（4.4，[0006](decisions/0006-sharding.md)）、二级缓存（4.5，[0007](decisions/0007-second-level-cache.md)）。
+开发中、还没有指南的能力：建表与迁移（code-first，ROADMAP 4.1）、二级缓存（4.5，[0007](decisions/0007-second-level-cache.md)）。
 
 ## 设计
 

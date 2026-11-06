@@ -17,6 +17,9 @@ public class Db2Dialect : SqlDialect
     public static Db2Dialect Instance { get; } = new();
 
     /// <inheritdoc />
+    public override NullsOrder DefaultNullsOrder(bool descending) => descending ? NullsOrder.First : NullsOrder.Last;
+
+    /// <inheritdoc />
     public override string Name => "db2";
 
     /// <summary>Db2 的 INSERT 没有 RETURNING：同一连接上紧接着取 <c>IDENTITY_VAL_LOCAL()</c>。</summary>

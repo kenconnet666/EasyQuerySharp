@@ -125,9 +125,35 @@ public sealed class H2QueryTest(H2Fixture fixture) : H2Test(fixture)
     [Fact, Upstream("h2/H2QueryTest.java#allTypeTest1_2_proxy")]
     public Task AllTypeTest1_2_proxy() => AssertRoundTripToVo("1235678");
 
-    // Java 写入 13 行 ALLTYPESharding（按 number_integer 分表），整表查询、倒序、倒序再分页，比较每一行
-    [Fact(Skip = "等 4.4 分库分表"), Upstream("h2/H2QueryTest.java#allTypeTestSharding1", Pending = true)]
-    public Task AllTypeTestSharding1() => Task.CompletedTask;
+    // Java 写入 13 行 ALLTYPESharding（按 id 取模分两张表），整表查询、按 number_integer 倒序、倒序再分页，比较每一行；
+    // 两张表各一条语句，在内存里归并排序、再跳过 3 行取 10 行
+    [Fact, Upstream("h2/H2QueryTest.java#allTypeTestSharding1")]
+    public async Task AllTypeTestSharding1()
+    {
+        var now = DateTime.Now;
+        var inserted = Enumerable.Range(0, 13).Select(i => new ALLTYPESharding
+        {
+            Id = i.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            NumberDecimal = 12.33m, NumberFloat = 12.3f, NumberDouble = 22.1d, NumberShort = 12, NumberInteger = i, NumberLong = 12345678911L, NumberByte = -1,
+            TimeLocalDateTime = new DateTime(2021, 1, 1, 0, 0, 0), TimeLocalDate = new DateOnly(2121, 1, 2), TimeLocalTime = new TimeOnly(21, 1, 9),
+            OnlyDate = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerMillisecond)), SqlDate = now.Date, OnlyTime = new TimeSpan(12, 9, 10), Enable = true, Value = "3322",
+            Uid = Guid.NewGuid(), NumberFloatBasic = 12.3f, NumberDoubleBasic = 22.1d, NumberShortBasic = 12, NumberIntegerBasic = 33, NumberLongBasic = 12345678911L,
+            NumberByteBasic = -1, EnableBasic = true,
+        }).ToList();
+        Assert.Equal(13, await Db.Insert(inserted).ExecuteAsync(Ct));
+
+        var all = await Db.Query<ALLTYPESharding>().ToListAsync(Ct);
+        Assert.Equal(13, all.Count);
+        foreach (var row in all) Assert.Equivalent(inserted[int.Parse(row.Id!, System.Globalization.CultureInfo.InvariantCulture)], row, strict: true);
+
+        var ordered = await Db.Query<ALLTYPESharding>().OrderByDescending(t => t.NumberInteger).ToListAsync(Ct);
+        Assert.Equal(Enumerable.Range(0, 13).Reverse().Cast<int?>(), ordered.Select(t => t.NumberInteger));
+        Assert.Equivalent(inserted, ordered, strict: true);
+
+        var page = await Db.Query<ALLTYPESharding>().OrderByDescending(t => t.NumberInteger).Skip(3).Take(10).ToListAsync(Ct);
+        Assert.Equal(Enumerable.Range(0, 10).Reverse().Cast<int?>(), page.Select(t => t.NumberInteger));
+        Assert.Equivalent(inserted.Take(10), page, strict: true);
+    }
 
     // Java 的 filterConfigure((t, p, v) -> …) 按属性名决定过滤与否；C# 的 UseValueFilter 只对之后追加的 Where 生效，
     // 恒保留的条件写在它之前，恒去掉的条件不写，其余条件按 NotNullOrBlank 过滤。SQL 与 Java 相同

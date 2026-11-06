@@ -1,11 +1,13 @@
 using System.Data.Common;
 using System.Diagnostics;
+using EasyQuerySharp.SqlAst;
 
 namespace EasyQuerySharp.Execution;
 
 /// <summary>
-/// 执行渲染好的语句：取连接（有环境事务时用事务的连接）、绑定参数、通知监听器、读结果。
+/// 执行语句：取连接（有环境事务时用事务的连接，分库时按语句的数据源取）、绑定参数、通知监听器、读结果。
 /// 所有对数据库的访问都经过这里，日志、监控、测试捕获只需挂在 <see cref="IExecutionListener"/> 上。
+/// 接收 <see cref="SelectQuery"/> 的入口先做分库分表路由（见 <see cref="Sharding.ShardQueries"/>），没有分片实体时直接渲染执行。
 /// </summary>
 internal sealed class SqlExecutor(EasyDb db)
 {
@@ -13,15 +15,42 @@ internal sealed class SqlExecutor(EasyDb db)
 
     /// <summary>执行查询，逐行用 <paramref name="shaper"/> 读成结果。</summary>
     public Task<List<T>> QueryAsync<T>(SqlStatement statement, Func<DbDataReader, T> shaper, CancellationToken ct) =>
-        SessionAsync(s => s.QueryAsync(statement, shaper, ct), ct);
+        SessionAsync(statement.DataSource, s => s.QueryAsync(statement, shaper, ct), ct);
 
     /// <summary>执行写入，返回受影响的行数。</summary>
     public Task<long> ExecuteAsync(SqlStatement statement, CancellationToken ct) =>
-        SessionAsync(s => s.ExecuteAsync(statement, ct), ct);
+        SessionAsync(statement.DataSource, s => s.ExecuteAsync(statement, ct), ct);
 
     /// <summary>执行并返回第一行第一列。</summary>
     public Task<object?> ScalarAsync(SqlStatement statement, CancellationToken ct) =>
-        SessionAsync(s => s.ScalarAsync(statement, ct), ct);
+        SessionAsync(statement.DataSource, s => s.ScalarAsync(statement, ct), ct);
+
+    /// <summary>执行查询（列表语义：分到几个单元时按排序归并、再统一跳过 / 取行），逐行用 <paramref name="shaper"/> 读成结果。</summary>
+    public Task<List<T>> QueryAsync<T>(SelectQuery query, Func<DbDataReader, T> shaper, CancellationToken ct) =>
+        db.Shards.Enabled ? Sharding.ShardQueries.ListAsync(db, query, shaper, ct) : QueryAsync(Render(query), shaper, ct);
+
+    /// <summary>执行 <c>SELECT COUNT(*) …</c>：分到几个单元时各单元的行数相加。</summary>
+    public async Task<long> CountAsync(SelectQuery query, CancellationToken ct) =>
+        db.Shards.Enabled ? await Sharding.ShardQueries.CountAsync(db, query, ct).ConfigureAwait(false) : ToLong(await ScalarAsync(Render(query), ct).ConfigureAwait(false));
+
+    /// <summary>执行 <c>SELECT 1 … LIMIT 1</c>：有任何一行时为 true。</summary>
+    public async Task<bool> AnyAsync(SelectQuery query, CancellationToken ct) =>
+        db.Shards.Enabled ? await Sharding.ShardQueries.AnyAsync(db, query, ct).ConfigureAwait(false) : (await QueryAsync(Render(query), _ => true, ct).ConfigureAwait(false)).Count > 0;
+
+    /// <summary>执行只取一个值的聚合 <c>SELECT FUNC(x) …</c>（<paramref name="function"/> 见 <see cref="SqlFunctionNames"/>）：分到几个单元时合并各单元的值。</summary>
+    public Task<object?> AggregateAsync(SelectQuery query, string function, CancellationToken ct) =>
+        db.Shards.Enabled ? Sharding.ShardQueries.AggregateAsync(db, query, function, ct) : ScalarAsync(Render(query), ct);
+
+    /// <summary>执行查询，把整个结果集交给 <paramref name="read"/>；分片的查询只能落在一个单元上。</summary>
+    public Task<TResult> ReadAsync<TResult>(SelectQuery query, Func<DbDataReader, CancellationToken, Task<TResult>> read, CancellationToken ct)
+    {
+        var statement = db.Shards.Enabled ? Sharding.ShardQueries.SingleUnit(db, query, "ReadAsync") : Render(query);
+        return SessionAsync(statement.DataSource, s => s.ReadAsync(statement, read, ct), ct);
+    }
+
+    /// <summary>流式查询；分片的查询只能落在一个单元上。</summary>
+    public IAsyncEnumerable<T> StreamAsync<T>(SelectQuery query, Func<DbDataReader, T> shaper, CancellationToken ct) =>
+        StreamAsync(db.Shards.Enabled ? Sharding.ShardQueries.SingleUnit(db, query, "AsAsyncEnumerable") : Render(query), shaper, ct);
 
     /// <summary>流式查询：连接在枚举结束时释放（有环境事务时用事务的连接）。</summary>
     public async IAsyncEnumerable<T> StreamAsync<T>(SqlStatement statement, Func<DbDataReader, T> shaper, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
@@ -29,8 +58,8 @@ internal sealed class SqlExecutor(EasyDb db)
         DbConnection? owned = null;
         DbConnection connection;
         DbTransaction? dbTransaction = null;
-        if (EasyTransaction.Current(db) is { } transaction) (connection, dbTransaction) = await transaction.EnsureStartedAsync(ct).ConfigureAwait(false);
-        else connection = owned = await db.OpenConnectionAsync(ct).ConfigureAwait(false);
+        if (EasyTransaction.Current(db) is { } transaction) (connection, dbTransaction) = await transaction.EnsureStartedAsync(statement.DataSource, ct).ConfigureAwait(false);
+        else connection = owned = await db.OpenConnectionAsync(statement.DataSource, ct).ConfigureAwait(false);
         try
         {
             await foreach (var row in new SqlSession(db, connection, dbTransaction).StreamAsync(statement, shaper, ct).ConfigureAwait(false))
@@ -42,17 +71,25 @@ internal sealed class SqlExecutor(EasyDb db)
         }
     }
 
-    /// <summary>在同一个连接上执行一组语句（插入后取自增键这类必须同连接的操作）。</summary>
-    public async Task<T> SessionAsync<T>(Func<SqlSession, Task<T>> work, CancellationToken ct)
+    /// <summary>在默认数据源的同一个连接上执行一组语句（插入后取自增键这类必须同连接的操作）。</summary>
+    public Task<T> SessionAsync<T>(Func<SqlSession, Task<T>> work, CancellationToken ct) => SessionAsync(null, work, ct);
+
+    /// <summary>在数据源 <paramref name="dataSource"/>（null 是默认数据源）的同一个连接上执行一组语句。</summary>
+    public async Task<T> SessionAsync<T>(string? dataSource, Func<SqlSession, Task<T>> work, CancellationToken ct)
     {
         if (EasyTransaction.Current(db) is { } transaction)
         {
-            var (connection, dbTransaction) = await transaction.EnsureStartedAsync(ct).ConfigureAwait(false);
+            var (connection, dbTransaction) = await transaction.EnsureStartedAsync(dataSource, ct).ConfigureAwait(false);
             return await work(new SqlSession(db, connection, dbTransaction)).ConfigureAwait(false);
         }
-        await using var owned = await db.OpenConnectionAsync(ct).ConfigureAwait(false);
+        await using var owned = await db.OpenConnectionAsync(dataSource, ct).ConfigureAwait(false);
         return await work(new SqlSession(db, owned, null)).ConfigureAwait(false);
     }
+
+    private SqlStatement Render(SelectQuery query) => Rendering.SqlRenderer.Render(db.Options.Dialect, query);
+
+    /// <summary>COUNT 的结果（各驱动返回 long、int 或 decimal）。</summary>
+    internal static long ToLong(object? value) => value is null ? 0 : Convert.ToInt64(value, System.Globalization.CultureInfo.InvariantCulture);
 
     internal static ActivitySource ActivitySource => Activities;
 }
@@ -239,7 +276,7 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
             // 取消原样抛出，调用方照常按 OperationCanceledException 处理；其余失败包上语句
             if (ex is OperationCanceledException) throw;
             var batch = statements.Count > 1 ? $"（批量 {statements.Count} 条）" : "";
-            throw new EasyQueryException($"执行 SQL 失败{batch}：{ex.Message}{Environment.NewLine}{statement.Text}", statement, ex);
+            throw new EasyQueryException($"执行 SQL 失败{batch}{On(statement)}：{ex.Message}{Environment.NewLine}{statement.Text}", statement, ex);
         }
         finally
         {
@@ -262,6 +299,9 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
     }
 
     private static object? DbValue(object? value) => value is DBNull ? null : value;
+
+    // 分库时异常里带上数据源（表名在语句里）
+    private static string On(SqlStatement statement) => statement.DataSource is { } dataSource ? $"（数据源 {dataSource}）" : "";
 
     // 输出参数要逐条读回，走不了 DbBatch
     private bool CanBatch(IReadOnlyList<SqlStatement> statements) =>
@@ -287,7 +327,7 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
             e.Elapsed = stopwatch.Elapsed;
             foreach (var l in db.Options.Listeners) l.OnExecuted(e);
             if (ex is OperationCanceledException) throw;
-            throw new EasyQueryException($"执行 SQL 失败：{ex.Message}{Environment.NewLine}{statement.Text}", statement, ex);
+            throw new EasyQueryException($"执行 SQL 失败{On(statement)}：{ex.Message}{Environment.NewLine}{statement.Text}", statement, ex);
         }
         long rows = 0;
         try

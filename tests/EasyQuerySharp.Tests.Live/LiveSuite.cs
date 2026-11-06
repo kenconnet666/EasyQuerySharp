@@ -40,6 +40,9 @@ public sealed record LiveSuiteOptions
     /// SQL Server、Oracle 方言还没有 Sql.Json 的写法（Java 也没有）。
     /// </summary>
     public bool JsonFunctions { get; init; } = true;
+
+    /// <summary>分库用例要第二个库（<see cref="LiveSuite.ShardConnectionStringAsync"/>）：Oracle 的测试用户没有建第二个 schema 的权限。</summary>
+    public bool ShardDataSources { get; init; } = true;
 }
 
 /// <summary>
@@ -72,6 +75,9 @@ public abstract partial class LiveSuite
 
     /// <summary>连接串；需要独立库的方言（MySQL、PG）覆盖成先建库再连 <c>eqs_live</c>。</summary>
     protected virtual Task<string> ConnectionStringAsync() => Task.FromResult(Database.ConnectionString());
+
+    /// <summary>分库用例的第二个库（<c>eqs_live_ds1</c> 或另一个文件库）的连接串；<see cref="LiveSuiteOptions.ShardDataSources"/> 为 false 的库不用实现。</summary>
+    protected internal virtual Task<string> ShardConnectionStringAsync() => throw new NotSupportedException($"{Database} 没有第二个库");
 
     /// <summary>当前测试的取消令牌。</summary>
     protected static CancellationToken Ct => TestContext.Current.CancellationToken;

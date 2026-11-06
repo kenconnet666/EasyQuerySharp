@@ -11,15 +11,15 @@ public abstract partial class QueryBase<TSelf, TElement>
     public async Task<List<TElement>> ToListAsync(CancellationToken cancellationToken = default)
     {
         var compiled = QueryCompiler.Compile<TElement>(State);
-        var statement = SqlRenderer.Render(Db.Options.Dialect, compiled.Sql);
         var shaper = compiled.Shaper;
         if (State.ResultSizeLimit is { } limit)
         {
+            // 分到几个单元时各单元并行读取，计数要线程安全
             var count = 0;
             var inner = shaper;
-            shaper = reader => ++count > limit ? throw new ResultSizeLimitException(limit) : inner(reader);
+            shaper = reader => Interlocked.Increment(ref count) > limit ? throw new ResultSizeLimitException(limit) : inner(reader);
         }
-        var rows = await Db.Executor.QueryAsync(statement, shaper, cancellationToken).ConfigureAwait(false);
+        var rows = await Db.Executor.QueryAsync(compiled.Sql, shaper, cancellationToken).ConfigureAwait(false);
         // 每行的回调在带出之前执行（与 Java 的 forEach 一致：回调抛异常时带出查询不再执行）
         foreach (var row in rows)
             foreach (var callback in State.RowCallbacks) callback(row);
@@ -47,9 +47,8 @@ public abstract partial class QueryBase<TSelf, TElement>
     {
         var compiled = QueryCompiler.Compile<TElement>(State);
         if (compiled.Includes.Count > 0) throw new NotSupportedException("投影里的导航带出不能流式读取，请用 ToListAsync");
-        var statement = SqlRenderer.Render(Db.Options.Dialect, compiled.Sql);
         var track = !State.NoTracking && Db.Tracker.Active && Db.Tracker.CanTrack(typeof(TElement));
-        await foreach (var row in Db.Executor.StreamAsync(statement, compiled.Shaper, cancellationToken).ConfigureAwait(false))
+        await foreach (var row in Db.Executor.StreamAsync(compiled.Sql, compiled.Shaper, cancellationToken).ConfigureAwait(false))
             yield return track && row is { } r ? (TElement)Db.Tracker.AttachQueried(r) : row;
     }
 
@@ -87,13 +86,12 @@ public abstract partial class QueryBase<TSelf, TElement>
     public Task<TResult> ReadAsync<TResult>(Func<System.Data.Common.DbDataReader, CancellationToken, Task<TResult>> read, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(read);
-        var statement = ToStatement();
-        return Db.Executor.SessionAsync(s => s.ReadAsync(statement, read, cancellationToken), cancellationToken);
+        return Db.Executor.ReadAsync(QueryCompiler.CompileSql(State), read, cancellationToken);
     }
 
     /// <summary>执行并把每行读成 列名 → 值 的 <see cref="DynamicRow"/>（对应 Java 的 toMaps）；列名忽略大小写，重复的列名抛出异常。</summary>
     public Task<List<DynamicRow>> ToRowsAsync(CancellationToken cancellationToken = default) =>
-        Db.Executor.QueryAsync(ToStatement(), Materialization.EntityMaterializer.ReadDictionary, cancellationToken);
+        Db.Executor.QueryAsync(QueryCompiler.CompileSql(State), Materialization.EntityMaterializer.ReadDictionary, cancellationToken);
 
     /// <summary>第一行读成 <see cref="DynamicRow"/>（追加 LIMIT 1）；没有时返回 null（对应 Java 的 toMap）。</summary>
     public async Task<DynamicRow?> FirstRowOrDefaultAsync(CancellationToken cancellationToken = default)
@@ -171,14 +169,11 @@ public abstract partial class QueryBase<TSelf, TElement>
     {
         var frame = QueryCompiler.Build(ForAggregate() with { Limit = 1 });
         frame.Query.Columns.Add(new SelectColumn(new LiteralExpr(" 1 "), null));
-        var statement = SqlRenderer.Render(Db.Options.Dialect, frame.Query);
-        var rows = await Db.Executor.QueryAsync(statement, _ => true, cancellationToken).ConfigureAwait(false);
-        return rows.Count > 0;
+        return await Db.Executor.AnyAsync(frame.Query, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>行数：<c>SELECT COUNT(*)</c>；有 DISTINCT 或分页时先包成派生表再计数。</summary>
-    public async Task<long> CountAsync(CancellationToken cancellationToken = default) =>
-        await ScalarAsync<long>(ToCountStatement(), cancellationToken).ConfigureAwait(false);
+    public Task<long> CountAsync(CancellationToken cancellationToken = default) => Db.Executor.CountAsync(CountQuery(), cancellationToken);
 
     /// <summary>计数语句（分页时与数据查询共用条件）。</summary>
     internal SelectQuery CountQuery()
@@ -218,6 +213,26 @@ public abstract partial class QueryBase<TSelf, TElement>
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
         return await PageOfAsync(page, size, await CountAsync(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 分片查询的分页（对应 Java 的 toShardingPageResult）：最外层分片表命中的每个节点各计一次数，各节点的行数放在
+    /// <see cref="ShardingPage{T}.TotalLines"/> 里（按路由的顺序）；下次翻页时把它传回 <paramref name="totalLines"/>，不小于 0 的项不再计数、
+    /// 小于 0 的项重新计数（如按月分表时只重算当月）。取数与 <see cref="ToPageAsync(long, long, CancellationToken)"/> 相同。
+    /// 不分片的查询只有一项。
+    /// </summary>
+    /// <example><code>
+    /// var first = await db.Query&lt;Log&gt;().OrderBy(l =&gt; l.CreateTime).ToShardingPageAsync(1, 20);
+    /// var lines = first.TotalLines.ToArray(); lines[^1] = -1;          // 只有最新的一张表还在变
+    /// var second = await db.Query&lt;Log&gt;().OrderBy(l =&gt; l.CreateTime).ToShardingPageAsync(2, 20, lines);
+    /// </code></example>
+    public async Task<ShardingPage<TElement>> ToShardingPageAsync(long page, long size, IReadOnlyList<long>? totalLines = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
+        var lines = await Sharding.ShardQueries.CountByNodeAsync(Db, CountQuery(), totalLines, cancellationToken).ConfigureAwait(false);
+        var result = await PageOfAsync(page, size, lines.Sum(), cancellationToken).ConfigureAwait(false);
+        return new ShardingPage<TElement>(result.Rows, result.Total, page, size, lines);
     }
 
     /// <summary>
@@ -306,13 +321,7 @@ public abstract partial class QueryBase<TSelf, TElement>
         var value = frame.Translator.Translate(selector.Body);
         frame.Query.Columns.Add(new SelectColumn(new FunctionExpr(function, [value]), null));
         frame.Query.ExplicitProjection = true;
-        var statement = SqlRenderer.Render(Db.Options.Dialect, frame.Query);
-        return await ScalarAsync<TResult>(statement, ct).ConfigureAwait(false);
-    }
-
-    private async Task<TResult> ScalarAsync<TResult>(SqlStatement statement, CancellationToken ct)
-    {
-        var raw = await Db.Executor.ScalarAsync(statement, ct).ConfigureAwait(false);
+        var raw = await Db.Executor.AggregateAsync(frame.Query, function, ct).ConfigureAwait(false);
         // 聚合没有行时数据库返回 NULL：结果类型可空就是 null，否则是 default
         return raw is null ? default! : (TResult)Materialization.ValueReader.ConvertTo(raw, typeof(TResult))!;
     }
