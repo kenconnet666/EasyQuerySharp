@@ -169,6 +169,18 @@ public class SqlServerDialect : SqlDialect
         _ => base.CastTemplate(targetType),
     };
 
+    // 几个值取最大 / 最小：(SELECT MAX(__col__) FROM (VALUES (a), (b)) AS t(__col__))（与 Java 的 MsSQLMaxMinColumnsSQLFunction 一致）
+    private static FunctionWriter ValuesExtreme(string aggregate) => (r, a) =>
+    {
+        r.Append("(SELECT " + aggregate + "(__col__) FROM (VALUES ");
+        for (var i = 0; i < a.Count; i++)
+        {
+            if (i > 0) r.Append(", ");
+            r.Append("(").Write(a[i]).Append(")");
+        }
+        r.Append(") AS t(__col__))");
+    };
+
     // 整串格式直接对应一个 CONVERT 样式
     private static readonly Dictionary<string, string> WholeDateFormats = new(StringComparer.Ordinal)
     {
@@ -246,6 +258,8 @@ public class SqlServerDialect : SqlDialect
         f[SqlFunctionNames.IndexOf] = Reordered("CHARINDEX", 1, 0);
         f[SqlFunctionNames.Ceiling] = Call("CEILING");
         f[SqlFunctionNames.Ln] = Call("LOG");
+        f[SqlFunctionNames.MaxColumns] = ValuesExtreme("MAX");
+        f[SqlFunctionNames.MinColumns] = ValuesExtreme("MIN");
         f[SqlFunctionNames.DateFormat] = WriteDateFormat;
         f[SqlFunctionNames.Now] = Template("GETDATE()");
         f[SqlFunctionNames.Random] = Template("RAND()");

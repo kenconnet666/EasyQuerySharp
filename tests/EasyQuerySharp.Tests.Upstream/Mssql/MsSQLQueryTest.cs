@@ -217,6 +217,40 @@ public sealed partial class MsSQLQueryTest(MsSqlFixture fixture) : MsSqlTest(fix
         }
     }
 
+    [Fact, Upstream("mssql/MsSQLQueryTest.java#testMaxColumns")]
+    public async Task TestMaxColumns()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<MsSQLCalc>()
+            .Where(m => Sql.MaxColumns(m.Column1, m.Column2, m.Column3) == 1m && Sql.MaxColumns(m.Column1, m.Column2, m.Column3) == 2m)
+            .ToListAsync(Ct);
+        listen.AssertSql("SELECT [Id],[Column1],[Column2],[Column3] FROM [t_calc] WHERE (SELECT MAX(__col__) FROM (VALUES ([Column1]), ([Column2]), ([Column3])) AS t(__col__)) = ? AND (SELECT MAX(__col__) FROM (VALUES ([Column1]), ([Column2]), ([Column3])) AS t(__col__)) = ?");
+        listen.AssertParams("1(BigDecimal),2(BigDecimal)");
+    }
+
+    // Java 的 t_calc 此时是空表，循环断言没有执行；这里先插一行（-8.87、-1.15、1.10），让读回的最大值真正对上
+    [Fact, Upstream("mssql/MsSQLQueryTest.java#testMaxColumns2")]
+    public async Task TestMaxColumns2()
+    {
+        try
+        {
+            await Db.Delete<MsSQLCalc>().AllowDeleteStatement(true).WhereById("1").ExecuteAsync(Ct);
+            await Db.Insert(Calc("1", "1.10")).ExecuteAsync(Ct);
+            using var listen = SqlCapture.Listen();
+            var list = await Db.Query<MsSQLCalc>()
+                .Select(m => new Draft<decimal?, decimal?, decimal?, decimal?>(m.Column1, m.Column2, m.Column3, Sql.MaxColumns(m.Column1, m.Column2, m.Column3)))
+                .ToListAsync(Ct);
+            Assert.NotEmpty(list);
+            Assert.All(list, item => Assert.Equal(new[] { item.Value1, item.Value2, item.Value3 }.Max(), item.Value4));
+            Assert.Equal(1.1m, list[0].Value4);
+            listen.AssertSql("SELECT t.[Column1] AS [Value1],t.[Column2] AS [Value2],t.[Column3] AS [Value3],(SELECT MAX(__col__) FROM (VALUES (t.[Column1]), (t.[Column2]), (t.[Column3])) AS t(__col__)) AS [Value4] FROM [t_calc] t");
+        }
+        finally
+        {
+            await Db.Delete<MsSQLCalc>().AllowDeleteStatement(true).WhereById("1").ExecuteAsync(Ct);
+        }
+    }
+
     // SQL Server 的 CONCAT 跳过 NULL
     [Fact, Upstream("mssql/MsSQLQueryTest.java#concat1")]
     public async Task Concat1()
