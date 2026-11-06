@@ -12,7 +12,7 @@ public sealed class MaxMinColumnsTest
     [InlineData("mysql", "SELECT `id`,`column1`,`column2`,`column3` FROM `t_calc` WHERE GREATEST(`column1`,`column2`,`column3`) = ?")]
     [InlineData("pgsql", "SELECT \"id\",\"column1\",\"column2\",\"column3\" FROM \"t_calc\" WHERE GREATEST(\"column1\",\"column2\",\"column3\") = ?")]
     [InlineData("sqlite", "SELECT \"id\",\"column1\",\"column2\",\"column3\" FROM \"t_calc\" WHERE MAX(\"column1\",\"column2\",\"column3\") = ?")]
-    [InlineData("oracle", "SELECT \"id\",\"column1\",\"column2\",\"column3\" FROM \"t_calc\" WHERE (SELECT MAX(__mmc.__col__) FROM (SELECT \"column1\" AS __col__ FROM DUAL UNION ALL SELECT \"column2\" AS __col__ FROM DUAL UNION ALL SELECT \"column3\" AS __col__ FROM DUAL) __mmc) = ?")]
+    [InlineData("oracle", "SELECT \"id\",\"column1\",\"column2\",\"column3\" FROM \"t_calc\" WHERE (SELECT MAX(\"__mmc\".\"__col__\") FROM (SELECT \"column1\" AS \"__col__\" FROM DUAL UNION ALL SELECT \"column2\" AS \"__col__\" FROM DUAL UNION ALL SELECT \"column3\" AS \"__col__\" FROM DUAL) \"__mmc\") = ?")]
     [InlineData("dameng", "SELECT \"id\",\"column1\",\"column2\",\"column3\" FROM \"t_calc\" WHERE (SELECT MAX(__mmc.__col__) FROM (SELECT \"column1\" AS __col__ FROM DUAL UNION ALL SELECT \"column2\" AS __col__ FROM DUAL UNION ALL SELECT \"column3\" AS __col__ FROM DUAL) __mmc) = ?")]
     [InlineData("mssql", "SELECT [id],[column1],[column2],[column3] FROM [t_calc] WHERE (SELECT MAX(__col__) FROM (VALUES ([column1]), ([column2]), ([column3])) AS t(__col__)) = ?")]
     public void MaxColumns(string dialect, string sql) =>
@@ -22,7 +22,7 @@ public sealed class MaxMinColumnsTest
     [InlineData("mysql", "SELECT LEAST(t.`column1`,t.`column2`) AS `value1` FROM `t_calc` t")]
     [InlineData("pgsql", "SELECT LEAST(t.\"column1\",t.\"column2\") AS \"value1\" FROM \"t_calc\" t")]
     [InlineData("sqlite", "SELECT MIN(t.\"column1\",t.\"column2\") AS \"value1\" FROM \"t_calc\" t")]
-    [InlineData("oracle", "SELECT (SELECT MIN(__mmc.__col__) FROM (SELECT t.\"column1\" AS __col__ FROM DUAL UNION ALL SELECT t.\"column2\" AS __col__ FROM DUAL) __mmc) AS \"value1\" FROM \"t_calc\" t")]
+    [InlineData("oracle", "SELECT (SELECT MIN(\"__mmc\".\"__col__\") FROM (SELECT t.\"column1\" AS \"__col__\" FROM DUAL UNION ALL SELECT t.\"column2\" AS \"__col__\" FROM DUAL) \"__mmc\") AS \"value1\" FROM \"t_calc\" t")]
     [InlineData("dameng", "SELECT (SELECT MIN(__mmc.__col__) FROM (SELECT t.\"column1\" AS __col__ FROM DUAL UNION ALL SELECT t.\"column2\" AS __col__ FROM DUAL) __mmc) AS \"value1\" FROM \"t_calc\" t")]
     [InlineData("mssql", "SELECT (SELECT MIN(__col__) FROM (VALUES (t.[column1]), (t.[column2])) AS t(__col__)) AS [value1] FROM [t_calc] t")]
     public void MinColumns(string dialect, string sql) =>

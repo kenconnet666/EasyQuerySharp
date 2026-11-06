@@ -168,17 +168,17 @@ public abstract partial class SqlDialect
 
     /// <summary>
     /// 几个值取最大 / 最小的通用写法（与 Java 的 MaxMinColumnsSQLFunction 一致）：每个值一个 <c>SELECT v AS __col__</c>，UNION ALL 后再聚合；
-    /// <paramref name="selectSuffix"/> 接在每个 SELECT 后（Oracle 的 <c> FROM DUAL</c>）。
+    /// <paramref name="selectSuffix"/> 接在每个 SELECT 后（Oracle 的 <c> FROM DUAL</c>）；<paramref name="table"/>、<paramref name="column"/> 是派生表与列的名字。
     /// </summary>
-    protected static FunctionWriter UnionAllExtreme(string aggregate, string selectSuffix) => (r, a) =>
+    protected static FunctionWriter UnionAllExtreme(string aggregate, string selectSuffix, string table = "__mmc", string column = "__col__") => (r, a) =>
     {
-        r.Append("(SELECT " + aggregate + "(__mmc.__col__) FROM (");
+        r.Append("(SELECT " + aggregate + "(" + table + "." + column + ") FROM (");
         for (var i = 0; i < a.Count; i++)
         {
             if (i > 0) r.Append(" UNION ALL ");
-            r.Append("SELECT ").Write(a[i]).Append(" AS __col__" + selectSuffix);
+            r.Append("SELECT ").Write(a[i]).Append(" AS " + column + selectSuffix);
         }
-        r.Append(") __mmc)");
+        r.Append(") " + table + ")");
     };
 
     /// <summary><c>NAME(DISTINCT x)</c>。</summary>

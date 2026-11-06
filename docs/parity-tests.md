@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1976、偏离 188、不适用 140、骨架 6、待做 94。
+合计：已移植 1982、偏离 188、不适用 140、骨架 6、待做 88。
 
 ## 按能力
 
@@ -24,7 +24,7 @@
 | JSON 函数 | `func.json` | M2 | 12 | 12 | 0 | 0 | 0 | 0 |
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
 | 字符串函数 | `func.string` | M2 | 131 | 123 | 4 | 4 | 0 | 0 |
-| 行锁 | `lock` | M2 | 28 | 23 | 1 | 1 | 0 | 3 |
+| 行锁 | `lock` | M2 | 28 | 25 | 1 | 1 | 0 | 1 |
 | 窗口函数 | `window` | M2 | 44 | 43 | 1 | 0 | 0 | 0 |
 | CTE | `query.cte` | M3 | 11 | 8 | 3 | 0 | 0 | 0 |
 | 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 75 | 6 | 2 | 0 | 0 |
@@ -50,7 +50,7 @@
 | UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
 | 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 25 | 1 | 0 | 0 | 0 |
 | upsert | `write.upsert` | M5 | 13 | 12 | 1 | 0 | 0 | 0 |
-| ClickHouse 方言 | `dialect.clickhouse` | M6 | 4 | 0 | 0 | 0 | 0 | 4 |
+| ClickHouse 方言 | `dialect.clickhouse` | M6 | 4 | 4 | 0 | 0 | 0 | 0 |
 | 达梦方言 | `dialect.dameng` | M6 | 51 | 30 | 20 | 0 | 1 | 0 |
 | DuckDB 方言 | `dialect.duckdb` | M6 | 16 | 10 | 6 | 0 | 0 | 0 |
 | 方言静态入口与专属函数 | `dialect.functions` | M6 | 25 | 24 | 1 | 0 | 0 | 0 |
@@ -1149,9 +1149,9 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| ForUpdateDialectToSQLSmokeTest.java#clickHouseForUpdateThrowsUnsupported | 待做 |  |  |
+| ForUpdateDialectToSQLSmokeTest.java#clickHouseForUpdateThrowsUnsupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:42 |  |
 | ForUpdateDialectToSQLSmokeTest.java#damengForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:27 |  |
-| ForUpdateDialectToSQLSmokeTest.java#db2ForUpdateToSQLSmoke | 待做 |  |  |
+| ForUpdateDialectToSQLSmokeTest.java#db2ForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:50 |  |
 | ForUpdateDialectToSQLSmokeTest.java#duckDBForUpdateThrowsUnsupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDbDialectTest.cs:13 |  |
 | ForUpdateDialectToSQLSmokeTest.java#gaussDBForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:21 |  |
 | ForUpdateDialectToSQLSmokeTest.java#h2ForUpdateToSQLSmoke | 待做 |  |  |
@@ -1161,7 +1161,7 @@
 | ForUpdateDialectToSQLSmokeTest.java#mysqlForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:18 |  |
 | ForUpdateDialectToSQLSmokeTest.java#oracleForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:26 |  |
 | ForUpdateDialectToSQLSmokeTest.java#pgsqlForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:19 |  |
-| ForUpdateDialectToSQLSmokeTest.java#sqliteForUpdateToSQLSmoke | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:42：SQLite 没有 FOR UPDATE 语法（写事务锁整个库），Java 照样拼出、执行时才报语法错误；C# 渲染时就抛出 NotSupportedException |  |
+| ForUpdateDialectToSQLSmokeTest.java#sqliteForUpdateToSQLSmoke | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:58：SQLite 没有 FOR UPDATE 语法（写事务锁整个库），Java 照样拼出、执行时才报语法错误；C# 渲染时就抛出 NotSupportedException |  |
 | fork/live/LockWaitLiveTest.java#noWaitFailsAndSkipLockedSkips | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/LockWaitLiveTest.cs:14 | `DROP TABLE {…}t_fork_post` |
 | mysql8/ForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ForUpdateTest.cs:46 |  |
 | mysql8/ForUpdateTest.java#testForUpdateBlocksConcurrentTransaction | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ForUpdateTest.cs:43 |  |
@@ -2133,10 +2133,10 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| click/ClickHouseTest.java#testDelete1 | 待做 |  | `ALTER TABLE 't_topic' DELETE WHERE 'ID' = ?` |
-| click/ClickHouseTest.java#testDelete2 | 待做 |  | `ALTER TABLE 't_topic' DELETE WHERE 'ID' = ?` |
-| click/ClickHouseTest.java#testUpdate1 | 待做 |  | `ALTER TABLE 't_topic' UPDATE 'TITLE' = ? WHERE 'ID' = ?` |
-| click/ClickHouseTest.java#testUpdate2 | 待做 |  | `ALTER TABLE 't_topic' UPDATE 'STARS' = ?,'TITLE' = ?,'CREATE_TIME' = ? WHERE 'ID' = ?` |
+| click/ClickHouseTest.java#testDelete1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ClickHouseTest.cs:27 | `ALTER TABLE 't_topic' DELETE WHERE 'ID' = ?` |
+| click/ClickHouseTest.java#testDelete2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ClickHouseTest.cs:32 | `ALTER TABLE 't_topic' DELETE WHERE 'ID' = ?` |
+| click/ClickHouseTest.java#testUpdate1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ClickHouseTest.cs:17 | `ALTER TABLE 't_topic' UPDATE 'TITLE' = ? WHERE 'ID' = ?` |
+| click/ClickHouseTest.java#testUpdate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ClickHouseTest.cs:22 | `ALTER TABLE 't_topic' UPDATE 'STARS' = ?,'TITLE' = ?,'CREATE_TIME' = ? WHERE 'ID' = ?` |
 
 ### 达梦方言（`dialect.dameng`，M6）
 

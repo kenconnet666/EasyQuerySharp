@@ -213,9 +213,10 @@ public class OracleDialect : SqlDialect
         f[SqlFunctionNames.InCsv] = Template("(INSTR(',' || {1} || ',', ',' || {0} || ',') > 0)");
         f[SqlFunctionNames.NullOrDefault] = Call("NVL");
         f[SqlFunctionNames.Concat] = Infix(" || ");
-        // 与 Java 的 OracleMaxMinColumnsSQLFunction 一致（达梦沿用）：每个值 SELECT … FROM DUAL
-        f[SqlFunctionNames.MaxColumns] = UnionAllExtreme("MAX", " FROM DUAL");
-        f[SqlFunctionNames.MinColumns] = UnionAllExtreme("MIN", " FROM DUAL");
+        // Java 的 OracleMaxMinColumnsSQLFunction：每个值 SELECT … FROM DUAL。Java 的 __mmc / __col__ 不加引号，
+        // Oracle 的标识符不能以下划线开头（ORA-00936），这里加上引号（达梦接受，沿用 Java 原文）
+        f[SqlFunctionNames.MaxColumns] = UnionAllExtreme("MAX", " FROM DUAL", "\"__mmc\"", "\"__col__\"");
+        f[SqlFunctionNames.MinColumns] = UnionAllExtreme("MIN", " FROM DUAL", "\"__mmc\"", "\"__col__\"");
         f[SqlFunctionNames.Length] = Call("LENGTH");
         f[SqlFunctionNames.PadLeft] = Pad("LPAD", "' '");
         f[SqlFunctionNames.PadRight] = Pad("RPAD", "' '");

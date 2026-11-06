@@ -64,6 +64,9 @@ public class DamengDialect : OracleDialect
         // 与 Java 的 DamengJoiningSQLFunction 一致：不排序时不写 WITHIN GROUP
         f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("LISTAGG(TO_CHAR(").Write(a[0]).Append("), ").Write(a[1]).Append(")");
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("LISTAGG(DISTINCT TO_CHAR(").Write(a[0]).Append("), ").Write(a[1]).Append(")");
+        // 与 Java 一致：派生表与列名不加引号（Oracle 上要加，见 OracleDialect）
+        f[SqlFunctionNames.MaxColumns] = UnionAllExtreme("MAX", " FROM DUAL");
+        f[SqlFunctionNames.MinColumns] = UnionAllExtreme("MIN", " FROM DUAL");
         // DATE 只到日：去掉秒以下的部分要经过字符串
         f[SqlFunctionNames.DateTrunc(DateTruncUnit.Second)] = Template("TO_TIMESTAMP(TO_CHAR({0}, 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS')");
         f[SqlFunctionNames.UtcNow] = Template("GETUTCDATE()");
