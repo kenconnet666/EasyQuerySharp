@@ -131,7 +131,7 @@ public class MySqlDialect : SqlDialect
         _ when type == typeof(int) || type.IsEnum => "INT(11)",
         _ when type == typeof(long) => "BIGINT(20)",
         _ when type == typeof(short) => "SMALLINT(6)",
-        _ when type == typeof(byte) => "TINYINT(4)",
+        _ when type == typeof(byte) || type == typeof(sbyte) => "TINYINT(4)",
         _ when type == typeof(bool) => "TINYINT(1)",
         _ when type == typeof(double) => "DOUBLE",
         _ when type == typeof(float) => "FLOAT",

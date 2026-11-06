@@ -94,6 +94,9 @@ public static class JavaParams
     {
         bool b => b ? "true" : "false",
         DateTime d => JavaLocalDateTime(d),
+        DateOnly d => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+        TimeOnly t => JavaLocalTime(t),
+        TimeSpan t => t.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture),
         decimal m => m.ToString(CultureInfo.InvariantCulture),
         IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
         _ => value.ToString() ?? "",
@@ -108,6 +111,9 @@ public static class JavaParams
         return fraction == 0 ? text : text + "." + (fraction * 100).ToString("D9", CultureInfo.InvariantCulture).TrimEnd('0');
     }
 
+    // Java LocalTime.toString()：与 LocalDateTime 的时间部分规则相同
+    private static string JavaLocalTime(TimeOnly t) => JavaLocalDateTime(DateTime.MinValue.Add(t.ToTimeSpan()))[11..];
+
     /// <summary>C# 类型对应的 Java 类型名。</summary>
     public static string JavaTypeName(Type type) => (Nullable.GetUnderlyingType(type) ?? type) switch
     {
@@ -115,7 +121,8 @@ public static class JavaParams
         var t when t == typeof(int) => "Integer",
         var t when t == typeof(long) => "Long",
         var t when t == typeof(short) => "Short",
-        var t when t == typeof(byte) => "Byte",
+        // Java 的 Byte 有符号，对应 C# 的 sbyte
+        var t when t == typeof(byte) || t == typeof(sbyte) => "Byte",
         var t when t == typeof(bool) => "Boolean",
         var t when t == typeof(decimal) => "BigDecimal",
         var t when t == typeof(double) => "Double",
@@ -123,6 +130,8 @@ public static class JavaParams
         var t when t == typeof(DateTime) => "LocalDateTime",
         var t when t == typeof(DateOnly) => "LocalDate",
         var t when t == typeof(TimeOnly) => "LocalTime",
+        // ADO.NET 的 TIME 列读写 TimeSpan，对应 Java 的 java.sql.Time
+        var t when t == typeof(TimeSpan) => "Time",
         var t when t == typeof(Guid) => "UUID",
         var t when t == typeof(char) => "Character",
         var t when t == typeof(DateTimeOffset) => "OffsetDateTime",
