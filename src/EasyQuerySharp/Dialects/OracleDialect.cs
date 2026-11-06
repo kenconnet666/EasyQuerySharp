@@ -72,6 +72,10 @@ public class OracleDialect : SqlDialect
     public override string RecursiveWith => "WITH ";
 
 
+    /// <summary>Oracle 没有 % 运算符：<c>MOD(a,b)</c>。</summary>
+    public override void WriteModulo(SqlRenderer renderer, SqlExpr left, SqlExpr right) =>
+        renderer.Append("MOD(").Write(left).Append(",").Write(right).Append(")");
+
     /// <summary>递归 CTE 必须写列名清单（否则 ORA-32039）。</summary>
     public override bool RecursiveCteColumnList => true;
 
@@ -198,6 +202,7 @@ public class OracleDialect : SqlDialect
     {
         base.RegisterFunctions(f);
         f[SqlFunctionNames.BooleanValue] = CaseBoolean;
+        f[SqlFunctionNames.Log10] = Template("LOG(10,{0})");
         foreach (var (unit, format) in new[] { (DateTruncUnit.Year, "YYYY"), (DateTruncUnit.Quarter, "Q"), (DateTruncUnit.Month, "MM"), (DateTruncUnit.Week, "IW"), (DateTruncUnit.Day, "DD"), (DateTruncUnit.Hour, "HH24"), (DateTruncUnit.Minute, "MI") })
             f[SqlFunctionNames.DateTrunc(unit)] = Template("TRUNC({0}, '" + format + "')");
         // TRUNC 没有到秒的格式：转成 DATE 就去掉了秒以下的部分

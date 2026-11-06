@@ -35,8 +35,11 @@ public sealed record LiveSuiteOptions
     /// <summary>MariaDB 11.4 的 bug：ROW_NUMBER()（倒序）、COUNT(*) OVER () 与 LAG() 在同一条语句里时 LAG 算错。</summary>
     public bool MixedWindowLag { get; init; } = true;
 
-    /// <summary>JSON 函数直接用在文本列上（模型里 JSON 列统一是 VARCHAR）：PostgreSQL 的 -&gt; / JSONB_EXISTS 要求 json / jsonb 列（与 Java 一样不加转换）。</summary>
-    public bool JsonOnTextColumn { get; init; } = true;
+    /// <summary>
+    /// Sql.Json 函数用在模型的 JSON 列上（统一是 VARCHAR）：PostgreSQL 的 -&gt; / JSONB_EXISTS 要求 json / jsonb 列（与 Java 一样不加转换）；
+    /// SQL Server、Oracle 方言还没有 Sql.Json 的写法（Java 也没有）。
+    /// </summary>
+    public bool JsonFunctions { get; init; } = true;
 }
 
 /// <summary>
@@ -52,6 +55,8 @@ public abstract partial class LiveSuite
         typeof(MemberNote), typeof(Member), typeof(Dept), typeof(UserRole), typeof(Role),
         typeof(Profile), typeof(Setting), typeof(Note), typeof(Comment), typeof(Post), typeof(User), typeof(Company),
     ];
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, System.Data.Common.DbDataSource> DataSources = new();
 
     /// <summary>种子数据里用户的创建时间（毫秒精度，各库都要原样读回）。</summary>
     protected static readonly DateTime CreatedAt = new(2026, 1, 2, 3, 4, 5, 6);
@@ -75,9 +80,11 @@ public abstract partial class LiveSuite
     protected async Task<EasyDb> SeededAsync(Action<EasyDbOptions>? configure = null)
     {
         var connectionString = await ConnectionStringAsync();
+        // 同一个连接串共用一个数据源（连接池）：每个用例各建一个池会把服务器的连接数占满（PG 的 too many clients）
+        var dataSource = DataSources.GetOrAdd(connectionString, cs => Database.Factory.CreateDataSource(cs));
         var db = new EasyDb(o =>
         {
-            o.Use(Dialect, Database.Factory.CreateDataSource(connectionString)).AddListener(SqlCapture.Instance);
+            o.Use(Dialect, dataSource).AddListener(SqlCapture.Instance);
             configure?.Invoke(o);
         });
         await db.CodeFirst.DropTablesIfExistsAsync(Tables, Ct);

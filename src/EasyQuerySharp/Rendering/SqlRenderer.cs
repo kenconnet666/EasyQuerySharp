@@ -330,6 +330,11 @@ public sealed class SqlRenderer
     // 算术运算总是加括号（Java 版的写法）：(a + b)、((a + b) * c)；比较不加
     private void WriteBinary(BinaryExpr b)
     {
+        if (b.Operator == SqlBinaryOperator.Modulo)
+        {
+            Dialect.WriteModulo(this, b.Left, b.Right);
+            return;
+        }
         if (!b.IsComparison) Append("(");
         // Java 把"列 比较 函数"写成原生片段，前面多一个空格（WHERE  t.`a` = IFNULL(…)）；右边是子查询、列、值时没有
         else if (b.Left is ColumnExpr && b.Right is FunctionExpr or FragmentExpr { IsPredicate: false } or CaseExpr or CastExpr) Append(" ");
@@ -346,7 +351,6 @@ public sealed class SqlRenderer
             SqlBinaryOperator.Subtract => " - ",
             SqlBinaryOperator.Multiply => " * ",
             SqlBinaryOperator.Divide => " / ",
-            SqlBinaryOperator.Modulo => " % ",
             _ => throw new NotSupportedException(b.Operator.ToString()),
         });
         Write(b.Right);

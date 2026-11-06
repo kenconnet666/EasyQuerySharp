@@ -17,7 +17,16 @@ public static class ValueReader
     public static T Read<T>(DbDataReader reader, int ordinal, IValueConverter? converter)
     {
         if (reader.IsDBNull(ordinal)) return default!;
-        var raw = reader.GetValue(ordinal);
+        object raw;
+        try
+        {
+            raw = reader.GetValue(ordinal);
+        }
+        // Oracle 的 NUMBER 运算结果（LOG、LN 等）可能超过 decimal 的 28 位精度，按 decimal 读会溢出：浮点目标改按 double 读
+        catch (OverflowException) when (converter is null && (Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T)) is var t && (t == typeof(double) || t == typeof(float)))
+        {
+            raw = reader.GetDouble(ordinal);
+        }
         if (converter is not null) return (T)converter.FromProvider(ConvertTo(raw, converter.ProviderType))!;
         return (T)ConvertTo(raw, typeof(T))!;
     }

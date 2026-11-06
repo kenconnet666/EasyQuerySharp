@@ -266,7 +266,12 @@ public class SqlServerDialect : SqlDialect
         f[SqlFunctionNames.NullOrDefault] = Call("ISNULL");
         f[SqlFunctionNames.Length] = Call("LEN");
         f[SqlFunctionNames.Trim] = (r, a) => r.Append("LTRIM(RTRIM(").Write(a[0]).Append("))");
-        f[SqlFunctionNames.SubString] = Call("SUBSTRING");
+        // SUBSTRING 必须给长度：不给（Substring(start)）时取到末尾
+        f[SqlFunctionNames.SubString] = (r, a) =>
+        {
+            if (a.Count > 2) r.Append("SUBSTRING(").WriteList(a, ",").Append(")");
+            else r.Append("SUBSTRING(").WriteList(a, ",").Append(",2147483647)");
+        };
         f[SqlFunctionNames.IndexOf] = Reordered("CHARINDEX", 1, 0);
         f[SqlFunctionNames.Ceiling] = Call("CEILING");
         f[SqlFunctionNames.Ln] = Call("LOG");

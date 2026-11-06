@@ -75,9 +75,11 @@ public abstract partial class LiveSuite
     {
         SkipUnless(Options.Rollup, "ROLLUP");
         var db = await SeededAsync();
-        var rows = await db.Query<Post>().GroupBy(p => p.UserId).Rollup()
-            .Select(g => new Draft<long?, decimal, int>(g.Key, g.Sum(p => p.Amount), Options.GroupingFunction ? g.Grouping(g.Key) : 0))
-            .ToListAsync(Ct);
+        // 条件写在查询外面：写进投影会翻译成 CASE WHEN，没有 GROUPING() 的库照样报错
+        var grouped = db.Query<Post>().GroupBy(p => p.UserId).Rollup();
+        var rows = Options.GroupingFunction
+            ? await grouped.Select(g => new Draft<long?, decimal, int>(g.Key, g.Sum(p => p.Amount), g.Grouping(g.Key))).ToListAsync(Ct)
+            : await grouped.Select(g => new Draft<long?, decimal, int>(g.Key, g.Sum(p => p.Amount), 0)).ToListAsync(Ct);
         var sorted = rows.OrderBy(r => r.Value1 ?? long.MaxValue).Select(r => (r.Value1, r.Value2, r.Value3)).ToList();
         var total = Options.GroupingFunction ? 1 : 0;
         Assert.Equal([((long?)1, 2010.5m, 0), (2, 4.25m, 0), (null, 2014.75m, total)], sorted);

@@ -176,6 +176,10 @@ public abstract partial class SqlDialect
         if (item.Nulls is { } nulls && !emulateNulls) renderer.Append(nulls == NullsOrder.Last ? " NULLS LAST" : " NULLS FIRST");
     }
 
+    /// <summary>取余 <c>(a % b)</c>；Oracle 系没有 % 运算符，写成 <c>MOD(a,b)</c>。</summary>
+    public virtual void WriteModulo(SqlRenderer renderer, SqlExpr left, SqlExpr right) =>
+        renderer.Append("(").Write(left).Append(" % ").Write(right).Append(")");
+
     /// <summary>
     /// 带组内排序的字符串聚合。默认是 PostgreSQL / SQLite 的写法：<c>STRING_AGG(x, ? ORDER BY …)</c>；
     /// MySQL 写成 <c>GROUP_CONCAT(x ORDER BY … SEPARATOR ?)</c>，SQL Server / Oracle 写成 <c>… WITHIN GROUP (ORDER BY …)</c>。

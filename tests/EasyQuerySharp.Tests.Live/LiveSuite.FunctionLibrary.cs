@@ -137,7 +137,7 @@ public abstract partial class LiveSuite
     [Fact]
     public async Task RunsJsonFunctions()
     {
-        SkipUnless(Options.JsonOnTextColumn, "在文本列上用 JSON 函数");
+        SkipUnless(Options.JsonFunctions, "Sql.Json 函数");
         var db = await SeededAsync();
         var rows = await db.Query<User>().OrderBy(u => u.Id)
             .Select(u => new Draft<string?, bool, int>(Sql.Json(u.Attrs).Get("tags").Text(0), Sql.Json(u.Attrs).ContainsKey("tags"), Sql.Json(u.Attrs).Get("tags").Length()))
