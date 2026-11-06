@@ -364,8 +364,9 @@ public sealed class SqlRenderer
     public SqlRenderer WriteOutputParameter(Type clrType)
     {
         var index = _parameters.Count;
-        _parameters.Add(new SqlParameterValue(null, clrType) { IsOutput = true });
-        _command.Append(Dialect.ParameterPlaceholder(index));
+        var parameter = new SqlParameterValue(null, clrType) { IsOutput = true };
+        _parameters.Add(parameter);
+        _command.Append(Dialect.ParameterPlaceholder(index, parameter));
         _text.Append('?');
         return this;
     }
@@ -375,8 +376,9 @@ public sealed class SqlRenderer
         var wrap = Dialect.ParameterWrap(p.ColumnDbType);
         if (wrap is { } before) Append(before.Before);
         var index = _parameters.Count;
-        _parameters.Add(new SqlParameterValue(p.Value, p.ClrType));
-        _command.Append(Dialect.ParameterPlaceholder(index));
+        var parameter = new SqlParameterValue(p.Value, p.ClrType);
+        _parameters.Add(parameter);
+        _command.Append(Dialect.ParameterPlaceholder(index, parameter));
         _text.Append('?');
         if (wrap is { } after) Append(after.After);
     }

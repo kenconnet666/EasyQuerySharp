@@ -18,17 +18,31 @@ public sealed class DatabaseConnectivityTests
         var ct = TestContext.Current.CancellationToken;
         var db = TestDatabases.Get(key);
         await using var connection = await db.OpenAsync(ct);
-        TestContext.Current.TestOutputHelper?.WriteLine($"{db.DisplayName} 服务器版本：{connection.ServerVersion}");
+        // ClickHouse.Driver 不再提供 ServerVersion（要查 version()）
+        var version = db == TestDatabases.ClickHouse ? "" : connection.ServerVersion;
+        TestContext.Current.TestOutputHelper?.WriteLine($"{db.DisplayName} 服务器版本：{version}");
 
         // 表名带随机后缀，多个 CI 任务或本地并行运行时互不干扰
         var table = $"eqs_probe_{Guid.NewGuid():N}"[..20];
-        await ExecuteAsync(connection, $"CREATE TABLE {table} (id INT PRIMARY KEY, name VARCHAR(50))", ct);
+        if (db == TestDatabases.TDengine)
+        {
+            // TDengine 的连接串只连到服务器，表要建在库里
+            await ExecuteAsync(connection, "CREATE DATABASE IF NOT EXISTS eqs PRECISION 'ms'", ct);
+            table = "eqs." + table;
+        }
+        await ExecuteAsync(connection, CreateProbeTable(db, table), ct);
         try
         {
-            var p = db.ParameterPrefix;
-            await ExecuteAsync(connection, $"INSERT INTO {table} (id, name) VALUES ({p}id, {p}name)", ct, ("id", 1), ("name", "easy-query"));
+            var (id, name) = (db.Placeholder("id"), db.Placeholder("name"));
+            if (db == TestDatabases.TDengine)
+            {
+                // 时序库每张表的第一列是时间戳；参数化插入的值都要是参数（不能混写 NOW()）
+                await ExecuteAsync(connection, $"INSERT INTO {table} (ts, id, name) VALUES (?, ?, ?)", ct,
+                    Parameter(db, "ts", DateTime.UtcNow), Parameter(db, "id", 1), Parameter(db, "name", "easy-query"));
+            }
+            else await ExecuteAsync(connection, $"INSERT INTO {table} (id, name) VALUES ({id}, {name})", ct, Parameter(db, "id", 1), Parameter(db, "name", "easy-query"));
 
-            await using var select = Command(connection, $"SELECT name FROM {table} WHERE id = {p}id", ("id", 1));
+            await using var select = Command(connection, $"SELECT name FROM {table} WHERE id = {id}", Parameter(db, "id", 1));
             Assert.Equal("easy-query", await select.ExecuteScalarAsync(ct));
         }
         finally
@@ -44,6 +58,17 @@ public sealed class DatabaseConnectivityTests
         var unknown = TestDatabases.RequiredKeys.Where(k => TestDatabases.All.All(d => !d.Key.Equals(k, StringComparison.OrdinalIgnoreCase)));
         Assert.Empty(unknown);
     }
+
+    private static string CreateProbeTable(TestDatabase db, string table) => db switch
+    {
+        _ when db == TestDatabases.ClickHouse => $"CREATE TABLE {table} (id Int32, name String) ENGINE = MergeTree ORDER BY id",
+        _ when db == TestDatabases.TDengine => $"CREATE TABLE {table} (ts TIMESTAMP, id INT, name NCHAR(50))",
+        _ => $"CREATE TABLE {table} (id INT NOT NULL PRIMARY KEY, name VARCHAR(50))",
+    };
+
+    // 位置参数的驱动（TDengine）按添加顺序绑定，名字仍要带前缀
+    private static (string Name, object Value) Parameter(TestDatabase db, string name, object value) =>
+        (db.PositionalParameters ? db.ParameterPrefix + name : name, value);
 
     private static async Task ExecuteAsync(DbConnection connection, string sql, CancellationToken ct, params (string Name, object Value)[] parameters)
     {

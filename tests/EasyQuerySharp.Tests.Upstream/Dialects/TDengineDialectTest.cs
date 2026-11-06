@@ -41,6 +41,16 @@ public sealed class TDengineDialectTest
         SqlOnly.AssertStatement(TDengine.Delete<TdReading>().Where(r => r.Ts < Day).ToStatement()!, "DELETE FROM `t_reading` WHERE `ts` < ?", Day2025);
     }
 
+    // 驱动执行的文本里值写成字面量、不绑定参数（stmt 接口收到带参数的 DELETE 会让 taosAdapter 崩溃）；Text 仍用 ? 占位
+    [Fact]
+    public void CommandTextInlinesValues()
+    {
+        var statement = TDengine.Delete<TdReading>().Where(r => r.Ts < Day && r.Device == "b'x\\" && r.Value > 1.5).ToStatement()!;
+        Assert.Equal("""DELETE FROM `t_reading` WHERE `ts` < '2025-01-01 00:00:00.000' AND `device` = 'b\'x\\' AND `value` > 1.5""", statement.CommandText);
+        Assert.Equal("DELETE FROM `t_reading` WHERE `ts` < ? AND `device` = ? AND `value` > ?", statement.Text);
+        Assert.True(TDengine.Options.Dialect.InlineParameters);
+    }
+
     // 没有 UPDATE、upsert、行锁；删除不能走导航或关联子查询
     [Fact]
     public void UnsupportedStatements()

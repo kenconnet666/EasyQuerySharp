@@ -11,9 +11,11 @@ namespace EasyQuerySharp.Dialects;
 /// <item>更新、删除是 mutation：<c>ALTER TABLE 表 UPDATE … WHERE …</c> / <c>ALTER TABLE 表 DELETE WHERE …</c>，不能带别名，不能走导航连接；</item>
 /// <item>没有自增列、upsert、RETURNING、行锁，用到时抛 <see cref="NotSupportedException"/>；</item>
 /// <item>建表 <c>ENGINE = MergeTree ORDER BY (主键)</c>，可空列由 <c>NULL</c> 修饰成 Nullable；</item>
-/// <item>LEFT JOIN 没匹配上的列默认是类型的默认值而不是 NULL，要在连接上设 <c>join_use_nulls = 1</c>。</item>
+/// <item>没有事务（<see cref="SupportsTransactions"/>）：一批写入逐条生效。</item>
 /// </list>
-/// 驱动（如 ClickHouse.Client）由用户通过 <see cref="System.Data.Common.DbDataSource"/> 传入：<c>o.UseClickHouse(dataSource)</c>。
+/// 驱动（官方的 ClickHouse.Driver，HTTP 接口）由用户通过 <see cref="System.Data.Common.DbDataSource"/> 传入：<c>o.UseClickHouse(dataSource)</c>。
+/// 连接串里要带三个会话设置（驱动认 <c>set_</c> 前缀）：<c>set_join_use_nulls=1</c>（LEFT JOIN 没匹配上的列是 NULL 而不是类型的默认值）、
+/// <c>set_mutations_sync=2</c>（更新删除做完再返回）、<c>set_session_timezone=UTC</c>（驱动把 DateTime 参数按会话时区解析、读回时按 UTC，时区不是 UTC 时会差几个小时）。
 /// </summary>
 public class ClickHouseDialect : SqlDialect
 {
@@ -28,6 +30,18 @@ public class ClickHouseDialect : SqlDialect
 
     /// <inheritdoc />
     public override string QuoteIdentifier(string identifier) => $"`{identifier}`";
+
+    /// <summary>ClickHouse 没有事务：一批写入逐条生效。</summary>
+    public override bool SupportsTransactions => false;
+
+    /// <summary>
+    /// <c>@p0</c>（ClickHouse.Driver 按值推断类型，改写成 <c>{p0:类型}</c>）；DateTime 参数直接写成 <c>{p0:DateTime64(7)}</c>：
+    /// 驱动推断出的 DateTime 只到秒，毫秒会丢。
+    /// </summary>
+    public override string ParameterPlaceholder(int index, SqlParameterValue parameter) =>
+        (Nullable.GetUnderlyingType(parameter.ClrType) ?? parameter.ClrType) != typeof(DateTime) ? "@p" + index
+        : Nullable.GetUnderlyingType(parameter.ClrType) is null ? $"{{p{index}:DateTime64(7)}}"
+        : $"{{p{index}:Nullable(DateTime64(7))}}";
 
     /// <summary>ClickHouse 是分析型数据库，没有行级锁（与 Java 一致，不能悄悄忽略）。</summary>
     public override void WriteLock(SqlRenderer renderer, RowLock rowLock) =>

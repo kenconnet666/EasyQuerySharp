@@ -33,6 +33,9 @@ public sealed class ClickHouseDialectTest
         SqlOnly.AssertStatement(ClickHouse.Delete<Topic>().Where(t => t.CreateTime < Day).ToStatement()!,
             "ALTER TABLE `t_topic` DELETE WHERE `create_time` < ?", Day2025);
         Assert.Equal("ALTER TABLE `t_topic` DELETE WHERE 1 = 1", ClickHouse.Delete<Topic>().All().ToSql());
+        // 驱动执行的文本：DateTime 参数写明 DateTime64(7)（驱动按值推断的 DateTime 只到秒），其余按 @p 由驱动推断类型
+        Assert.Equal("ALTER TABLE `t_topic` DELETE WHERE `create_time` < {p0:DateTime64(7)} AND `stars` > @p1",
+            ClickHouse.Delete<Topic>().Where(t => t.CreateTime < Day && t.Stars > 1).ToStatement()!.CommandText);
     }
 
     // ALTER TABLE 不能带别名、不能连接；也没有 upsert 与自增列

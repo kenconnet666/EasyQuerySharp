@@ -461,7 +461,7 @@ SELECT t.`title` FROM `t_post` t WHERE REPLACE(t.`title`, ' ', '') LIKE ?;
 | 能力 | 不支持或有差异的方言 |
 |---|---|
 | `PadLeft` / `PadRight` | SQLite 用 `substr(replace(hex(zeroblob(n)), '00', c), …)` 拼出填充字符再连接、截取；SQL Server 写成 `RIGHT(REPLICATE(c, n) + LEFT(s, n), n)` / `LEFT(s + REPLICATE(c, n), n)`（Java 写 `LPAD` / `RPAD`，SQL Server 没有）；MySQL 不给填充字符时补 `' '`（Java 写两个参数，MySQL 执行不了） |
-| `Sql.Json(..)` | 支持：MySQL / MariaDB、PostgreSQL 家族、SQLite、DuckDB、ClickHouse、Db2；SQL Server、Oracle、达梦、HANA、TDengine 渲染时报不支持 |
+| `Sql.Json(..)` | 支持：MySQL / MariaDB、PostgreSQL 家族、SQLite、DuckDB、ClickHouse、Db2（没有 `Length()`）；SQL Server、Oracle、达梦、HANA、TDengine 渲染时报不支持 |
 | `DateTrunc` | TDengine 只能截到天及以下 |
 | 日期加减 | TDengine 只能写字面量时长，按参数加减报不支持 |
 | 字符串聚合 | TDengine 不支持；HANA 的 `STRING_AGG` 不能去重；ClickHouse 不能带组内排序 |

@@ -22,8 +22,17 @@ public abstract partial class SqlDialect
     /// <summary>给标识符加引号。默认用双引号（标准 SQL）。</summary>
     public virtual string QuoteIdentifier(string identifier) => $"\"{identifier}\"";
 
-    /// <summary>驱动执行时的第 <paramref name="index"/> 个参数占位符（从 0 开始）；默认 <c>@p0</c>。</summary>
-    public virtual string ParameterPlaceholder(int index) => "@p" + index;
+    /// <summary>
+    /// 驱动执行时的第 <paramref name="index"/> 个参数占位符（从 0 开始），<paramref name="parameter"/> 是它的值与 CLR 类型；默认 <c>@p0</c>。
+    /// 参数类型要写明时方言在这里写（ClickHouse 的 <c>{p0:DateTime64(7)}</c>、Db2 的 <c>CAST(@p0 AS INTEGER)</c>）。
+    /// </summary>
+    public virtual string ParameterPlaceholder(int index, SqlParameterValue parameter) => "@p" + index;
+
+    /// <summary>
+    /// 参数值是否直接写进 SQL（字面量由 <see cref="ParameterPlaceholder"/> 给出），执行时不绑定参数；默认 false。
+    /// <see cref="SqlStatement.Text"/> 仍用 <c>?</c> 占位、<see cref="SqlStatement.Parameters"/> 仍记下各值，日志与跨方言比对不受影响。
+    /// </summary>
+    public virtual bool InlineParameters => false;
 
     /// <summary>驱动参数对象的名字，与 <see cref="ParameterPlaceholder"/> 对应。</summary>
     public virtual string ParameterName(int index) => "p" + index;
@@ -79,6 +88,12 @@ public abstract partial class SqlDialect
     /// <summary>递归 CTE 是否要在名字后写列名清单 <c>"cte" ("a","b") AS (…)</c>（Oracle 必须写）；默认不写。</summary>
     public virtual bool RecursiveCteColumnList => false;
 
+    /// <summary>
+    /// 树查询（AsTreeCte）的递归部分是否把子节点表写成逗号连接、连接条件并入 WHERE；默认写 <c>INNER JOIN … ON</c>（与 Java 一致）。
+    /// Db2 的递归部分不能有带 ON 的显式连接（SQL0345N），覆盖成 true。
+    /// </summary>
+    public virtual bool RecursiveCteCommaJoin => false;
+
     /// <summary>递归 CTE 的开头（树查询 AsTreeCte）：默认 <c>WITH RECURSIVE </c>；SQL Server、Oracle 不写 RECURSIVE。</summary>
     public virtual string RecursiveWith => "WITH RECURSIVE ";
 
@@ -129,6 +144,35 @@ public abstract partial class SqlDialect
         renderer.WriteWhere([.. joins.Where(j => j.On is not null).Select(j => j.On!), .. where]);
     }
 
+    /// <summary>
+    /// 按主键对上的 MERGE 写带连接的 UPDATE（没有 UPDATE … FROM / JOIN 的库：HANA、Db2）：
+    /// <c>MERGE INTO "a" t USING (SELECT t."id" AS "eq_key_0",新值 AS "eq_value_0" FROM "a" t INNER JOIN … WHERE …) eq_src
+    /// ON (t."id" = eq_src."eq_key_0") WHEN MATCHED THEN UPDATE SET t."c" = eq_src."eq_value_0"</c>。
+    /// </summary>
+    protected void WriteJoinedUpdateAsMerge(SqlRenderer renderer, UpdateStatement update)
+    {
+        var table = update.Table;
+        var keys = table.Entity.KeyColumns;
+        if (keys.Count == 0) throw new NotSupportedException($"{Name} 的带连接更新按主键对上（MERGE），{table.Entity.Type.Name} 没有主键");
+        renderer.Append("MERGE INTO ").WriteTable(table).Append(" USING (SELECT ");
+        for (var i = 0; i < keys.Count; i++) renderer.Append(i > 0 ? "," : "").Write(table.Column(keys[i])).Append(" AS " + QuoteIdentifier($"eq_key_{i}"));
+        for (var i = 0; i < update.Sets.Count; i++) renderer.Append(",").Write(update.Sets[i].Value).Append(" AS " + QuoteIdentifier($"eq_value_{i}"));
+        renderer.Append(" FROM ").WriteTable(table);
+        foreach (var join in update.Joins) renderer.WriteJoin(join);
+        renderer.WriteWhere(update.Where).Append(") eq_src ON (")
+            .Append(string.Join(" AND ", keys.Select((k, i) => $"{table.Alias}.{QuoteIdentifier(k.Name)} = eq_src.{QuoteIdentifier($"eq_key_{i}")}")))
+            .Append(") WHEN MATCHED THEN UPDATE SET ")
+            .Append(string.Join(",", update.Sets.Select((s, i) => $"{table.Alias}.{QuoteIdentifier(s.Column.Name)} = eq_src.{QuoteIdentifier($"eq_value_{i}")}")));
+    }
+
+    /// <summary>EXISTS 子查询写带连接的 DELETE（DELETE 没有 USING / JOIN 的库：HANA、Db2）：<c>DELETE FROM "a" t WHERE EXISTS(SELECT 1 FROM "b" t1 WHERE 各 ON 条件 AND 原条件)</c>。</summary>
+    protected static void WriteJoinedDeleteAsExists(SqlRenderer renderer, DeleteStatement statement)
+    {
+        renderer.Append("DELETE FROM ").WriteTable(statement.Table).Append(" WHERE EXISTS(SELECT 1 FROM ");
+        WriteCommaJoinedTables(renderer, statement.Joins, statement.Where);
+        renderer.Append(")");
+    }
+
     /// <summary>写带连接的 DELETE（条件里用到对一导航）。默认不支持；MySQL 写成 <c>DELETE t FROM … JOIN</c>，PostgreSQL 写成 <c>DELETE FROM … USING</c>。</summary>
     public virtual void WriteJoinedDelete(SqlRenderer renderer, DeleteStatement statement) =>
         throw new NotSupportedException($"{Name} 方言还不支持在 DELETE 里使用对一导航（需要 JOIN），请改写成子查询");
@@ -153,6 +197,12 @@ public abstract partial class SqlDialect
 
     /// <summary>UPDATE / DELETE 能否带 <c>RETURNING</c> 返回受影响的行（PostgreSQL、SQLite）；默认不能，用到时渲染报不支持。</summary>
     public virtual bool SupportsWriteReturning => false;
+
+    /// <summary>
+    /// 是否有事务；ClickHouse、TDengine 没有（驱动的 BeginTransaction 直接报不支持）。没有事务时一批写入逐条执行、各自生效（中途失败不回滚），
+    /// 显式开启的事务在执行第一条语句时报 <see cref="NotSupportedException"/>。
+    /// </summary>
+    public virtual bool SupportsTransactions => true;
 
     /// <summary>插入后读回生成列：写在列清单与 VALUES 之间的部分（SQL Server 的 <c>OUTPUT INSERTED.[id]</c>）；默认不写。</summary>
     public virtual void WriteInsertOutput(SqlRenderer renderer, IReadOnlyList<SqlExpr> returning)

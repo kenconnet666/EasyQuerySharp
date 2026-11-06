@@ -55,6 +55,11 @@ public abstract partial class LiveSuite
             }
             await using (var tx = db.BeginTransaction())
             {
+                if (!Options.NoWait)
+                {
+                    Assert.Throws<NotSupportedException>(() => db.Query<User>().Where(u => u.Id == 1).ForUpdateNoWait().ToSql());
+                    return;
+                }
                 await Assert.ThrowsAsync<EasyQueryException>(() => db.Query<User>().Where(u => u.Id == 1).ForUpdateNoWait().ToListAsync(Ct));
             }
             await using (var tx = db.BeginTransaction())

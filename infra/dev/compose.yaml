@@ -24,6 +24,7 @@ name: easy-query-sharp-dev
 x-mysql: &mysql
   restart: unless-stopped
   mem_limit: 1g
+  memswap_limit: 1g
   environment:
     MYSQL_ROOT_PASSWORD: ${EQS_DEV_MYSQL_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
     MYSQL_DATABASE: eqs
@@ -69,6 +70,7 @@ services:
     image: mariadb:11.4.13@sha256:d1891ede5a559f1086f55053bb8cc1569b0298338c4d72d71725a7f74f6ba620
     restart: unless-stopped
     mem_limit: 1g
+    memswap_limit: 1g
     environment:
       MARIADB_ROOT_PASSWORD: ${EQS_DEV_MARIADB_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
       MARIADB_DATABASE: eqs
@@ -91,6 +93,7 @@ services:
     image: postgres:17.11-bookworm@sha256:66aafa11cf15800a3c94763f7e11d1e7b2e37e5e84bc4ce027cb6e1e4bfaf4df
     restart: unless-stopped
     mem_limit: 1g
+    memswap_limit: 1g
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${EQS_DEV_PG_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
@@ -115,6 +118,7 @@ services:
     platform: linux/amd64
     restart: unless-stopped
     mem_limit: 2g
+    memswap_limit: 2g
     environment:
       ACCEPT_EULA: 'Y'
       MSSQL_PID: Developer
@@ -141,6 +145,7 @@ services:
     image: gvenzl/oracle-free:23-slim@sha256:6d61d267a3b978c24c5ac1790e62e927416a0aec446bd86e4b3a1527562757bd
     restart: unless-stopped
     mem_limit: 2g
+    memswap_limit: 2g
     environment:
       ORACLE_PASSWORD: ${EQS_DEV_ORACLE_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
       APP_USER: eqs
@@ -163,6 +168,7 @@ services:
     image: xuxuclassmate/dameng:latest@sha256:c4088323442747a45d58bd33ef59e657c9b85f9e7dd956ba60b36d04a35b141d
     restart: unless-stopped
     mem_limit: 2g
+    memswap_limit: 2g
     environment:
       SYSDBA_PWD: ${EQS_DEV_DAMENG_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
       UNICODE_FLAG: 1
@@ -188,6 +194,7 @@ services:
     restart: unless-stopped
     privileged: true
     mem_limit: 2g
+    memswap_limit: 2g
     environment:
       GS_PASSWORD: ${EQS_DEV_OPENGAUSS_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
       TZ: Asia/Shanghai
@@ -207,6 +214,7 @@ services:
     image: clickhouse/clickhouse-server:25.8@sha256:0152dd511befe6a2c2ef53e930726179669b08116da78500b37c51c96ff5ee77
     restart: unless-stopped
     mem_limit: 2g
+    memswap_limit: 2g
     environment:
       CLICKHOUSE_USER: eqs
       CLICKHOUSE_PASSWORD: ${EQS_DEV_CLICKHOUSE_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
@@ -228,6 +236,7 @@ services:
     restart: unless-stopped
     privileged: true
     mem_limit: 4g
+    memswap_limit: 4g
     environment:
       LICENSE: accept
       DB2INSTANCE: db2inst1
@@ -247,6 +256,7 @@ services:
     image: tdengine/tdengine:3.3.6.13@sha256:79d32ce8a42f64c7dbfc33946a36b3e176ea23c0cd695a1bc9e8aa889ca03b88
     restart: unless-stopped
     mem_limit: 2g
+    memswap_limit: 2g
     environment:
       TZ: UTC
     ports:

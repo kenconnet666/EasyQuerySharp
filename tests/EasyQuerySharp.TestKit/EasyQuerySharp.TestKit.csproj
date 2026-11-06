@@ -16,6 +16,14 @@
         <PackageReference Include="Oracle.ManagedDataAccess.Core" />
         <PackageReference Include="DuckDB.NET.Data.Full" />
         <PackageReference Include="DM.DmProvider" />
+        <PackageReference Include="ClickHouse.Driver" />
+        <PackageReference Include="TDengine.Connector" />
+    </ItemGroup>
+
+    <!-- IBM 按操作系统分包发布 Db2 驱动（同一个程序集 IBM.Data.Db2，各自带 CLI 原生库）：本机 Windows，CI 在 Linux -->
+    <ItemGroup>
+        <PackageReference Include="Net.IBM.Data.Db2" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+        <PackageReference Include="Net.IBM.Data.Db2-lnx" Condition="$([MSBuild]::IsOSPlatform('Linux'))" />
     </ItemGroup>
 
 </Project>

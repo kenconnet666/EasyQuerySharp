@@ -1,4 +1,5 @@
 using Company = EasyQuerySharp.Tests.Upstream.Entities.BlogTest.Company;
+using SysUser = EasyQuerySharp.Tests.Upstream.Entities.BlogTest.SysUser;
 
 namespace EasyQuerySharp.Tests.Upstream.Dialects;
 
@@ -80,6 +81,34 @@ public sealed class Db2DialectTest
             Db2.Query<Topic>().Select(t => new Draft<double, double, decimal>(Math.Log((double)t.Stars!, 2), Math.Atan2((double)t.Stars!, 1), Sql.Cast<decimal>(t.Title))).ToSql());
         Assert.Equal(TopicColumns + " WHERE (\"title\" IS NOT DISTINCT FROM \"id\")", Db2.Query<Topic>().Where(t => t.Title.EqualsNullSafe(t.Id)).ToSql());
     }
+
+    // 驱动执行的文本里参数按值的类型写成 CAST（CASE 的结果、函数参数、带单位的时长里不能有无类型的参数标记）；Text 仍用 ? 占位
+    [Fact]
+    public void CommandTextCastsParameters()
+    {
+        var statement = Db2.Query<Topic>().Where(t => t.Stars > 1 && t.Title == "a" && t.CreateTime < Day).Select(t => t.Stars > 3 ? 1.5m : 2m).ToStatement();
+        Assert.Equal("SELECT (CASE WHEN t.\"stars\" > CAST(@p0 AS INTEGER) THEN CAST(@p1 AS DECIMAL(31,1)) ELSE CAST(@p2 AS DECIMAL(31,0)) END) FROM \"t_topic\" t "
+            + "WHERE t.\"stars\" > CAST(@p3 AS INTEGER) AND t.\"title\" = CAST(@p4 AS VARCHAR(4000)) AND t.\"create_time\" < CAST(@p5 AS TIMESTAMP)", statement.CommandText);
+    }
+
+    // 带导航的更新写成按主键对上的 MERGE、删除写成 EXISTS（Db2 的 UPDATE / DELETE 不能连接）
+    [Fact]
+    public void WritesThroughToOneNavigations()
+    {
+        Assert.Equal("MERGE INTO \"t_user\" t USING (SELECT t.\"id\" AS \"eq_key_0\",? AS \"eq_value_0\" FROM \"t_user\" t "
+            + "INNER JOIN \"t_company\" t1 ON t1.\"id\" = t.\"company_id\" WHERE t1.\"name\" = ?) eq_src ON (t.\"id\" = eq_src.\"eq_key_0\") WHEN MATCHED THEN UPDATE SET t.\"name\" = eq_src.\"eq_value_0\"",
+            Db2.Update<SysUser>().Set(u => u.Name, "a").Where(u => u.Company!.Name == "x").ToSql());
+        Assert.Equal("DELETE FROM \"t_user\" t WHERE EXISTS(SELECT 1 FROM \"t_company\" t1 WHERE t1.\"id\" = t.\"company_id\" AND t1.\"name\" = ?)",
+            Db2.Delete<SysUser>().Where(u => u.Company!.Name == "x").ToSql());
+    }
+
+    // 格式串里只能有格式符与分隔符，其余文字单独拼接；JSON 的逐级取值合并成一条路径（路径不能从数组根开始）
+    [Fact]
+    public void DateFormatTextAndJsonPaths() =>
+        Assert.Equal("SELECT (VARCHAR_FORMAT(t.\"create_time\",'YYYY') || '年' || VARCHAR_FORMAT(t.\"create_time\",'MM') || '月 ' || VARCHAR_FORMAT(t.\"create_time\",'HH24:MI')) AS \"value1\","
+            + "JSON_VALUE(t.\"title\", '$.a[0].b') AS \"value2\",(JSON_EXISTS(t.\"title\", '$.a.c')) AS \"value3\" FROM \"t_topic\" t",
+            Db2.Query<Topic>().Select(t => new Draft<string, string?, bool>(t.CreateTime!.Value.ToString("yyyy年MM月 HH:mm"),
+                Sql.Json(t.Title).Get("a").Get(0).Text("b"), Sql.Json(t.Title).Get("a").ContainsKey("c"))).ToSql());
 
     [Fact]
     public void LikeEscapesWildcardValues() =>

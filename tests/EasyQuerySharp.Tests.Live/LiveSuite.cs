@@ -29,7 +29,7 @@ public sealed record LiveSuiteOptions
     /// <summary>TRUNC(x, n) 截断小数：SQLite 的 trunc 只有一个参数。</summary>
     public bool TruncateWithScale { get; init; } = true;
 
-    /// <summary>MaxColumns / MinColumns 忽略 NULL：SQLite 的 MAX(a, b) 与 MySQL 系的 GREATEST 碰到 NULL 就返回 NULL。</summary>
+    /// <summary>MaxColumns / MinColumns 忽略 NULL：SQLite 的 MAX(a, b) 与 MySQL 系、Db2 的 GREATEST 碰到 NULL 就返回 NULL。</summary>
     public bool ExtremesIgnoreNull { get; init; } = true;
 
     /// <summary>MariaDB 11.4 的 bug：ROW_NUMBER()（倒序）、COUNT(*) OVER () 与 LAG() 在同一条语句里时 LAG 算错。</summary>
@@ -43,6 +43,12 @@ public sealed record LiveSuiteOptions
 
     /// <summary>递归 CTE（树查询 AsTreeCte）：SAP HANA 2.0 没有 WITH RECURSIVE。</summary>
     public bool RecursiveCte { get; init; } = true;
+
+    /// <summary>FOR UPDATE NOWAIT：Db2 没有（锁等待用 CURRENT LOCK TIMEOUT 控制），渲染时报不支持。</summary>
+    public bool NoWait { get; init; } = true;
+
+    /// <summary>Sql.Json 的数组长度：Db2 的 SQL/JSON 路径没有取数组长度的写法（TS 版同样跳过）。</summary>
+    public bool JsonLength { get; init; } = true;
 
     /// <summary>分库用例要第二个库（<see cref="LiveSuite.ShardConnectionStringAsync"/>）：Oracle 的测试用户没有建第二个 schema 的权限。</summary>
     public bool ShardDataSources { get; init; } = true;

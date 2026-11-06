@@ -27,7 +27,7 @@ public class HanaDialect : SqlDialect
     public override string Name => "hana";
 
     /// <summary>HANA 的客户端驱动只认位置参数 <c>?</c>。</summary>
-    public override string ParameterPlaceholder(int index) => "?";
+    public override string ParameterPlaceholder(int index, SqlParameterValue parameter) => "?";
 
     /// <summary>INSERT 没有 RETURNING：在同一连接上取本会话最后生成的 IDENTITY。</summary>
     public override string? LastInsertIdQuery => "SELECT CURRENT_IDENTITY_VALUE() FROM DUMMY";
@@ -87,29 +87,10 @@ public class HanaDialect : SqlDialect
     /// <c>MERGE INTO "a" t USING (SELECT t."id" AS "eq_key_0",值 AS "eq_value_0" FROM "a" t INNER JOIN "b" t1 ON … WHERE …) eq_src
     /// ON (t."id" = eq_src."eq_key_0") WHEN MATCHED THEN UPDATE SET t."c" = eq_src."eq_value_0"</c>。
     /// </summary>
-    public override void WriteJoinedUpdate(SqlRenderer renderer, UpdateStatement update)
-    {
-        var table = update.Table;
-        var keys = table.Entity.KeyColumns;
-        if (keys.Count == 0) throw new NotSupportedException($"SAP HANA 的带连接更新按主键对上（MERGE），{table.Entity.Type.Name} 没有主键");
-        renderer.Append("MERGE INTO ").WriteTable(table).Append(" USING (SELECT ");
-        for (var i = 0; i < keys.Count; i++) renderer.Append(i > 0 ? "," : "").Write(table.Column(keys[i])).Append(" AS " + QuoteIdentifier($"eq_key_{i}"));
-        for (var i = 0; i < update.Sets.Count; i++) renderer.Append(",").Write(update.Sets[i].Value).Append(" AS " + QuoteIdentifier($"eq_value_{i}"));
-        renderer.Append(" FROM ").WriteTable(table);
-        foreach (var join in update.Joins) renderer.WriteJoin(join);
-        renderer.WriteWhere(update.Where).Append(") eq_src ON (")
-            .Append(string.Join(" AND ", keys.Select((k, i) => $"{table.Alias}.{QuoteIdentifier(k.Name)} = eq_src.{QuoteIdentifier($"eq_key_{i}")}")))
-            .Append(") WHEN MATCHED THEN UPDATE SET ")
-            .Append(string.Join(",", update.Sets.Select((s, i) => $"{table.Alias}.{QuoteIdentifier(s.Column.Name)} = eq_src.{QuoteIdentifier($"eq_value_{i}")}")));
-    }
+    public override void WriteJoinedUpdate(SqlRenderer renderer, UpdateStatement update) => WriteJoinedUpdateAsMerge(renderer, update);
 
     /// <summary><c>DELETE FROM "a" t WHERE EXISTS(SELECT 1 FROM "b" t1 WHERE 各 ON 条件 AND 原条件)</c>：HANA 的 DELETE 没有 USING / JOIN。</summary>
-    public override void WriteJoinedDelete(SqlRenderer renderer, DeleteStatement statement)
-    {
-        renderer.Append("DELETE FROM ").WriteTable(statement.Table).Append(" WHERE EXISTS(SELECT 1 FROM ");
-        WriteCommaJoinedTables(renderer, statement.Joins, statement.Where);
-        renderer.Append(")");
-    }
+    public override void WriteJoinedDelete(SqlRenderer renderer, DeleteStatement statement) => WriteJoinedDeleteAsExists(renderer, statement);
 
     /// <inheritdoc />
     public override bool InsertConflictUsesMerge => true;
@@ -219,7 +200,9 @@ public class HanaDialect : SqlDialect
         f[SqlFunctionNames.UtcNow] = Template("CURRENT_UTCTIMESTAMP");
         f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("STRING_AGG(TO_NVARCHAR(").Write(a[0]).Append("), ").Write(a[1]).Append(")");
         f[SqlFunctionNames.StringJoinDistinct] = (_, _) => throw new NotSupportedException("SAP HANA 的 STRING_AGG 不支持 DISTINCT");
-        f[SqlFunctionNames.DateFormat] = WriteDateFormat;
+        // 格式串里只能有格式符与分隔符（与 Java fork 一致）：其余文字单独拼接
+        f[SqlFunctionNames.DateFormat] = SegmentedDateFormat("TO_NVARCHAR",
+            ("yyyy", "YYYY"), ("yy", "YY"), ("MM", "MM"), ("dd", "DD"), ("HH", "HH24"), ("hh", "HH12"), ("mm", "MI"), ("ss", "SS"), ("fff", "FF3"));
         // 截断：按格式取出起点的文字再转回时间；季度、周在月、日的基础上往回推（周从周一起，WEEKDAY 周一为 0）
         const string day = "TO_TIMESTAMP(TO_NVARCHAR({0},'YYYY-MM-DD'),'YYYY-MM-DD')";
         const string month = "TO_TIMESTAMP(TO_NVARCHAR({0},'YYYY-MM')||'-01','YYYY-MM-DD')";
@@ -271,54 +254,5 @@ public class HanaDialect : SqlDialect
     {
         r.Append(new string('(', a.Count - 1)).Write(a[0]);
         for (var i = 1; i < a.Count; i++) r.Append(" || ").Write(a[i]).Append(")");
-    }
-
-    // C# 格式符 → HANA 格式符（长的在前）
-    private static readonly (string CSharp, string Hana)[] DateFormatTokens =
-        [("yyyy", "YYYY"), ("yy", "YY"), ("MM", "MM"), ("dd", "DD"), ("HH", "HH24"), ("hh", "HH12"), ("mm", "MI"), ("ss", "SS"), ("fff", "FF3")];
-
-    // 夹在两个格式符之间时留在格式串里的分隔符
-    private const string DateFormatSeparators = "-/:., ";
-
-    /// <summary>
-    /// 日期格式化（与 Java fork 一致）：格式符和夹在格式符之间的分隔符写进 <c>TO_NVARCHAR(x,'…')</c>，其余文字单独作为字面量拼接，
-    /// 如 <c>yyyy年MM月dd日 HH:mm</c> 写成 <c>(TO_NVARCHAR(x,'YYYY') || '年' || TO_NVARCHAR(x,'MM') || '月' || TO_NVARCHAR(x,'DD') || '日 ' || TO_NVARCHAR(x,'HH24:MI'))</c>。
-    /// </summary>
-    private static void WriteDateFormat(SqlRenderer r, IReadOnlyList<SqlExpr> a)
-    {
-        var format = ((LiteralExpr)a[1]).Sql;
-        var parts = new List<(bool IsFormat, System.Text.StringBuilder Text)>();
-        for (var i = 0; i < format.Length;)
-        {
-            var token = TokenAt(format, i);
-            var inFormat = parts.Count > 0 && parts[^1].IsFormat;
-            if (token is { } t)
-            {
-                if (!inFormat) parts.Add((true, new()));
-                parts[^1].Text.Append(t.Hana);
-                i += t.CSharp.Length;
-                continue;
-            }
-            if (!(inFormat && DateFormatSeparators.Contains(format[i]) && TokenAt(format, i + 1) is not null) && (parts.Count == 0 || parts[^1].IsFormat))
-                parts.Add((false, new()));
-            parts[^1].Text.Append(format[i++]);
-        }
-        if (parts.Count > 1) r.Append("(");
-        for (var i = 0; i < parts.Count; i++)
-        {
-            if (i > 0) r.Append(" || ");
-            var text = parts[i].Text.ToString();
-            if (parts[i].IsFormat) r.Append("TO_NVARCHAR(").Write(a[0]).Append(",'" + text + "')");
-            else r.Append("'" + text.Replace("'", "''", StringComparison.Ordinal) + "'");
-        }
-        if (parts.Count > 1) r.Append(")");
-    }
-
-    private static (string CSharp, string Hana)? TokenAt(string format, int index)
-    {
-        foreach (var token in DateFormatTokens)
-            if (string.CompareOrdinal(format, index, token.CSharp, 0, token.CSharp.Length) == 0)
-                return token;
-        return null;
     }
 }

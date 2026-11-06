@@ -144,10 +144,12 @@ public abstract partial class LiveSuite
         SkipUnless(Options.JsonFunctions, "Sql.Json 函数");
         var db = await SeededAsync();
         var rows = await db.Query<User>().OrderBy(u => u.Id)
-            .Select(u => new Draft<string?, bool, int>(Sql.Json(u.Attrs).Get("tags").Text(0), Sql.Json(u.Attrs).ContainsKey("tags"), Sql.Json(u.Attrs).Get("tags").Length()))
+            .Select(u => new Draft<string?, bool>(Sql.Json(u.Attrs).Get("tags").Text(0), Sql.Json(u.Attrs).ContainsKey("tags")))
             .ToListAsync(Ct);
-        Assert.Equal([("vip", true, 1), (null, true, 0), (null, true, 0)], rows.Select(r => (r.Value1, r.Value2, r.Value3)));
+        Assert.Equal([("vip", true), (null, true), (null, true)], rows.Select(r => (r.Value1, r.Value2)));
         Assert.Equal(["alice"], await db.Query<User>().Where(u => Sql.Json(u.Attrs).Get("tags").Text(0) == "vip").Select(u => u.Name).ToListAsync(Ct));
+        if (Options.JsonLength)
+            Assert.Equal([1, 0, 0], await db.Query<User>().OrderBy(u => u.Id).Select(u => Sql.Json(u.Attrs).Get("tags").Length()).ToListAsync(Ct));
     }
 
     // 窗口取值函数：每个用户第一篇与最后一篇（最后一个值要把 frame 拉到分区末尾）、第二个值

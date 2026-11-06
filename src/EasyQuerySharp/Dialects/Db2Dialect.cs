@@ -34,6 +34,44 @@ public class Db2Dialect : SqlDialect
     /// <summary>递归 CTE 必须写列名清单（否则 SQL0343N）。</summary>
     public override bool RecursiveCteColumnList => true;
 
+    /// <summary>递归 CTE 的递归部分不能有带 ON 的显式连接（SQL0345N）：子节点表写成逗号连接。</summary>
+    public override bool RecursiveCteCommaJoin => true;
+
+    /// <summary>
+    /// 参数写成 <c>CAST(@p0 AS 类型)</c>：Db2 不给无类型的参数标记推断类型的地方很多（CASE 的结果、函数参数、带单位的时长、SELECT 列表，
+    /// SQL0418N / SQL0440N），按值的 CLR 类型写明；没有对应类型的（null、byte[]、Guid 等）照常写 <c>@p0</c>。
+    /// </summary>
+    public override string ParameterPlaceholder(int index, SqlParameterValue parameter) =>
+        ParameterType(parameter) is { } type ? $"CAST(@p{index} AS {type})" : "@p" + index;
+
+    private static string? ParameterType(SqlParameterValue parameter)
+    {
+        var type = Nullable.GetUnderlyingType(parameter.ClrType) ?? parameter.ClrType;
+        if (type.IsEnum) type = Enum.GetUnderlyingType(type);
+        return type switch
+        {
+            // 字符串按 UTF-8 字节数取够长的 VARCHAR，超过 VARCHAR 上限的写 CLOB
+            _ when type == typeof(string) => ((parameter.Value as string)?.Length * 4) switch
+            {
+                null or <= 4000 => "VARCHAR(4000)",
+                <= 32672 => "VARCHAR(32672)",
+                _ => "CLOB(2G)",
+            },
+            _ when type == typeof(bool) => "BOOLEAN",
+            _ when type == typeof(byte) || type == typeof(sbyte) || type == typeof(short) => "SMALLINT",
+            _ when type == typeof(int) || type == typeof(ushort) => "INTEGER",
+            _ when type == typeof(long) || type == typeof(uint) || type == typeof(ulong) => "BIGINT",
+            // 小数位数跟着值走，整数部分留够位数
+            _ when type == typeof(decimal) => $"DECIMAL(31,{(parameter.Value is decimal d ? d.Scale : 0).ToString(CultureInfo.InvariantCulture)})",
+            _ when type == typeof(double) => "DOUBLE",
+            _ when type == typeof(float) => "REAL",
+            _ when type == typeof(DateTime) => "TIMESTAMP",
+            _ when type == typeof(DateOnly) => "DATE",
+            _ when type == typeof(TimeOnly) || type == typeof(TimeSpan) => "TIME",
+            _ => null,
+        };
+    }
+
     /// <summary>
     /// 有跳过行数时写 <c>OFFSET n ROWS [FETCH NEXT m ROWS ONLY]</c>，只取前几行时写 <c>FETCH FIRST m ROWS ONLY</c>（与 Java 的 DB2QuerySQLExpression 一致）。
     /// 跳过行数而没有排序时，按分组键、再不然按第一个主键（没有主键时第一列）排序，分页才稳定。
@@ -70,6 +108,12 @@ public class Db2Dialect : SqlDialect
         RowLock.ForUpdateNoWait => throw new NotSupportedException("Db2 不支持 FOR UPDATE NOWAIT：锁等待时间用 SET CURRENT LOCK TIMEOUT 控制"),
         _ => throw new ArgumentOutOfRangeException(nameof(rowLock), rowLock, null),
     });
+
+    /// <summary>带对一导航的更新写成按主键对上的 MERGE（Db2 的 UPDATE 没有 FROM / JOIN）。</summary>
+    public override void WriteJoinedUpdate(SqlRenderer renderer, UpdateStatement update) => WriteJoinedUpdateAsMerge(renderer, update);
+
+    /// <summary>带对一导航的删除写成 EXISTS 子查询（Db2 的 DELETE 没有 USING / JOIN）。</summary>
+    public override void WriteJoinedDelete(SqlRenderer renderer, DeleteStatement statement) => WriteJoinedDeleteAsExists(renderer, statement);
 
     /// <inheritdoc />
     public override bool InsertConflictUsesMerge => true;
@@ -111,6 +155,25 @@ public class Db2Dialect : SqlDialect
         renderer.Append(")");
     }
 
+    /// <summary>
+    /// <c>F(文档, '$.a[0].b')</c>：逐级的 Get 合并成一条路径。Db2 的路径不能从数组根开始（对 JSON_QUERY 取出的数组再取下标是 SQL16410N），
+    /// 不能像别的库那样逐级套函数。<paramref name="last"/> 是最后一级按键（JsonGet，写 <c>.键</c>）还是按下标（JsonGetIndex，写 <c>[下标]</c>）。
+    /// </summary>
+    private static FunctionWriter JsonPathCall(string function, string last) => (r, a) =>
+    {
+        var path = Step(last, a[1]);
+        var document = a[0];
+        while (document is FunctionExpr { Name: SqlFunctionNames.JsonGet or SqlFunctionNames.JsonGetIndex } get)
+        {
+            path = Step(get.Name, get.Arguments[1]) + path;
+            document = get.Arguments[0];
+        }
+        r.Append(function + "(").Write(document).Append(", '$" + path + "')");
+
+        static string Step(string name, SqlExpr segment) =>
+            name == SqlFunctionNames.JsonGet ? "." + ((LiteralExpr)segment).Sql : "[" + ((LiteralExpr)segment).Sql + "]";
+    };
+
     // LISTAGG 的分隔符必须是常量：字符串参数改写成字面量
     private static void WriteListAgg(SqlRenderer renderer, SqlExpr value, SqlExpr separator, bool distinct)
     {
@@ -137,6 +200,12 @@ public class Db2Dialect : SqlDialect
         _ when targetType == typeof(string) => "CAST({0} AS VARCHAR(4000))",
         _ => throw new NotSupportedException($"{Name} 不支持转换到 {targetType.Name}"),
     };
+
+    /// <summary><c>"列" 类型 NULL|NOT NULL[ DEFAULT 默认值]</c>：Db2 不认 <c>DEFAULT … NULL</c> 的顺序（SQL0104N）；自增列按通用写法。</summary>
+    protected override string ColumnDefinition(EntityMetadata entity, ColumnMetadata column) =>
+        column.IsGenerated
+            ? base.ColumnDefinition(entity, column)
+            : $"{QuoteIdentifier(column.Name)} {ColumnType(column)} {(IsNullable(column) ? "NULL" : "NOT NULL")}{DefaultClause(column)}";
 
     /// <summary>字符串列按字符计长 <c>VARCHAR(n CODEUNITS32)</c>（默认按字节，中文一个字占 3 个字节）；Db2 LUW 没有带时区的时间戳。</summary>
     protected override string ClrColumnType(Type type, ColumnMetadata column) => type switch
@@ -197,17 +266,18 @@ public class Db2Dialect : SqlDialect
         f[SqlFunctionNames.UtcNow] = Template("(CURRENT_TIMESTAMP - CURRENT_TIMEZONE)");
         f[SqlFunctionNames.StringJoin] = (r, a) => WriteListAgg(r, a[0], a[1], false);
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => WriteListAgg(r, a[0], a[1], true);
-        f[SqlFunctionNames.JsonGet] = Template("JSON_QUERY({0}, '$.{1}')");
-        f[SqlFunctionNames.JsonGetIndex] = Template("JSON_QUERY({0}, '$[{1}]')");
-        f[SqlFunctionNames.JsonText] = Template("JSON_VALUE({0}, '$.{1}')");
-        f[SqlFunctionNames.JsonTextIndex] = Template("JSON_VALUE({0}, '$[{1}]')");
-        f[SqlFunctionNames.JsonContainsKey] = Template("JSON_EXISTS({0}, '$.{1}')");
+        f[SqlFunctionNames.JsonGet] = JsonPathCall("JSON_QUERY", SqlFunctionNames.JsonGet);
+        f[SqlFunctionNames.JsonGetIndex] = JsonPathCall("JSON_QUERY", SqlFunctionNames.JsonGetIndex);
+        f[SqlFunctionNames.JsonText] = JsonPathCall("JSON_VALUE", SqlFunctionNames.JsonGet);
+        f[SqlFunctionNames.JsonTextIndex] = JsonPathCall("JSON_VALUE", SqlFunctionNames.JsonGetIndex);
+        f[SqlFunctionNames.JsonContainsKey] = JsonPathCall("JSON_EXISTS", SqlFunctionNames.JsonGet);
         foreach (var (unit, format) in new[] { (DateTruncUnit.Year, "YYYY"), (DateTruncUnit.Quarter, "Q"), (DateTruncUnit.Month, "MM"), (DateTruncUnit.Week, "IW"), (DateTruncUnit.Day, "DD"), (DateTruncUnit.Hour, "HH"), (DateTruncUnit.Minute, "MI") })
             f[SqlFunctionNames.DateTrunc(unit)] = Template("TRUNC_TIMESTAMP({0},'" + format + "')");
         // TRUNC_TIMESTAMP 没有到秒的格式：转成不带小数秒的 TIMESTAMP(0)
         f[SqlFunctionNames.DateTrunc(DateTruncUnit.Second)] = Template("CAST({0} AS TIMESTAMP(0))");
-        // VARCHAR_FORMAT 的格式里只能有格式符与分隔符（- / . , : 空格）
-        f[SqlFunctionNames.DateFormat] = DateFormat("VARCHAR_FORMAT({0},{1})", ("yyyy", "YYYY"), ("MM", "MM"), ("dd", "DD"), ("HH", "HH24"), ("mm", "MI"), ("ss", "SS"));
+        // VARCHAR_FORMAT 的格式里只能有格式符与分隔符（- / . , : 空格，SQL0171N）：其余文字单独拼接
+        f[SqlFunctionNames.DateFormat] = SegmentedDateFormat("VARCHAR_FORMAT",
+            ("yyyy", "YYYY"), ("yy", "YY"), ("MM", "MM"), ("dd", "DD"), ("HH", "HH24"), ("hh", "HH12"), ("mm", "MI"), ("ss", "SS"), ("fff", "FF3"));
         // 相差：按经过的秒数整除（与其余方言一样截断）；先转 BIGINT，避免天数乘秒数溢出
         const string seconds = "(CAST(DAYS({1}) - DAYS({0}) AS BIGINT) * 86400 + MIDNIGHT_SECONDS({1}) - MIDNIGHT_SECONDS({0}))";
         DateFunctions(f,

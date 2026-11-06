@@ -113,9 +113,10 @@ internal static class RawSql
     /// <summary>整条执行的语句：参数处写方言的占位符，<see cref="SqlStatement.Text"/> 写 <c>?</c>。</summary>
     public static SqlStatement ToStatement(SqlDialect dialect, RawSqlText raw)
     {
+        var parameters = raw.Parameters.Select(p => new SqlParameterValue(p.Value, p.ClrType)).ToList();
         var command = new StringBuilder(raw.Segments[0]);
-        for (var i = 0; i < raw.Parameters.Count; i++) command.Append(dialect.ParameterPlaceholder(i)).Append(raw.Segments[i + 1]);
-        return new SqlStatement(command.ToString(), raw.Text, raw.Parameters.Select(p => new SqlParameterValue(p.Value, p.ClrType)).ToList());
+        for (var i = 0; i < parameters.Count; i++) command.Append(dialect.ParameterPlaceholder(i, parameters[i])).Append(raw.Segments[i + 1]);
+        return new SqlStatement(command.ToString(), raw.Text, parameters);
     }
 
     private static ParameterExpr Value(object? value) => ExpressionTranslator.Parameter(value, value?.GetType() ?? typeof(object));

@@ -49,6 +49,9 @@ add_db EQS_DEV_CLICKHOUSE_PASSWORD "" "EQS_CLICKHOUSE_CS='Host=127.0.0.1;Port=48
 add_db EQS_DEV_DB2_PASSWORD "" "EQS_DB2_CS='Server=127.0.0.1:45000;Database=eqs;UID=db2inst1;PWD={p}'"
 # HANA 要求 16-64 位且只含字母数字（start.sh 校验）
 add_db EQS_DEV_HANA_PASSWORD "" "EQS_HANA_CS='Server=127.0.0.1:49041;UserName=SYSTEM;Password={p}'"
+# TDengine 用镜像默认的 root / taosdata，没有生成的密码；连接串不带库名，实库测试自己建库 eqs
+grep -q "EQS_TDENGINE_CS=" "$env_file" ||
+  echo "#EQS_TDENGINE_CS='protocol=WebSocket;host=127.0.0.1;port=46041;username=root;password=taosdata'" >>"$env_file"
 
 
 if [[ ! -f $local_dir/connections.md ]]; then
