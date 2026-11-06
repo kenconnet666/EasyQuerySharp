@@ -260,13 +260,18 @@ public class SqlServerDialect : SqlDialect
                 _ => "datepart(" + Lower(part) + ", {0})",
             },
             unit => "datediff(" + Lower(unit) + ", {0}, {1})");
-        // ROUND 的第三个参数非 0 表示截断
+        // ROUND 必须带位数；第三个参数非 0 表示截断。不带位数的截断与 Java 一致写成 CASE（Java 的 Floor 也用它，对负数会得到截断而不是向下取整，这里的 Floor 仍是 FLOOR）
+        f[SqlFunctionNames.Round] = WithDigits("ROUND");
         f[SqlFunctionNames.Truncate] = (r, a) =>
         {
-            r.Append("ROUND(").Write(a[0]).Append(",");
-            if (a.Count > 1) r.Write(a[1]);
-            else r.Append("0");
-            r.Append(",1)");
+            if (a.Count == 1)
+            {
+                Template("(CASE WHEN {0} >= 0 THEN FLOOR({0}) ELSE CEILING({0}) END)")(r, a);
+                return;
+            }
+            r.Append("ROUND(").Write(a[0]).Append(",").Write(a[1]).Append(",1)");
         };
+        // SQL Server 没有 ATAN2，用 ATAN 按象限补 π（与 Java 的 MsSQLMathSQLFunction 一致）
+        f[SqlFunctionNames.Atan2] = Template("(CASE WHEN {1}<>0 THEN ATAN({0}/{1}) + CASE WHEN {1}<0 AND {0}>=0 THEN PI() WHEN {1}<0 AND {0}<0 THEN -PI() ELSE 0 END WHEN {1}=0 AND {0}>0 THEN PI()/2 WHEN {1}=0 AND {0}<0 THEN -PI()/2 ELSE NULL END)");
     }
 }

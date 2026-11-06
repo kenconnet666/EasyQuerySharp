@@ -150,6 +150,9 @@ public static class SqlFunctionNames
     /// <summary>(x, [digits])：截断。</summary>
     public const string Truncate = "Truncate";
 
+    /// <summary>(y, x)：点 (x, y) 与 x 轴正方向的夹角（弧度）。</summary>
+    public const string Atan2 = "ATAN2";
+
     // ---------- 聚合 ----------
 
     /// <summary>(x)：计数。</summary>

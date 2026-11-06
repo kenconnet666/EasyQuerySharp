@@ -116,6 +116,7 @@ internal static class MethodTranslators
                     nameof(Math.Log) when parameters.Length == 1 => SqlFunctionNames.Ln,
                     nameof(Math.Log) => "LOG",
                     nameof(Math.Truncate) => SqlFunctionNames.Truncate,
+                    nameof(Math.Atan2) => SqlFunctionNames.Atan2,
                     _ => name.ToUpperInvariant(),
                 };
                 Add(m, (t, c) => Fn(function, Arguments(t, c)));
