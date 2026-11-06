@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using EasyQuerySharp.Metadata;
 
 namespace EasyQuerySharp.Tests.Live;
@@ -38,8 +39,23 @@ public class User
     [Navigate(RelationType.ManyToOne, SelfProperties = [nameof(CompanyId)])]
     public Company? Company { get; set; }
 
-    [Navigate(RelationType.OneToMany, TargetProperties = [nameof(Post.UserId)])]
+    [Navigate(RelationType.OneToMany, TargetProperties = [nameof(Post.UserId)], Cascade = Cascade.Delete)]
     public List<Post>? Posts { get; set; }
+
+    /// <summary>多对多：经 <see cref="UserRole"/> 中间表（对应 TS 的 roles）。</summary>
+    [Navigate(RelationType.ManyToMany, Mapping = typeof(UserRole),
+        SelfMappingProperties = [nameof(UserRole.UserId)], TargetMappingProperties = [nameof(UserRole.RoleId)], Cascade = Cascade.Delete)]
+    public List<Role>? Roles { get; set; }
+
+    /// <summary>带固定条件的一对多：本人的大额帖子（对应 TS 的 manyOn）。</summary>
+    [Navigate(RelationType.OneToMany, TargetProperties = [nameof(Post.UserId)], ExtraFilter = nameof(BigPostFilter))]
+    public List<Post>? BigPosts { get; set; }
+
+    /// <summary>每个用户最新的一篇帖子（对应 TS 的 oneOfMany）：一对一导航按 id 倒序取 1 条。</summary>
+    [Navigate(RelationType.OneToOne, TargetProperties = [nameof(Post.UserId)], PartitionOrder = PartitionOrder.KeyDescending, OrderBy = "Id desc", Limit = 1)]
+    public Post? LatestPost { get; set; }
+
+    private static Expression<Func<Post, bool>> BigPostFilter => p => p.Amount > 100;
 }
 
 /// <summary>用户的 JSON 属性。</summary>
@@ -62,8 +78,12 @@ public class Post
     [Navigate(RelationType.ManyToOne, SelfProperties = [nameof(UserId)])]
     public User? User { get; set; }
 
-    [Navigate(RelationType.OneToMany, TargetProperties = [nameof(Comment.PostId)])]
+    [Navigate(RelationType.OneToMany, TargetProperties = [nameof(Comment.PostId)], Cascade = Cascade.Delete)]
     public List<Comment>? Comments { get; set; }
+
+    /// <summary>直达导航：经作者到他的公司（对应 TS 的 pathOne）。</summary>
+    [Navigate(RelationType.ManyToOne, DirectMapping = [nameof(User), nameof(User.Company)])]
+    public Company? Company { get; set; }
 }
 
 /// <summary>评论。</summary>
@@ -89,6 +109,8 @@ public class Setting
     public string Code { get; set; } = "";
 
     public string? Value { get; set; }
+
+    public string? Remark { get; set; }
 }
 
 /// <summary>带乐观锁版本的便签：验证批量更新后新版本写回实体。</summary>
@@ -168,4 +190,77 @@ public class ShopContact
 {
     [Column("tel")]
     public string? Phone { get; set; }
+}
+
+/// <summary>角色；与用户多对多（对应 TS 的 Role）。</summary>
+[Table("t_role")]
+public class Role
+{
+    [Column(PrimaryKey = true, Generated = true)]
+    public long Id { get; set; }
+
+    public string Name { get; set; } = "";
+
+    [Navigate(RelationType.ManyToMany, Mapping = typeof(UserRole),
+        SelfMappingProperties = [nameof(UserRole.RoleId)], TargetMappingProperties = [nameof(UserRole.UserId)])]
+    public List<User>? Users { get; set; }
+}
+
+/// <summary>用户与角色的中间表（复合主键）。</summary>
+[Table("t_user_role")]
+public class UserRole
+{
+    [Column(PrimaryKey = true)]
+    public long UserId { get; set; }
+
+    [Column(PrimaryKey = true)]
+    public long RoleId { get; set; }
+}
+
+/// <summary>成员：以 (TenantId, Id) 为主键，笔记按这一对列引用成员（对应 TS 的 Member）。</summary>
+[Table("t_member")]
+public class Member
+{
+    [Column(PrimaryKey = true)]
+    public int TenantId { get; set; }
+
+    [Column(PrimaryKey = true)]
+    public int Id { get; set; }
+
+    public string Name { get; set; } = "";
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(TenantId), nameof(Id)], TargetProperties = [nameof(MemberNote.TenantId), nameof(MemberNote.MemberId)])]
+    public List<MemberNote>? Notes { get; set; }
+}
+
+/// <summary>成员的笔记（复合外键；对应 TS 的 Note）。</summary>
+[Table("t_member_note")]
+public class MemberNote
+{
+    [Column(PrimaryKey = true, Generated = true)]
+    public long Id { get; set; }
+
+    public int TenantId { get; set; }
+
+    public int MemberId { get; set; }
+
+    public string Body { get; set; } = "";
+
+    [Navigate(RelationType.ManyToOne, SelfProperties = [nameof(TenantId), nameof(MemberId)], TargetProperties = [nameof(Member.TenantId), nameof(Member.Id)])]
+    public Member? Member { get; set; }
+}
+
+/// <summary>自关联的树：部门的上级是另一个部门（对应 TS 的 Dept）。</summary>
+[Table("t_dept")]
+public class Dept
+{
+    [Column(PrimaryKey = true)]
+    public long Id { get; set; }
+
+    public long? ParentId { get; set; }
+
+    public string Name { get; set; } = "";
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(ParentId)])]
+    public List<Dept>? Children { get; set; }
 }

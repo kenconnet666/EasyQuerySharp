@@ -10,6 +10,21 @@ public sealed record LiveSuiteOptions
 {
     /// <summary>行锁要两条连接同时持锁：SQLite 只有库级锁，没有行锁。</summary>
     public bool RowLocks { get; init; } = true;
+
+    /// <summary>GROUP BY ROLLUP（MySQL 系写成 WITH ROLLUP）：SQLite 没有。</summary>
+    public bool Rollup { get; init; } = true;
+
+    /// <summary>GROUP BY CUBE：SQLite、MySQL 系没有。</summary>
+    public bool Cube { get; init; } = true;
+
+    /// <summary>GROUPING() 函数：SQLite、MariaDB 没有。</summary>
+    public bool GroupingFunction { get; init; } = true;
+
+    /// <summary>窗口函数 NTH_VALUE：SQL Server 没有。</summary>
+    public bool NthValue { get; init; } = true;
+
+    /// <summary>MariaDB 11.4 的 bug：ROW_NUMBER()（倒序）、COUNT(*) OVER () 与 LAG() 在同一条语句里时 LAG 算错。</summary>
+    public bool MixedWindowLag { get; init; } = true;
 }
 
 /// <summary>
@@ -20,7 +35,11 @@ public sealed record LiveSuiteOptions
 public abstract partial class LiveSuite
 {
     // 删表顺序：子表在前
-    private static readonly Type[] Tables = [typeof(Profile), typeof(Setting), typeof(Note), typeof(Comment), typeof(Post), typeof(User), typeof(Company)];
+    private static readonly Type[] Tables =
+    [
+        typeof(MemberNote), typeof(Member), typeof(Dept), typeof(UserRole), typeof(Role),
+        typeof(Profile), typeof(Setting), typeof(Note), typeof(Comment), typeof(Post), typeof(User), typeof(Company),
+    ];
 
     /// <summary>种子数据里用户的创建时间（毫秒精度，各库都要原样读回）。</summary>
     protected static readonly DateTime CreatedAt = new(2026, 1, 2, 3, 4, 5, 6);
