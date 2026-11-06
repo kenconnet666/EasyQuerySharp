@@ -16,7 +16,7 @@
 ## 现状（2026-11-06）
 
 - 对标：已移植 2011、偏离 193、不适用 141、骨架 7、待做 52。
-- 待做的分布：分库分表 48（等 0006 定稿）、二级缓存 4（等 0007 定稿）；骨架里另有等列默认值的 MySQL8Test2 与 QueryTest26 testGenerateKeys 之外的分表与 HANA 实库用例。
+- 待做的分布：分库分表 48（等 0006 定稿）、二级缓存 4（等 0007 定稿）。骨架 7：分表 3（H2）、要实库的 3（HANA 2、达梦行锁 1）、等列默认值的 MySQL8Test2 1。
 - 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17、DuckDB（进程内）；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
 
 ## 已定的取舍
