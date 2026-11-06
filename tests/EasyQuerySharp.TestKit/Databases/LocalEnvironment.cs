@@ -39,6 +39,9 @@ public static class LocalEnvironment
         {
             var candidate = Path.Combine(dir.FullName, ".local", "db.env");
             if (File.Exists(candidate)) return candidate;
+            // 到仓库根（含 .git 的目录或文件）为止：git worktree 放在主仓库的 .claude/worktrees 下，不能越过自己的根读到主仓库的 .local/db.env
+            var git = Path.Combine(dir.FullName, ".git");
+            if (Directory.Exists(git) || File.Exists(git)) break;
         }
         return null;
     }
