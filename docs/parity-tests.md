@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1726、偏离 224、不适用 78、骨架 6、待做 370。
+合计：已移植 1726、偏离 224、不适用 136、骨架 6、待做 312。
 
 ## 按能力
 
@@ -58,11 +58,11 @@
 | SAP HANA 方言 | `dialect.hana` | M6 | 18 | 0 | 0 | 0 | 0 | 18 |
 | 人大金仓方言 | `dialect.kingbase` | M6 | 2 | 0 | 0 | 0 | 0 | 2 |
 | SQL Server 方言 | `dialect.mssql` | M6 | 38 | 0 | 0 | 0 | 0 | 38 |
-| SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | M6 | 13 | 0 | 0 | 0 | 0 | 13 |
+| SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | M6 | 13 | 0 | 0 | 13 | 0 | 0 |
 | UPDATE / DELETE … RETURNING | `write.returning` | M6 | 3 | 0 | 0 | 0 | 0 | 3 |
 | 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 2 | 0 | 0 | 0 | 15 |
 | 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 82 | 13 | 0 | 0 | 6 |
-| search 扩展 | `search` | M7 | 45 | 0 | 0 | 0 | 0 | 45 |
+| search 扩展 | `search` | M7 | 45 | 0 | 0 | 45 | 0 | 0 |
 | 分库分表 | `sharding` | M7 | 48 | 0 | 0 | 0 | 0 | 48 |
 | 跨库链接（asTableLink） | `table.link` | M7 | 13 | 9 | 0 | 0 | 0 | 4 |
 | 换表名（asTable / 表名映射） | `table.rename` | M7 | 52 | 34 | 9 | 0 | 0 | 9 |
@@ -2401,19 +2401,19 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query0 | 待做 |  | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query1 | 待做 |  | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query2 | 待做 |  | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query3 | 待做 |  | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query4 | 待做 |  |  |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query4_1 | 待做 |  |  |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query4_2 | 待做 |  |  |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query5 | 待做 |  |  |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query5_1 | 待做 |  |  |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query5_2 | 待做 |  | `WITH rt AS ( SELECT [Id],[Stars],[Title],[CreateTime], ROW_NUMBER() OVER( ORDER BY [Id] ASC ) AS __r…` |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query5_3 | 待做 |  | `WITH rt AS ( SELECT [Id],[Stars],[Title],[CreateTime], ROW_NUMBER() OVER( ORDER BY [Id] ) AS __rownu…` |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query6 | 待做 |  |  |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#testDraft9 | 待做 |  |  |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query0 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:49：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:50：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:51：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query3 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:52：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query4 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:53：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query4_1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:54：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query4_2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:55：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query5 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:56：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query5_1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:57：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query5_2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:58：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `WITH rt AS ( SELECT [Id],[Stars],[Title],[CreateTime], ROW_NUMBER() OVER( ORDER BY [Id] ASC ) AS __r…` |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query5_3 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:59：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `WITH rt AS ( SELECT [Id],[Stars],[Title],[CreateTime], ROW_NUMBER() OVER( ORDER BY [Id] ) AS __rownu…` |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query6 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:60：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#testDraft9 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:61：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
 
 ### UPDATE / DELETE … RETURNING（`write.returning`，M6）
 
@@ -2555,51 +2555,51 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| search/EasySearchBaseCommonTests.java#testCommon | 待做 |  |  |
-| search/EasySearchBaseCommonTests.java#testCommon2 | 待做 |  |  |
-| search/EasySearchBaseCommonTests.java#testComplexJoinConditions | 待做 |  |  |
-| search/EasySearchBaseCommonTests.java#testDefaultSort | 待做 |  |  |
-| search/EasySearchBaseCommonTests.java#testEmpty | 待做 |  |  |
-| search/EasySearchBaseCommonTests.java#testMultiFieldSortOverride | 待做 |  |  |
-| search/EasySearchBaseCommonTests.java#testMultiSourceCondition | 待做 |  |  |
-| search/EasySearchBaseCommonTests.java#testNullValueHandling | 待做 |  |  |
-| search/EasySearchBaseOpExtraTests.java#testCrossTableCondition | 待做 |  |  |
-| search/EasySearchBaseOpExtraTests.java#testEmptyResult | 待做 |  |  |
-| search/EasySearchBaseOpExtraTests.java#testInvalidOperator | 待做 |  |  |
-| search/EasySearchBaseOpExtraTests.java#testLargeResultSet | 待做 |  |  |
-| search/EasySearchBaseOpExtraTests.java#testMultiCondition | 待做 |  |  |
-| search/EasySearchBaseOpExtraTests.java#testNullFieldName | 待做 |  |  |
-| search/EasySearchBaseOpExtraTests.java#testNullValueHandling | 待做 |  |  |
-| search/EasySearchBaseOpExtraTests.java#testOperator_gt_maxValue | 待做 |  |  |
-| search/EasySearchBaseOpExtraTests.java#testOperator_in_empty | 待做 |  |  |
-| search/EasySearchBaseOpExtraTests.java#testOperator_lk_emptyPattern | 待做 |  |  |
-| search/EasySearchBaseOpExtraTests.java#testOperator_lt_boundary | 待做 |  |  |
-| search/EasySearchBaseOpExtraTests.java#testOperator_roc_zero_range | 待做 |  |  |
-| search/EasySearchBaseOpExtraTests.java#testThreeConditionCombination | 待做 |  |  |
-| search/EasySearchBaseOpExtraTests.java#testTypeMismatch | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_eq | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_ge | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_gt | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_in | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_inn | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_le | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_lk | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_lml | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_lmr | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_lt | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_ne | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_ni | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_nl | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_nlml | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_nlmr | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_nrc | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_nrco | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_nro | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_nroc | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_rc | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_rco | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_ro | 待做 |  |  |
-| search/EasySearchBaseOpTests.java#testOperator_roc | 待做 |  |  |
+| search/EasySearchBaseCommonTests.java#testCommon | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:3：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseCommonTests.java#testCommon2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:4：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseCommonTests.java#testComplexJoinConditions | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:5：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseCommonTests.java#testDefaultSort | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:6：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseCommonTests.java#testEmpty | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:7：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseCommonTests.java#testMultiFieldSortOverride | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:8：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseCommonTests.java#testMultiSourceCondition | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:9：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseCommonTests.java#testNullValueHandling | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:10：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpExtraTests.java#testCrossTableCondition | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:11：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpExtraTests.java#testEmptyResult | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:12：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpExtraTests.java#testInvalidOperator | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:13：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpExtraTests.java#testLargeResultSet | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:14：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpExtraTests.java#testMultiCondition | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:15：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpExtraTests.java#testNullFieldName | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:16：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpExtraTests.java#testNullValueHandling | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:17：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpExtraTests.java#testOperator_gt_maxValue | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:18：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpExtraTests.java#testOperator_in_empty | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:19：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpExtraTests.java#testOperator_lk_emptyPattern | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:20：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpExtraTests.java#testOperator_lt_boundary | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:21：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpExtraTests.java#testOperator_roc_zero_range | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:22：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpExtraTests.java#testThreeConditionCombination | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:23：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpExtraTests.java#testTypeMismatch | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:24：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_eq | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:25：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_ge | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:26：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_gt | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:27：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_in | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:28：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_inn | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:29：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_le | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:30：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_lk | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:31：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_lml | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:32：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_lmr | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:33：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_lt | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:34：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_ne | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:35：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_ni | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:36：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_nl | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:37：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_nlml | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:38：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_nlmr | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:39：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_nrc | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:40：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_nrco | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:41：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_nro | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:42：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_nroc | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:43：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_rc | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:44：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_rco | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:45：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_ro | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:46：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
+| search/EasySearchBaseOpTests.java#testOperator_roc | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:47：search 扩展（sql-search）不做：它是由前端选运算符的 URL 参数约定，同类需求用 FilterBy / SortBy |  |
 
 ### 分库分表（`sharding`，M7）
 

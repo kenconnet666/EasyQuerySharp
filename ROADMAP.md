@@ -74,7 +74,7 @@ R → 1 → 2 → 3 → 4 → 5。
   - 构造 `EasyDb` 时冻结 `EasyDbOptions`，之后再修改就抛异常；
   - 新增分析器 EQ0007：只能在查询里用的方法（`Sql` 上的扩展方法等）在表达式树之外调用时，编译报错；
   - 引入 `Microsoft.CodeAnalysis.PublicApiAnalyzers`（只在开发期用），建立公共 API 基线。
-- [ ] R.4 落地删减：search 的 45 个、SQL Server 2008 的 13 个用例标为不适用并写理由；文档站、AOT、原 M9 记进 BACKLOG。
+- [x] R.4 落地删减：search 的 45 个、SQL Server 2008 的 13 个用例在 `tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs` 标为不适用；文档站、AOT、原 M9 已记进 BACKLOG。
 - [ ] R.5 文档对齐现状：
   - `architecture.md` 的模块表按实际情况重写：方言和加密都在核心里；测试项目是 TestKit / Upstream / Live / Generator；没有 `apps/docs`。同时修正"运行时不反射实体"、EQ0006 的含义、`BeginTransaction` 是同步方法这几处；
   - 0001 / 0002 里已被取代的写法要改掉：`MySql.JsonContains`；`Save().Cascade()` 和 `OrphanPolicy`（已由 0004 取代）；`MapConfig`（实际是 `IAutoIncludeConfigure<T>`）；`ToTreeAsync(id, parentId)` / `DescendantsOf`（实际是 `AsTreeCte`）；Source Generator 的范围。四份决策的状态改成"已定"；
