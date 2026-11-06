@@ -7,6 +7,8 @@
 
     <ItemGroup>
         <ProjectReference Include="..\EasyQuerySharp.TestKit\EasyQuerySharp.TestKit.csproj" />
+        <!-- 生成器：视图一组的 [Projection] 方法在编译期登记表达式（与使用者引用核心包时一样） -->
+        <ProjectReference Include="..\..\src\EasyQuerySharp.Generator\EasyQuerySharp.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <ItemGroup>

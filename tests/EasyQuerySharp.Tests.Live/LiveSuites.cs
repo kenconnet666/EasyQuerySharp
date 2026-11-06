@@ -123,14 +123,14 @@ public sealed class Db2LiveSuite : LiveSuite
     protected override LiveSuiteOptions Options { get; } = new() { ExtremesIgnoreNull = false, NoWait = false, JsonLength = false, ShardDataSources = false };
 }
 
-/// <summary>DuckDB（进程内）：临时文件库（内存库每条连接各是一个库，跨连接看不到表）；没有行锁。</summary>
+/// <summary>DuckDB（进程内）：临时文件库（内存库每条连接各是一个库，跨连接看不到表）；没有行锁，外键不能带 ON DELETE 等动作。</summary>
 public sealed class DuckDbLiveSuite : LiveSuite
 {
     private static readonly string File = Path.Combine(Path.GetTempPath(), $"eqs_live_{Environment.ProcessId}.duckdb");
 
     protected override TestDatabase Database => TestDatabases.DuckDb;
     protected override SqlDialect Dialect => DuckDbDialect.Instance;
-    protected override LiveSuiteOptions Options { get; } = new() { RowLocks = false };
+    protected override LiveSuiteOptions Options { get; } = new() { RowLocks = false, ForeignKeyActions = false };
     // DuckDB.NET 在最后一个连接关闭时关库（落盘），每条语句都重新开关会慢得多：整个进程里留一个连接不关
     private static readonly Lazy<DuckDB.NET.Data.DuckDBConnection> Anchor = new(() => Open(File));
     private static readonly Lazy<DuckDB.NET.Data.DuckDBConnection> ShardAnchor = new(() => Open(Path.ChangeExtension(File, null) + "_ds1.duckdb"));

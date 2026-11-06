@@ -50,6 +50,9 @@ public sealed record LiveSuiteOptions
     /// <summary>Sql.Json 的数组长度：Db2 的 SQL/JSON 路径没有取数组长度的写法（TS 版同样跳过）。</summary>
     public bool JsonLength { get; init; } = true;
 
+    /// <summary>外键的引用动作（ON DELETE CASCADE 等）：DuckDB 没有。</summary>
+    public bool ForeignKeyActions { get; init; } = true;
+
     /// <summary>分库用例要第二个库（<see cref="LiveSuite.ShardConnectionStringAsync"/>）：Oracle 的测试用户没有建第二个 schema 的权限。</summary>
     public bool ShardDataSources { get; init; } = true;
 }
