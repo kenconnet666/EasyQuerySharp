@@ -51,8 +51,8 @@ public class SqliteDialect : SqlDialect
     public override string WriteTargetAliasSeparator => " AS ";
 
     /// <summary>自增主键只能写成列定义里的 <c>INTEGER PRIMARY KEY AUTOINCREMENT</c>（整型必须是 INTEGER 才是 rowid 别名）。</summary>
-    protected override string ColumnDefinition(Metadata.ColumnMetadata column) =>
-        InlinePrimaryKey(column) ? $"{QuoteIdentifier(column.Name)} INTEGER PRIMARY KEY AUTOINCREMENT" : base.ColumnDefinition(column);
+    protected override string ColumnDefinition(Metadata.EntityMetadata entity, Metadata.ColumnMetadata column) =>
+        InlinePrimaryKey(column) ? $"{QuoteIdentifier(column.Name)} INTEGER PRIMARY KEY AUTOINCREMENT" : base.ColumnDefinition(entity, column);
 
     /// <inheritdoc />
     protected override bool InlinePrimaryKey(Metadata.ColumnMetadata key) => key is { IsGenerated: true, IsPrimaryKey: true };

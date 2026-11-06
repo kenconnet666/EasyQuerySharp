@@ -143,6 +143,9 @@ public sealed class EasyDbOptions
     /// <summary>使用 Oracle 方言（驱动 Oracle.ManagedDataAccess.Core）。</summary>
     public EasyDbOptions UseOracle(DbDataSource? dataSource = null) => Use(OracleDialect.Instance, dataSource);
 
+    /// <summary>使用 DuckDB 方言（驱动 DuckDB.NET：<c>DuckDBClientFactory.Instance.CreateDataSource(cs)</c>）。</summary>
+    public EasyDbOptions UseDuckDb(DbDataSource? dataSource = null) => Use(DuckDbDialect.Instance, dataSource);
+
     /// <summary>使用任意方言。</summary>
     public EasyDbOptions Use(SqlDialect dialect, DbDataSource? dataSource = null)
     {

@@ -116,6 +116,8 @@ EasyQuerySharp.DateTruncUnit.Quarter = 1 -> EasyQuerySharp.DateTruncUnit
 EasyQuerySharp.DateTruncUnit.Second = 7 -> EasyQuerySharp.DateTruncUnit
 EasyQuerySharp.DateTruncUnit.Week = 3 -> EasyQuerySharp.DateTruncUnit
 EasyQuerySharp.DateTruncUnit.Year = 0 -> EasyQuerySharp.DateTruncUnit
+EasyQuerySharp.Dialects.DuckDbDialect
+EasyQuerySharp.Dialects.DuckDbDialect.DuckDbDialect() -> void
 EasyQuerySharp.Dialects.FunctionWriter
 EasyQuerySharp.Dialects.MySqlDialect
 EasyQuerySharp.Dialects.MySqlDialect.IgnoreConflictAsKeyUpdate.get -> bool
@@ -365,6 +367,7 @@ EasyQuerySharp.EasyDbOptions.ReverseOffsetThreshold.set -> void
 EasyQuerySharp.EasyDbOptions.UpdateStrategy.get -> EasyQuerySharp.Commands.ColumnStrategy
 EasyQuerySharp.EasyDbOptions.UpdateStrategy.set -> void
 EasyQuerySharp.EasyDbOptions.Use(EasyQuerySharp.Dialects.SqlDialect! dialect, System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
+EasyQuerySharp.EasyDbOptions.UseDuckDb(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseMySql(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseOracle(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UsePostgreSql(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
@@ -1720,6 +1723,17 @@ override EasyQuerySharp.Commands.MapValue.Equals(object? obj) -> bool
 override EasyQuerySharp.Commands.MapValue.GetHashCode() -> int
 override EasyQuerySharp.Commands.MapValue.ToString() -> string!
 override EasyQuerySharp.Commands.UpdateCommand<T>.ExecuteAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<long>!
+override EasyQuerySharp.Dialects.DuckDbDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
+override EasyQuerySharp.Dialects.DuckDbDialect.ColumnDefinition(EasyQuerySharp.Metadata.EntityMetadata! entity, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
+override EasyQuerySharp.Dialects.DuckDbDialect.CreateTableSql(EasyQuerySharp.Metadata.EntityMetadata! entity) -> string!
+override EasyQuerySharp.Dialects.DuckDbDialect.DropTableIfExistsSql(EasyQuerySharp.Metadata.EntityMetadata! entity) -> string!
+override EasyQuerySharp.Dialects.DuckDbDialect.Name.get -> string!
+override EasyQuerySharp.Dialects.DuckDbDialect.ParameterPlaceholder(int index) -> string!
+override EasyQuerySharp.Dialects.DuckDbDialect.ParameterWrap(string? columnDbType) -> (string! Before, string! After)?
+override EasyQuerySharp.Dialects.DuckDbDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
+override EasyQuerySharp.Dialects.DuckDbDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
+override EasyQuerySharp.Dialects.DuckDbDialect.WriteLock(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.RowLock rowLock) -> void
+override EasyQuerySharp.Dialects.DuckDbDialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
 override EasyQuerySharp.Dialects.MySqlDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
 override EasyQuerySharp.Dialects.MySqlDialect.CreateTableSql(EasyQuerySharp.Metadata.EntityMetadata! entity) -> string!
 override EasyQuerySharp.Dialects.MySqlDialect.InsertKeyword(EasyQuerySharp.SqlAst.InsertStatement! insert) -> string!
@@ -1780,7 +1794,7 @@ override EasyQuerySharp.Dialects.SqlServerDialect.WriteLock(EasyQuerySharp.Rende
 override EasyQuerySharp.Dialects.SqlServerDialect.WritePaging(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
 override EasyQuerySharp.Dialects.SqlServerDialect.WriteSelectHead(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
 override EasyQuerySharp.Dialects.SqliteDialect.CastTemplate(System.Type! targetType) -> string!
-override EasyQuerySharp.Dialects.SqliteDialect.ColumnDefinition(EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
+override EasyQuerySharp.Dialects.SqliteDialect.ColumnDefinition(EasyQuerySharp.Metadata.EntityMetadata! entity, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
 override EasyQuerySharp.Dialects.SqliteDialect.InlinePrimaryKey(EasyQuerySharp.Metadata.ColumnMetadata! key) -> bool
 override EasyQuerySharp.Dialects.SqliteDialect.LastInsertIdQuery.get -> string?
 override EasyQuerySharp.Dialects.SqliteDialect.Name.get -> string!
@@ -1869,6 +1883,7 @@ override EasyQuerySharp.SqlStatement.ToString() -> string!
 override EasyQuerySharp.WindowBound.GetHashCode() -> int
 static EasyQuerySharp.Commands.MapValue.operator !=(EasyQuerySharp.Commands.MapValue? left, EasyQuerySharp.Commands.MapValue? right) -> bool
 static EasyQuerySharp.Commands.MapValue.operator ==(EasyQuerySharp.Commands.MapValue? left, EasyQuerySharp.Commands.MapValue? right) -> bool
+static EasyQuerySharp.Dialects.DuckDbDialect.Instance.get -> EasyQuerySharp.Dialects.DuckDbDialect!
 static EasyQuerySharp.Dialects.MySqlDialect.Instance.get -> EasyQuerySharp.Dialects.MySqlDialect!
 static EasyQuerySharp.Dialects.OracleDialect.Instance.get -> EasyQuerySharp.Dialects.OracleDialect!
 static EasyQuerySharp.Dialects.PostgreSqlDialect.Instance.get -> EasyQuerySharp.Dialects.PostgreSqlDialect!
@@ -2077,7 +2092,7 @@ virtual EasyQuerySharp.Dialects.FunctionWriter.Invoke(EasyQuerySharp.Rendering.S
 virtual EasyQuerySharp.Dialects.SqlDialect.AliasedWriteUsesFrom.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.CastTemplate(System.Type! targetType) -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
-virtual EasyQuerySharp.Dialects.SqlDialect.ColumnDefinition(EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
+virtual EasyQuerySharp.Dialects.SqlDialect.ColumnDefinition(EasyQuerySharp.Metadata.EntityMetadata! entity, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.ConfigureParameter(System.Data.Common.DbParameter! parameter, EasyQuerySharp.SqlParameterValue! value) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.CreateTableSql(EasyQuerySharp.Metadata.EntityMetadata! entity) -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.CreateTableStatement(EasyQuerySharp.Metadata.EntityMetadata! entity, string! body) -> string!
