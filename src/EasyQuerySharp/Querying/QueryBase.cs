@@ -207,6 +207,9 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
             shaper = reader => ++count > limit ? throw new ResultSizeLimitException(limit) : inner(reader);
         }
         var rows = await Db.Executor.QueryAsync(statement, shaper, cancellationToken).ConfigureAwait(false);
+        // 每行的回调在带出之前执行（与 Java 的 forEach 一致：回调抛异常时带出查询不再执行）
+        foreach (var row in rows)
+            foreach (var callback in State.RowCallbacks) callback(row);
         // 投影里的导航带出：每个导航一次 IN 查询，挂回刚读出的行
         await IncludeRunner.RunAsync(Db, compiled.Includes, IncludeContext.Of(State), cancellationToken).ConfigureAwait(false);
         foreach (var fill in State.Fills) await fill(rows, cancellationToken).ConfigureAwait(false);

@@ -127,3 +127,80 @@ public class M8SaveRootMiddleMany2
     [SaveKey]
     public string? ManyId { get; set; }
 }
+
+[Table("m8_save_b")]
+public class M8SaveB
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Pid { get; set; }
+
+    public string? Name { get; set; }
+
+    [Navigate(RelationType.OneToOne, SelfProperties = [nameof(Id)], TargetProperties = [nameof(Mysql8.M8SaveC.Pid)], Cascade = Cascade.Delete)]
+    public M8SaveC? M8SaveC { get; set; }
+}
+
+[Table("m8_save_c")]
+public class M8SaveC
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Pid { get; set; }
+
+    public string? Name { get; set; }
+
+    [Navigate(RelationType.OneToOne, SelfProperties = [nameof(Id)], TargetProperties = [nameof(Mysql8.M8SaveD.Pid)], Cascade = Cascade.Delete)]
+    public M8SaveD? M8SaveD { get; set; }
+}
+
+[Table("m8_save_d")]
+public class M8SaveD
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Pid { get; set; }
+
+    public string? Name { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/M8User3（多对多角色，级联默认：不维护中间表）。</summary>
+[Table("m8_user3")]
+public class M8User3
+{
+    [Column(PrimaryKey = true)]
+    public string? UserId { get; set; }
+
+    public string? UserName { get; set; }
+
+    public int? UserAge { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+
+    [Navigate(RelationType.ManyToMany, SelfProperties = [nameof(UserId)], SelfMappingProperties = [nameof(M8UserRole3.UserId)], Mapping = typeof(M8UserRole3),
+        TargetProperties = [nameof(M8Role3.RoleId)], TargetMappingProperties = [nameof(M8UserRole3.RoleId)])]
+    public List<M8Role3>? Roles { get; set; }
+}
+
+[Table("m8_role3")]
+public class M8Role3
+{
+    [Column(PrimaryKey = true)]
+    public string? RoleId { get; set; }
+
+    public string? RoleName { get; set; }
+}
+
+[Table("m8_user_role3")]
+public class M8UserRole3
+{
+    [Column(PrimaryKey = true)]
+    public string? UserRoleId { get; set; }
+
+    public string? UserId { get; set; }
+
+    public string? RoleId { get; set; }
+}

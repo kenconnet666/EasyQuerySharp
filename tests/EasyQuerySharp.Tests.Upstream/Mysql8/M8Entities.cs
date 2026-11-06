@@ -394,7 +394,7 @@ public class M8UserTemp2 : ICteView<M8UserTemp2>
     });
 }
 
-/// <summary>对应 Java：mysql8/entity/save/M8SaveA（聚合保存的根；这里先用到 id、name）。</summary>
+/// <summary>对应 Java：mysql8/entity/save/M8SaveA（聚合保存的根：A → B → C → D 一对一链，全部级联 Delete）。</summary>
 [Table("m8_save_a")]
 public class M8SaveA
 {
@@ -402,6 +402,9 @@ public class M8SaveA
     public string? Id { get; set; }
 
     public string? Name { get; set; }
+
+    [Navigate(RelationType.OneToOne, SelfProperties = [nameof(Id)], TargetProperties = [nameof(Mysql8.M8SaveB.Pid)], Cascade = Cascade.Delete)]
+    public M8SaveB? M8SaveB { get; set; }
 }
 
 /// <summary>对应 Java：dto/MyConfigLogicDelete（实体上不标注，逻辑删除由夹具里的 ApplyLogicDelete 配置）。</summary>

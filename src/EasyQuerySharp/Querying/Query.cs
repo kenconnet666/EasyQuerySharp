@@ -185,6 +185,11 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     /// <summary>给最近一个表来源指定别名（对应 Java 的 asAlias）。</summary>
     public Query<T> AsAlias(string alias) => new(QueryStates.WithLast(State, s => s with { Alias = alias }));
 
+    /// <summary>
+    /// 每行读出后、执行带出之前调用 <paramref name="action"/>（对应 Java 的 queryable.forEach）：可以在这里补算字段或校验，抛出的异常会中止查询。
+    /// </summary>
+    public Query<T> ForEach(Action<T> action) => new(Open with { RowCallbacks = Open.RowCallbacks.Add(row => action((T)row!)) });
+
     /// <summary>最近一个表来源不加逻辑删除条件（对应 Java 的 tableLogicDelete(() -> false)），其它表照常。</summary>
     public Query<T> DisableTableLogicDelete() => new(QueryStates.WithLast(State, s => s with { NoLogicDelete = true }));
 

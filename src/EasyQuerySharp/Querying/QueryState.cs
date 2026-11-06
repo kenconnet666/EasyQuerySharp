@@ -118,6 +118,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>结果读出后依次执行的填充（FillMany / FillOne），参数是本次的结果行。</summary>
     public ImmutableArray<Func<System.Collections.IList, CancellationToken, Task>> Fills { get; init; } = [];
 
+    /// <summary>每行读出后、带出与填充之前依次调用的回调（ForEach，对应 Java 的 queryable.forEach）。</summary>
+    public ImmutableArray<Action<object?>> RowCallbacks { get; init; } = [];
+
     /// <summary>第一个表来源上要合并成分组 LEFT JOIN 的集合导航（GroupJoin / GroupJoinIf）。</summary>
     public ImmutableArray<Translation.GroupJoinSpec> GroupJoins { get; init; } = [];
 
