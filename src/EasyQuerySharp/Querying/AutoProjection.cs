@@ -96,23 +96,41 @@ internal static class AutoProjection
             // 属性就是实体本身：整个对象带出；否则映射成嵌套 DTO
             if (property.PropertyType.IsAssignableFrom(nav.Target.Type)) return navValue;
             if (visiting.Contains(property.PropertyType)) return null;
-            return Include(nameof(AutoIncludeMarkers.One), nav, navValue, property.PropertyType, Build(registry, nav.Target, property.PropertyType, null, visiting, root: false));
+            return Include(nameof(AutoIncludeMarkers.One), nav, navValue, property, property.PropertyType, Build(registry, nav.Target, property.PropertyType, null, visiting, root: false));
         }
         var element = MetadataRegistry.ElementType(property.PropertyType);
         if (element == property.PropertyType || ScalarTypes.IsScalar(element)) return null;
         // 引用自身的集合（树形 DTO）：不展开，拼树时再挂
         if (visiting.Contains(element)) return null;
         var selector = element.IsAssignableFrom(nav.Target.Type) ? null : Build(registry, nav.Target, element, null, visiting, root: false);
-        return Include(nameof(AutoIncludeMarkers.Many), nav, navValue, element, selector);
+        return Include(nameof(AutoIncludeMarkers.Many), nav, navValue, property, element, selector);
     }
 
-    // AutoIncludeMarkers.One / Many(导航, 配置, 投影)：规划器据此建带出计划；嵌套 DTO 实现 IAutoIncludeConfigure 时带上它的配置
-    private static MethodCallExpression Include(string marker, NavigationMetadata nav, Expression navValue, Type element, LambdaExpression? selector)
+    // AutoIncludeMarkers.One / Many(导航, 配置, 投影)：规划器据此建带出计划。配置先按 DTO 属性上的 [Navigate] 覆盖排序与条数，
+    // 嵌套 DTO 实现 IAutoIncludeConfigure 时再接上它的配置
+    private static MethodCallExpression Include(string marker, NavigationMetadata nav, Expression navValue, PropertyInfo property, Type element, LambdaExpression? selector)
     {
         var resultType = selector?.ReturnType ?? nav.Target.Type;
         var method = typeof(AutoIncludeMarkers).GetMethod(marker)!.MakeGenericMethod(nav.Target.Type, resultType);
-        return Expression.Call(method, navValue, Expression.Constant(ConfigureOf(element, nav.Target.Type), typeof(Func<QueryState, QueryState>)),
+        var overrides = NavigateOverrides(property, nav.Target.Type);
+        var configure = ConfigureOf(element, nav.Target.Type);
+        var combined = overrides is null ? configure : configure is null ? overrides : state => configure(overrides(state));
+        return Expression.Call(method, navValue, Expression.Constant(combined, typeof(Func<QueryState, QueryState>)),
             Expression.Constant(selector, typeof(LambdaExpression)));
+    }
+
+    // DTO 属性上的 [Navigate(OrderBy / Limit / Offset)]（Java DTO 上的 @Navigate）覆盖实体导航上声明的排序与条数
+    private static Func<QueryState, QueryState>? NavigateOverrides(PropertyInfo property, Type target)
+    {
+        if (property.GetCustomAttribute<NavigateAttribute>() is not { } attribute) return null;
+        var orders = NavigationMetadata.ParseOrder(attribute.OrderBy, target);
+        if (orders.Count == 0 && attribute.Limit <= 0 && attribute.Offset <= 0) return null;
+        return state => state with
+        {
+            OrderBys = orders.Count == 0 ? state.OrderBys : [.. orders.Select(o => new OrderSpec(o.Key, o.Descending))],
+            Limit = attribute.Limit > 0 ? attribute.Limit : state.Limit,
+            Offset = attribute.Offset > 0 ? attribute.Offset : state.Offset,
+        };
     }
 
     // DTO 实现了 IAutoIncludeConfigure<目标实体> 时，把它的 Configure 包成对查询状态的配置

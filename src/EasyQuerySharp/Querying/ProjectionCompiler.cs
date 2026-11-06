@@ -44,6 +44,10 @@ internal sealed partial class ProjectionCompiler(ExpressionTranslator translator
 
     private readonly List<(IncludePlan Plan, SourceBinding Owner)> _includes = [];
 
+    // 投影了的查询上 Include 的配置（按导航名），并入投影里根实体同名导航的带出
+    private IReadOnlyDictionary<string, Func<QueryState, QueryState>> _includeConfigs = new Dictionary<string, Func<QueryState, QueryState>>();
+    private SourceBinding? _root;
+
     // 平铺带出按（所属来源, 导航）共用一条带出查询
     private readonly Dictionary<(SourceBinding Owner, NavigationMetadata Navigation), IncludePlan> _flatPlans = [];
 
@@ -56,11 +60,20 @@ internal sealed partial class ProjectionCompiler(ExpressionTranslator translator
     /// <summary>
     /// 拆解投影：登记 SELECT 列，并构造（尚未编译的）读取表达式。
     /// 带出需要的父键列、调用方要求的关联键列追加在最后：已经原样选出的列直接复用，否则写成 <c>列 AS __relation__列名</c>（与 Java 版一致）。
+    /// <para>
+    /// <paramref name="includes"/> 是查询上的 Include：不投影时带出到实体上；投影了（<c>Select&lt;TDto&gt;()</c> 或手写投影）时，
+    /// 配置并入投影里根实体同名导航的带出（Java 的 include 之后再 select VO），投影里没用到的导航忽略。
+    /// </para>
     /// </summary>
-    public void Prepare(Expression body, SourceBinding? root = null, IReadOnlyList<ColumnMetadata>? relationKeys = null, IReadOnlyList<IncludeSpec>? includes = null)
+    public void Prepare(Expression body, SourceBinding root, IReadOnlyList<ColumnMetadata>? relationKeys, IReadOnlyList<IncludeSpec> includes, bool projected)
     {
+        if (projected)
+        {
+            _root = root;
+            _includeConfigs = includes.Where(i => i.Configure is not null).ToDictionary(i => i.Member, i => i.Configure!, StringComparer.Ordinal);
+        }
         _shaped = Shape(body, member: null, topLevel: true);
-        if (includes is { Count: > 0 })
+        if (!projected && includes.Count > 0)
             _shaped = WithIncludes(_shaped, root as EntityBinding ?? throw new NotSupportedException("Include 只能用在实体查询上"), includes);
         // 与 Java 一致：导航带出的父键先于关联键，平铺带出（@NavigateFlat：平铺值、经中间表的路径）的父键在关联键之后
         foreach (var (plan, owner) in _includes.Where(i => !i.Plan.IsFlat)) RegisterParentKeys(plan, owner);

@@ -61,10 +61,11 @@ public sealed class MySqlFixture : IAsyncLifetime
                     skip: s => s.StartsWith("CREATE DATABASE", StringComparison.OrdinalIgnoreCase));
         }
 
-        // 与 Java 的 BaseTest 一致：深分页反向排序的阈值为 10
+        // 与 Java 的 BaseTest 一致：深分页反向排序的阈值为 10，带出取段用 UNION ALL
         _db = new EasyDb(o =>
         {
             o.ReverseOffsetThreshold = 10;
+            o.IncludeLimitMode = IncludeLimitMode.UnionAll;
             o.UseMySql(new MySqlDataSource(cs)).AddListener(SqlCapture.Instance)
                 .AddInterceptor(new Topic1Interceptor())
                 .AddInterceptor(new MyEntityInterceptor())

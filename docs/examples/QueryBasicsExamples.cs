@@ -73,6 +73,24 @@ public static class QueryBasicsExamples
             .Select(p => new PostWithAuthor(p.Title, p.Views, p.Author!.Name, p.Author!.Company!.Name))
             .ToListAsync();
 
+    /// <summary>帖子与作者对象：作者按导航带出。</summary>
+    public sealed class PostAndAuthor
+    {
+        public string Title { get; set; } = "";
+
+        public AuthorName? Author { get; set; }
+    }
+
+    /// <summary>作者名。</summary>
+    public sealed class AuthorName
+    {
+        public string Name { get; set; } = "";
+    }
+
+    [Example("query/basics", "先分页再投影到 DTO：导航只对这一页带出")]
+    public static Task<Page<PostAndAuthor>> PageThenProject(EasyDb db) =>
+        db.Query<Post>().OrderBy(p => p.Id).ToPageAsync(1, 2, q => q.Select<PostAndAuthor>());
+
     [Example("query/basics", "值在逗号分隔的列表里：Sql.InCsv")]
     public static Task<List<string>> InCsv(EasyDb db) =>
         db.Query<Post>().Where(p => Sql.InCsv(p.Id, "1,3")).OrderBy(p => p.Id).Select(p => p.Title).ToListAsync();

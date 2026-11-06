@@ -69,3 +69,21 @@ public class MyUser
 
     public int? Age { get; set; }
 }
+
+/// <summary>对应 Java：doc/MyComUser1（同表 my_com_user，报名导航带默认排序）。</summary>
+[Table("my_com_user")]
+public class MyComUser1
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? ComId { get; set; }
+
+    public string? UserId { get; set; }
+
+    public string? Gw { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(ComId), nameof(UserId)], TargetProperties = [nameof(MySignUp.ComId), nameof(MySignUp.UserId)],
+        OrderBy = "ComId, Time desc nulls first")]
+    public List<MySignUp>? MySignUps { get; set; }
+}

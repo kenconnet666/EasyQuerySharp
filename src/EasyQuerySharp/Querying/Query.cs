@@ -93,13 +93,24 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     /// 分页后再投影（对应 Java 的 toPageSelectResult）：总数按投影前的查询计，当前页先分页、包成派生表再投影
     /// （同 <c>Skip(..).Take(..).AsSubQuery().Select(..)</c>），投影里的子查询只对这一页执行。
     /// </summary>
-    public async Task<Page<TResult>> ToPageAsync<TResult>(long page, long size, Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
+    public Task<Page<TResult>> ToPageAsync<TResult>(long page, long size, Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(selector);
+        return ToPageAsync(page, size, q => q.Select(selector), cancellationToken);
+    }
+
+    /// <summary>
+    /// 同上，投影由 <paramref name="project"/> 写在包好的这一页上，如 <c>q =&gt; q.Select&lt;TDto&gt;()</c>（Java 的 toPageSelectResult(q -&gt; q.selectAutoInclude(..))）。
+    /// Include 留在外层：配置并入投影里同名导航的带出。
+    /// </summary>
+    public async Task<Page<TResult>> ToPageAsync<TResult>(long page, long size, Func<Query<T>, Query<TResult>> project, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(project);
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
         var total = await CountAsync(cancellationToken).ConfigureAwait(false);
         if (PageWindow(page, size, total) is not var (paged, reverse)) return new Page<TResult>([], total, page, size);
-        var rows = await new Query<TResult>(paged.Wrap() with { Selector = selector }).ToListAsync(cancellationToken).ConfigureAwait(false);
+        var rows = await project(new Query<T>((paged with { Includes = [] }).Wrap() with { Includes = State.Includes })).ToListAsync(cancellationToken).ConfigureAwait(false);
         if (reverse) rows.Reverse();
         return new Page<TResult>(rows, total, page, size);
     }

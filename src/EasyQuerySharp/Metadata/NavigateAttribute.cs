@@ -121,6 +121,13 @@ public sealed class NavigateAttribute(RelationType relation) : Attribute
     /// </summary>
     public int Limit { get; init; }
 
+    /// <summary>带出时每个父对象跳过几条（对应 Java 的 offset；0 为不跳），与 <see cref="Limit"/> 一样按 <see cref="OrderBy"/> 排序后取。</summary>
+    /// <remarks>
+    /// 写在 DTO 属性上时（Java DTO 上的 @Navigate），<see cref="OrderBy"/>、<see cref="Limit"/>、<see cref="Offset"/> 覆盖实体导航上声明的，
+    /// 只对这次投影的带出生效；关系类型等其余设置以实体上的为准。
+    /// </remarks>
+    public int Offset { get; init; }
+
     /// <summary>聚合保存（<c>db.Save(root)</c>）时这条导航怎样级联，见 <see cref="Metadata.Cascade"/> 与 0004；默认 <see cref="Cascade.Auto"/>。</summary>
     public Cascade Cascade { get; init; }
 

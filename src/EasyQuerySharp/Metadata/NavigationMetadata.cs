@@ -27,6 +27,7 @@ public sealed class NavigationMetadata
         GroupJoin = attribute.GroupJoin;
         PartitionOrder = attribute.PartitionOrder;
         Limit = attribute.Limit > 0 ? attribute.Limit : null;
+        Offset = attribute.Offset > 0 ? attribute.Offset : null;
         Cascade = attribute.Cascade;
         KeyMatch = attribute.KeyMatch;
         DefaultOrder = ParseOrder(attribute.OrderBy, target.Type);
@@ -41,6 +42,9 @@ public sealed class NavigationMetadata
     /// <summary>带出时每个父对象最多取几条（<see cref="NavigateAttribute.Limit"/>）；不限时为 null。</summary>
     public int? Limit { get; }
 
+    /// <summary>带出时每个父对象跳过几条（<see cref="NavigateAttribute.Offset"/>）；不跳时为 null。</summary>
+    public int? Offset { get; }
+
     /// <summary>取元素、取一段行而链上没写排序时组内按什么排。</summary>
     public PartitionOrder PartitionOrder { get; }
 
@@ -48,7 +52,7 @@ public sealed class NavigationMetadata
     public IReadOnlyList<(LambdaExpression Key, bool Descending)> DefaultOrder { get; }
 
     // "OpenTime, Code desc nulls first" → [(x => x.OpenTime, false), (x => Sql.NullsFirst(x.Code), true)]
-    private static List<(LambdaExpression, bool)> ParseOrder(string? orderBy, Type target)
+    internal static List<(LambdaExpression Key, bool Descending)> ParseOrder(string? orderBy, Type target)
     {
         if (string.IsNullOrWhiteSpace(orderBy)) return [];
         return orderBy.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(item =>

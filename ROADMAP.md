@@ -82,11 +82,12 @@ R → 1 → 2 → 3 → 4 → 5。
 - [x] 1.6 `Returning()`：按条件的更新 / 删除加 `.Returning()`（整行，`RETURNING *`）或 `.Returning(选择器)`（只取选择器用到的列，读回后在内存里投影），得到 `ReturningCommand`（`ToSql` / `ExecuteAsync`）；逻辑删除返回被标记的行。PostgreSQL、SQLite 支持，其余方言、走导航连接、按实体写入都拒绝。fork ReturningSqlTest ×2、ReturningLiveTest 移植。
 - [x] 1.7 窗口取值函数（Lag / Lead / FirstValue / LastValue / NthValue）不带窗口或窗口没写排序时，沿用所在查询的 ORDER BY（翻译时的快照，与 Java 的 `offset()` 一致），查询没有排序时报错；这类查询深分页时不反转排序。nextTest3 改回已移植，nextTest2 由不适用改为偏离（只差异常文本）。
 - [x] 1.8 零散用例：fork ProxySmokeTest（补 ForkCompany 与 ForkUser.Company）；whereSubQuery3、pgsql tree7_2 原本记的"功能缺口"复核后与 Java 一致，改回已移植；骨架 MySQLInsertIgnore2UpdateKey / 2（`new MySqlDialect { IgnoreConflictAsKeyUpdate = true }`，对应 Java 的 mysqlInsertIgnoreToUpdateKey）、NumberFunctionsTest subQueryMySQL；testDoubleConcat 用的是 Kingbase 方言，挪到 3.4。顺手修了 `Select<TDto>()` 遇到直达导航时拿本表键查目标表的错误（静默取错数据）。testOneToOne、testRelation 篇幅远超预计，拆到 1.9。
-- [ ] 1.9 带出与 DTO 自动带出补齐（RelationTest testOneToOne：一个方法约 80 段；QueryTestRelationTest testRelation：24 段）。按段移植，同一用例拆成多个测试，不能逐字对齐的段写偏离。已知缺口：
-  - G1 `Include(导航, 配置)` 再 `Select<TDto>()` 时配置被丢掉：按导航名并入 DTO 的同名带出；
-  - G2 先分页再投影到 DTO（Java 的 `toPageSelectResult`）：分页查询包成派生表，计数与取数共用条件；
-  - G4 DTO 属性上的 `[Navigate(OrderBy / Limit)]` 覆盖实体导航的默认值，`NavigateAttribute` 补 `Offset`；
-  - G5 `IncludeLimitMode.UnionAll` 的 SQL 与 Java 不一致（外层不写 AS、单键写 `= ?`、投影写在外层），根夹具按 Java 的 BaseTest 改用 UnionAll。
+- [~] 1.9 带出与 DTO 自动带出补齐（RelationTest testOneToOne：一个方法约 80 段；QueryTestRelationTest testRelation：24 段）。按段移植（`QueryTestRelationTest.Relation.cs`），全部段移植后再标 Upstream；不能逐字对齐的段写偏离。
+  - [x] G1 `Include(导航, 配置)` 之后再投影（`Select<TDto>()` 或手写投影）：配置并入投影里根实体同名导航的带出；
+  - [x] G2 先分页再投影 `ToPageAsync(page, size, q => q.Select<TDto>())`（Java 的 `toPageSelectResult`）：这一页包成派生表，Include 留在外层；
+  - [x] G4 DTO 属性上的 `[Navigate(OrderBy / Limit / Offset)]` 覆盖实体导航的排序与条数，`NavigateAttribute` 补 `Offset`（实体导航上同样生效）；
+  - [x] G5 `IncludeLimitMode.UnionAll` 与 Java 逐字一致（每段取整个实体、单键写 `= ?`、投影写在外层不写 AS），根夹具按 Java 的 BaseTest 改用 UnionAll；
+  - testRelation 已移植第 1–8 段与 DTO4 / DTO6 / DTO7 三段；剩下分页加额外列（Java 的 `selectAutoInclude(DTO, extra)`）、`MyComUserDTO1` / `DTO3` / `DTO5` / `DTO8`–`DTO11`、`NavigateJoin` 的 DTOy；testOneToOne 未开始。
 ## 阶段 2 第一档方言
 
 - [ ] 2.1 SQL Server：

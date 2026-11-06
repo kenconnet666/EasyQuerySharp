@@ -48,7 +48,7 @@ internal sealed partial class ProjectionCompiler
         var path = (LambdaExpression)((ConstantExpression)marker.Arguments[1]).Value!;
         if (!_flatPlans.TryGetValue((navOwner, navigation), out var plan))
         {
-            plan = new IncludePlan(navigation, typeof(object?[]), null, [], isCollection: false) { FlatPaths = [] };
+            plan = new IncludePlan(navigation, typeof(object?[]), null, [], isCollection: false) { FlatPaths = [], Configure = Merged(navOwner, nav.Member.Name, null) };
             _flatPlans[(navOwner, navigation)] = plan;
             _includes.Add((plan, navOwner));
         }
@@ -90,6 +90,8 @@ internal sealed partial class ProjectionCompiler
             var offset = through ? 1 : 0;
             var childSelector = (LambdaExpression?)((ConstantExpression)marker.Arguments[2 + offset]).Value;
             var isCollection = navigation.IsCollection || via.Any(v => v.IsCollection);
+            var configure = (Func<QueryState, QueryState>?)((ConstantExpression)marker.Arguments[1 + offset]).Value;
+            if (!through) configure = Merged(navOwner, markerNav.Member.Name, configure);
             // 直达导航（DirectMapping）展开成沿路径的各段，与 Include 一致；否则会拿本表的键去查目标表
             var direct = !through && navigation.DirectPath.Count > 0;
             if (direct)
@@ -100,7 +102,7 @@ internal sealed partial class ProjectionCompiler
             }
             var markerPlan = new IncludePlan(navigation, childSelector?.ReturnType ?? navigation.Target.Type, childSelector, [], isCollection)
             {
-                Configure = (Func<QueryState, QueryState>?)((ConstantExpression)marker.Arguments[1 + offset]).Value,
+                Configure = configure,
                 Via = via,
                 DirectVia = direct,
             };
@@ -142,18 +144,24 @@ internal sealed partial class ProjectionCompiler
         if (!nav.IsCollection && (selector is not null || filters.Count > 0 || orders.Count > 0 || inner != value)) return null;
         if (nav.DirectPath.Count > 0)
         {
-            var direct = IncludePlan.ForNavigation(translator.Context!.Metadata, nav, null);
+            var direct = IncludePlan.ForNavigation(translator.Context!.Metadata, nav, Merged(owner, nav.Property.Name, null));
             _includes.Add((direct, owner));
             return direct;
         }
 
         var plan = new IncludePlan(nav, selector?.ReturnType ?? nav.Target.Type, selector, filters, nav.IsCollection)
         {
-            Configure = orders.Count == 0 ? null : state => state with { OrderBys = state.OrderBys.AddRange(orders) },
+            Configure = Merged(owner, nav.Property.Name, orders.Count == 0 ? null : state => state with { OrderBys = state.OrderBys.AddRange(orders) }),
         };
         _includes.Add((plan, owner));
         return plan;
     }
+
+    // Include(导航, 配置) 之后又投影：根实体上同名导航的带出先按投影自带的配置，再按 Include 的（调用处在后）
+    private Func<QueryState, QueryState>? Merged(SourceBinding owner, string navigation, Func<QueryState, QueryState>? own) =>
+        owner == _root && _includeConfigs.TryGetValue(navigation, out var configure)
+            ? own is null ? configure : state => configure(own(state))
+            : own;
 
     // 实体查询的 Include：实体读出后，集合导航先放一个空 List（主查询后填充），对一导航登记回填函数
     private Expression WithIncludes(Expression entity, EntityBinding owner, IReadOnlyList<IncludeSpec> includes)

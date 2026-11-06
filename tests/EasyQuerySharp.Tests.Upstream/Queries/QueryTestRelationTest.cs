@@ -6,7 +6,7 @@ namespace EasyQuerySharp.Tests.Upstream.Queries;
 /// 对应 Java：QueryTestRelationTest.java。复合键导航（ON 写成带括号的 (a AND b)）、条件值过滤去掉条件时连带去掉隐式 JOIN、
 /// 子查询引用外层的隐式 JOIN。
 /// </summary>
-public sealed class QueryTestRelationTest(MySqlFixture fixture) : MySqlTest(fixture)
+public sealed partial class QueryTestRelationTest(MySqlFixture fixture) : MySqlTest(fixture)
 {
     private const string SignUpJoin = "SELECT t.`id`,t.`com_id`,t.`user_id`,t.`time`,t.`content` FROM `my_sign_up` t LEFT JOIN `my_com_user` t1 ON (t1.`com_id` = t.`com_id` AND t1.`user_id` = t.`user_id`)";
 

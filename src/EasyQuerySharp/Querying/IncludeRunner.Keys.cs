@@ -61,9 +61,11 @@ internal static partial class IncludeRunner
     }
 
     // 按目标键取子数据的条件：键是逗号列表时写成 Sql.InCsv(目标键, "k1,k2,…")（与 Java 的 FIND_IN_SET 一致），否则 IN / 复合键 OR
-    private static LambdaExpression KeyFilter(NavigationMetadata nav, IReadOnlyCollection<CompositeKey> keys)
+    // single：只有一个父对象的键（UNION ALL 的一段），单列写成 = 而不是 IN (?)（与 Java 一致）
+    private static LambdaExpression KeyFilter(NavigationMetadata nav, IReadOnlyCollection<CompositeKey> keys, bool single = false)
     {
-        if (nav.KeyMatch == KeyMatch.Equal) return KeyIn(nav.Target.Type, nav.TargetColumns, keys);
+        if (nav.KeyMatch == KeyMatch.Equal)
+            return single && nav.TargetColumns is [var keyColumn] ? KeyEquals(nav.Target.Type, keyColumn, keys.Single()) : KeyIn(nav.Target.Type, nav.TargetColumns, keys);
         var p = Expression.Parameter(nav.Target.Type, "x");
         var column = nav.TargetColumns[0];
         var list = string.Join(",", keys.Select(k => Convert.ToString(k.First, System.Globalization.CultureInfo.InvariantCulture)).Distinct());
@@ -154,6 +156,13 @@ internal static partial class IncludeRunner
         var p = keyIn.Parameters[0];
         var extraBody = new ExpressionTranslator.ParameterReplacer(extra.Parameters[0], p).Visit(extra.Body);
         return Expression.Lambda(Expression.Call(typeof(Sql).GetMethod(nameof(Sql.Group))!, Expression.AndAlso(keyIn.Body, extraBody)), p);
+    }
+
+    private static LambdaExpression KeyEquals(Type entityType, ColumnMetadata column, CompositeKey key)
+    {
+        var p = Expression.Parameter(entityType, "x");
+        var value = Expression.Constant(ValueReader.ConvertTo(key.First, column.ClrType), column.Property.PropertyType);
+        return Expression.Lambda(Expression.Equal(Expression.Property(p, column.Property), value), p);
     }
 
     // 单列键：x => keys.Contains(x.Key)；复合键：((x.A =? AND x.B =?) OR (…))（与 Java 一致，= 后面不留空格）。键值先转成列的 CLR 类型

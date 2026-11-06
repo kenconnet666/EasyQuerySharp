@@ -44,10 +44,11 @@ internal static partial class IncludeRunner
             var configured = plan.Configure?.Invoke(baseState) ?? baseState;
             // LoadIncludeAsync 的单表子查询不写别名（Java 的 loadInclude）；按父对象取段时包成派生表，照常写
             var state = configured with { ForceAlias = !flat && !(plan.Unaliased && configured.Limit is null && configured.Offset is null) };
-            // 带出的子数据没写排序、条数时按导航声明的（Java 的 orderByProps、limit）
+            // 带出的子数据没写排序、条数时按导航声明的（Java 的 orderByProps、limit、offset）
             if (state.OrderBys.IsEmpty && nav.DefaultOrder.Count > 0)
                 state = state with { OrderBys = [.. nav.DefaultOrder.Select(o => new OrderSpec(o.Key, o.Descending))] };
             if (state.Limit is null && nav.Limit is { } navLimit) state = state with { Limit = navLimit };
+            if (state.Offset is null && nav.Offset is { } navOffset) state = state with { Offset = navOffset };
             if (plan.ChildSelector is not null) state = state with { Selector = plan.ChildSelector, ImplicitSelector = flat };
 
             var childrenByKey = new Dictionary<CompositeKey, List<object?>>();
@@ -103,6 +104,18 @@ internal static partial class IncludeRunner
         CompiledQuery<object?> CompileFor(QueryState s, IReadOnlyCollection<CompositeKey> keys) => QueryCompiler.Compile<object?>(
             s with { Wheres = s.Wheres.Add(WithExtraFilter(KeyFilter(nav, keys), nav.ExtraFilter)) }, relationKeys: nav.TargetColumns);
 
+        // 外层从取好段的来源按子对象的投影取列，关联键写成 __relation__
+        (CompiledQuery<object?> Query, SelectQuery Sql) Outer(TableSource source, bool aliased)
+        {
+            var target = nav.Target;
+            var columns = target.Columns.Where(c => c.AutoSelect).ToDictionary(c => c.PropertyName, c => c.Name, StringComparer.Ordinal);
+            var binding = new DerivedBinding(source, columns, target, aliased ? columns.Keys.ToHashSet(StringComparer.Ordinal) : null);
+            var outer = QueryCompiler.Compile<object?>(
+                new QueryState(db, [new BoundSource(binding, target.Type)]) { Selector = state.Selector, ForceAlias = state.ForceAlias, ImplicitSelector = state.ImplicitSelector, Interceptors = context.Interceptors },
+                relationKeys: nav.TargetColumns);
+            return (outer, outer.Sql);
+        }
+
         if (state.Limit is null && state.Offset is null)
         {
             var compiled = CompileFor(state, targets);
@@ -112,20 +125,16 @@ internal static partial class IncludeRunner
         if (nav.KeyMatch != KeyMatch.Equal) throw new NotSupportedException($"{nav} 的键是逗号列表，带出时不能按父对象取一段（Take / Skip / Limit）");
         if (db.Options.IncludeLimitMode == IncludeLimitMode.UnionAll)
         {
-            var parts = targets.Select(t => CompileFor(state, [t])).ToList();
-            return (parts[0], SelectByName(new UnionTableSource([.. parts.Select(p => p.Sql)], all: true) { IndependentAliases = true }, ColumnNames(parts[0].Sql)));
+            // 每个父对象一段：取整个实体、按这个父对象的键过滤（单列写 =）、排序、取段，投影写在外层，外层不写 AS（与 Java 一致）
+            var parts = targets.Select(t => QueryCompiler.Compile<object?>(state with
+            {
+                Selector = null, Wheres = state.Wheres.Add(WithExtraFilter(KeyFilter(nav, [t], single: true), nav.ExtraFilter)),
+            }).Sql).ToList();
+            return Outer(parts.Count == 1 ? new DerivedTableSource(parts[0]) : new UnionTableSource(parts, all: true) { IndependentAliases = true }, aliased: false);
         }
-        // 内层取整个实体按父对象编号、取段，子对象的投影写在最外层（与 Java 一致）
+        // 内层取整个实体按父对象编号、取段，子对象的投影写在最外层（与 Java 一致）；外层从匿名的派生表取列，Java 都写 AS，平铺带出不写
         var whole = CompileFor(state with { Limit = null, Offset = null, Selector = null }, targets);
-        var ranged = Ranged(whole.Sql, whole.RelationOrdinals[0], state.Offset ?? 0, state.Limit);
-        var target = nav.Target;
-        var columns = target.Columns.Where(c => c.AutoSelect).ToDictionary(c => c.PropertyName, c => c.Name, StringComparer.Ordinal);
-        // 外层从匿名的派生表取列：Java 都写 AS，平铺带出（单表不写别名的风格）不写
-        var binding = new DerivedBinding(ranged, columns, target, state.ForceAlias ? columns.Keys.ToHashSet(StringComparer.Ordinal) : null);
-        var outer = QueryCompiler.Compile<object?>(
-            new QueryState(db, [new BoundSource(binding, target.Type)]) { Selector = state.Selector, ForceAlias = state.ForceAlias, ImplicitSelector = state.ImplicitSelector, Interceptors = context.Interceptors },
-            relationKeys: nav.TargetColumns);
-        return (outer, outer.Sql);
+        return Outer(Ranged(whole.Sql, whole.RelationOrdinals[0], state.Offset ?? 0, state.Limit), aliased: state.ForceAlias);
     }
 
     /// <summary>

@@ -29,6 +29,12 @@ SELECT UPPER(t."title") AS "title",(t."views" + ?) AS "next_views",(t."views" >=
 -- SelectNavigation：经导航取关联表的列
 SELECT t."title",t."views",t1."name" AS "author",t2."name" AS "company" FROM "t_post" t LEFT JOIN "t_user" t1 ON t1."id" = t."author_id" LEFT JOIN "t_company" t2 ON t2."id" = t1."company_id" ORDER BY t."id" ASC LIMIT 2;
 
+-- PageThenProject：先分页再投影到 DTO：导航只对这一页带出
+SELECT COUNT(*) FROM "t_post";
+SELECT t1."title",t1."author_id" AS "__relation__authorId" FROM (SELECT t."id",t."author_id",t."category_id",t."title",t."status",t."views",t."published_at" FROM "t_post" t ORDER BY t."id" ASC LIMIT 2) t1;
+SELECT t."name",t."id" AS "__relation__id" FROM "t_user" t WHERE t."id" IN (?);
+-- params: [1]
+
 -- InCsv：值在逗号分隔的列表里：Sql.InCsv
 SELECT t."title" FROM "t_post" t WHERE (instr(',' || ? || ',', ',' || t."id" || ',') > 0) ORDER BY t."id" ASC;
 -- params: ['1,3']

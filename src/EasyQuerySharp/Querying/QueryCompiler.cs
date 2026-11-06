@@ -239,7 +239,7 @@ internal static class QueryCompiler
         }
         frame.Translator.Bind(selector, frame.Bindings);
         // 先登记列，再把列表交给 AST；读取函数由调用方按需编译
-        projection.Prepare(selector.Body, frame.Bindings[0], relationKeys, state.Selector is null ? (IReadOnlyList<IncludeSpec>)state.Includes : null);
+        projection.Prepare(selector.Body, frame.Bindings[0], relationKeys, state.Includes, projected: state.Selector is not null);
         frame.Query.Columns.AddRange(projection.Columns);
         // 树查询不投影（或要拼树）时，层级列跟在投影的列之后（与 Java 一致；拼树时按它分层）
         if ((state.Selector is null || state.AppendTreeDeep) && state.Sources[0] is TreeCteSource treeSource)

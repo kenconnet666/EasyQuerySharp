@@ -655,6 +655,8 @@ EasyQuerySharp.Metadata.NavigateAttribute.Limit.init -> void
 EasyQuerySharp.Metadata.NavigateAttribute.Mapping.get -> System.Type?
 EasyQuerySharp.Metadata.NavigateAttribute.Mapping.init -> void
 EasyQuerySharp.Metadata.NavigateAttribute.NavigateAttribute(EasyQuerySharp.Metadata.RelationType relation) -> void
+EasyQuerySharp.Metadata.NavigateAttribute.Offset.get -> int
+EasyQuerySharp.Metadata.NavigateAttribute.Offset.init -> void
 EasyQuerySharp.Metadata.NavigateAttribute.OrderBy.get -> string?
 EasyQuerySharp.Metadata.NavigateAttribute.OrderBy.init -> void
 EasyQuerySharp.Metadata.NavigateAttribute.PartitionOrder.get -> EasyQuerySharp.Metadata.PartitionOrder
@@ -682,6 +684,7 @@ EasyQuerySharp.Metadata.NavigationMetadata.IsCollection.get -> bool
 EasyQuerySharp.Metadata.NavigationMetadata.KeyMatch.get -> EasyQuerySharp.Metadata.KeyMatch
 EasyQuerySharp.Metadata.NavigationMetadata.Limit.get -> int?
 EasyQuerySharp.Metadata.NavigationMetadata.Mapping.get -> EasyQuerySharp.Metadata.EntityMetadata?
+EasyQuerySharp.Metadata.NavigationMetadata.Offset.get -> int?
 EasyQuerySharp.Metadata.NavigationMetadata.PartitionOrder.get -> EasyQuerySharp.Metadata.PartitionOrder
 EasyQuerySharp.Metadata.NavigationMetadata.Property.get -> System.Reflection.PropertyInfo!
 EasyQuerySharp.Metadata.NavigationMetadata.Relation.get -> EasyQuerySharp.Metadata.RelationType
@@ -1196,6 +1199,7 @@ EasyQuerySharp.Querying.Query<T>.SelectRaw(string! selectSql) -> EasyQuerySharp.
 EasyQuerySharp.Querying.Query<T>.SumAsync<TResult>(System.Linq.Expressions.Expression<System.Func<T, TResult>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult>!
 EasyQuerySharp.Querying.Query<T>.ThenBy<TKey>(System.Linq.Expressions.Expression<System.Func<T, TKey>!>! key) -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.Querying.Query<T>.ThenByDescending<TKey>(System.Linq.Expressions.Expression<System.Func<T, TKey>!>! key) -> EasyQuerySharp.Querying.Query<T>!
+EasyQuerySharp.Querying.Query<T>.ToPageAsync<TResult>(long page, long size, System.Func<EasyQuerySharp.Querying.Query<T>!, EasyQuerySharp.Querying.Query<TResult>!>! project, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<EasyQuerySharp.Querying.Page<TResult>!>!
 EasyQuerySharp.Querying.Query<T>.ToPageAsync<TResult>(long page, long size, System.Linq.Expressions.Expression<System.Func<T, TResult>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<EasyQuerySharp.Querying.Page<TResult>!>!
 EasyQuerySharp.Querying.Query<T>.ToTreeAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.List<T>!>!
 EasyQuerySharp.Querying.Query<T>.Union(params System.Collections.Generic.IEnumerable<EasyQuerySharp.Querying.Query<T>!>! others) -> EasyQuerySharp.Querying.Query<T>!
