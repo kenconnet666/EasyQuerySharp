@@ -68,7 +68,7 @@ R → 1 → 2 → 3 → 4 → 5。
 - [x] R.4 落地删减：search 的 45 个、SQL Server 2008 的 13 个用例在 `tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs` 标为不适用；文档站、AOT、原 M9 已记进 BACKLOG。
 - [x] R.5 文档对齐现状：`architecture.md` 按实际的模块、管线、抽象、分析器重写；0001–0003 按实现修订并改为已定（0002 的级联保存改指 0004）；`parity.md` 的 C# 写法按实际 API 刷新，状态列改成对应的阶段；旧 ROADMAP 里标 `[~]` 的项逐个核对，剩余内容已在阶段 1–4 或 BACKLOG 里。
 - [x] R.6 复核偏离：224 条里 80 条只是 C# 写法不同、SQL 与 Java 逐字一致（flatElement 写成 Any、include2 写成嵌套 Include、字符串比较写成 `string.Compare`、Map 投影写成带 `[Column]` 的 DTO 等），改为已移植，理由留作注释；剩下 144 条是参数类型、别名编号、异常文本、C# 语义或 Java 自身的 bug 带来的真实差异。藏着功能缺口的几条记在 1.5、1.7、1.8。
-- [ ] R.7 代码走查：找出重复代码、死代码和过长的文件（`QueryBase`、`SqlDialect`、`SqlRenderer`、`SavePlan`），整理单独提交。
+- [x] R.7 代码走查：`QueryBase` 拆出终结方法（`QueryBase.Execution.cs`）与 `Page<T>`，`SqlDialect` 拆成通用渲染、upsert、函数表、DDL 四个分部文件；IN 翻译复用 `MetadataRegistry.ElementType`；`EasyDb` 构造函数标注 `RequiresUnreferencedCode` / `RequiresDynamicCode`；没有被调用的公开方法（`DecrementIf`、`UpdateColumnsBuilder.IsIncluded`）补上用例。编译器的未使用成员与多余 using 检查没有报出问题。
 
 完成标准：文档与代码一致；对标表里的待做只剩各阶段计划内的项；CI 全绿。
 

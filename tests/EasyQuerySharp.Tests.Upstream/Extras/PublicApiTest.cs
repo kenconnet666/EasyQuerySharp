@@ -56,6 +56,11 @@ public sealed class PublicApiTest(MySqlFixture fixture) : MySqlTest(fixture)
             Db.Update<Topic>().SetIf(true, t => t.Title, "a").SetIf(false, t => t.Stars, 1).WhereById("x").ToSql());
 
     [Fact]
+    public void DecrementIfSkipsFalseConditions() =>
+        Assert.Equal("UPDATE `t_topic` SET `stars` = `stars` - ? WHERE `id` = ?",
+            Db.Update<Topic>().DecrementIf(true, t => t.Stars, 1).DecrementIf(false, t => t.Stars, 2).WhereById("x").ToSql());
+
+    [Fact]
     public async Task WindowFrameWithOffsets()
     {
         using var listen = SqlCapture.Listen();

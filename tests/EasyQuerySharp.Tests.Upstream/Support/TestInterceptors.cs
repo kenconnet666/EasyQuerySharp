@@ -67,7 +67,10 @@ public sealed class TopicUpdateInterceptor : EntityInterceptor<TopicUpdate>
 
     public override void BeforeUpdate(TopicUpdate entity) => entity.CreateTime = new DateTime(2024, 1, 1, 1, 1, 0);
 
-    public override void BeforeEntityUpdateColumns(UpdateColumnsBuilder<TopicUpdate> columns) => columns.Include(e => e.CreateTime);
+    public override void BeforeEntityUpdateColumns(UpdateColumnsBuilder<TopicUpdate> columns)
+    {
+        if (!columns.IsIncluded(e => e.CreateTime)) columns.Include(e => e.CreateTime);
+    }
 
     public override void BeforeConditionUpdate(UpdateSetBuilder<TopicUpdate> sets) => sets.Set(e => e.CreateTime, DateTime.Now);
 }
