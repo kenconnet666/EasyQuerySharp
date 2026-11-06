@@ -26,7 +26,7 @@ internal sealed partial class TranslationContext(
     public TranslationContext ForSubQuery(SelectQuery subQuery, IReadOnlyList<GroupJoinSpec>? groupJoinSpecs = null) =>
         new(metadata, tableFilters, subQuery, this)
         {
-            Db = Db, GroupJoinAll = GroupJoinAll, MergeGroupFilters = MergeGroupFilters, NavigationValueFilter = NavigationValueFilter, GroupJoinSpecs = groupJoinSpecs ?? [], NavigationFilters = NavigationFilters,
+            Db = Db, Tables = Tables, GroupJoinAll = GroupJoinAll, MergeGroupFilters = MergeGroupFilters, NavigationValueFilter = NavigationValueFilter, GroupJoinSpecs = groupJoinSpecs ?? [], NavigationFilters = NavigationFilters,
         };
 
     /// <summary>本查询的条件已经翻译完（之后加的隐式 JOIN 标 <see cref="JoinClause.AfterWhere"/>）。</summary>
@@ -34,6 +34,13 @@ internal sealed partial class TranslationContext(
 
     /// <summary>所属的 EasyDb（分组合并的 Configure 要构造目标实体的查询状态）。</summary>
     public EasyDb? Db { get; init; }
+
+    /// <summary>查询级的换表（MapTable / InSchema），子查询里同样生效。</summary>
+    public Querying.TableMapping Tables { get; init; } = Querying.TableMapping.None;
+
+    /// <summary>导航等补出的实体表：带上导航上的表配置（<paramref name="options"/>）与查询级的换表，显式配置的表名优先。</summary>
+    public EntityTableSource TableFor(EntityMetadata entity, NavigationTableOptions options = default) =>
+        Tables.Table(entity, options.TableName, options.Alias, options.Segment);
 
     /// <summary>本查询第一个表来源上显式声明的分组合并（Query.GroupJoin / GroupJoinIf）。</summary>
     public IReadOnlyList<GroupJoinSpec> GroupJoinSpecs { get; init; } = [];
@@ -98,7 +105,7 @@ internal sealed partial class TranslationContext(
             return view;
         }
 
-        var target = options.TableFor(navigation.Target);
+        var target = TableFor(navigation.Target, options);
         var conditions = new List<SqlExpr>(TableFilters(target, !options.NoLogicDelete));
         var keys = navigation.SelfColumns
             .Select((self, i) => (SqlExpr)new BinaryExpr(target.Column(navigation.TargetColumns[i]), SqlBinaryOperator.Equal, owner.OwnerColumn(self)))
@@ -131,11 +138,7 @@ internal sealed partial class TranslationContext(
 /// <see cref="Sql.AsTableSegment{T}(T, Func{string, string?, string})"/>，对应 Java 的 nav().configure(..)）；默认值表示没有配置。
 /// 记录结构的相等性整体比较各项（表写法按委托相等），同一导航带不同配置时在缓存里各占一项。
 /// </summary>
-internal readonly record struct NavigationTableOptions(bool NoLogicDelete, string? TableName, string? Alias, Func<string, string?, string>? Segment = null)
-{
-    /// <summary>导航目标实体的表来源，带上配置的表名、别名与表写法。</summary>
-    public EntityTableSource TableFor(EntityMetadata target) => new(target) { TableNameOverride = TableName, ExplicitAlias = Alias, Segment = Segment };
-}
+internal readonly record struct NavigationTableOptions(bool NoLogicDelete, string? TableName, string? Alias, Func<string, string?, string>? Segment = null);
 
 /// <summary>查询上声明的导航级固定条件：所属实体类型 + 导航属性名 → 以导航目标为参数的条件。</summary>
 internal sealed record NavigationFilterSpec(Type OwnerType, string Member, LambdaExpression Predicate);

@@ -217,7 +217,31 @@ public abstract partial class QueryBase<TSelf, TElement>
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
-        var total = await CountAsync(cancellationToken).ConfigureAwait(false);
+        return await PageOfAsync(page, size, await CountAsync(cancellationToken).ConfigureAwait(false), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 按列表请求分页（对应 TS 版的 table(request)，见 <see cref="Filtering.TableRequest"/>）：先加上请求里的表头筛选（<c>filter.列</c> IN、<c>search.列</c> 包含）
+    /// 与排序（排在查询自己的排序之前），再取第 <see cref="Filtering.TableRequest.Page"/> 页；请求带了总数时不再计数。
+    /// 键是结果里的成员名（忽略大小写），请求碰不到结果以外的列；查询栏的条件在 <see cref="Filtering.TableRequest.Params"/> 里，由调用方自己写成 Where。
+    /// </summary>
+    /// <example><code>
+    /// var request = TableRequest.Parse(httpContext.Request.QueryString.Value);
+    /// var page = await db.Query&lt;Order&gt;().Select(o =&gt; new OrderRow { Id = o.Id, Status = o.Status, Supplier = o.Supplier!.Name }).ToPageAsync(request);
+    /// </code></example>
+    public async Task<Page<TElement>> ToPageAsync(Filtering.TableRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentOutOfRangeException.ThrowIfLessThan(request.Page, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(request.PageSize, 1);
+        var query = With(Filtering.TableFilter.Apply(State, request));
+        var total = request.Total ?? await query.CountAsync(cancellationToken).ConfigureAwait(false);
+        return await query.PageOfAsync(request.Page, request.PageSize, total, cancellationToken).ConfigureAwait(false);
+    }
+
+    // 已知总数时取第 page 页
+    private async Task<Page<TElement>> PageOfAsync(long page, long size, long total, CancellationToken cancellationToken)
+    {
         if (PageWindow(page, size, total) is not var (state, reverse)) return new Page<TElement>([], total, page, size);
         var rows = await With(state).ToListAsync(cancellationToken).ConfigureAwait(false);
         if (reverse) rows.Reverse();

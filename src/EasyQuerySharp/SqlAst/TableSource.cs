@@ -30,6 +30,12 @@ public sealed class EntityTableSource(EntityMetadata entity) : TableSource
     /// <summary>整个表引用的写法（对应 Java 的 asTableSegment）：(带引号的表名, 别名) → 片段；为 null 时写 <c>表名 别名</c>。</summary>
     public Func<string, string?, string>? Segment { get; init; }
 
+    /// <summary>
+    /// 表前面的连接符改写（对应 Java 的 asTableLink）：参数是原来的连接符（<c>FROM</c>、<c>LEFT JOIN</c>…；写入的目标表是空串），
+    /// 返回值替换它，如 <c>LEFT JOIN</c> → <c>LEFT JOIN LATERAL</c>；写入的目标表直接写在表名前面。为 null 时不改。
+    /// </summary>
+    public Func<string, string>? Link { get; init; }
+
     /// <summary>实际使用的表名。</summary>
     public string TableName => TableNameOverride ?? Entity.TableName;
 

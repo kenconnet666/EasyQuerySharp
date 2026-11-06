@@ -78,11 +78,11 @@
 | 能力 | key | 用例数 | C# 写法 | 状态 |
 |---|---|---|---|---|
 | 建表与迁移（code-first） | `codeFirst` | 17 | `db.CodeFirst.CreateTablesAsync(..)` / `DropTablesIfExistsAsync(..)` / `CreateTableSql(type)`；只增不删的同步、`RenamedFrom`、读库结构（计划） | 阶段 4 |
-| 换表名 asTable | `table.rename` | 52 | `.AsTable("t_post_2025")` / `.AsTable(name => name + "_2025")` / `AsTableSegment(..)`（整个表引用的写法，如 SQL Server 的 `WITH(NOLOCK)`；单表、联表后最近的一张表、导航上的 `Sql.AsTableSegment(u.User, ..)` 都能用）；写入同样 `AsTable` / `AsSchema`；查询级的 `MapTable<Post>(..)`（导航、隐式 join、include 跟着变，fork 的 TableNameMapping）（计划） | 阶段 4 |
-| 换 schema | `table.schema` | 25 | 写入 `.AsSchema("tenant_a")`；查询级的写法（计划） | 阶段 4 |
-| 跨库链接 | `table.link` | 13 | `.WithTableLink("link")`（计划） | 阶段 4 |
+| 换表名 asTable | `table.rename` | 52 | `.AsTable("t_post_2025")` / `.AsTable(name => name + "_2025")` / `AsTableSegment(..)`（整个表引用的写法，如 SQL Server 的 `WITH(NOLOCK)`；单表、联表后最近的一张表、导航上的 `Sql.AsTableSegment(u.User, ..)` 都能用）；写入同样 `AsTable` / `AsSchema`；查询级的 `.MapTable<Post>("t_post_2025")` / `.MapTable<Post>(name => name + "_archive")`（fork 的 TableNameMapping：主表、联表、隐式 JOIN、集合导航的子查询与分组合并、中间表、Include 与 DTO 自动带出、嵌在里面的子查询都跟着换，显式的 `AsTable` 优先） | 完成 |
+| 换 schema | `table.schema` | 25 | 写入 `.AsSchema("tenant_a")`；查询级的 `.InSchema("archive_2025")`（整条查询的实体表都换，范围同 `MapTable`） | 完成 |
+| 跨库链接 | `table.link` | 13 | `.WithTableLink(join => join + " LATERAL")` / `.WithTableLink("LEFT OUTER JOIN")`：改写最近一张表前面的连接符（Java 的 asTableLink，查询与联表都能用）；写入时写在目标表名前面 | 完成 |
 | 分库分表 | `sharding` | 48 | 分表路由（取模、时间）、条件裁剪、库内 UNION ALL、写入路由；分库时在内存里归并排序和分页（计划，先写决策文档 0006） | 阶段 4 |
-| 按对象筛选排序 | `dto.object` | 101 | `.FilterBy(request)`（属性上的 `[Filter]` 说明条件类型、多属性 OR、区间、导航路径、集合 EXISTS）/ `.SortBy(sort)`（允许排序的属性）；按路径动态取列 `Sql.Column<T>(c, "user.age")`（对应 anyColumn）；`Table(request)`（计划） | 阶段 4 |
+| 按对象筛选排序 | `dto.object` | 101 | `.FilterBy(request)`（属性上的 `[Filter]` 说明条件类型、多属性 OR、区间、导航路径、集合 EXISTS）/ `.SortBy(sort)`（允许排序的属性）；按路径动态取列 `Sql.Column<T>(c, "user.age")`（对应 anyColumn）；列表页请求 `ToPageAsync(TableRequest.Parse(queryString))`（TS 的 table(request)：`filter.列` IN、`search.列` 包含、`sort=-a,b`，只认结果里的列，带了 `total` 不再计数） | 完成 |
 | search 扩展 | `search` | 45 | — | 不做 |
 | 依赖注入（Spring Boot starter、Solon 插件） | 没有用例 | — | `services.AddEasyQuery(o => ..)`，多个库 `AddEasyQuery("name", ..)` 加 `[FromKeyedServices("name")]`；容器里的 `DbDataSource`、`IExecutionListener`、`IInterceptor` 自动接上，见 [依赖注入指南](guide/dependency-injection.md) | 完成 |
 

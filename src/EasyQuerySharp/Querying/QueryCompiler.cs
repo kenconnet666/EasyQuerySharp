@@ -32,10 +32,12 @@ internal static class QueryCompiler
         var translator = new ExpressionTranslator(outer is null ? [] : new Dictionary<ParameterExpression, SourceBinding>(outer));
         var bindings = new List<SourceBinding>();
         SelectQuery? query = null;
+        // 外层查询的换表也作用于这条子查询（本查询自己映射的优先）
+        var tables = state.Tables.Over(outerContext?.Tables ?? TableMapping.None);
 
         foreach (var source in state.Sources)
         {
-            var binding = CreateBinding(db, source);
+            var binding = CreateBinding(db, source, tables);
             bindings.Add(binding);
             var filters = Filters(db, state, binding, source.NoLogicDelete);
 
@@ -48,6 +50,7 @@ internal static class QueryCompiler
                 translator.Context = new TranslationContext(db.Metadata, (table, logicDelete) => Filters(db, state, new EntityBinding(table), noLogicDelete: !logicDelete), query, outerContext)
                 {
                     Db = db,
+                    Tables = tables,
                     GroupJoinSpecs = state.GroupJoins,
                     NavigationFilters = state.NavigationFilters.IsEmpty ? outerContext?.NavigationFilters ?? [] : (IReadOnlyList<NavigationFilterSpec>)state.NavigationFilters,
                     GroupJoinAll = state.GroupJoinAll || outerContext?.GroupJoinAll == true,
@@ -79,7 +82,7 @@ internal static class QueryCompiler
         // 可选导航（LEFT JOIN）不影响行数，没用到时 Java 会省掉，用到时再连
         if (translator.Context is { } navContext && bindings[0].OwnerEntity is { } root)
             foreach (var spec in state.NavigationFilters)
-                if (db.Metadata.FindNavigation(root, spec.Member) is { IsCollection: false, Required: true } nav && spec.OwnerType.IsAssignableFrom(root.Type))
+                if (db.Metadata.FindNavigation(root, spec.Member) is { IsCollection: false, Required: true, Limit: null } nav && spec.OwnerType.IsAssignableFrom(root.Type))
                     navContext.JoinFor(bindings[0], nav);
 
         // 外层传播下来的值过滤也作用于子查询自己的条件（本查询的条件在 Where 时已按自己的值过滤处理过）
@@ -138,18 +141,20 @@ internal static class QueryCompiler
     /// <c>WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `cte_deep`,t1.… FROM 表 t1 WHERE …)  UNION ALL
     /// (SELECT t2.`cte_deep` + 1 AS `cte_deep`,t3.… FROM `as_tree_cte` t2 INNER JOIN 表 t3 ON t3.上级 = t2.键) )</c>，往上走时 ON 反过来。
     /// </summary>
-    private static DerivedBinding TreeBinding(EasyDb db, TreeCteSource tree)
+    private static DerivedBinding TreeBinding(EasyDb db, TreeCteSource tree, TableMapping tables)
     {
         var options = tree.Options;
         var entity = db.Metadata.Get(tree.Base.ElementType);
-        var (start, _) = CompileSelect(tree.Base with { ForceAlias = true });
+        var start = CompileSelect(tree.Base.InheritTables(tables) with { ForceAlias = true }).Query;
+        // 递归部分连的子节点表与基础查询同样换表
+        tables = tree.Base.Tables.Over(tables);
         start.Columns.Insert(0, new SelectColumn(new LiteralExpr(db.Options.Dialect.TreeDeepStart), options.DeepColumnName));
 
         var walked = new CteTableSource(options.CteTableName, start);
         // 子节点来源：基础查询是实体（含视图实体）时连它的表，投影过的查询连它的投影（不带基础查询的条件）
         var child = tree.Base is { Sources: [EntitySource e], Selector: null }
-            ? CreateBinding(db, e with { Alias = null })
-            : CreateBinding(db, new SubQuerySource(tree.Base with { Wheres = [] }));
+            ? CreateBinding(db, e with { Alias = null }, tables)
+            : CreateBinding(db, new SubQuerySource(tree.Base with { Wheres = [] }), tables);
         // 往下走：子节点的上级 = 已走到的节点；往上走：上级节点的键 = 已走到的节点的上级
         var keys = tree.SelfColumns.Select((self, i) => (SqlExpr)(options.Up
             ? new BinaryExpr(child.OwnerColumn(self), SqlBinaryOperator.Equal, new ColumnExpr(walked, tree.ParentColumns[i].Name, tree.ParentColumns[i]))
@@ -268,23 +273,21 @@ internal static class QueryCompiler
 
     /// <summary>由查询定义的实体（ICteView）作为隐式 JOIN 的目标时的绑定（按 CTE 读）；不是视图实体时返回 null。</summary>
     internal static SourceBinding? ViewBinding(EasyDb db, Type entityType) =>
-        CteViews.Of(db, entityType) is null ? null : CreateBinding(db, new EntitySource(entityType));
+        CteViews.Of(db, entityType) is null ? null : CreateBinding(db, new EntitySource(entityType), TableMapping.None);
 
-    private static SourceBinding CreateBinding(EasyDb db, QuerySource source)
+    // tables：这条查询的换表，派生表、CTE、UNION 的各分支在它之上叠加自己的
+    private static SourceBinding CreateBinding(EasyDb db, QuerySource source, TableMapping tables)
     {
         switch (source)
         {
             // 由查询定义的实体（ICteView）：按 CTE 读，名字是它的表名
             case EntitySource e when CteViews.Of(db, e.EntityType) is { } view:
-                return CreateBinding(db, new CteSource(db.Metadata.Get(e.EntityType).TableName, view) { Alias = e.Alias, Join = e.Join, On = e.On, ViewType = e.EntityType });
+                return CreateBinding(db, new CteSource(db.Metadata.Get(e.EntityType).TableName, view) { Alias = e.Alias, Join = e.Join, On = e.On, ViewType = e.EntityType }, tables);
             case EntitySource e:
-            {
-                var table = new EntityTableSource(db.Metadata.Get(e.EntityType)) { ExplicitAlias = e.Alias, TableNameOverride = e.TableName, Segment = e.TableSegment };
-                return new EntityBinding(table);
-            }
+                return new EntityBinding(tables.Table(db.Metadata.Get(e.EntityType), e.TableName, e.Alias, e.TableSegment, e.TableLink));
             case SubQuerySource s:
             {
-                var (inner, projection) = CompileSelect(s.Inner);
+                var (inner, projection) = CompileSelect(s.Inner.InheritTables(tables));
                 var table = new DerivedTableSource(inner)
                 {
                     ExplicitAlias = s.Alias,
@@ -297,12 +300,12 @@ internal static class QueryCompiler
                 };
             }
             case TreeCteSource tree:
-                return TreeBinding(db, tree);
+                return TreeBinding(db, tree, tables);
             case BoundSource bound:
                 return bound.Binding;
             case CteSource c:
             {
-                var (inner, projection) = CompileSelect(c.Inner);
+                var (inner, projection) = CompileSelect(c.Inner.InheritTables(tables));
                 // 投影过的查询（分组后作为 JOIN 来源、视图实体）：Java 内部多一层匿名表，引用的别名跳过一个
                 var projected = c.ViewType is not null || c.Join is not null && c.Inner.GroupKey is not null;
                 var table = new CteTableSource(c.Name, inner) { ExplicitAlias = c.Alias, ReserveExtraAlias = projected, DefinitionKey = c.Inner };
@@ -316,7 +319,7 @@ internal static class QueryCompiler
             }
             case UnionSource u:
             {
-                var parts = u.Parts.Select(p => CompileSelect(p)).ToList();
+                var parts = u.Parts.Select(p => CompileSelect(p.InheritTables(tables))).ToList();
                 var table = new UnionTableSource(parts.Select(p => p.Query).ToList(), u.All) { ExplicitAlias = u.Alias, IndependentAliases = u.IndependentAliases };
                 // 外层按第一条查询的投影访问列（与 SQL 的 UNION 语义一致：列名取第一个分支）
                 return new DerivedBinding(table, parts[0].Projection.MemberColumns, parts[0].Projection.Entity, parts[0].Projection.AliasedMembers, parts[0].Projection.NestedEntities);

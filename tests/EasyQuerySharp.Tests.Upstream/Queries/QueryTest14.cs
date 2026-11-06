@@ -144,6 +144,90 @@ public sealed class QueryTest14(MySqlFixture fixture) : MySqlTest(fixture)
         SqlOnly.AssertStatement(db.Query<BlogEntity>().Where(b => b.Id == "123").OrderBy(b => b.Star).Take(10).ToStatement(), "SELECT rt.* FROM (SELECT \"id\",\"create_time\",\"update_time\",\"create_by\",\"update_by\",\"deleted\",\"title\",\"content\",\"url\",\"star\",\"publish_time\",\"score\",\"status\",\"order\",\"is_top\",\"top\" FROM \"t_blog\" WHERE \"deleted\" = ? AND \"id\" = ? ORDER BY \"star\" ASC) rt WHERE ROWNUM < 11", "false(Boolean),123(String)");
     }
 
+    // test2 / test3 共用：分组后投影（标题、按 id 计数）
+    private static Query<BlogEntity> GroupedBlogs(EasyDb db) =>
+        db.Query<BlogEntity>().Where(b => b.Id == "123").GroupBy(b => b.Title).Select(g => new BlogEntity { Title = g.Key, Star = (int)g.Count(x => x.Id) });
+
+    private static TopicAuto NewTopicAuto() => new() { Stars = 999, Title = "title999", CreateTime = new DateTime(2020, 1, 1, 1, 1, 0) };
+
+    private static Topic NewTopic(string? id = "111xxa") => new() { Id = id, Stars = 999, Title = "title999", CreateTime = new DateTime(2020, 1, 1, 1, 1, 0) };
+
+    private const string GroupedSql = "SELECT t.\"title\" AS \"title\",COUNT(t.\"id\") AS \"star\" FROM \"t_blog\" t WHERE t.\"deleted\" = ? AND t.\"id\" = ? GROUP BY t.\"title\"";
+
+    private const string TopicJoinBlog = "SELECT t.\"id\",t.\"stars\",t.\"title\",t.\"create_time\" FROM \"t_topic\" t LEFT JOIN \"t_blog\" t1 ON t1.\"deleted\" = ? AND t.\"id\" = t1.\"id\" WHERE t.\"id\" LIKE ";
+
+    // Java 用 Oracle 方言连 MySQL 数据源，执行失败后取发出的 SQL；C# 直接渲染。分组分页、MERGE 写入、目标表的 asTableLink 与 Java 一致
+    [Fact, Upstream("QueryTest14.java#test2", Deviation = "MERGE 的约束列 C# 按列名排序（Java 按 HashSet 的遍历顺序，stars 在 id 前）；没有可作约束的列（自增主键）时 Java 抛 EasyQueryInvalidOperationException，C# 抛 InvalidOperationException，消息不同")]
+    public void Test2()
+    {
+        var db = SqlOnly.Db("oracle");
+        const string Paged = "SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS \"__rownum__\" FROM ({0}) rt WHERE ROWNUM < 31) rt1 WHERE rt1.\"__rownum__\" > 20";
+        SqlOnly.AssertStatement(GroupedBlogs(db).Take(10).ToStatement(), $"SELECT rt.* FROM ({GroupedSql}) rt WHERE ROWNUM < 11", "false(Boolean),123(String)");
+        SqlOnly.AssertStatement(GroupedBlogs(db).Skip(20).Take(10).ToStatement(), string.Format(Paged, GroupedSql), "false(Boolean),123(String)");
+        SqlOnly.AssertStatement(GroupedBlogs(db).OrderBy(b => b.Star).Skip(20).Take(10).ToStatement(),
+            string.Format(Paged, $"SELECT t1.\"title\" AS \"title\",t1.\"star\" AS \"star\" FROM ({GroupedSql}) t1 ORDER BY t1.\"star\" ASC"), "false(Boolean),123(String)");
+        SqlOnly.AssertStatement(db.Query<BlogEntity>().Where(b => b.Id == "123").OrderBy(b => b.Star).GroupBy(b => b.Title)
+                .Select(g => new BlogEntity { Title = g.Key, Star = (int)g.Count(x => x.Id) }).Skip(20).Take(10).ToStatement(),
+            string.Format(Paged, GroupedSql + " ORDER BY t.\"star\" ASC"), "false(Boolean),123(String)");
+        Assert.Equal(TopicJoinBlog + "('%'||TO_CHAR(t1.\"title\")||'%')", db.Query<Topic>().LeftJoin<BlogEntity>((t, b2) => t.Id == b2.Id).Where((t1, b2) => t1.Id!.Contains(b2.Title!)).ToSql());
+
+        Assert.Equal("MERGE INTO 1\"t_topic_auto\" t1 USING (SELECT ? AS \"stars\",? AS \"title\",? AS \"create_time\" FROM DUAL ) t2 ON (t1.\"title\" = t2.\"title\") WHEN MATCHED THEN UPDATE SET t1.\"stars\" = t2.\"stars\" WHEN NOT MATCHED THEN INSERT (\"stars\",\"title\",\"create_time\") VALUES (t2.\"stars\",t2.\"title\",t2.\"create_time\")",
+            db.Insert(NewTopicAuto()).WithTableLink(o => o + "1").OnConflictUpdate(s => new { s.Stars, s.Title }, x => x.Title).ToSql());
+        const string MergeTopic = "MERGE INTO \"t_topic\" t1 USING (SELECT ? AS \"id\",? AS \"stars\",? AS \"title\",? AS \"create_time\" FROM DUAL ) t2 ON ({0}) WHEN NOT MATCHED THEN INSERT (\"id\",\"stars\",\"title\",\"create_time\") VALUES (t2.\"id\",t2.\"stars\",t2.\"title\",t2.\"create_time\")";
+        const string TopicParams = "111xxa(String),999(Integer),title999(String),2020-01-01T01:01(LocalDateTime)";
+        SqlOnly.AssertStatement(db.Insert(NewTopic()).OnConflictIgnore(o => new { o.Stars, o.Id }).ToStatement(),
+            string.Format(MergeTopic, "t1.\"id\" = t2.\"id\" AND t1.\"stars\" = t2.\"stars\""), TopicParams);
+        SqlOnly.AssertStatement(db.Insert(NewTopic()).OnConflictIgnore(o => o.Stars).ToStatement(), string.Format(MergeTopic, "t1.\"stars\" = t2.\"stars\""), TopicParams);
+        // 自增主键不写入，不能作约束：只剩 stars
+        SqlOnly.AssertStatement(db.Insert(NewTopicAuto()).OnConflictIgnore(o => new { o.Stars, o.Id }).ToStatement(),
+            "MERGE INTO \"t_topic_auto\" t1 USING (SELECT ? AS \"stars\",? AS \"title\",? AS \"create_time\" FROM DUAL ) t2 ON (t1.\"stars\" = t2.\"stars\") WHEN NOT MATCHED THEN INSERT (\"stars\",\"title\",\"create_time\") VALUES (t2.\"stars\",t2.\"title\",t2.\"create_time\")",
+            "999(Integer),title999(String),2020-01-01T01:01(LocalDateTime)");
+        Assert.Throws<InvalidOperationException>(() => db.Insert(NewTopicAuto()).OnConflictUpdate(s => new { s.Stars, s.Title }).ToSql());
+        Assert.Throws<InvalidOperationException>(() => db.Insert(NewTopicAuto()).OnConflictUpdate(s => new { s.Stars, s.Title }, x => x.Id).ToSql());
+        // 约束取主键 id（没有写入，与 Java 一致）
+        SqlOnly.AssertStatement(db.Insert(NewTopic(null)).OnConflictUpdate().ToStatement(),
+            "MERGE INTO \"t_topic\" t1 USING (SELECT ? AS \"stars\",? AS \"title\",? AS \"create_time\" FROM DUAL ) t2 ON (t1.\"id\" = t2.\"id\") WHEN MATCHED THEN UPDATE SET t1.\"stars\" = t2.\"stars\",t1.\"title\" = t2.\"title\",t1.\"create_time\" = t2.\"create_time\" WHEN NOT MATCHED THEN INSERT (\"stars\",\"title\",\"create_time\") VALUES (t2.\"stars\",t2.\"title\",t2.\"create_time\")",
+            "999(Integer),title999(String),2020-01-01T01:01(LocalDateTime)");
+        Assert.Throws<InvalidOperationException>(() => db.Insert(NewTopicAuto()).OnConflictIgnore().ToSql());
+    }
+
+    // 同上，方言换成 SQLite：分组分页、目标表的 asTableLink 与 Java 一致
+    [Fact, Upstream("QueryTest14.java#test3", Deviation = "插入冲突：Java 的 SQLite 方言写 REPLACE INTO（更新）与 INSERT … SELECT … WHERE NOT EXISTS（忽略），"
+        + "C# 写 SQLite 3.24 起的 ON CONFLICT … DO UPDATE / DO NOTHING，没有可作约束的列时报错；带条件的删除与逻辑删除 Java 用表名限定列，C# 给目标表起别名 t（UPDATE / DELETE … AS t）；"
+        + "列模式的 LIKE：Java 写 ('%'||列||'%')，C# 写 CONCAT('%',列,'%')")]
+    public void Test3()
+    {
+        var db = SqlOnly.Db("sqlite");
+        SqlOnly.AssertStatement(db.Delete<BlogEntity>().Where(b => Sql.Exists(db.Query<BlogEntity>().Where(x => x.Id == b.Id))).ToStatement()!,
+            "UPDATE \"t_blog\" AS t SET \"deleted\" = ? WHERE t.\"deleted\" = ? AND EXISTS(SELECT 1 FROM \"t_blog\" t1 WHERE t1.\"deleted\" = ? AND t1.\"id\" = t.\"id\")",
+            "true(Boolean),false(Boolean),false(Boolean)");
+        SqlOnly.AssertStatement(db.Delete<BlogEntity>().AllowDeleteStatement(true).Hard().Where(b => Sql.Exists(db.Query<BlogEntity>().Where(x => x.Id == b.Id))).ToStatement()!,
+            "DELETE FROM \"t_blog\" AS t WHERE EXISTS(SELECT 1 FROM \"t_blog\" t1 WHERE t1.\"deleted\" = ? AND t1.\"id\" = t.\"id\")", "false(Boolean)");
+        SqlOnly.AssertStatement(GroupedBlogs(db).Take(10).ToStatement(), GroupedSql + " LIMIT 10", "false(Boolean),123(String)");
+        SqlOnly.AssertStatement(GroupedBlogs(db).Skip(20).Take(10).ToStatement(), GroupedSql + " LIMIT 10 OFFSET 20", "false(Boolean),123(String)");
+        SqlOnly.AssertStatement(GroupedBlogs(db).OrderBy(b => b.Star).Skip(20).Take(10).ToStatement(),
+            $"SELECT t1.\"title\" AS \"title\",t1.\"star\" AS \"star\" FROM ({GroupedSql}) t1 ORDER BY t1.\"star\" ASC LIMIT 10 OFFSET 20", "false(Boolean),123(String)");
+        SqlOnly.AssertStatement(db.Query<BlogEntity>().Where(b => b.Id == "123").OrderBy(b => b.Star).GroupBy(b => b.Title)
+                .Select(g => new BlogEntity { Title = g.Key, Star = (int)g.Count(x => x.Id) }).Skip(20).Take(10).ToStatement(),
+            GroupedSql + " ORDER BY t.\"star\" ASC LIMIT 10 OFFSET 20", "false(Boolean),123(String)");
+        Assert.Equal(TopicJoinBlog + "CONCAT('%',t1.\"title\",'%')", db.Query<Topic>().LeftJoin<BlogEntity>((t, b2) => t.Id == b2.Id).Where((t1, b2) => t1.Id!.Contains(b2.Title!)).ToSql());
+
+        const string AutoInsert = "INSERT INTO \"t_topic_auto\" (\"stars\",\"title\",\"create_time\") VALUES (?,?,?)";
+        Assert.Equal(AutoInsert.Replace("INTO ", "INTO 1", StringComparison.Ordinal) + " ON CONFLICT (\"title\") DO UPDATE SET \"stars\" = EXCLUDED.\"stars\"",
+            db.Insert(NewTopicAuto()).WithTableLink(o => o + "1").OnConflictUpdate(s => new { s.Stars, s.Title }, x => x.Title).ToSql());
+        const string TopicInsert = "INSERT INTO \"t_topic\" (\"id\",\"stars\",\"title\",\"create_time\") VALUES (?,?,?,?)";
+        const string TopicParams = "111xxa(String),999(Integer),title999(String),2020-01-01T01:01(LocalDateTime)";
+        SqlOnly.AssertStatement(db.Insert(NewTopic()).OnConflictIgnore(o => new { o.Stars, o.Id }).ToStatement(), TopicInsert + " ON CONFLICT (\"id\",\"stars\") DO NOTHING", TopicParams);
+        SqlOnly.AssertStatement(db.Insert(NewTopic()).OnConflictIgnore(o => o.Stars).ToStatement(), TopicInsert + " ON CONFLICT (\"stars\") DO NOTHING", TopicParams);
+        SqlOnly.AssertStatement(db.Insert(NewTopicAuto()).OnConflictIgnore(o => new { o.Stars, o.Id }).ToStatement(), AutoInsert + " ON CONFLICT (\"stars\") DO NOTHING",
+            "999(Integer),title999(String),2020-01-01T01:01(LocalDateTime)");
+        Assert.Throws<InvalidOperationException>(() => db.Insert(NewTopicAuto()).OnConflictUpdate(s => new { s.Stars, s.Title }).ToSql());
+        Assert.Throws<InvalidOperationException>(() => db.Insert(NewTopicAuto()).OnConflictUpdate(s => new { s.Stars, s.Title }, x => x.Id).ToSql());
+        Assert.Equal("INSERT INTO \"t_topic\" (\"stars\",\"title\",\"create_time\") VALUES (?,?,?) ON CONFLICT (\"id\") DO UPDATE SET \"stars\" = EXCLUDED.\"stars\", \"title\" = EXCLUDED.\"title\", \"create_time\" = EXCLUDED.\"create_time\"",
+            db.Insert(NewTopic(null)).OnConflictUpdate().ToSql());
+        Assert.Equal(AutoInsert + " ON CONFLICT DO NOTHING", db.Insert(NewTopicAuto()).OnConflictIgnore().ToSql());
+    }
+
     /// <summary>对应 Java：entity/testrelation/vo/TestUserDTO（用户 → 角色 → 路由）。</summary>
     public sealed class TestUserDTO
     {

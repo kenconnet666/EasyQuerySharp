@@ -53,11 +53,11 @@ public sealed partial class Query<T>
     {
         var options = new TreeCteOptions();
         configure?.Invoke(options);
-        // 外层沿用起点查询的拦截器选择与逻辑删除开关（Java 的外层从起点查询的上下文扩展而来）
+        // 外层沿用起点查询的拦截器选择、逻辑删除开关与换表（Java 的外层从起点查询的上下文扩展而来）
         var start = Open;
         return new(new QueryState(Db, [new TreeCteSource(start, self, parent, options, childFilter)])
         {
-            Interceptors = start.Interceptors, DisableLogicDelete = start.DisableLogicDelete,
+            Interceptors = start.Interceptors, DisableLogicDelete = start.DisableLogicDelete, Tables = start.Tables,
         });
     }
 

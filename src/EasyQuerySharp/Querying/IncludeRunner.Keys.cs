@@ -14,7 +14,7 @@ internal static partial class IncludeRunner
     /// 父键 → 子数据的目标键：经过中间导航（<see cref="IncludePlan.Via"/>）时逐段查中间表换成下一段的键；
     /// 多对多再经中间表换成目标键；其余情况父键就是目标键。中间表每段一条查询，键多于 <paramref name="groupSize"/> 时 IN 拆成 OR。
     /// </summary>
-    private static async Task<List<(CompositeKey Parent, CompositeKey Target)>> ResolveLinksAsync(EasyDb db, IncludePlan plan, int groupSize, CancellationToken ct)
+    private static async Task<List<(CompositeKey Parent, CompositeKey Target)>> ResolveLinksAsync(EasyDb db, IncludePlan plan, int groupSize, TableMapping tables, CancellationToken ct)
     {
         if (plan.Via.FirstOrDefault(v => v.KeyMatch != KeyMatch.Equal) is { } csvStep)
             throw new NotSupportedException($"带出路径经过的 {csvStep} 的键是逗号列表，不能作为中间一段");
@@ -25,11 +25,11 @@ internal static partial class IncludeRunner
             var next = i + 1 < plan.Via.Count ? plan.Via[i + 1] : plan.Navigation;
             // 经过的是多对多：先经它的中间表换成目标键
             if (step.Mapping is { } stepMapping)
-                links = Compose(links, await LoadLinksAsync(db, step, stepMapping, links.Select(l => l.Target), groupSize, ct).ConfigureAwait(false));
-            links = Compose(links, await LoadViaAsync(db, step, next, links.Select(l => l.Target), plan.DirectVia, groupSize, ct).ConfigureAwait(false));
+                links = Compose(links, await LoadLinksAsync(db, step, tables.Table(stepMapping), links.Select(l => l.Target), groupSize, ct).ConfigureAwait(false));
+            links = Compose(links, await LoadViaAsync(db, step, next, tables.Table(step.Target), links.Select(l => l.Target), plan.DirectVia, groupSize, ct).ConfigureAwait(false));
         }
         if (plan.Navigation.Mapping is { } mapping && links.Count > 0)
-            links = Compose(links, await LoadLinksAsync(db, plan.Navigation, mapping, links.Select(l => l.Target), groupSize, ct).ConfigureAwait(false));
+            links = Compose(links, await LoadLinksAsync(db, plan.Navigation, tables.Table(mapping), links.Select(l => l.Target), groupSize, ct).ConfigureAwait(false));
         return plan.Navigation.KeyMatch == KeyMatch.SelfCsv ? SplitCsv(links, plan.Navigation.TargetColumns[0].ClrType) : links;
 
         // (父, 中间键) 与 (中间键, 下一段键) 连成 (父, 下一段键)；同一对只留一个
@@ -79,9 +79,8 @@ internal static partial class IncludeRunner
     /// 直达导航（DirectMapping）写成 <c>SELECT 本段目标列, 下一段自身列 FROM 表 WHERE …</c>，复合键写成 <c>((a =? AND b =?) OR …)</c>。
     /// </summary>
     private static async Task<List<(CompositeKey From, CompositeKey To)>> LoadViaAsync(
-        EasyDb db, NavigationMetadata step, NavigationMetadata next, IEnumerable<CompositeKey> keys, bool direct, int groupSize, CancellationToken ct)
+        EasyDb db, NavigationMetadata step, NavigationMetadata next, EntityTableSource table, IEnumerable<CompositeKey> keys, bool direct, int groupSize, CancellationToken ct)
     {
-        var table = new EntityTableSource(step.Target);
         var query = new SelectQuery(table);
         int Select(ColumnMetadata column, bool alias)
         {
@@ -133,10 +132,9 @@ internal static partial class IncludeRunner
 
     // 多对多的中间表：按父键取出 (父键, 目标键) 对
     private static async Task<List<(CompositeKey Parent, CompositeKey Target)>> LoadLinksAsync(
-        EasyDb db, NavigationMetadata nav, EntityMetadata mapping, IEnumerable<CompositeKey> parentKeys, int groupSize, CancellationToken ct)
+        EasyDb db, NavigationMetadata nav, EntityTableSource table, IEnumerable<CompositeKey> parentKeys, int groupSize, CancellationToken ct)
     {
         if (nav.SelfMappingColumns.Count != 1 || nav.TargetMappingColumns.Count != 1) throw new NotSupportedException($"复合键的多对多导航 {nav} 的带出还不支持");
-        var table = new EntityTableSource(mapping);
         var query = new SelectQuery(table);
         query.Columns.Add(new SelectColumn(table.Column(nav.SelfMappingColumns[0]), null));
         query.Columns.Add(new SelectColumn(table.Column(nav.TargetMappingColumns[0]), null));

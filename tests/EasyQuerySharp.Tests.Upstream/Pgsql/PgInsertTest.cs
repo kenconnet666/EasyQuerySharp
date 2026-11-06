@@ -9,6 +9,12 @@ public sealed class PgInsertTest(PgFixture fixture) : PgTest(fixture)
 
     private const string Insert = "INSERT INTO \"t_topic_auto\" (\"stars\",\"title\",\"create_time\") VALUES (?,?,?)";
 
+    // 换表、换 schema 后照样写冲突忽略（Java 执行失败后取 SQL；C# 直接渲染）
+    [Fact, Upstream("pgsql/InsertTest.java#insertTest1")]
+    public void InsertTest1() =>
+        Assert.Equal("INSERT INTO \"xxx\".\"t_topic_autoaaa\" (\"stars\",\"title\",\"create_time\") VALUES (?,?,?) ON CONFLICT DO NOTHING",
+            Pg.Insert(NewTopicAuto()).OnConflictIgnore().DisableInterceptors().AsTable(o => o + "aaa").AsSchema("xxx").ToSql());
+
     [Fact, Upstream("pgsql/InsertTest.java#insertDuplicateKeyIgnore2")]
     public void InsertDuplicateKeyIgnore2() =>
         Assert.Equal(Insert + " ON CONFLICT DO NOTHING", Pg.Insert(NewTopicAuto()).OnConflictIgnore().ToSql());

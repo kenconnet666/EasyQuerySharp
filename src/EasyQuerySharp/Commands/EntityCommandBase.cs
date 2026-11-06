@@ -5,7 +5,7 @@ using EasyQuerySharp.SqlAst;
 namespace EasyQuerySharp.Commands;
 
 /// <summary>
-/// 插入、更新、删除共有的部分：目标表（AsTable / AsSchema）与拦截器的开关。
+/// 插入、更新、删除共有的部分：目标表（AsTable / AsSchema / WithTableLink）与拦截器的开关。
 /// 写入命令是一次性的可变构建器（与不可变的查询不同），链式调用返回自身。
 /// </summary>
 public abstract class EntityCommandBase<TSelf, T>
@@ -15,6 +15,7 @@ public abstract class EntityCommandBase<TSelf, T>
     private string? _tableName;
     private string? _schema;
     private string? _alias;
+    private Func<string, string>? _link;
 
     private protected EntityCommandBase(EasyDb db)
     {
@@ -75,6 +76,24 @@ public abstract class EntityCommandBase<TSelf, T>
         return AsSchema(rename(_schema ?? Entity.Schema ?? ""));
     }
 
+    /// <summary>
+    /// 目标表名前面加一段写法（对应 Java 的 asTableLink）：参数是原来的连接符，写入的目标表是空串，返回值直接写在表名前面，
+    /// 如 <c>.WithTableLink(link =&gt; link + "1")</c> 写成 <c>INSERT INTO 1`t_topic`</c>。
+    /// </summary>
+    public TSelf WithTableLink(Func<string, string> link)
+    {
+        ArgumentNullException.ThrowIfNull(link);
+        _link = link;
+        return Self;
+    }
+
+    /// <summary>目标表名前面加上 <paramref name="link"/>（对应 Java 的 asTableLink(String)）。</summary>
+    public TSelf WithTableLink(string link)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(link);
+        return WithTableLink(_ => link);
+    }
+
     /// <summary>给目标表起别名（对应 Java 的 asAlias），列引用随之带上别名：<c>UPDATE `t_blog` xx SET xx.`deleted` = ?</c>。</summary>
     public TSelf AsAlias(string alias)
     {
@@ -111,5 +130,5 @@ public abstract class EntityCommandBase<TSelf, T>
         return Self;
     }
 
-    private protected EntityTableSource NewTable() => new(Entity) { TableNameOverride = _tableName, SchemaOverride = _schema, ExplicitAlias = _alias };
+    private protected EntityTableSource NewTable() => new(Entity) { TableNameOverride = _tableName, SchemaOverride = _schema, ExplicitAlias = _alias, Link = _link };
 }

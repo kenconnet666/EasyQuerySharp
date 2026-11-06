@@ -28,3 +28,5 @@
 - Db2：CASE 分支等处只有参数、推不出类型时报 SQL0418N，要按值的类型包 `CAST(? AS …)`（TS 版做了）；递归 CTE 的递归成员不能有显式 JOIN（SQL0345N），树查询要改成逗号连接。实库冒烟时一起补。
 - ClickHouse：LEFT JOIN 没匹配上的列默认是类型的默认值而不是 NULL，要在连接上设 `join_use_nulls = 1`；`EXISTS` 等关联子查询要 25.x 的新分析器；`UNION` 不带 ALL / DISTINCT 时取决于 `union_default_mode`；带组内排序的字符串聚合不支持。
 - TDengine：日期加减（时长只能写字面量）、字符串聚合、`InCsv`、截到周及以上的 `DateTrunc` 不支持；子查询、窗口函数能力有限，实库冒烟时再按能力裁剪。
+- 列表页请求的条件树与整天区间（TS 11b.3a：FilterBar 高级筛选的 `condition` JSON，日期时间列上只写日期的区间按整天、按时区算）以及 `filterable` / `sortable` 白名单选项：`ToPageAsync(TableRequest)` 现在只做表头筛选、关键字、排序，白名单就是结果里的列；有前端用到时再做。
+- 数据库级的换表（TS 的 `db.mapTables(..)` / `db.inSchema(..)`，一个 `EasyDb` 上所有查询与写入都换）：现在是查询级的 `MapTable` / `InSchema`，写入用 `AsTable` / `AsSchema`；多租户分库要整库切换时再做。

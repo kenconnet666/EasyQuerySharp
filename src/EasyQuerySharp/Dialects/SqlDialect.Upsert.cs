@@ -18,8 +18,8 @@ public abstract partial class SqlDialect
     /// <summary>
     /// 带冲突处理的单行插入写成 MERGE（与 Java 的 MsSQL / Oracle 插入一致）：
     /// <c>MERGE INTO 表 t1 USING (SELECT ? AS c1,… ) t2 ON (t1.k = t2.k AND …) [WHEN MATCHED THEN UPDATE SET t1.c = t2.c,…]
-    /// WHEN NOT MATCHED THEN INSERT (c1,…) VALUES (t2.c1,…)</c>。约束列按列名排序，没有指定时取主键；没有要更新的列时不写 WHEN MATCHED。
-    /// 来源查询写不成 SELECT 的库（Db2 要 <c>VALUES</c>）覆盖。
+    /// WHEN NOT MATCHED THEN INSERT (c1,…) VALUES (t2.c1,…)</c>。约束列按列名排序，没有指定时取非自增的主键（自增主键不写入，不能作约束，与 Java 一致）；
+    /// 没有要更新的列时不写 WHEN MATCHED。来源查询写不成 SELECT 的库（Db2 要 <c>VALUES</c>）覆盖。
     /// </summary>
     public virtual void WriteMerge(SqlRenderer renderer, InsertStatement insert)
     {
@@ -45,9 +45,12 @@ public abstract partial class SqlDialect
     protected IReadOnlyList<string> MergeKeys(InsertStatement insert)
     {
         var conflict = insert.Conflict!;
-        var keys = (conflict.ConflictColumns.Count > 0 ? conflict.ConflictColumns.Select(c => c.Name) : insert.Table.Entity.KeyColumns.Select(c => c.Name))
+        // 自增主键不写入，不能作约束（与 Java 一致）
+        var keys = (conflict.ConflictColumns.Count > 0
+                ? conflict.ConflictColumns.Select(c => c.Name)
+                : insert.Table.Entity.KeyColumns.Where(c => !c.IsGenerated).Select(c => c.Name))
             .Order(StringComparer.Ordinal).ToList();
-        return keys.Count > 0 ? keys : throw new InvalidOperationException($"{Name} 的冲突处理需要约束列：实体没有主键时请指定 conflictColumns");
+        return keys.Count > 0 ? keys : throw new InvalidOperationException($"{Name} 的冲突处理需要约束列：{insert.Table.Entity.Type.Name} 没有非自增的主键时请指定 conflictColumns");
     }
 
     /// <summary>INSERT 的开头关键字；MySQL 忽略冲突时是 <c>INSERT IGNORE INTO </c>。</summary>

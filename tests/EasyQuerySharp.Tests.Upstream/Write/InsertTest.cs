@@ -69,6 +69,15 @@ public sealed class InsertTest(MySqlFixture fixture) : MySqlTest(fixture)
         Assert.Equal("INSERT INTO `t_topic_auto` (`stars`,`title`,`create_time`) VALUES (?,?,?) ON DUPLICATE KEY UPDATE `stars` = VALUES(`stars`), `title` = VALUES(`title`)",
             Db.Insert(NewTopicAuto()).OnConflictUpdate(s => new { s.Stars, s.Title }).ToSql());
 
+    // 目标表名前面加一段写法（Java 的 asTableLink：写入的目标表原来的连接符是空串）
+    [Fact, Upstream("InsertTest.java#insertTableLinkTest1")]
+    public void InsertTableLinkTest1()
+    {
+        const string Rest = "`t_topic_auto` (`stars`,`title`,`create_time`) VALUES (?,?,?) ON DUPLICATE KEY UPDATE `stars` = VALUES(`stars`), `title` = VALUES(`title`)";
+        Assert.Equal("INSERT INTO 1" + Rest, Db.Insert(NewTopicAuto()).WithTableLink(o => o + "1").OnConflictUpdate(s => new { s.Stars, s.Title }).ToSql());
+        Assert.Equal("INSERT INTO 2" + Rest, Db.Insert(NewTopicAuto()).WithTableLink("2").OnConflictUpdate(s => new { s.Stars, s.Title }).ToSql());
+    }
+
     private static BlogEntity Blog(string id, int star, bool withUrl = true)
     {
         var begin = new DateTime(2000, 1, 1, 1, 1, 1);

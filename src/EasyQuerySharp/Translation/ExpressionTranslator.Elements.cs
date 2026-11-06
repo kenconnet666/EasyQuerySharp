@@ -33,22 +33,24 @@ internal sealed partial class ExpressionTranslator
         var predicate = !elementAt && call.Arguments.Count > 1 ? Lambda(call.Arguments[1]) : null;
         var key = string.Join("|", chain.Select(op => op.Method.Name + ":" + (op.Arguments.Count > 1 ? GroupJoinKey(Lambda(op.Arguments[1])) : "")))
                   + "|" + (predicate is null ? "" : GroupJoinKey(predicate)) + "|" + nav.Property.Name + "#" + index;
-        return PartitionedRow(owner, nav, chain, predicate, index, key);
+        return ElementJoin(owner, nav, chain, predicate, index, key, []);
     }
 
     /// <summary>
-    /// 声明了条数的对一导航（<c>[Navigate(OneToOne, OrderBy = …, Limit = 1)]</c>，Java 的 OneToOne + orderByProps + limit，如“最新的一条”）
-    /// 在查询里：与 <c>First()</c> 一样按所属行分区取第 Offset + 1 行，每个所属行最多连上一行（与 Java 一致）。
+    /// 声明了条数的对一导航（<c>[Navigate(OneToOne, OrderBy = …, Limit = 1)]</c>，Java 的 OneToOne + limit / orderByProps，如"最早开的那张卡"）：
+    /// 与集合导航的 <c>First()</c> 一样按所属行分区编行号，取导航排序（PartitionOrder）下第 Offset + 1 行；
+    /// 查询上给这个导航声明的条件（FilterNavigation，Java 的 nav().filter(..)）写在 ON 里分区条件之后。
     /// </summary>
-    private DerivedBinding LimitedToOne(SourceBinding owner, NavigationMetadata nav) =>
-        PartitionedRow(owner, nav, [], null, nav.Offset ?? 0, nav.Property.Name + "#navigate");
+    private DerivedBinding RankedToOne(SourceBinding owner, NavigationMetadata nav) =>
+        ElementJoin(owner, nav, [], null, nav.Offset ?? 0, "ranked|" + nav.Property.Name, Context!.FiltersFor(nav).ToList());
 
-    // 按所属行分区编行号、取第 index + 1 行的派生表；chain 是取行之前的 Where / OrderBy，key 区分同一所属行上的不同取法
-    private DerivedBinding PartitionedRow(SourceBinding owner, NavigationMetadata nav, IReadOnlyList<MethodCallExpression> chain, LambdaExpression? predicate, int index, string key)
+    // 分区编号的派生表 JOIN：chain 是取行之前的 Where / OrderBy，predicate 是 First(条件) 的条件，onFilters 写在 ON 里（参数是目标实体）
+    private DerivedBinding ElementJoin(SourceBinding owner, NavigationMetadata nav, IReadOnlyList<MethodCallExpression> chain, LambdaExpression? predicate, int index,
+        string key, IReadOnlyList<LambdaExpression> onFilters)
     {
         return Context!.ElementJoinFor(owner, key, nav.Required, context =>
         {
-            var element = new EntityTableSource(nav.Target);
+            var element = context.TableFor(nav.Target);
             var inner = new SelectQuery(element);
             // 多对多：经中间表连目标表，按中间表里对应所属表的列分区，这些列以 __列名__ 选出供外层 ON 用（与 Java 一致）
             var link = nav.Mapping is { } mapping ? context.JoinMapping(inner, element, nav, mapping) : null;
@@ -94,7 +96,14 @@ internal sealed partial class ExpressionTranslator
             var pushDown = ownerColumns.All(c => c is ColumnExpr) && partition.All(p => p.Item1 is ColumnExpr)
                 ? new KeyPushDown(ownerColumns.Cast<ColumnExpr>().ToList(), partition.Select(p => (ColumnExpr)p.Item1).ToList())
                 : null;
-            return (table, LogicalExpr.Grouped(on), new DerivedBinding(table, columns.ToDictionary(c => c.PropertyName, c => c.Name), nav.Target), pushDown);
+            var rowBinding = new DerivedBinding(table, columns.ToDictionary(c => c.PropertyName, c => c.Name), nav.Target);
+            SqlExpr join = LogicalExpr.Grouped(on);
+            if (onFilters.Count > 0)
+            {
+                var filters = new ExpressionTranslator([]) { Context = context };
+                join = LogicalExpr.And([join, .. onFilters.Select(f => filters.ElementPredicate(f, rowBinding))]);
+            }
+            return (table, join, rowBinding, pushDown);
         });
     }
 

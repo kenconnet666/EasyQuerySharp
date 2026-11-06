@@ -46,7 +46,9 @@ internal sealed partial class ExpressionTranslator
         if (m.Expression is null || BindingOf(m.Expression) is not { OwnerEntity: { } entity } owner) return null;
         if (Context?.Metadata.FindNavigation(entity, m.Member.Name) is not { IsCollection: false } nav) return null;
         if (nav.Limit is not null && nav.DirectPath.Count == 0)
-            return options == default ? LimitedToOne(owner, nav) : throw Unsupported(m, $"声明了条数的导航 {nav} 不支持 Sql.DisableLogicDelete / Sql.AsTable / Sql.AsAlias / Sql.AsTableSegment");
+            return options == default
+                ? RankedToOne(owner, nav)
+                : throw Unsupported(m, $"声明了条数的对一导航 {nav} 不支持 Sql.DisableLogicDelete / Sql.AsTable / Sql.AsAlias / Sql.AsTableSegment");
         if (nav.DirectPath.Count == 0) return Context!.JoinFor(owner, nav, options);
         if (options != default) throw Unsupported(m, $"直达导航 {nav} 不支持 Sql.DisableLogicDelete / Sql.AsTable / Sql.AsAlias / Sql.AsTableSegment");
         // 直达导航：沿路径逐级 JOIN（与手写 x.A.B 共用同一组 JOIN）
@@ -225,9 +227,9 @@ internal sealed partial class ExpressionTranslator
     /// </summary>
     private CollectionSubQuery NewCollectionSubQuery(SourceBinding owner, NavigationMetadata nav, NavigationTableOptions options = default)
     {
-        var table = options.TableFor(nav.Target);
+        var table = Context!.TableFor(nav.Target, options);
         var sub = new SelectQuery(table);
-        var context = Context!.ForSubQuery(sub);
+        var context = Context.ForSubQuery(sub);
         var translator = new ExpressionTranslator(new Dictionary<ParameterExpression, SourceBinding>(_scope)) { Context = context };
         var element = new EntityBinding(table);
 
@@ -236,7 +238,7 @@ internal sealed partial class ExpressionTranslator
         var relation = new List<SqlExpr>();
         if (nav.Mapping is { } mapping)
         {
-            var mappingTable = new EntityTableSource(mapping);
+            var mappingTable = context.TableFor(mapping);
             var link = new SelectQuery(mappingTable);
             link.Where.AddRange(context.TableFilters(mappingTable));
             for (var i = 0; i < nav.TargetMappingColumns.Count; i++)

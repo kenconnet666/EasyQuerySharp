@@ -43,6 +43,13 @@ public sealed partial class QueryTest3(MySqlFixture fixture) : MySqlTest(fixture
             FourTables().LeftJoin<BlogEntity>((t, t1, t2, t3, t4) => t.Id == t3.Id).LeftJoin<BlogEntity>((t, _, _, _, t4, _) => t.Id == t4.Id)
                 .Where(o => o.Id == "3").Skip(1).Take(2).ToSql());
 
+    // 改写第一个连接表前面的连接符（Java 的 asTableLink）
+    [Fact, Upstream("QueryTest3.java#query124_1")]
+    public void Query124_1() =>
+        Assert.Equal("SELECT t.`id`,t.`stars`,t.`title`,t.`create_time` FROM `t_topic` t LEFT JOIN lateral `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` LEFT JOIN `t_blog` t2 ON t2.`deleted` = ? AND t.`id` = t2.`id` LEFT JOIN `t_blog` t3 ON t3.`deleted` = ? AND t.`id` = t3.`id` WHERE t.`id` = ? LIMIT 2 OFFSET 1",
+            Db.Query<Topic>().LeftJoin<BlogEntity>((t, t1) => t.Id == t1.Id).WithTableLink(join => join + " lateral").LeftJoin<BlogEntity>((t, t1, t2) => t.Id == t2.Id)
+                .LeftJoin<BlogEntity>((t, t1, t2, t3) => t.Id == t3.Id).Where(o => o.Id == "3").Skip(1).Take(2).ToSql());
+
     [Fact, Upstream("QueryTest3.java#query124_2")]
     public void Query124_2() =>
         Assert.Equal("SELECT " + TopicColumns + FourSql() + " WHERE t.`id` = ? LIMIT 2 OFFSET 1",

@@ -174,9 +174,13 @@ internal static class ObjectFilter
             case FilterOp.GreaterThanOrEqual: return Expression.GreaterThanOrEqual(member, Constant(value, member.Type));
             case FilterOp.LessThan: return Expression.LessThan(member, Constant(value, member.Type));
             case FilterOp.LessThanOrEqual: return Expression.LessThanOrEqual(member, Constant(value, member.Type));
-            case FilterOp.Like or FilterOp.Contains: return StringCall(member, nameof(string.Contains), value);
-            case FilterOp.LikeStart or FilterOp.StartsWith: return StringCall(member, nameof(string.StartsWith), value);
-            case FilterOp.LikeEnd or FilterOp.EndsWith: return StringCall(member, nameof(string.EndsWith), value);
+            case FilterOp.Like: return StringCall(member, typeof(string).GetMethod(nameof(string.Contains), [typeof(string)])!, value);
+            case FilterOp.LikeStart: return StringCall(member, typeof(string).GetMethod(nameof(string.StartsWith), [typeof(string)])!, value);
+            case FilterOp.LikeEnd: return StringCall(member, typeof(string).GetMethod(nameof(string.EndsWith), [typeof(string)])!, value);
+            // Java 的 CONTAINS / STARTS_WITH / ENDS_WITH：值原样作参数，% 在 SQL 里拼，值里的通配符按字面匹配
+            case FilterOp.Contains: return StringCall(member, typeof(Sql).GetMethod(nameof(Sql.LikeContains))!, value);
+            case FilterOp.StartsWith: return StringCall(member, typeof(Sql).GetMethod(nameof(Sql.LikeStartsWith))!, value);
+            case FilterOp.EndsWith: return StringCall(member, typeof(Sql).GetMethod(nameof(Sql.LikeEndsWith))!, value);
             case FilterOp.In or FilterOp.NotIn:
             {
                 var list = TypedList(value, member.Type);
@@ -207,10 +211,13 @@ internal static class ObjectFilter
         }
     }
 
-    private static MethodCallExpression StringCall(Expression member, string method, object value) =>
-        member.Type == typeof(string)
-            ? Expression.Call(member, typeof(string).GetMethod(method, [typeof(string)])!, Expression.Constant(Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture), typeof(string)))
-            : throw new InvalidOperationException($"{member} 不是字符串，不能用 LIKE 类条件");
+    // 实例方法 member.M(值)（string.Contains 等）或扩展方法 M(member, 值)（Sql.LikeContains 等）
+    private static MethodCallExpression StringCall(Expression member, MethodInfo method, object value)
+    {
+        if (member.Type != typeof(string)) throw new InvalidOperationException($"{member} 不是字符串，不能用 LIKE 类条件");
+        var text = Expression.Constant(Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture), typeof(string));
+        return method.IsStatic ? Expression.Call(method, member, text) : Expression.Call(member, method, text);
+    }
 
     private static ConstantExpression Constant(object? value, Type type) =>
         Expression.Constant(ValueReader.ConvertTo(value, Nullable.GetUnderlyingType(type) ?? type), type);

@@ -52,7 +52,7 @@ internal sealed partial class TranslationContext
     // 整个集合分组：FROM 目标表（多对多时 INNER JOIN 中间表）GROUP BY 关联键
     private GroupJoinPlan WholePlan(NavigationMetadata navigation, Querying.QueryState? configured, NavigationTableOptions options)
     {
-        var element = options.TableFor(navigation.Target);
+        var element = TableFor(navigation.Target, options);
         var inner = new SelectQuery(element);
         var groupKeys = navigation.Mapping is { } mapping
             ? navigation.SelfMappingColumns.Select(JoinMapping(inner, element, navigation, mapping).Column).ToList()
@@ -67,7 +67,7 @@ internal sealed partial class TranslationContext
     /// <summary>多对多：<paramref name="inner"/> 里目标表 INNER JOIN 中间表（与 Java 一致，ON 里目标列在前），返回中间表。</summary>
     public EntityTableSource JoinMapping(SelectQuery inner, EntityTableSource element, NavigationMetadata navigation, EntityMetadata mapping)
     {
-        var link = new EntityTableSource(mapping);
+        var link = TableFor(mapping);
         var on = navigation.TargetColumns
             .Select((c, i) => (SqlExpr)new BinaryExpr(element.Column(c), SqlBinaryOperator.Equal, link.Column(navigation.TargetMappingColumns[i])))
             .ToList();
@@ -85,7 +85,7 @@ internal sealed partial class TranslationContext
     /// </summary>
     private GroupJoinPlan WindowedPlan(NavigationMetadata navigation, Querying.QueryState? configured, GroupJoinWindow window, NavigationTableOptions options)
     {
-        var element = options.TableFor(navigation.Target);
+        var element = TableFor(navigation.Target, options);
         var numbered = new SelectQuery(element);
         var link = navigation.Mapping is { } mapping ? JoinMapping(numbered, element, navigation, mapping) : null;
         var context = ForSubQuery(numbered);

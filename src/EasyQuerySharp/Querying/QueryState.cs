@@ -29,6 +29,9 @@ internal sealed record EntitySource(Type EntityType) : QuerySource
 
     /// <summary>整个表引用的写法（AsTableSegment）：(带引号的表名, 别名) → SQL 片段。</summary>
     public Func<string, string?, string>? TableSegment { get; init; }
+
+    /// <summary>表前面的连接符改写（WithTableLink）：原来的连接符 → 新的写法。</summary>
+    public Func<string, string>? TableLink { get; init; }
 }
 
 /// <summary>子查询作为派生表。</summary>
@@ -172,6 +175,12 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>传播到导航条件与子查询里的值过滤（UseValueFilter(…, includeNavigations: true)，对应 Java 的 DEFAULT_PROPAGATION_SUPPORTS）。</summary>
     public Filtering.ValueFilter NavigationValueFilter { get; init; }
 
+    /// <summary>查询级的换表（MapTable / InSchema）：这条查询翻译出的全部实体表都按它换表名、换 schema。</summary>
+    public TableMapping Tables { get; init; } = TableMapping.None;
+
+    /// <summary>叠上外层查询的换表（作为派生表、CTE 编译时）：本查询自己映射的优先。</summary>
+    public QueryState InheritTables(TableMapping outer) => outer.IsEmpty ? this : this with { Tables = Tables.Over(outer) };
+
     /// <summary>追加一个 Where 条件：先按 <see cref="ValueFilter"/> 去掉值被拒绝的比较，全部去掉时不追加。</summary>
     public QueryState AddWhere(LambdaExpression predicate)
     {
@@ -193,7 +202,7 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>投影之后再加条件、排序、连接时，把当前查询包成派生表，在外层继续（与 Java 版的 select 之后再 where 一致）。行锁跟到外层：锁只写在最外层查询上。</summary>
     public QueryState Wrap() => new(Db, [new SubQuerySource(this with { Fills = [], Lock = RowLock.None, UniqueColumnNames = true })])
     {
-        ValueFilter = ValueFilter, NavigationValueFilter = NavigationValueFilter, Fills = Fills, Lock = Lock,
+        ValueFilter = ValueFilter, NavigationValueFilter = NavigationValueFilter, Fills = Fills, Lock = Lock, Tables = Tables,
         // 分组合并的设置跟到外层：投影包一层后，外层投影里的导航仍按同样的方式合并
         GroupJoins = GroupJoins, GroupJoinAll = GroupJoinAll, GroupJoinNoMerge = GroupJoinNoMerge, NavigationFilters = NavigationFilters,
         SmartPredicate = SmartPredicate,
@@ -210,7 +219,7 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     private QuerySource? BareSource =>
         Sources is [EntitySource or CteSource] && !IsDynamicTable && Wheres.IsEmpty && OrderBys.IsEmpty && Selector is null && RawSelect is null && GroupKey is null
         && !Distinct && Offset is null && Limit is null && Includes.IsEmpty && Fills.IsEmpty && !DisableLogicDelete && Lock == RowLock.None
-        && Interceptors == InterceptorSelection.Default
+        && Interceptors == InterceptorSelection.Default && Tables.IsEmpty
             ? Sources[0]
             : null;
 
