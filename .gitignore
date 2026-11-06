@@ -11,3 +11,6 @@ riderModule.iml
 /TestResults/
 # BenchmarkDotNet 的运行结果（本地看，不提交）
 BenchmarkDotNet.Artifacts/
+
+# Claude Code 为子代理建的 git 工作树
+.claude/worktrees/
