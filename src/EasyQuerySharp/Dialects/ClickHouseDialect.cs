@@ -122,7 +122,7 @@ public class ClickHouseDialect : SqlDialect
     /// </summary>
     public override string CreateTableSql(EntityMetadata entity)
     {
-        var columns = string.Join(", ", entity.Columns.Select(c => ColumnDefinition(entity, c)));
+        var columns = string.Join(", ", TableColumns(entity).Select(c => ColumnDefinition(entity, c)));
         var order = entity.KeyColumns.Count > 0 ? "(" + string.Join(",", entity.KeyColumns.Select(k => QuoteIdentifier(k.Name))) + ")" : "tuple()";
         return CreateTableStatement(entity, columns) + " ENGINE = MergeTree ORDER BY " + order;
     }
@@ -130,6 +130,40 @@ public class ClickHouseDialect : SqlDialect
     /// <inheritdoc />
     protected override string ColumnDefinition(EntityMetadata entity, ColumnMetadata column) =>
         column.IsGenerated ? throw NoIdentity() : base.ColumnDefinition(entity, column);
+
+    /// <summary>表注释：<c>ALTER TABLE 表 MODIFY COMMENT '…'</c>（没有 COMMENT ON）。</summary>
+    internal override string? TableCommentSql(EntityMetadata entity) =>
+        entity.Comment is null ? null : $"ALTER TABLE {QualifiedTable(entity)} MODIFY COMMENT {SqlString(entity.Comment)}";
+
+    /// <summary>列注释：<c>ALTER TABLE 表 COMMENT COLUMN 列 '…'</c>。</summary>
+    internal override string? ColumnCommentSql(EntityMetadata entity, ColumnMetadata column) =>
+        column.Comment is null ? null : $"ALTER TABLE {QualifiedTable(entity)} COMMENT COLUMN {QuoteIdentifier(column.Name)} {SqlString(column.Comment)}";
+
+    /// <summary>
+    /// 索引是跳数索引：<c>ALTER TABLE 表 ADD INDEX 名 (列, …) TYPE minmax GRANULARITY 1</c>（同 TS 版）；没有唯一索引，也不能指定升降序。
+    /// </summary>
+    internal override string CreateIndexSql(EntityMetadata entity, IndexMetadata index) => index.Unique
+        ? throw new NotSupportedException($"ClickHouse 没有唯一索引：{entity.Type.Name} 的索引 {index.Name}")
+        : $"ALTER TABLE {QualifiedTable(entity)} ADD INDEX {QuoteIdentifier(index.Name)} ({QuotedNames(index.Columns.Select(c => c.Column), ", ")}) TYPE minmax GRANULARITY 1";
+
+    /// <summary>ClickHouse 没有外键。</summary>
+    internal override string AddForeignKeySql(ForeignKeyMetadata foreignKey) =>
+        throw new NotSupportedException($"ClickHouse 没有外键：{foreignKey.Entity.Type.Name} 上的 [ForeignKey] {foreignKey.Name}");
+
+    /// <summary>改表名：<c>RENAME TABLE 旧表 TO 新表</c>。</summary>
+    internal override string RenameTableSql(EntityMetadata entity, string oldName) =>
+        $"RENAME TABLE {QualifiedName(entity.Schema, oldName)} TO {QualifiedTable(entity)}";
+
+    /// <summary>读 system.tables / system.columns / system.data_skipping_indices（当前库，同 TS 版）；可空列的类型去掉 Nullable(…)，没有外键。</summary>
+    internal override CatalogQueries CatalogQueries { get; } = new(
+        "SELECT name AS table_name, comment FROM system.tables WHERE database = currentDatabase() AND NOT is_temporary AND engine NOT LIKE '%View' ORDER BY name",
+        "SELECT table AS table_name, name AS column_name, replaceRegexpOne(type, '^Nullable\\\\((.*)\\\\)$', '\\\\1') AS column_type, "
+        + "startsWith(type, 'Nullable(') AS is_nullable, if(default_kind = '', NULL, default_expression) AS column_default, "
+        + "if(comment = '', NULL, comment) AS comment, 0 AS is_generated, is_in_sorting_key AS primary_key "
+        + "FROM system.columns WHERE database = currentDatabase() ORDER BY table, position",
+        "SELECT table AS table_name, name AS index_name, 0 AS is_unique, trim(BOTH ' ' FROM column_name) AS column_name "
+        + "FROM system.data_skipping_indices ARRAY JOIN splitByChar(',', expr) AS column_name WHERE database = currentDatabase() ORDER BY table, name",
+        null);
 
     /// <summary>ClickHouse 的类型名（区分大小写）：String、Int32、Bool、Float64、DateTime64(3)、Date32、UUID。</summary>
     protected override string ClrColumnType(Type type, ColumnMetadata column) => type switch

@@ -104,26 +104,54 @@ public class MySqlDialect : SqlDialect
             : throw new InvalidOperationException($"{insert.Table.Entity.Type.Name} 没有非自增的主键：MySQL 的忽略冲突改写不成 ON DUPLICATE KEY UPDATE 主键 = VALUES(主键)");
     }
 
-    /// <summary>与 Java 版逐字一致的建表格式：每列 <c>`列` 类型 NULL [ COMMENT '…'],</c> 一行，主键单独一行，<c>Engine=InnoDB</c>。</summary>
-    public override string CreateTableSql(Metadata.EntityMetadata entity)
-    {
-        var sb = new System.Text.StringBuilder();
-        sb.Append("CREATE TABLE IF NOT EXISTS ").Append(QualifiedTable(entity)).Append(" ( \n");
-        for (var i = 0; i < entity.Columns.Count; i++)
-        {
-            var c = entity.Columns[i];
-            sb.Append(QuoteIdentifier(c.Name)).Append(' ').Append(ColumnType(c)).Append(IsNullable(c) ? " NULL " : " NOT NULL ");
-            if (c.IsGenerated) sb.Append("AUTO_INCREMENT ");
-            if (c.Comment is not null) sb.Append(" COMMENT '").Append(c.Comment.Replace("'", "''")).Append('\'');
-            // 最后一列之后是主键约束；没有主键的表不加逗号
-            sb.Append(i < entity.Columns.Count - 1 ? ",\n" : entity.KeyColumns.Count > 0 ? ", \n" : "\n");
-        }
-        if (entity.KeyColumns.Count > 0)
-            sb.Append(" PRIMARY KEY (").Append(string.Join(",", entity.KeyColumns.Select(k => QuoteIdentifier(k.Name)))).Append(")\n");
-        sb.Append(") Engine=InnoDB");
-        if (entity.Comment is not null) sb.Append(" COMMENT='").Append(entity.Comment.Replace("'", "''")).Append('\'');
-        return sb.Append(';').ToString();
-    }
+    /// <summary>与 Java 版逐字一致的建表格式：每列 <c>`列` 类型 NULL [ AUTO_INCREMENT][ COMMENT '…'],</c> 一行，主键单独一行，<c>Engine=InnoDB</c>，注释写在语句里。</summary>
+    public override string CreateTableSql(Metadata.EntityMetadata entity) =>
+        MultiLineCreateTable(entity, c => (c.IsGenerated ? " AUTO_INCREMENT" : "") + InlineComment(c.Comment),
+            ") Engine=InnoDB" + (entity.Comment is null ? "" : " COMMENT=" + SqlString(entity.Comment)) + ";");
+
+    private string InlineComment(string? comment) => comment is null ? "" : " COMMENT " + SqlString(comment);
+
+    // 下面的同步语句与 Java 的 DefaultDatabaseMigrationProvider 逐字一致：注释写在语句里，索引名、外键名不加引号，以分号结尾
+
+    /// <inheritdoc />
+    internal override string? TableCommentSql(Metadata.EntityMetadata entity) => null;
+
+    /// <inheritdoc />
+    internal override string? ColumnCommentSql(Metadata.EntityMetadata entity, Metadata.ColumnMetadata column) => null;
+
+    /// <summary><c>CREATE [UNIQUE ]INDEX 名 ON `表` (`列` ASC,…)[ COMMENT '…'];</c></summary>
+    internal override string CreateIndexSql(Metadata.EntityMetadata entity, Metadata.IndexMetadata index) =>
+        $"CREATE {(index.Unique ? "UNIQUE " : "")}INDEX {index.Name} ON {QualifiedTable(entity)} ({IndexColumns(index, ",")}){InlineComment(index.Comment)};";
+
+    /// <summary><c>ALTER TABLE `表` ADD CONSTRAINT 名 FOREIGN KEY (`列`) REFERENCES `目标` (`列`)[ 动作 ];</c></summary>
+    internal override string AddForeignKeySql(Metadata.ForeignKeyMetadata foreignKey) =>
+        $"ALTER TABLE {QualifiedTable(foreignKey.Entity)} ADD CONSTRAINT {foreignKey.Name} FOREIGN KEY ({QuotedNames(foreignKey.Columns)}) "
+        + $"REFERENCES {QuoteIdentifier(foreignKey.Target.TableName)} ({QuotedNames(foreignKey.TargetColumns)}){(foreignKey.Action is null ? "" : " " + foreignKey.Action + " ")};";
+
+    /// <summary><c>ALTER TABLE `旧表` RENAME TO `新表`;</c></summary>
+    internal override string RenameTableSql(Metadata.EntityMetadata entity, string oldName) => base.RenameTableSql(entity, oldName) + ";";
+
+    /// <summary><c>ALTER TABLE `表` CHANGE `旧列` `新列` 类型 NULL[ COMMENT '…'];</c>（CHANGE 连同类型一起写，5.7 也能用）。</summary>
+    internal override string RenameColumnSql(Metadata.EntityMetadata entity, string oldName, Metadata.ColumnMetadata column) =>
+        $"ALTER TABLE {QualifiedTable(entity)} CHANGE {QuoteIdentifier(oldName)} {QuoteIdentifier(column.Name)} {ColumnType(column)}{(IsNullable(column) ? " NULL" : " NOT NULL")}{InlineComment(column.Comment)};";
+
+    /// <summary><c>ALTER TABLE `表` ADD `列` 类型 NULL[ COMMENT '…'];</c></summary>
+    internal override string AddColumnSql(Metadata.EntityMetadata entity, Metadata.ColumnMetadata column) =>
+        $"ALTER TABLE {QualifiedTable(entity)} ADD {QuoteIdentifier(column.Name)} {ColumnType(column)}{(IsNullable(column) ? " NULL" : " NOT NULL")}{InlineComment(column.Comment)};";
+
+    /// <summary>读 information_schema（当前库）。</summary>
+    internal override CatalogQueries CatalogQueries { get; } = new(
+        "SELECT TABLE_NAME AS table_name, TABLE_COMMENT AS comment FROM information_schema.TABLES "
+        + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME",
+        "SELECT TABLE_NAME AS table_name, COLUMN_NAME AS column_name, COLUMN_TYPE AS column_type, IS_NULLABLE AS is_nullable, "
+        + "COLUMN_DEFAULT AS column_default, COLUMN_COMMENT AS comment, EXTRA LIKE '%auto_increment%' AS is_generated, COLUMN_KEY = 'PRI' AS primary_key "
+        + "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME, ORDINAL_POSITION",
+        "SELECT TABLE_NAME AS table_name, INDEX_NAME AS index_name, NON_UNIQUE = 0 AS is_unique, COLUMN_NAME AS column_name "
+        + "FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND INDEX_NAME <> 'PRIMARY' ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX",
+        "SELECT TABLE_NAME AS table_name, CONSTRAINT_NAME AS constraint_name, COLUMN_NAME AS column_name, "
+        + "REFERENCED_TABLE_NAME AS referenced_table, REFERENCED_COLUMN_NAME AS referenced_column "
+        + "FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME IS NOT NULL "
+        + "ORDER BY TABLE_NAME, CONSTRAINT_NAME, ORDINAL_POSITION");
 
     /// <inheritdoc />
     protected override string ClrColumnType(Type type, Metadata.ColumnMetadata column) => type switch

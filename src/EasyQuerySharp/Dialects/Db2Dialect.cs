@@ -144,6 +144,30 @@ public class Db2Dialect : SqlDialect
         _ => base.ClrColumnType(type, column),
     };
 
+    /// <summary>改表名：<c>RENAME TABLE 旧表 TO "新表"</c>。</summary>
+    internal override string RenameTableSql(EntityMetadata entity, string oldName) =>
+        $"RENAME TABLE {QualifiedName(entity.Schema, oldName)} TO {QuoteIdentifier(entity.TableName)}";
+
+    /// <summary>读 SYSCAT 目录（当前模式，同 TS 版）。</summary>
+    internal override CatalogQueries CatalogQueries { get; } = new(
+        "SELECT TABNAME AS \"table_name\", REMARKS AS \"comment\" FROM SYSCAT.TABLES WHERE TABSCHEMA = CURRENT SCHEMA AND TYPE = 'T' ORDER BY TABNAME",
+        "SELECT c.TABNAME AS \"table_name\", c.COLNAME AS \"column_name\", LOWER(c.TYPENAME) || CASE "
+        + "WHEN c.TYPENAME IN ('VARCHAR', 'CHARACTER') AND c.TYPESTRINGUNITS = 'CODEUNITS32' THEN '(' || c.STRINGUNITSLENGTH || ' codeunits32)' "
+        + "WHEN c.TYPENAME IN ('VARCHAR', 'CHARACTER') THEN '(' || c.LENGTH || ')' "
+        + "WHEN c.TYPENAME = 'DECIMAL' THEN '(' || c.LENGTH || ', ' || c.SCALE || ')' "
+        + "WHEN c.TYPENAME = 'TIMESTAMP' THEN '(' || c.SCALE || ')' ELSE '' END AS \"column_type\", "
+        + "CASE c.NULLS WHEN 'Y' THEN 1 ELSE 0 END AS \"is_nullable\", c.\"DEFAULT\" AS \"column_default\", c.REMARKS AS \"comment\", "
+        + "CASE c.IDENTITY WHEN 'Y' THEN 1 ELSE 0 END AS \"is_generated\", CASE WHEN c.KEYSEQ IS NULL THEN 0 ELSE 1 END AS \"primary_key\" "
+        + "FROM SYSCAT.COLUMNS c WHERE c.TABSCHEMA = CURRENT SCHEMA ORDER BY c.TABNAME, c.COLNO",
+        "SELECT i.TABNAME AS \"table_name\", i.INDNAME AS \"index_name\", CASE i.UNIQUERULE WHEN 'D' THEN 0 ELSE 1 END AS \"is_unique\", ic.COLNAME AS \"column_name\" "
+        + "FROM SYSCAT.INDEXES i JOIN SYSCAT.INDEXCOLUSE ic ON ic.INDSCHEMA = i.INDSCHEMA AND ic.INDNAME = i.INDNAME "
+        + "WHERE i.TABSCHEMA = CURRENT SCHEMA AND i.UNIQUERULE <> 'P' AND i.INDNAME NOT LIKE 'SQL%' ORDER BY i.TABNAME, i.INDNAME, ic.COLSEQ",
+        "SELECT r.TABNAME AS \"table_name\", r.CONSTNAME AS \"constraint_name\", k.COLNAME AS \"column_name\", "
+        + "r.REFTABNAME AS \"referenced_table\", rk.COLNAME AS \"referenced_column\" FROM SYSCAT.REFERENCES r "
+        + "JOIN SYSCAT.KEYCOLUSE k ON k.TABSCHEMA = r.TABSCHEMA AND k.CONSTNAME = r.CONSTNAME "
+        + "JOIN SYSCAT.KEYCOLUSE rk ON rk.TABSCHEMA = r.REFTABSCHEMA AND rk.CONSTNAME = r.REFKEYNAME AND rk.COLSEQ = k.COLSEQ "
+        + "WHERE r.TABSCHEMA = CURRENT SCHEMA ORDER BY r.TABNAME, r.CONSTNAME, k.COLSEQ");
+
     /// <inheritdoc />
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {

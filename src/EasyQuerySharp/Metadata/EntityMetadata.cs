@@ -79,6 +79,17 @@ public sealed class EntityMetadata
     /// <summary>这是值对象自己的形状（只用来物化单独投影出的值对象，没有表）。</summary>
     internal bool IsValueObject { get; init; }
 
+    /// <summary>改名前的表名（<see cref="RenamedFromAttribute"/>）；code-first 同步时用。</summary>
+    internal string? RenamedFrom { get; init; }
+
+    /// <summary>表上的索引（<see cref="TableIndexAttribute"/>）。</summary>
+    internal IReadOnlyList<IndexMetadata> Indexes { get; init; } = [];
+
+    /// <summary>对一导航上声明的外键（<see cref="ForeignKeyAttribute"/>）；要解析目标实体，首次访问时才构建。</summary>
+    internal IReadOnlyList<ForeignKeyMetadata> ForeignKeys => _foreignKeys?.Value ?? [];
+
+    internal Lazy<IReadOnlyList<ForeignKeyMetadata>>? _foreignKeys;
+
     /// <summary>按属性名取列；不是映射列时返回 null。</summary>
     public ColumnMetadata? FindColumn(string propertyName) => _byProperty.GetValueOrDefault(propertyName);
 

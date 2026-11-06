@@ -39,6 +39,17 @@ public class DamengDialect : OracleDialect
     /// <inheritdoc />
     protected override string IdentityClause => "IDENTITY(1, 1)";
 
+    /// <summary>读库结构时的列类型：达梦的 VARCHAR / DECIMAL / TIMESTAMP 带长度与精度（同 TS 版）。</summary>
+    private protected override string IntrospectedType =>
+        "LOWER(c.data_type) || CASE WHEN c.data_type IN ('VARCHAR', 'VARCHAR2', 'CHAR', 'NVARCHAR') THEN '(' || c.char_length || ')' "
+        + "WHEN c.data_type IN ('DECIMAL', 'NUMBER', 'NUMERIC') AND c.data_precision IS NOT NULL THEN '(' || c.data_precision || ', ' || c.data_scale || ')' "
+        + "WHEN c.data_type IN ('TIMESTAMP', 'TIME') THEN '(' || c.data_scale || ')' ELSE '' END";
+
+    /// <summary>自增列记在 SYSCOLUMNS.INFO2 的最低位（达梦的 user_tab_columns 没有 identity_column）。</summary>
+    private protected override string IntrospectedIdentity =>
+        "(SELECT BITAND(sc.info2, 1) FROM syscolumns sc JOIN sysobjects so ON so.id = sc.id AND so.subtype$ = 'UTAB' AND so.schid = CURRENT_SCHID() "
+        + "WHERE so.name = c.table_name AND sc.name = c.column_name)";
+
     /// <summary>Java 的 DamengSQLFuncImpl 没有覆盖 orderByNullsMode：NULL 位置沿用通用的 CASE 写法。</summary>
     protected override bool NativeNullsOrder => false;
 
