@@ -116,8 +116,12 @@ EasyQuerySharp.DateTruncUnit.Quarter = 1 -> EasyQuerySharp.DateTruncUnit
 EasyQuerySharp.DateTruncUnit.Second = 7 -> EasyQuerySharp.DateTruncUnit
 EasyQuerySharp.DateTruncUnit.Week = 3 -> EasyQuerySharp.DateTruncUnit
 EasyQuerySharp.DateTruncUnit.Year = 0 -> EasyQuerySharp.DateTruncUnit
+EasyQuerySharp.Dialects.ClickHouseDialect
+EasyQuerySharp.Dialects.ClickHouseDialect.ClickHouseDialect() -> void
 EasyQuerySharp.Dialects.DamengDialect
 EasyQuerySharp.Dialects.DamengDialect.DamengDialect() -> void
+EasyQuerySharp.Dialects.Db2Dialect
+EasyQuerySharp.Dialects.Db2Dialect.Db2Dialect() -> void
 EasyQuerySharp.Dialects.DuckDbDialect
 EasyQuerySharp.Dialects.DuckDbDialect.DuckDbDialect() -> void
 EasyQuerySharp.Dialects.FunctionWriter
@@ -137,16 +141,18 @@ EasyQuerySharp.Dialects.PostgreSqlDialect
 EasyQuerySharp.Dialects.PostgreSqlDialect.PostgreSqlDialect() -> void
 EasyQuerySharp.Dialects.SqlDialect
 EasyQuerySharp.Dialects.SqlDialect.ColumnType(EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
+EasyQuerySharp.Dialects.SqlDialect.MergeKeys(EasyQuerySharp.SqlAst.InsertStatement! insert) -> System.Collections.Generic.IReadOnlyList<string!>!
 EasyQuerySharp.Dialects.SqlDialect.QualifiedName(string? schema, string! table) -> string!
 EasyQuerySharp.Dialects.SqlDialect.QualifiedTable(EasyQuerySharp.Metadata.EntityMetadata! entity) -> string!
 EasyQuerySharp.Dialects.SqlDialect.SqlDialect() -> void
 EasyQuerySharp.Dialects.SqlDialect.WriteFunction(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.FunctionExpr! functionCall) -> void
-EasyQuerySharp.Dialects.SqlDialect.WriteMerge(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.InsertStatement! insert) -> void
 EasyQuerySharp.Dialects.SqlDialect.WriteOrderBy(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.OrderByItem!>! orders) -> void
 EasyQuerySharp.Dialects.SqlServerDialect
 EasyQuerySharp.Dialects.SqlServerDialect.SqlServerDialect() -> void
 EasyQuerySharp.Dialects.SqliteDialect
 EasyQuerySharp.Dialects.SqliteDialect.SqliteDialect() -> void
+EasyQuerySharp.Dialects.TDengineDialect
+EasyQuerySharp.Dialects.TDengineDialect.TDengineDialect() -> void
 EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
 EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.<Clone>$() -> EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>!
 EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.Deconstruct(out T1 Value1, out T2 Value2, out T3 Value3, out T4 Value4, out T5 Value5, out T6 Value6, out T7 Value7, out T8 Value8, out T9 Value9, out T10 Value10) -> void
@@ -375,7 +381,9 @@ EasyQuerySharp.EasyDbOptions.ReverseOffsetThreshold.set -> void
 EasyQuerySharp.EasyDbOptions.UpdateStrategy.get -> EasyQuerySharp.Commands.ColumnStrategy
 EasyQuerySharp.EasyDbOptions.UpdateStrategy.set -> void
 EasyQuerySharp.EasyDbOptions.Use(EasyQuerySharp.Dialects.SqlDialect! dialect, System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
+EasyQuerySharp.EasyDbOptions.UseClickHouse(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseDameng(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
+EasyQuerySharp.EasyDbOptions.UseDb2(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseDuckDb(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseGaussDb(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseHana(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
@@ -385,6 +393,7 @@ EasyQuerySharp.EasyDbOptions.UseOracle(System.Data.Common.DbDataSource? dataSour
 EasyQuerySharp.EasyDbOptions.UsePostgreSql(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseSqlServer(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseSqlite(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
+EasyQuerySharp.EasyDbOptions.UseTDengine(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyQueryException
 EasyQuerySharp.EasyQueryException.EasyQueryException(string! message, EasyQuerySharp.SqlStatement? statement = null, System.Exception? inner = null) -> void
 EasyQuerySharp.EasyQueryException.Sql.get -> string?
@@ -1741,6 +1750,22 @@ override EasyQuerySharp.Commands.MapValue.Equals(object? obj) -> bool
 override EasyQuerySharp.Commands.MapValue.GetHashCode() -> int
 override EasyQuerySharp.Commands.MapValue.ToString() -> string!
 override EasyQuerySharp.Commands.UpdateCommand<T>.ExecuteAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<long>!
+override EasyQuerySharp.Dialects.ClickHouseDialect.CastTemplate(System.Type! targetType) -> string!
+override EasyQuerySharp.Dialects.ClickHouseDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
+override EasyQuerySharp.Dialects.ClickHouseDialect.ColumnDefinition(EasyQuerySharp.Metadata.EntityMetadata! entity, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
+override EasyQuerySharp.Dialects.ClickHouseDialect.CreateTableSql(EasyQuerySharp.Metadata.EntityMetadata! entity) -> string!
+override EasyQuerySharp.Dialects.ClickHouseDialect.Name.get -> string!
+override EasyQuerySharp.Dialects.ClickHouseDialect.QuoteIdentifier(string! identifier) -> string!
+override EasyQuerySharp.Dialects.ClickHouseDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
+override EasyQuerySharp.Dialects.ClickHouseDialect.WriteDelete(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.DeleteStatement! statement) -> void
+override EasyQuerySharp.Dialects.ClickHouseDialect.WriteInsertConflict(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.InsertStatement! insert) -> void
+override EasyQuerySharp.Dialects.ClickHouseDialect.WriteInsertReturning(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! returning) -> void
+override EasyQuerySharp.Dialects.ClickHouseDialect.WriteJoinedDelete(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.DeleteStatement! statement) -> void
+override EasyQuerySharp.Dialects.ClickHouseDialect.WriteJoinedUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
+override EasyQuerySharp.Dialects.ClickHouseDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
+override EasyQuerySharp.Dialects.ClickHouseDialect.WriteLock(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.RowLock rowLock) -> void
+override EasyQuerySharp.Dialects.ClickHouseDialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
+override EasyQuerySharp.Dialects.ClickHouseDialect.WriteUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
 override EasyQuerySharp.Dialects.DamengDialect.CastTemplate(System.Type! targetType) -> string!
 override EasyQuerySharp.Dialects.DamengDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
 override EasyQuerySharp.Dialects.DamengDialect.DateDiffInterval.get -> string!
@@ -1749,6 +1774,20 @@ override EasyQuerySharp.Dialects.DamengDialect.Name.get -> string!
 override EasyQuerySharp.Dialects.DamengDialect.NativeNullsOrder.get -> bool
 override EasyQuerySharp.Dialects.DamengDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
 override EasyQuerySharp.Dialects.DamengDialect.WriteJoinedUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
+override EasyQuerySharp.Dialects.Db2Dialect.CastTemplate(System.Type! targetType) -> string!
+override EasyQuerySharp.Dialects.Db2Dialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
+override EasyQuerySharp.Dialects.Db2Dialect.InsertConflictUsesMerge.get -> bool
+override EasyQuerySharp.Dialects.Db2Dialect.LastInsertIdQuery.get -> string?
+override EasyQuerySharp.Dialects.Db2Dialect.Name.get -> string!
+override EasyQuerySharp.Dialects.Db2Dialect.QualifySetColumns.get -> bool
+override EasyQuerySharp.Dialects.Db2Dialect.RecursiveCteColumnList.get -> bool
+override EasyQuerySharp.Dialects.Db2Dialect.RecursiveWith.get -> string!
+override EasyQuerySharp.Dialects.Db2Dialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
+override EasyQuerySharp.Dialects.Db2Dialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
+override EasyQuerySharp.Dialects.Db2Dialect.WriteLock(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.RowLock rowLock) -> void
+override EasyQuerySharp.Dialects.Db2Dialect.WriteMerge(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.InsertStatement! insert) -> void
+override EasyQuerySharp.Dialects.Db2Dialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
+override EasyQuerySharp.Dialects.Db2Dialect.WritePaging(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
 override EasyQuerySharp.Dialects.DuckDbDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
 override EasyQuerySharp.Dialects.DuckDbDialect.ColumnDefinition(EasyQuerySharp.Metadata.EntityMetadata! entity, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
 override EasyQuerySharp.Dialects.DuckDbDialect.CreateTableSql(EasyQuerySharp.Metadata.EntityMetadata! entity) -> string!
@@ -1864,6 +1903,22 @@ override EasyQuerySharp.Dialects.SqliteDialect.WriteJoinedUpdate(EasyQuerySharp.
 override EasyQuerySharp.Dialects.SqliteDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
 override EasyQuerySharp.Dialects.SqliteDialect.WriteLock(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.RowLock rowLock) -> void
 override EasyQuerySharp.Dialects.SqliteDialect.WriteTargetAliasSeparator.get -> string!
+override EasyQuerySharp.Dialects.TDengineDialect.CastTemplate(System.Type! targetType) -> string!
+override EasyQuerySharp.Dialects.TDengineDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
+override EasyQuerySharp.Dialects.TDengineDialect.ColumnDefinition(EasyQuerySharp.Metadata.EntityMetadata! entity, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
+override EasyQuerySharp.Dialects.TDengineDialect.CreateTableSql(EasyQuerySharp.Metadata.EntityMetadata! entity) -> string!
+override EasyQuerySharp.Dialects.TDengineDialect.Name.get -> string!
+override EasyQuerySharp.Dialects.TDengineDialect.QuoteIdentifier(string! identifier) -> string!
+override EasyQuerySharp.Dialects.TDengineDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
+override EasyQuerySharp.Dialects.TDengineDialect.WriteDelete(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.DeleteStatement! statement) -> void
+override EasyQuerySharp.Dialects.TDengineDialect.WriteInsertConflict(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.InsertStatement! insert) -> void
+override EasyQuerySharp.Dialects.TDengineDialect.WriteInsertReturning(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! returning) -> void
+override EasyQuerySharp.Dialects.TDengineDialect.WriteJoinedDelete(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.DeleteStatement! statement) -> void
+override EasyQuerySharp.Dialects.TDengineDialect.WriteJoinedUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
+override EasyQuerySharp.Dialects.TDengineDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
+override EasyQuerySharp.Dialects.TDengineDialect.WriteLock(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.RowLock rowLock) -> void
+override EasyQuerySharp.Dialects.TDengineDialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
+override EasyQuerySharp.Dialects.TDengineDialect.WriteUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
 override EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.Equals(object? obj) -> bool
 override EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.GetHashCode() -> int
 override EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.ToString() -> string!
@@ -1939,7 +1994,9 @@ override EasyQuerySharp.SqlStatement.ToString() -> string!
 override EasyQuerySharp.WindowBound.GetHashCode() -> int
 static EasyQuerySharp.Commands.MapValue.operator !=(EasyQuerySharp.Commands.MapValue? left, EasyQuerySharp.Commands.MapValue? right) -> bool
 static EasyQuerySharp.Commands.MapValue.operator ==(EasyQuerySharp.Commands.MapValue? left, EasyQuerySharp.Commands.MapValue? right) -> bool
+static EasyQuerySharp.Dialects.ClickHouseDialect.Instance.get -> EasyQuerySharp.Dialects.ClickHouseDialect!
 static EasyQuerySharp.Dialects.DamengDialect.Instance.get -> EasyQuerySharp.Dialects.DamengDialect!
+static EasyQuerySharp.Dialects.Db2Dialect.Instance.get -> EasyQuerySharp.Dialects.Db2Dialect!
 static EasyQuerySharp.Dialects.DuckDbDialect.Instance.get -> EasyQuerySharp.Dialects.DuckDbDialect!
 static EasyQuerySharp.Dialects.GaussDbDialect.Instance.get -> EasyQuerySharp.Dialects.GaussDbDialect!
 static EasyQuerySharp.Dialects.HanaDialect.Instance.get -> EasyQuerySharp.Dialects.HanaDialect!
@@ -1963,8 +2020,10 @@ static EasyQuerySharp.Dialects.SqlDialect.Template(string! template) -> EasyQuer
 static EasyQuerySharp.Dialects.SqlDialect.UnionAllExtreme(string! aggregate, string! selectSuffix) -> EasyQuerySharp.Dialects.FunctionWriter!
 static EasyQuerySharp.Dialects.SqlDialect.WithDigits(string! name) -> EasyQuerySharp.Dialects.FunctionWriter!
 static EasyQuerySharp.Dialects.SqlDialect.WriteCommaJoinedTables(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.JoinClause!>! joins, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! where) -> void
+static EasyQuerySharp.Dialects.SqlDialect.WriteEscapedLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate, string! escapeClause, System.Func<string!, string!>? escape = null) -> void
 static EasyQuerySharp.Dialects.SqlServerDialect.Instance.get -> EasyQuerySharp.Dialects.SqlServerDialect!
 static EasyQuerySharp.Dialects.SqliteDialect.Instance.get -> EasyQuerySharp.Dialects.SqliteDialect!
+static EasyQuerySharp.Dialects.TDengineDialect.Instance.get -> EasyQuerySharp.Dialects.TDengineDialect!
 static EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.operator !=(EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>? left, EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>? right) -> bool
 static EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.operator ==(EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>? left, EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>? right) -> bool
 static EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9>.operator !=(EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9>? left, EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9>? right) -> bool
@@ -2179,6 +2238,7 @@ virtual EasyQuerySharp.Dialects.SqlDialect.RecursiveWith.get -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.SupportsWriteReturning.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.TreeDeepStart.get -> string!
+virtual EasyQuerySharp.Dialects.SqlDialect.WriteDelete(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.DeleteStatement! statement) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteGroupBy(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! keys, EasyQuerySharp.SqlAst.GroupByMode mode) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteInsertConflict(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.InsertStatement! insert) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteInsertOutput(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! returning) -> void
@@ -2187,6 +2247,7 @@ virtual EasyQuerySharp.Dialects.SqlDialect.WriteJoinedDelete(EasyQuerySharp.Rend
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteJoinedUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteLock(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.RowLock rowLock) -> void
+virtual EasyQuerySharp.Dialects.SqlDialect.WriteMerge(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.InsertStatement! insert) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteModulo(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SqlExpr! left, EasyQuerySharp.SqlAst.SqlExpr! right) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteOrderByItem(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderByItem! item) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
@@ -2194,6 +2255,7 @@ virtual EasyQuerySharp.Dialects.SqlDialect.WritePagedSelect(EasyQuerySharp.Rende
 virtual EasyQuerySharp.Dialects.SqlDialect.WritePaging(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteSelectHead(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteTargetAliasSeparator.get -> string!
+virtual EasyQuerySharp.Dialects.SqlDialect.WriteUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
 virtual EasyQuerySharp.Encryption.SegmentedEncryptionStrategy.ChineseCharOccupancyLength.get -> int
 virtual EasyQuerySharp.Encryption.SegmentedEncryptionStrategy.EncryptWordMinLength.get -> int
 virtual EasyQuerySharp.Encryption.SegmentedEncryptionStrategy.OtherCharOccupancyLength.get -> int
