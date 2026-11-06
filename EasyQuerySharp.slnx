@@ -6,6 +6,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/EasyQuerySharp.TestKit/EasyQuerySharp.TestKit.csproj" />
+    <Project Path="tests/EasyQuerySharp.Tests.DependencyInjection/EasyQuerySharp.Tests.DependencyInjection.csproj" />
     <Project Path="tests/EasyQuerySharp.Tests.Generator/EasyQuerySharp.Tests.Generator.csproj" />
     <Project Path="tests/EasyQuerySharp.Tests.Live/EasyQuerySharp.Tests.Live.csproj" />
     <Project Path="tests/EasyQuerySharp.Tests.Upstream/EasyQuerySharp.Tests.Upstream.csproj" />
