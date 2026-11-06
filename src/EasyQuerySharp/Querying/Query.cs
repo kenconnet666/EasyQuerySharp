@@ -28,7 +28,8 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     private QueryState Open => State.HasSelector ? State.Wrap() : State;
 
     /// <summary>追加条件（多个 Where 之间是 AND）。</summary>
-    public Query<T> Where(Expression<Func<T, bool>> predicate) => new(Open.AddWhere(predicate));
+    public Query<T> Where(Expression<Func<T, bool>> predicate) =>
+        new(PickedElement is { } picked ? State.AddWhere(OverJoinedSources(predicate, picked)) : Open.AddWhere(predicate));
 
     /// <summary><paramref name="condition"/> 为 true 时才追加条件。</summary>
     public Query<T> WhereIf(bool condition, Expression<Func<T, bool>> predicate) => condition ? Where(predicate) : this;
@@ -61,7 +62,8 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     public GroupQuery<TKey, T> GroupBy<TKey>(Expression<Func<T, TKey>> key) => new(Open with { GroupKey = key });
 
     /// <summary>投影到 DTO、匿名类型或标量。投影之后再 Where / OrderBy 会把它包成派生表。</summary>
-    public Query<TResult> Select<TResult>(Expression<Func<T, TResult>> selector) => new(Open with { Selector = selector });
+    public Query<TResult> Select<TResult>(Expression<Func<T, TResult>> selector) =>
+        new(PickedElement is { } picked ? State with { Selector = OverJoinedSources(selector, picked) } : Open with { Selector = selector });
 
     /// <summary>
     /// 带出导航（对应 Java 的 include）：主查询之后每个导航一条 <c>WHERE 键 IN (…)</c> 查询，结果挂到实体的导航属性上，没有 N+1。
@@ -273,7 +275,12 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     public Task<decimal?> AverageDecimalAsync<TValue>(Expression<Func<T, TValue>> selector, CancellationToken cancellationToken = default) =>
         AggregateAsync<decimal?>(SqlFunctionNames.Avg, selector, cancellationToken);
 
-    private Query<T> Order(LambdaExpression key, bool descending) => new(Open with { OrderBys = Open.OrderBys.Add(new OrderSpec(key, descending)) });
+    private Query<T> Order(LambdaExpression key, bool descending)
+    {
+        if (PickedElement is { } picked) return new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(OverJoinedSources(key, picked), descending)) });
+        var open = Open;
+        return new(open with { OrderBys = open.OrderBys.Add(new OrderSpec(key, descending)) });
+    }
 
     /// <summary>
     /// 追加一个自带方向的原生排序项，片段里可以引用列（对应 Java 的 orderBy(x -&gt; x.expression().sql("{0} ASC", …))）：

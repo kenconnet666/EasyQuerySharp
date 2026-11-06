@@ -25,6 +25,15 @@ public sealed class QueryTest25(MySqlFixture fixture) : MySqlTest(fixture)
         Assert.Equal("t_topic", Db.Metadata.Get<Topic>().TableName);
     }
 
+    // 库里没有 test_a 等表：两边都执行到 SQL 为止，报表不存在
+    [Fact, Upstream("QueryTest25.java#testToListFlat1", Deviation = "Java 的 toList(flatElement…) 先只查关联键、再逐层带出并在内存里去重；C# 的 SelectMany 按 LINQ 语义写成一条 INNER JOIN（保留重复，去重加 Distinct）")]
+    public async Task TestToListFlat1()
+    {
+        var ex = await Assert.ThrowsAnyAsync<Exception>(() => Db.Query<TestA>().Where(t => t.Aname!.Contains("123"))
+            .SelectMany(t => t.BList).SelectMany(b => b.CList).Select(c => c.Cname).ToListAsync(Ct));
+        Assert.Contains("test_a' doesn't exist", ex.Message);
+    }
+
     [Fact, Upstream("QueryTest25.java#tupleTest1")]
     public async Task TupleTest1()
     {

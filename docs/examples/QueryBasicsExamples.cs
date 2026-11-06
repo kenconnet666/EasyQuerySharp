@@ -73,6 +73,11 @@ public static class QueryBasicsExamples
             .Select(p => new PostWithAuthor(p.Title, p.Views, p.Author!.Name, p.Author!.Company!.Name))
             .ToListAsync();
 
+    [Example("query/basics", "沿集合导航展开")]
+    public static Task<List<string>> FlattenNavigations(EasyDb db) =>
+        db.Query<Company>().Where(c => c.Id == 1).SelectMany(c => c.Users).SelectMany(u => u.Following)
+            .OrderBy(u => u.Name).Select(u => u.Name).Distinct().ToListAsync();
+
     /// <summary>去重的结果行。</summary>
     public sealed record AuthorStatus(long AuthorId, PostStatus Status);
 

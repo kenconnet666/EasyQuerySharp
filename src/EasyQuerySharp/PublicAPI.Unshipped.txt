@@ -1169,6 +1169,8 @@ EasyQuerySharp.Querying.Query<T>.RightJoin<T2>(System.Linq.Expressions.Expressio
 EasyQuerySharp.Querying.Query<T>.Select<TResult>() -> EasyQuerySharp.Querying.Query<TResult>!
 EasyQuerySharp.Querying.Query<T>.Select<TResult>(System.Linq.Expressions.Expression<System.Func<T, TResult>!>! selector) -> EasyQuerySharp.Querying.Query<TResult>!
 EasyQuerySharp.Querying.Query<T>.SelectExcept<TResult>(System.Linq.Expressions.Expression<System.Func<T, object?>!>! excluded) -> EasyQuerySharp.Querying.Query<TResult>!
+EasyQuerySharp.Querying.Query<T>.SelectMany<TElement, TResult>(System.Linq.Expressions.Expression<System.Func<T, System.Collections.Generic.IEnumerable<TElement!>?>!>! navigation, System.Linq.Expressions.Expression<System.Func<T, TElement!, TResult>!>! resultSelector) -> EasyQuerySharp.Querying.Query<TResult>!
+EasyQuerySharp.Querying.Query<T>.SelectMany<TResult>(System.Linq.Expressions.Expression<System.Func<T, System.Collections.Generic.IEnumerable<TResult!>?>!>! navigation) -> EasyQuerySharp.Querying.Query<TResult!>!
 EasyQuerySharp.Querying.Query<T>.SelectRaw(string! selectSql) -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.Querying.Query<T>.SumAsync<TResult>(System.Linq.Expressions.Expression<System.Func<T, TResult>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult>!
 EasyQuerySharp.Querying.Query<T>.ThenBy<TKey>(System.Linq.Expressions.Expression<System.Func<T, TKey>!>! key) -> EasyQuerySharp.Querying.Query<T>!

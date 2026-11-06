@@ -29,6 +29,10 @@ SELECT UPPER(t.`title`) AS `title`,(t.`views` + ?) AS `next_views`,(t.`views` >=
 -- SelectNavigation：经导航取关联表的列
 SELECT t.`title`,t.`views`,t1.`name` AS `author`,t2.`name` AS `company` FROM `t_post` t LEFT JOIN `t_user` t1 ON t1.`id` = t.`author_id` LEFT JOIN `t_company` t2 ON t2.`id` = t1.`company_id` ORDER BY t.`id` ASC LIMIT 2;
 
+-- FlattenNavigations：沿集合导航展开
+SELECT DISTINCT t3.`name` FROM `t_company` t INNER JOIN `t_user` t1 ON t1.`company_id` = t.`id` INNER JOIN `t_follow` t2 ON t2.`follower_id` = t1.`id` INNER JOIN `t_user` t3 ON t3.`id` = t2.`followee_id` WHERE t.`id` = ? ORDER BY t3.`name` ASC;
+-- params: [1]
+
 -- DistinctRows：去重
 SELECT t1.`author_id`,t1.`status` FROM (SELECT DISTINCT t.`author_id`,t.`status` FROM `t_post` t) t1 ORDER BY t1.`author_id` ASC LIMIT 4;
 

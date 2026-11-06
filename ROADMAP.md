@@ -79,14 +79,14 @@ R → 1 → 2 → 3 → 4 → 5。
   - 在导航上声明匹配策略，内置"逗号分隔 id"的实现，并按方言渲染（MySQL 用 `FIND_IN_SET`，PG 用 `= ANY(string_to_array(..))`，SQLite 拼接逗号后用 LIKE）；
   - 隐式子查询、分组合并、Include、DTO 自动带出都能用；聚合保存不支持；
   - 用例：M8Test1 testRelationColumns / testRelationColumns1。
-- [ ] 1.2 沿导航拉平取列表：用 LINQ 的 `SelectMany`（`q.SelectMany(a => a.Bs).SelectMany(b => b.Cs).Select(c => c.Name)`）。用例是 QueryTest25 testToListFlat1 / test11a 和 RelationTest testOneToOne；做完后复核 nav.flat 的偏离能不能改回已移植。
+- [x] 1.2 沿集合导航展开 `SelectMany`：按 LINQ 语义写成 INNER JOIN（多对多经中间表，导航的固定条件与逻辑删除写进 ON，保留重复），连着写的 SelectMany 和之后的 Where / OrderBy / Select 直接作用在最后连接的表上；父查询分页、去重、分组、投影过时先包成派生表；支持查询语法 `from a in q from b in a.Bs`。Java 的 testToListFlat1 记为偏离（Java 逐层带出再去重）。
 - [ ] 1.3 值对象 `[ValueObject]`。
 - [ ] 1.4 不追踪时的差异更新 `db.Update<T>().Changes(before, after)`。
 - [ ] 1.5 批量写入走 `DbBatch`。做完后复核按"每个实体一条语句"记的偏离：DeleteTest testBatchDelete、InsertTest testIncrement、UpdateTest updateTestBatch / updateTestBatch1 / updateTestBatch2。
 - [ ] 1.6 `Returning()`：PG 的 UPDATE / DELETE … RETURNING，其余方言在渲染期报错（fork ReturningSqlTest、ReturningLiveTest）。
 - [ ] 1.7 窗口取值函数省略排序时，沿用查询的 ORDER BY；做完后 MySQL8Test3 nextTest3 的偏离改回已移植。
 - [ ] 1.8 零散用例：
-  - QueryTest25 test11a1 / topicIntegerTest / xxx、QueryTest26 testAAA；
+  - RelationTest testOneToOne（include2 按路径带出多段、各段带条件，再 select 到 VO）；
   - QueryTestRelationTest testRelation（Include 的配置并入平铺带出、分页后再按段取）；
   - fork ProxySmokeTest；
   - 偏离里的功能缺口：M8BankTest whereSubQuery3（与集合导航同表的显式 EXISTS 也并进分组合并）、pgsql QueryTest19 tree7_2（树查询的层级列投影进 DTO 的同名属性）；
@@ -106,7 +106,7 @@ R → 1 → 2 → 3 → 4 → 5。
 
 每个方言交付三样东西：方言类、在 `TestDatabases` 里登记、实库冒烟。容器起得来的再加一个 CI 任务。
 
-- [ ] 3.1 达梦：方言继承 Oracle，覆盖差异部分。用例有 DamengQueryTest、DamengForUpdateTest、UpdateJoinTest、MathQueryTest、MigrationDamengTest。
+- [ ] 3.1 达梦：方言继承 Oracle，覆盖差异部分。用例有 DamengQueryTest、DamengForUpdateTest、UpdateJoinTest、MathQueryTest、MigrationDamengTest，以及 QueryTest26 testAAA（达梦上用对一导航条件删除）。
 - [ ] 3.2 SAP HANA：
   - `Sql.Hana.Text`；
   - fork 的 HanaSqlTest、HanaTextSqlTest、三个 live 用例，以及 InsertSelect / JsonValueConverter 的 HANA 用例；
@@ -125,7 +125,7 @@ R → 1 → 2 → 3 → 4 → 5。
 - [ ] 4.4 分库分表（ShardingTest 48 个），先写决策文档 0006：
   - 分表：按取模或按时间路由、按条件裁剪、库内 UNION ALL、写入路由；
   - 分库：路由，在内存里做归并排序和分页，跨库合并 `count` / `sum` / `min` / `max`。
-- [ ] 4.5 二级缓存 `EasyQuerySharp.Caching`，先写决策文档 0007：
+- [ ] 4.5 二级缓存 `EasyQuerySharp.Caching`，先写决策文档 0007（用例在 QueryTest25：test11a、test11a1、topicIntegerTest、xxx）：
   - 参照 Java 的 `sql-extension/sql-cache`：单实体、多实体、键值三种缓存查询，写入后让缓存失效；
   - 对接 `Microsoft.Extensions.Caching` 的抽象，支持本机和分布式两级。
 - [ ] 4.6 依赖注入 `EasyQuerySharp.DependencyInjection`：`AddEasyQuery`，多个库按名字注入。

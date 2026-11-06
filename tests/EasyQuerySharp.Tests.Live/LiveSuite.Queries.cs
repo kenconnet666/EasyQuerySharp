@@ -167,6 +167,18 @@ public abstract partial class LiveSuite
     }
 
     // UNION 的各分支在 SQLite 上不能加括号：方言决定写法，各库都能执行
+    // 沿两级集合导航展开：公司 → 用户 → 帖子，条件、排序、投影都写在最后取出的帖子表上
+    [Fact]
+    public async Task FlattensCollectionNavigationsWithSelectMany()
+    {
+        var db = await SeededAsync();
+        var titles = await db.Query<Company>().Where(c => c.Name == "acme").SelectMany(c => c.Users).SelectMany(u => u.Posts)
+            .Where(p => p.Amount < 100).OrderBy(p => p.Title).Select(p => p.Title).ToListAsync(Ct);
+        Assert.Equal(["hello", "orm tips", "orm_v2"], titles);
+        var owners = await (from u in db.Query<User>() from p in u.Posts! select new { u.Name, p.Title }).CountAsync(Ct);
+        Assert.Equal(4, owners);
+    }
+
     [Fact]
     public async Task UnionsQueriesOnEveryDatabase()
     {
