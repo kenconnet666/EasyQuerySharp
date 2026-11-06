@@ -96,6 +96,10 @@ public static partial class FunctionExamples
     public static Task<List<string>> Casts(EasyDb db) =>
         db.Query<Post>().Where(p => p.Views.ToString().StartsWith("8")).OrderBy(p => p.Id).Select(p => p.Title + "：" + p.Views.ToString()).ToListAsync();
 
+    [Example("func", "Convert.ToXxx：各类型的重载都写成 CAST")]
+    public static Task<List<string>> ConvertTo(EasyDb db) =>
+        db.Query<Post>().Where(p => Convert.ToDecimal(p.Views) / 1000 >= 2).OrderBy(p => p.Id).Select(p => Convert.ToString(p.Views)).ToListAsync();
+
     // ---- JSON
 
     /// <summary>用户 id 与技能数、第一项技能。</summary>

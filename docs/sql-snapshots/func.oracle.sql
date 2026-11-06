@@ -44,6 +44,10 @@ SELECT rt.* FROM (SELECT t."title",(CASE WHEN t."views" >= ? THEN ? WHEN t."view
 SELECT t."title" || ? || TO_CHAR(t."views") FROM "t_post" t WHERE TO_CHAR(t."views") LIKE ? ORDER BY t."id" ASC;
 -- params: ['：', '8%']
 
+-- ConvertTo：Convert.ToXxx：各类型的重载都写成 CAST
+SELECT TO_CHAR(t."views") FROM "t_post" t WHERE (CAST(t."views" AS DECIMAL(18,4)) / ?) >= ? ORDER BY t."id" ASC;
+-- params: [1000, 2]
+
 -- Json：JSON：Sql.Json(列) 取长度、取元素
 -- error: oracle 方言还不支持 Sql.Json 的 JsonLength
 

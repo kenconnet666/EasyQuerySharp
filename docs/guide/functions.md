@@ -203,7 +203,7 @@ SELECT (t.[price] * t.[quantity]) AS [total],ROUND((t.[price] * ?),?) AS [rounde
 | `Sql.MaxColumns(a, b, ..)` / `MinColumns` | MySQL / PG `GREATEST` / `LEAST`，SQLite 多参数 `MAX` / `MIN`，SQL Server `VALUES` 派生表，Oracle / 达梦 `UNION ALL` 派生表 | 同一行里几个值取最大 / 最小 |
 | 三元表达式 `c ? a : b` | `CASE WHEN c THEN a ELSE b END` | 多分支写成嵌套三元 |
 | 条件当值（`p.Views > 1000` 放在投影里） | 原样；SQL Server、Oracle、达梦、HANA、Kingbase、GaussDB 写成 `CASE WHEN … THEN ? ELSE ? END` | |
-| `x.ToString()`、`int.Parse(s)`、`Convert.ToInt64((object)x)`、`Sql.Cast<T>(x)` | `CAST(x AS …)` | 目标类型按方言 |
+| `x.ToString()`、`int.Parse(s)`、`Convert.ToXxx(x)`（任一个参数的重载）、`Sql.Cast<T>(x)` | `CAST(x AS …)` | 目标类型按方言；`Convert.ToInt32(2.5)` 在 .NET 里四舍六入，数据库按各自的 CAST 规则 |
 | `Sql.Constant(v)` | `?` | 客户端的值作为参数放进 SQL，接着的运算（如 `.ToLower()`）在数据库里做 |
 
 <!-- card: func/NullHandling sql=mysql,mssql,oracle -->
@@ -267,6 +267,24 @@ db.Query<Post>().OrderBy(p => p.Id).Take(5)
 -- MySQL
 SELECT t.`title`,(CASE WHEN t.`views` >= ? THEN ? WHEN t.`views` >= ? THEN ? ELSE ? END) AS `heat` FROM `t_post` t ORDER BY t.`id` ASC LIMIT 5;
 -- params: [2000, '热门', 500, '普通', '冷门']
+```
+<!-- /card -->
+
+<!-- card: func/ConvertTo sql=mysql,mssql -->
+```csharp
+db.Query<Post>().Where(p => Convert.ToDecimal(p.Views) / 1000 >= 2).OrderBy(p => p.Id).Select(p => Convert.ToString(p.Views)).ToListAsync();
+```
+
+```sql
+-- MySQL
+SELECT CAST(t.`views` AS CHAR) FROM `t_post` t WHERE (CAST(t.`views` AS DECIMAL(36,18)) / ?) >= ? ORDER BY t.`id` ASC;
+-- params: [1000, 2]
+```
+
+```sql
+-- SQL Server
+SELECT cast(t.[views] as nvarchar(max)) FROM [t_post] t WHERE (cast(t.[views] as decimal(36,18)) / ?) >= ? ORDER BY t.[id] ASC;
+-- params: [1000, 2]
 ```
 <!-- /card -->
 
@@ -454,7 +472,7 @@ SELECT t.`title` FROM `t_post` t WHERE REPLACE(t.`title`, ' ', '') LIKE ?;
 
 - 日期 `ToString(格式)` 只转换 `yyyy` / `MM` / `dd` / `HH` / `mm` / `ss` 六个格式符；`yy`、`M`、`d`、`tt` 等单字母格式符原样当文字输出。
 - 日期相差在 DuckDB 上数的是跨过的边界（03:59 到 04:01 算 1 小时，与 Java 一致），与 .NET 的整段时长不同。
-- `Convert.ToXxx` 只映射参数是 `object` 或 `string` 的重载：`Convert.ToString(p.Views)`（`int` 重载）报不支持，改写成 `p.Views.ToString()`。
+- `Convert.ToXxx` 只映射一个参数的重载；带进制、`IFormatProvider` 的重载报不支持。
 - 正则（`Regex`）、`string.Format` 的格式说明符（`{0:N2}`）不翻译。
 - 自定义函数的模板原样拼进 SQL，不同方言写法不同时要自己按方言选。
 

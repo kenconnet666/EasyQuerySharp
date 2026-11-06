@@ -44,6 +44,10 @@ SELECT TOP 5 t.[title],(CASE WHEN t.[views] >= ? THEN ? WHEN t.[views] >= ? THEN
 SELECT CONCAT(t.[title],?,cast(t.[views] as nvarchar(max))) FROM [t_post] t WHERE cast(t.[views] as nvarchar(max)) LIKE ? ORDER BY t.[id] ASC;
 -- params: ['：', '8%']
 
+-- ConvertTo：Convert.ToXxx：各类型的重载都写成 CAST
+SELECT cast(t.[views] as nvarchar(max)) FROM [t_post] t WHERE (cast(t.[views] as decimal(36,18)) / ?) >= ? ORDER BY t.[id] ASC;
+-- params: [1000, 2]
+
 -- Json：JSON：Sql.Json(列) 取长度、取元素
 -- error: mssql 方言还不支持 Sql.Json 的 JsonLength
 

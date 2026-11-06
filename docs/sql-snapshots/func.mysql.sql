@@ -44,6 +44,10 @@ SELECT t.`title`,(CASE WHEN t.`views` >= ? THEN ? WHEN t.`views` >= ? THEN ? ELS
 SELECT CONCAT(t.`title`,?,CAST(t.`views` AS CHAR)) FROM `t_post` t WHERE CAST(t.`views` AS CHAR) LIKE ? ORDER BY t.`id` ASC;
 -- params: ['：', '8%']
 
+-- ConvertTo：Convert.ToXxx：各类型的重载都写成 CAST
+SELECT CAST(t.`views` AS CHAR) FROM `t_post` t WHERE (CAST(t.`views` AS DECIMAL(36,18)) / ?) >= ? ORDER BY t.`id` ASC;
+-- params: [1000, 2]
+
 -- Json：JSON：Sql.Json(列) 取长度、取元素
 SELECT t.`user_id`,JSON_LENGTH(t.`skills`) AS `count`,JSON_UNQUOTE(JSON_EXTRACT(t.`skills`,'$[0]')) AS `first` FROM `t_profile` t WHERE JSON_LENGTH(t.`skills`) >= ? ORDER BY t.`user_id` ASC;
 -- params: [3]

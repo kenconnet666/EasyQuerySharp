@@ -177,7 +177,6 @@ R → 1 → 2 → 3 → 4 → 5。
   - [ ] code-first（4.1）、分库分表（4.4）、二级缓存（4.5）做完后补指南，索引里已留位置。
   - [ ] 写文档时发现、待修的问题（正确性问题按 CLAUDE.md 直接修，修完从这里删掉，指南里对应的"限制"一并更新）：
     - [!] `PadLeft` / `PadRight` 在 SQL Server 上写成 `LPAD` / `RPAD`（Java 的 StringFunctionsTest#leftRightPadMSSQL 逐字锁定这个写法），SQL Server 没有这两个函数；MySQL 的 `PadLeft(n)` 不带填充字符写成两个参数的 `LPAD`（leftRightPadMySQL 锁定），MySQL 要求三个参数。改写要偏离 Java 的期望 SQL，待定。SQLite 已改成用 `zeroblob` 模拟。
-    - `Convert.ToXxx` 只映射 `object` / `string` 参数的重载，`Convert.ToString(p.Views)`（`int` 重载）报不支持。
     - 0002 写的按名字拼接自动平铺（DTO 的 `CompanyName` 对应 `Company.Name`）没有实现，只认 `[MapPath]`；实现或改文档二选一。
     - 没有公开的"当前是否在事务里"的判断（`EasyDb` 只有 `IsTracking`）。
 - [!] 5.4 打包：NuGet 元数据、Source Link、确定性构建，生成器和分析器随核心包一起分发。是否发布到 nuget.org 在这一步决定。打包已就绪，发布等下面的决定。

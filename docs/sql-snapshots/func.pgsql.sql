@@ -44,6 +44,10 @@ SELECT t."title",(CASE WHEN t."views" >= ? THEN ? WHEN t."views" >= ? THEN ? ELS
 SELECT CONCAT(t."title",?,(t."views")::text) FROM "t_post" t WHERE (t."views")::text LIKE ? ORDER BY t."id" ASC;
 -- params: ['：', '8%']
 
+-- ConvertTo：Convert.ToXxx：各类型的重载都写成 CAST
+SELECT (t."views")::text FROM "t_post" t WHERE ((t."views")::numeric / ?) >= ? ORDER BY t."id" ASC;
+-- params: [1000, 2]
+
 -- Json：JSON：Sql.Json(列) 取长度、取元素
 SELECT t."user_id",JSONB_ARRAY_LENGTH(t."skills") AS "count",(t."skills" ->> 0) AS "first" FROM "t_profile" t WHERE JSONB_ARRAY_LENGTH(t."skills") >= ? ORDER BY t."user_id" ASC;
 -- params: [3]
