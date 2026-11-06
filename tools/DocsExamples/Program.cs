@@ -9,8 +9,8 @@ using EasyQuerySharp.Samples;
 using Microsoft.Data.Sqlite;
 
 // 文档卡片：每张卡片在 SQLite 上实跑并录下结果，再用录下的结果在其余方言上各跑一遍，记下各方言的 SQL。
-// 用法：dotnet run --project tools/DocsExamples            写入 docs/sql-snapshots
-//       dotnet run --project tools/DocsExamples -- --check 只校验（快照过期、SQLite 上失败、方言意外报错都算失败）
+// 用法：dotnet run --project tools/DocsExamples            写入 docs/sql-snapshots，重写 docs/guide 里引用卡片与代码片段的区域
+//       dotnet run --project tools/DocsExamples -- --check 只校验（快照或指南过期、SQLite 上失败、方言意外报错、引用不存在的卡片都算失败）
 
 var check = args.Contains("--check");
 var root = FindRepositoryRoot();
@@ -34,6 +34,7 @@ var cards = typeof(ExampleAttribute).Assembly.GetTypes()
 
 var problems = new List<string>();
 var outputs = new Dictionary<string, StringBuilder>(StringComparer.Ordinal);
+var cardSql = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
 var file = Path.Combine(Path.GetTempPath(), $"eqs_docs_{Environment.ProcessId}.db");
 try
 {
@@ -42,6 +43,7 @@ try
         var id = attribute!.Page + "/" + method.Name;
         var recording = await RunOnSqliteAsync(method, file);
         if (recording.Error is not null) problems.Add($"{id}：SQLite 上执行失败：{recording.Error}");
+        var statements = cardSql[id] = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var (name, dialect) in dialects)
         {
             if (attribute.Only is not null && attribute.Only != name) continue;
@@ -50,7 +52,8 @@ try
                 problems.Add($"{id}：{name} 上报错：{run.Error}");
             var page = attribute.Page.Replace('/', '.') + "." + name + ".sql";
             if (!outputs.TryGetValue(page, out var text)) outputs[page] = text = new StringBuilder();
-            Append(text, method.Name, attribute.Title, run);
+            statements[name] = Statements(run);
+            text.Append("-- ").Append(method.Name).Append('：').Append(attribute.Title).Append('\n').Append(statements[name]).Append('\n');
         }
     }
 }
@@ -76,6 +79,7 @@ foreach (var stale in Directory.GetFiles(snapshots, "*.sql").Where(f => !outputs
     if (check) problems.Add($"多余的快照：{Path.GetFileName(stale)}");
     else File.Delete(stale);
 }
+Guides.Sync(root, cardSql, check, problems);
 
 Console.WriteLine($"{cards.Count} 张卡片，{outputs.Count} 个快照文件{(check ? "（校验）" : "")}");
 foreach (var p in problems) Console.Error.WriteLine(p);
@@ -113,10 +117,11 @@ static async Task<CardRun> RunAsync(MethodInfo method, SqlDialect dialect, Tape 
     }
 }
 
-// 每张卡片：-- 名字：标题，然后每次执行的语句和参数（批量执行写一次语句、每条一行参数）；出错时最后一行写 -- error
-static void Append(StringBuilder text, string name, string title, CardRun run)
+// 一张卡片在一种方言上发出的语句：每次执行的语句和参数（批量执行写一次语句、每条一行参数）；出错时最后一行写 -- error。
+// 快照里每张卡片前面再加一行 -- 名字：标题；指南里直接用这段
+static string Statements(CardRun run)
 {
-    text.Append("-- ").Append(name).Append('：').Append(title).Append('\n');
+    var text = new StringBuilder();
     foreach (var statements in run.Executions)
     {
         text.Append(statements[0].Text).Append(";\n");
@@ -124,7 +129,7 @@ static void Append(StringBuilder text, string name, string title, CardRun run)
             text.Append("-- params: [").AppendJoin(", ", statement.Parameters.Select(p => Format(p.Value))).Append("]\n");
     }
     if (run.Error is not null) text.Append("-- error: ").Append(run.Error).Append('\n');
-    text.Append('\n');
+    return text.ToString();
 }
 
 static string Format(object? value) => value switch
