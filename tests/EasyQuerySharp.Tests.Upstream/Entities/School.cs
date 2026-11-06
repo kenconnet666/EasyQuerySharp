@@ -40,6 +40,21 @@ public class SchoolStudent
     public SchoolStudentAddress? SchoolStudentAddress { get; set; }
 }
 
+/// <summary>对应 Java：entity/school/SchoolStudent2（与 SchoolStudent 同表，班级声明成一对一）。</summary>
+[Table("school_student")]
+public class SchoolStudent2
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? ClassId { get; set; }
+
+    public string? Name { get; set; }
+
+    [Navigate(RelationType.OneToOne, SelfProperties = [nameof(ClassId)], TargetProperties = [nameof(SchoolClass.Id)])]
+    public SchoolClass? SchoolClass { get; set; }
+}
+
 /// <summary>对应 Java：entity/school/SchoolTeacher。</summary>
 [Table("school_teacher")]
 public class SchoolTeacher
