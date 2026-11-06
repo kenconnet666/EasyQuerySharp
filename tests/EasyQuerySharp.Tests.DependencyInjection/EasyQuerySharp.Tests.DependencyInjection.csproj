@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- EasyQuerySharp.DependencyInjection 的测试：用真实的容器（Microsoft.Extensions.DependencyInjection）注册、解析，执行只用进程内的 SQLite -->
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\EasyQuerySharp.DependencyInjection\EasyQuerySharp.DependencyInjection.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="xunit.v3" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+        <PackageReference Include="Microsoft.Data.Sqlite" />
+    </ItemGroup>
+
+</Project>

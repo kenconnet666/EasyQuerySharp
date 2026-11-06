@@ -30,7 +30,7 @@ env:
   LIVE_TESTS: tests/EasyQuerySharp.Tests.Live
 
 jobs:
-  # 本地也必测的三个库（SQLite、MySQL 8.4、PG 17）：用例最多的 Upstream 项目按命名空间拆成两片并行，其余测试项目一个任务
+  # 本地也必测的三个库（SQLite、MySQL 8.4、PG 17）：用例最多的 Upstream 项目按命名空间拆成两片并行，其余测试项目（实库套件、生成器、依赖注入）一个任务
   core:
     name: core ${{ matrix.shard.name }} (SQLite, MySQL 8.4, PG 17)
     runs-on: ubuntu-latest
@@ -39,8 +39,8 @@ jobs:
       fail-fast: false
       matrix:
         shard:
-          - name: live + generator
-            project: tests/EasyQuerySharp.Tests.Live tests/EasyQuerySharp.Tests.Generator
+          - name: live + generator + di
+            project: tests/EasyQuerySharp.Tests.Live tests/EasyQuerySharp.Tests.Generator tests/EasyQuerySharp.Tests.DependencyInjection
             filter: ''
           - name: upstream queries
             project: tests/EasyQuerySharp.Tests.Upstream
