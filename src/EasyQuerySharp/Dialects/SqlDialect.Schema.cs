@@ -42,7 +42,7 @@ public abstract partial class SqlDialect
         _ when type == typeof(int) || type.IsEnum => "INTEGER",
         _ when type == typeof(long) => "BIGINT",
         _ when type == typeof(short) => "SMALLINT",
-        _ when type == typeof(byte) => "SMALLINT",
+        _ when type == typeof(byte) || type == typeof(sbyte) => "SMALLINT",
         _ when type == typeof(bool) => "BOOLEAN",
         _ when type == typeof(decimal) => "DECIMAL(16,2)",
         _ when type == typeof(double) => "DOUBLE PRECISION",
