@@ -1,0 +1,49 @@
+#nullable enable
+EasyQuerySharp.Caching.AllCache<T>
+EasyQuerySharp.Caching.AllCache<T>.AnyAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+EasyQuerySharp.Caching.AllCache<T>.CountAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<long>!
+EasyQuerySharp.Caching.AllCache<T>.OrderBy<TKey>(System.Linq.Expressions.Expression<System.Func<T!, TKey>!>! key) -> EasyQuerySharp.Caching.AllCache<T!>!
+EasyQuerySharp.Caching.AllCache<T>.OrderByDescending<TKey>(System.Linq.Expressions.Expression<System.Func<T!, TKey>!>! key) -> EasyQuerySharp.Caching.AllCache<T!>!
+EasyQuerySharp.Caching.AllCache<T>.ThenBy<TKey>(System.Linq.Expressions.Expression<System.Func<T!, TKey>!>! key) -> EasyQuerySharp.Caching.AllCache<T!>!
+EasyQuerySharp.Caching.AllCache<T>.ThenByDescending<TKey>(System.Linq.Expressions.Expression<System.Func<T!, TKey>!>! key) -> EasyQuerySharp.Caching.AllCache<T!>!
+EasyQuerySharp.Caching.AllCache<T>.ToIdsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.List<object!>!>!
+EasyQuerySharp.Caching.AllCache<T>.ToListAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.List<T!>!>!
+EasyQuerySharp.Caching.AllCache<T>.ToPageAsync(long page, long size, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<EasyQuerySharp.Querying.Page<T!>!>!
+EasyQuerySharp.Caching.CacheClient
+EasyQuerySharp.Caching.CacheClient.All<T>() -> EasyQuerySharp.Caching.AllCache<T!>!
+EasyQuerySharp.Caching.CacheClient.Db.get -> EasyQuerySharp.EasyDb!
+EasyQuerySharp.Caching.CacheClient.InvalidateAsync<T>(object? id = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+EasyQuerySharp.Caching.CacheClient.Kv<T>() -> EasyQuerySharp.Caching.KvCache<T!>!
+EasyQuerySharp.Caching.CacheQuery<TSelf, T>
+EasyQuerySharp.Caching.CacheQuery<TSelf, T>.DisableInterceptor(string! name) -> TSelf!
+EasyQuerySharp.Caching.CacheQuery<TSelf, T>.DisableInterceptors() -> TSelf!
+EasyQuerySharp.Caching.CacheQuery<TSelf, T>.EnableInterceptor(string! name) -> TSelf!
+EasyQuerySharp.Caching.CacheQuery<TSelf, T>.EnableInterceptors() -> TSelf!
+EasyQuerySharp.Caching.CacheQuery<TSelf, T>.ExistsAsync(object! id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+EasyQuerySharp.Caching.CacheQuery<TSelf, T>.Filter(System.Func<T!, bool>! predicate) -> TSelf!
+EasyQuerySharp.Caching.CacheQuery<TSelf, T>.FindAsync(object! id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T?>!
+EasyQuerySharp.Caching.CacheQuery<TSelf, T>.FindManyAsync(System.Collections.IEnumerable! ids, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.List<T!>!>!
+EasyQuerySharp.Caching.CacheQuery<TSelf, T>.FindOrThrowAsync(object! id, string? message = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T!>!
+EasyQuerySharp.Caching.CacheQuery<TSelf, T>.Where(System.Linq.Expressions.Expression<System.Func<T!, bool>!>! predicate) -> TSelf!
+EasyQuerySharp.Caching.CacheQuery<TSelf, T>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T!, bool>!>! predicate) -> TSelf!
+EasyQuerySharp.Caching.EasyCache
+EasyQuerySharp.Caching.EasyCache.EasyCache(Microsoft.Extensions.Caching.Hybrid.HybridCache! store, System.Action<EasyQuerySharp.Caching.EasyCacheOptions!>! configure) -> void
+EasyQuerySharp.Caching.EasyCache.Of(EasyQuerySharp.EasyDb! db) -> EasyQuerySharp.Caching.CacheClient!
+EasyQuerySharp.Caching.EasyCacheOptions
+EasyQuerySharp.Caching.EasyCacheOptions.Cache<T>() -> EasyQuerySharp.Caching.EasyCacheOptions!
+EasyQuerySharp.Caching.EasyCacheOptions.EasyCacheOptions() -> void
+EasyQuerySharp.Caching.EasyCacheOptions.Expiration.get -> System.TimeSpan
+EasyQuerySharp.Caching.EasyCacheOptions.Expiration.set -> void
+EasyQuerySharp.Caching.EasyCacheOptions.Json.get -> System.Text.Json.JsonSerializerOptions?
+EasyQuerySharp.Caching.EasyCacheOptions.Json.set -> void
+EasyQuerySharp.Caching.EasyCacheOptions.KeyPrefix.get -> string!
+EasyQuerySharp.Caching.EasyCacheOptions.KeyPrefix.set -> void
+EasyQuerySharp.Caching.EasyCacheOptions.LateEvictDelay.get -> System.TimeSpan?
+EasyQuerySharp.Caching.EasyCacheOptions.LateEvictDelay.set -> void
+EasyQuerySharp.Caching.EasyCacheOptions.LocalCacheExpiration.get -> System.TimeSpan?
+EasyQuerySharp.Caching.EasyCacheOptions.LocalCacheExpiration.set -> void
+EasyQuerySharp.Caching.EasyCacheOptions.NullExpiration.get -> System.TimeSpan
+EasyQuerySharp.Caching.EasyCacheOptions.NullExpiration.set -> void
+EasyQuerySharp.Caching.EasyDbOptionsCacheExtensions
+EasyQuerySharp.Caching.KvCache<T>
+static EasyQuerySharp.Caching.EasyDbOptionsCacheExtensions.UseCache(this EasyQuerySharp.EasyDbOptions! options, EasyQuerySharp.Caching.EasyCache! cache) -> EasyQuerySharp.EasyDbOptions!

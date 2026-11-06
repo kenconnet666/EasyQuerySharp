@@ -35,6 +35,11 @@
         <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
     </ItemGroup>
 
+    <!-- 二级缓存（0007）：缓存包只引用 HybridCache，它带上 Caching.Abstractions / Memory、Options、Logging.Abstractions -->
+    <ItemGroup>
+        <PackageVersion Include="Microsoft.Extensions.Caching.Hybrid" Version="10.11.0" />
+    </ItemGroup>
+
     <!-- 数据库驱动 -->
     <ItemGroup>
         <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.14" />
