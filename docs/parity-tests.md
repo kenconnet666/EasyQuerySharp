@@ -4,30 +4,30 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1726、偏离 224、不适用 136、骨架 6、待做 312。
+合计：已移植 1806、偏离 144、不适用 136、骨架 6、待做 312。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 354 | 44 | 35 | 0 | 2 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 361 | 37 | 35 | 0 | 2 |
 | 分页结果 | `query.page` | M1 | 22 | 18 | 3 | 0 | 0 | 1 |
-| 原生 SQL | `sql.native` | M1 | 50 | 40 | 9 | 1 | 0 | 0 |
+| 原生 SQL | `sql.native` | M1 | 50 | 41 | 8 | 1 | 0 | 0 |
 | 删除 | `write.delete` | M1 | 25 | 13 | 1 | 10 | 0 | 1 |
 | 插入 | `write.insert` | M1 | 50 | 48 | 1 | 0 | 0 | 1 |
 | 更新 | `write.update` | M1 | 59 | 46 | 5 | 8 | 0 | 0 |
 | CASE WHEN | `expr.case` | M2 | 27 | 20 | 7 | 0 | 0 | 0 |
-| 日期函数 | `func.date` | M2 | 101 | 79 | 15 | 7 | 0 | 0 |
+| 日期函数 | `func.date` | M2 | 101 | 80 | 14 | 7 | 0 | 0 |
 | 通用函数（nullOrDefault、greatest、nullif、null-safe） | `func.general` | M2 | 59 | 55 | 3 | 0 | 0 | 1 |
-| 字符串聚合（joining） | `func.joining` | M2 | 29 | 26 | 3 | 0 | 0 | 0 |
+| 字符串聚合（joining） | `func.joining` | M2 | 29 | 27 | 2 | 0 | 0 | 0 |
 | JSON 函数 | `func.json` | M2 | 12 | 12 | 0 | 0 | 0 | 0 |
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
-| 字符串函数 | `func.string` | M2 | 131 | 119 | 7 | 4 | 1 | 0 |
+| 字符串函数 | `func.string` | M2 | 131 | 122 | 4 | 4 | 1 | 0 |
 | 行锁 | `lock` | M2 | 28 | 21 | 1 | 0 | 0 | 6 |
 | 窗口函数 | `window` | M2 | 44 | 42 | 1 | 1 | 0 | 0 |
 | CTE | `query.cte` | M3 | 11 | 8 | 3 | 0 | 0 | 0 |
-| 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 73 | 8 | 2 | 0 | 0 |
+| 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 75 | 6 | 2 | 0 | 0 |
 | 显式 join | `query.join` | M3 | 88 | 83 | 4 | 1 | 0 | 0 |
 | 无实体的 Map 查询、toMap | `query.map` | M3 | 11 | 10 | 1 | 0 | 0 | 0 |
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 2 | 0 | 0 | 0 | 0 |
@@ -35,17 +35,17 @@
 | union / union all | `query.union` | M3 | 18 | 14 | 4 | 0 | 0 | 0 |
 | 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 33 | 1 | 0 | 1 | 1 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
-| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 25 | 26 | 3 | 0 | 2 |
+| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 51 | 0 | 3 | 0 | 2 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 61 | 2 | 2 | 2 | 0 |
-| include 带出导航 | `nav.include` | M4 | 37 | 34 | 2 | 0 | 0 | 1 |
+| include 带出导航 | `nav.include` | M4 | 37 | 35 | 1 | 0 | 0 | 1 |
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 137 | 3 | 1 | 0 | 1 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 23 | 2 | 0 | 0 | 0 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 5 | 2 | 1 | 0 | 1 |
 | 列加密 | `column.encryption` | M5 | 8 | 8 | 0 | 0 | 0 | 0 |
 | 拦截器 | `interceptor` | M5 | 3 | 3 | 0 | 0 | 0 | 0 |
 | 逻辑删除 | `logicDelete` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
-| 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 25 | 14 | 0 | 0 | 0 |
-| 追踪与差异更新 | `tracking` | M5 | 62 | 44 | 17 | 0 | 0 | 1 |
+| 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 30 | 9 | 0 | 0 | 0 |
+| 追踪与差异更新 | `tracking` | M5 | 62 | 58 | 3 | 0 | 0 | 1 |
 | 乐观锁版本 | `version` | M5 | 13 | 13 | 0 | 0 | 0 | 0 |
 | UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
 | 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 20 | 6 | 0 | 0 | 0 |
@@ -61,11 +61,11 @@
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | M6 | 13 | 0 | 0 | 13 | 0 | 0 |
 | UPDATE / DELETE … RETURNING | `write.returning` | M6 | 3 | 0 | 0 | 0 | 0 | 3 |
 | 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 2 | 0 | 0 | 0 | 15 |
-| 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 82 | 13 | 0 | 0 | 6 |
+| 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 92 | 3 | 0 | 0 | 6 |
 | search 扩展 | `search` | M7 | 45 | 0 | 0 | 45 | 0 | 0 |
 | 分库分表 | `sharding` | M7 | 48 | 0 | 0 | 0 | 0 | 48 |
 | 跨库链接（asTableLink） | `table.link` | M7 | 13 | 9 | 0 | 0 | 0 | 4 |
-| 换表名（asTable / 表名映射） | `table.rename` | M7 | 52 | 34 | 9 | 0 | 0 | 9 |
+| 换表名（asTable / 表名映射） | `table.rename` | M7 | 52 | 43 | 0 | 0 | 0 | 9 |
 | 换 schema（asSchema） | `table.schema` | M7 | 25 | 22 | 2 | 0 | 0 | 1 |
 
 ## 逐条
@@ -254,22 +254,22 @@
 | QueryTest.java#query97 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.cs:598 |  |
 | QueryTest.java#query98 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.cs:602 |  |
 | QueryTest10.java#test223 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest10.cs:12 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'title' <> ? AND ('title' = ? OR 'tit…` |
-| QueryTest11.java#testOrder2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:430 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE 'topic_type' LIKE ?` |
-| QueryTest11.java#testOrder3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:440：Java 的 proxy set 同名列也写 AS（t.'id' AS 'id'），C# 成员初始化同名列不写 | `SELECT t.'id' AS 'id',t.'title' AS 'name' FROM 't_topic_type' t WHERE t.'topic_type' LIKE ?` |
-| QueryTest11.java#testx10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:166 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE t.'id' NOT IN (SELECT t1.'i…` |
-| QueryTest11.java#testx11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:177 | `SELECT t.'id',t.'stars',t.'title',t.'topic_type',t.'create_time' FROM 't_topic_type' t WHERE t.'topi…` |
-| QueryTest11.java#testx12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:188 | `SELECT CAST(t.'topic_type' AS SIGNED) FROM 't_topic_type' t` |
-| QueryTest11.java#testx12_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:196 | `SELECT CAST(t.'topic_type' AS SIGNED) FROM 't_topic_type' t LIMIT 1` |
-| QueryTest11.java#testx13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:207 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE 'topic_type' IN (?,…` |
-| QueryTest11.java#testx2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:92：Java 先 selectAll 再 set(url) 会把 my_url 写两遍；C# 的成员初始化每个成员只出现一次 | `SELECT t.'order' AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND t.'id' = ? LIMIT 1` |
-| QueryTest11.java#testx22 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:297 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest11.java#testx23 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:306 | `SELECT t.'id' AS 'value1',t.'url' AS 'value2' FROM 't_blog' t WHERE t.'deleted' = ? AND ? = (SELECT …` |
-| QueryTest11.java#testx24 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:317 | `SELECT t.'id' AS 'value1',t.'url' AS 'value2',(SELECT COUNT(*) FROM 't_topic' t1 WHERE t1.'id' = t.'…` |
-| QueryTest11.java#testx3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:101 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest11.java#testx4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:110 | `SELECT t.'id',t.'stars',t.'title',t.'create_time',(SELECT COUNT(*) FROM 't_blog' t1 WHERE t1.'delete…` |
-| QueryTest11.java#testx6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:136 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE EXISTS(SELECT 1 FROM 't_blo…` |
-| QueryTest11.java#testx7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:146 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE NOT EXISTS(SELECT 1 FROM 't…` |
-| QueryTest11.java#testx8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:156 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE t.'id' IN (SELECT t1.'id' F…` |
+| QueryTest11.java#testOrder2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:431 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE 'topic_type' LIKE ?` |
+| QueryTest11.java#testOrder3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:441：Java 的 proxy set 同名列也写 AS（t.'id' AS 'id'），C# 成员初始化同名列不写 | `SELECT t.'id' AS 'id',t.'title' AS 'name' FROM 't_topic_type' t WHERE t.'topic_type' LIKE ?` |
+| QueryTest11.java#testx10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:167 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE t.'id' NOT IN (SELECT t1.'i…` |
+| QueryTest11.java#testx11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:178 | `SELECT t.'id',t.'stars',t.'title',t.'topic_type',t.'create_time' FROM 't_topic_type' t WHERE t.'topi…` |
+| QueryTest11.java#testx12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:189 | `SELECT CAST(t.'topic_type' AS SIGNED) FROM 't_topic_type' t` |
+| QueryTest11.java#testx12_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:197 | `SELECT CAST(t.'topic_type' AS SIGNED) FROM 't_topic_type' t LIMIT 1` |
+| QueryTest11.java#testx13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:208 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE 'topic_type' IN (?,…` |
+| QueryTest11.java#testx2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:93：Java 先 selectAll 再 set(url) 会把 my_url 写两遍；C# 的成员初始化每个成员只出现一次 | `SELECT t.'order' AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND t.'id' = ? LIMIT 1` |
+| QueryTest11.java#testx22 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:298 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest11.java#testx23 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:307 | `SELECT t.'id' AS 'value1',t.'url' AS 'value2' FROM 't_blog' t WHERE t.'deleted' = ? AND ? = (SELECT …` |
+| QueryTest11.java#testx24 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:318 | `SELECT t.'id' AS 'value1',t.'url' AS 'value2',(SELECT COUNT(*) FROM 't_topic' t1 WHERE t1.'id' = t.'…` |
+| QueryTest11.java#testx3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:102 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest11.java#testx4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:111 | `SELECT t.'id',t.'stars',t.'title',t.'create_time',(SELECT COUNT(*) FROM 't_blog' t1 WHERE t1.'delete…` |
+| QueryTest11.java#testx6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:137 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE EXISTS(SELECT 1 FROM 't_blo…` |
+| QueryTest11.java#testx7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:147 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE NOT EXISTS(SELECT 1 FROM 't…` |
+| QueryTest11.java#testx8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:157 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE t.'id' IN (SELECT t1.'id' F…` |
 | QueryTest12.java#testDoc11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.Part2.cs:73 | `SELECT t.'id',t.'create_time',t.'username',t.'phone',t.'id_card',t.'address' FROM 'easy-query-test'.…` |
 | QueryTest12.java#testDoc12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:325 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
 | QueryTest12.java#testDoc13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:333 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
@@ -282,10 +282,10 @@
 | QueryTest12.java#testNum4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:103 | `SELECT ((t.'star' * t.'score') + t.'score') FROM 't_blog' t WHERE t.'deleted' = ?` |
 | QueryTest12.java#testNum5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:103 | `SELECT ((t.'star' * t.'score') + ?) FROM 't_blog' t WHERE t.'deleted' = ?` |
 | QueryTest12.java#testOr26 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:75 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest13.java#orderTest2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest13.cs:28：Java 用 MapKey 拼 Map 投影；C# 写成 DTO，[Column] 给出相同的列别名，SQL 相同 | `SELECT t.'id' AS 'blogId',t.'create_time' AS 'dateTime' FROM 't_blog' t WHERE t.'deleted' = ? AND t.…` |
+| QueryTest13.java#orderTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest13.cs:28 | `SELECT t.'id' AS 'blogId',t.'create_time' AS 'dateTime' FROM 't_blog' t WHERE t.'deleted' = ? AND t.…` |
 | QueryTest14.java#test111 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest14.cs:13 |  |
 | QueryTest15.java#test1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:45：Java 的学生数子查询里 COUNT 列带 AS 'id'、且多占一个别名编号（selectColumn 建的匿名表）；C# 的计算列写成 Select(s => s.Id).Count()，不写别名、不跳号 | `SELECT 'id','first_name','last_name','birthday',CONCAT('first_name','last_name') AS 'full_name',CEIL…` |
-| QueryTest15.java#test12234 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:314：Java 自建 Hikari 数据源与客户端配置，没有断言；C# 的连接与配置由 EasyDbOptions 覆盖 |  |
+| QueryTest15.java#test12234 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:315：Java 自建 Hikari 数据源与客户端配置，没有断言；C# 的连接与配置由 EasyDbOptions 覆盖 |  |
 | QueryTest15.java#test1_1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:74：Java 的学生数子查询里 COUNT 列带 AS 'id'、且多占一个别名编号（selectColumn 建的匿名表）；C# 的计算列写成 Select(s => s.Id).Count()，不写别名、不跳号 | `SELECT t.'id',t.'name',(SELECT COUNT(t1.'id') AS 'id' FROM 'school_student' t1 WHERE t1.'class_id' =…` |
 | QueryTest15.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:186 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'create_time' = ?` |
 | QueryTest15.java#testCaseSubAggregate | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:86：Java 的学生数子查询里 COUNT 列带 AS 'id'、且多占一个别名编号（selectColumn 建的匿名表）；C# 的计算列写成 Select(s => s.Id).Count()，不写别名、不跳号 | `SELECT 'id','name' FROM 'school_class'` |
@@ -294,13 +294,13 @@
 | QueryTest15.java#testSimple | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:64 | `SELECT 'id','first_name','last_name','birthday',CONCAT('first_name','last_name') AS 'full_name',CEIL…` |
 | QueryTest15.java#testSubqueryAnonymous | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:99：Java 的学生数子查询里 COUNT 列带 AS 'id'、且多占一个别名编号（selectColumn 建的匿名表）；C# 的计算列写成 Select(s => s.Id).Count()，不写别名、不跳号 | `SELECT t3.'a' AS 'a',t3.'b' AS 'b',t3.'sc' AS 'sc' FROM (SELECT t.'id' AS 'a',t.'name' AS 'b',(SELEC…` |
 | QueryTest16.java#test14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:20 | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN 't_company' …` |
-| QueryTest16.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:30 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest17.java#test11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:17 | `SELECT t.'id',t.'title' FROM 't_topic' t WHERE t.'title' = ?` |
-| QueryTest17.java#testNopQuery | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:158：Java 用例体全部注释掉了 |  |
-| QueryTest17.java#testSubFrom | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:172 |  |
-| QueryTest17.java#testSubFrom1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:172 |  |
-| QueryTest17.java#testxxx9 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:165：测的是 Java 代理管理器创建代理对象 |  |
-| QueryTest17.java#xxx | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:166：Java 的几种实体继承写法（MyTopic / MyTopicx / MyTopic4 / MyTopic5）只跑不断言；C# 的实体就是普通类 |  |
+| QueryTest16.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:31 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest17.java#test11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:15 | `SELECT t.'id',t.'title' FROM 't_topic' t WHERE t.'title' = ?` |
+| QueryTest17.java#testNopQuery | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:160：Java 用例体全部注释掉了 |  |
+| QueryTest17.java#testSubFrom | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:174 |  |
+| QueryTest17.java#testSubFrom1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:174 |  |
+| QueryTest17.java#testxxx9 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:167：测的是 Java 代理管理器创建代理对象 |  |
+| QueryTest17.java#xxx | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:168：Java 的几种实体继承写法（MyTopic / MyTopicx / MyTopic4 / MyTopic5）只跑不断言；C# 的实体就是普通类 |  |
 | QueryTest18.java#andTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:76 |  |
 | QueryTest18.java#autoFalse | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:60 |  |
 | QueryTest18.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.cs:18 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'id' IS NULL` |
@@ -410,13 +410,13 @@
 | QueryTest4.java#testSQLFunc4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:91 | `SELECT DATE_FORMAT(t.'create_time','%Y-%m-%d') FROM 't_topic' t WHERE t.'id' = ?` |
 | QueryTest4.java#testSQLFunc5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:99：Java 断言固定日期 2023-05-25（种子数据写入日）；C# 断言与客户端格式化结果一致 |  |
 | QueryTest4.java#testSQLFunc6 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:100：同 testSQLFunc5 |  |
-| QueryTest5.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:119 | `select 1` |
-| QueryTest7.java#forEachTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:80 |  |
-| QueryTest7.java#testBank1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:91 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NOT NULL AND 'id' <> '' AND …` |
-| QueryTest7.java#testBank2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:95 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NULL OR 'id' = '' OR LTRIM('…` |
-| QueryTest7.java#testEmpty1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:99 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NOT NULL AND 'id' <> '')` |
-| QueryTest7.java#testEmpty2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:103 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NULL OR 'id' = '')` |
-| QueryTest7.java#testQuery9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:108 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NULL OR 'id' = '' OR LTRIM('…` |
+| QueryTest5.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:124 | `select 1` |
+| QueryTest7.java#forEachTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:87 |  |
+| QueryTest7.java#testBank1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:98 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NOT NULL AND 'id' <> '' AND …` |
+| QueryTest7.java#testBank2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:102 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NULL OR 'id' = '' OR LTRIM('…` |
+| QueryTest7.java#testEmpty1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:106 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NOT NULL AND 'id' <> '')` |
+| QueryTest7.java#testEmpty2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:110 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NULL OR 'id' = '')` |
+| QueryTest7.java#testQuery9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:115 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NULL OR 'id' = '' OR LTRIM('…` |
 | QueryTest9.java#selectCount1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest9.cs:17 | `SELECT COUNT(*) FROM 't_topic' WHERE 'id' = ?` |
 | QueryTest9.java#testDsl4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest9.cs:167 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE ('id' IS NULL OR 'id' = '')` |
 | QueryTest9.java#testQuery7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest9.cs:313 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'content',t.…` |
@@ -453,15 +453,15 @@
 | mysql8/CTETest.java#cteTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:56 | `WITH 'm8_user_temp' AS (SELECT t.'id',t.'name' FROM 'm8_user' t WHERE t.'age' IS NULL) SELECT t2.'id…` |
 | mysql8/IncludeConditionTest.java#testInclude1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/IncludeConditionTest.cs:26 | `SELECT 'id','name','version' FROM 'my_task'` |
 | mysql8/IncludeConditionTest.java#testInclude2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/IncludeConditionTest.cs:53 | `SELECT 'id','name','version' FROM 'my_task' WHERE 'id' = ?` |
-| mysql8/M8BankTest.java#dynamicPartition | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:87 |  |
-| mysql8/M8BankTest.java#fromSubQuery1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:122 | `SELECT t1.'value1' AS 'value1',t1.'value2' AS 'value2',t1.'value3' AS 'value3' FROM (SELECT t.'name'…` |
+| mysql8/M8BankTest.java#dynamicPartition | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:88 |  |
+| mysql8/M8BankTest.java#fromSubQuery1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:123 | `SELECT t1.'value1' AS 'value1',t1.'value2' AS 'value2',t1.'value3' AS 'value3' FROM (SELECT t.'name'…` |
 | mysql8/M8BankTest.java#includeSubQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:28 | `SELECT t.'name' AS 'vo1',t.'id' AS 'vo2',t.'phone' AS 'vo3',t.'id' AS '__relation__id' FROM 't_sys_u…` |
 | mysql8/M8BankTest.java#includeSubQuery3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:45 | `SELECT t.'name' AS 'vo1',t.'id' AS 'vo2',t.'phone' AS 'vo3',t.'id' AS '__relation__id' FROM 't_sys_u…` |
 | mysql8/M8BankTest.java#includeSubQuery5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:78 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t` |
 | mysql8/M8BankTest.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:100 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t LEFT JOIN 't_…` |
 | mysql8/M8BankTest.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:8 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t LEFT JOIN 't_…` |
 | mysql8/M8BankTest.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:17 | `SELECT t1.'name' AS 'value1',t2.'name' AS 'value2',t.'code' AS 'value3' FROM 't_bank_card' t LEFT JO…` |
-| mysql8/M8BankTest.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:52 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
+| mysql8/M8BankTest.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:53 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
 | mysql8/M8BankTest.java#testFirst | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:11 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time',t3.'code' AS '__part__column1' FROM 't_sys_…` |
 | mysql8/M8BankTest.java#testFirst2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:21 | `SELECT t.'name' AS 'value1',t3.'code' AS 'value2' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'id',t1.'…` |
 | mysql8/M8BankTest.java#testFirstElementInnerJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:32 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t INNER JOIN (SELECT t1.'…` |
@@ -471,28 +471,28 @@
 | mysql8/M8BankTest.java#whereSubQuery6_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:196 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (SELECT COUNT(*) …` |
 | mysql8/M8BankTest.java#whereSubQuery7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:206 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE ? = (SELECT COUNT…` |
 | mysql8/M8Save2Test.java#testInsert | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save2Test.cs:55 |  |
-| mysql8/M8Save3Test.java#testForeach | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:177：Java 的 include2 写成嵌套 Include(a => a.M8SaveB, b => b.Include(...)) | `SELECT 'id','name' FROM 'm8_save_a' WHERE 'id' = ?` |
+| mysql8/M8Save3Test.java#testForeach | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:180 | `SELECT 'id','name' FROM 'm8_save_a' WHERE 'id' = ?` |
 | mysql8/M8SaveTest.java#testInsert | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:92 |  |
 | mysql8/M8Test1.java#testQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Test1.cs:9 | `SELECT t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time',t1.'name' AS '__part__column1' FROM 't_ba…` |
 | mysql8/M8Test1.java#testQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Test1.cs:19 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time',t1.'name' AS '__part__column1' FRO…` |
 | mysql8/M8Test1.java#userTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Test1.cs:29 | `SELECT 'id','sex','age','user_name' FROM 'm8_user_test' WHERE 'id' >= ? AND ('sex' = ? OR 'sex' = ?)…` |
-| mysql8/ManyJoinTest.java#manyJoinMany2Many9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:160 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t1…` |
-| mysql8/ManyJoinTest.java#partitionByFirst | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:256 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/ManyJoinTest.java#partitionByFirst2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:265 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/ManyJoinTest.java#testElement4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:20 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'co…` |
-| mysql8/ManyJoinTest.java#testLastCard | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:469 |  |
+| mysql8/ManyJoinTest.java#manyJoinMany2Many9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:158 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t1…` |
+| mysql8/ManyJoinTest.java#partitionByFirst | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:258 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#partitionByFirst2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:267 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#testElement4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:18 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'co…` |
+| mysql8/ManyJoinTest.java#testLastCard | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:471 |  |
 | mysql8/MySQL8Test2.java#testJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:79 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
 | mysql8/MySQL8Test2.java#testOrderCaseWhen1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:100 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
 | mysql8/MySQL8Test2.java#testOrderCaseWhen2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:110 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
 | mysql8/MySQL8Test2.java#testParentNull | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:120 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
-| mysql8/MySQL8Test3.java#testQueryFirstLimit3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:216：Java 的 firstCard 是 OneToOne + limit 1 + orderByProps 的导航；C# 写成 BankCards.OrderBy(c => c.OpenTime).First()，SQL 相同 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
-| mysql8/MySQL8Test3.java#testQueryFirstLimit4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:225：Java 的 firstCard 是 OneToOne + limit 1 + orderByProps 的导航；C# 写成 BankCards.OrderBy(c => c.OpenTime).First()，SQL 相同 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
-| mysql8/MySQL8Test4.java#includeOneTest2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:266：Java 的 firstCard 是 OneToOne + limit 1 + orderByProps 的导航；C# 写成 Include(BankCards, q => q.OrderBy(OpenTime).Take(1))，SQL 相同 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
-| mysql8/MySQL8Test4.java#testAll4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:216：Java 的 notEmptyAll(…) 是一个方法；C# 写成 Sql.Group(Any() && All(…))，SQL 相同 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (EXISTS(SELECT 1 …` |
-| mysql8/MySQL8Test4.java#testAll5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:227：Java 的 notEmptyAll(…) 是一个方法；C# 写成 Sql.Group(Any() && All(…))，SQL 相同 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
+| mysql8/MySQL8Test3.java#testQueryFirstLimit3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:221 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
+| mysql8/MySQL8Test3.java#testQueryFirstLimit4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:231 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
+| mysql8/MySQL8Test4.java#includeOneTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:268 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
+| mysql8/MySQL8Test4.java#testAll4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:217 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (EXISTS(SELECT 1 …` |
+| mysql8/MySQL8Test4.java#testAll5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:229 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
 | mysql8/MySQL8Test4.java#testPartition | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:12 | `SELECT t.'id' AS 'value1',t.'name' AS 'value2',t3.'code' AS 'value3',t3.'type' AS 'value4',t3.'open_…` |
-| mysql8/MySQL8Test4.java#testSelect | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:241 | `SELECT t1.'id',t1.'phone' AS 'phone',t1.'age' FROM (SELECT t.'id',t.'name' AS 'phone',t.'age' FROM '…` |
-| mysql8/MySQL8Test4.java#testSelect1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:241 | `SELECT t1.'id',t1.'phone' AS 'phone',t1.'age' FROM (SELECT t.'id',t.'name' AS 'phone',t.'age' FROM '…` |
+| mysql8/MySQL8Test4.java#testSelect | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:243 | `SELECT t1.'id',t1.'phone' AS 'phone',t1.'age' FROM (SELECT t.'id',t.'name' AS 'phone',t.'age' FROM '…` |
+| mysql8/MySQL8Test4.java#testSelect1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:243 | `SELECT t1.'id',t1.'phone' AS 'phone',t1.'age' FROM (SELECT t.'id',t.'name' AS 'phone',t.'age' FROM '…` |
 | mysql8/MySQL8Test4.java#testTimeAfterNull1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:107 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user' WHERE 'create_time' > ?` |
 | mysql8/MySQL8Test4.java#testTimeBeforeNull1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:126 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user' WHERE 'create_time' < ?` |
 | mysql8/MySQL8Test5.java#configurationLogicDelete | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:288 | `SELECT 'id','name','deleted' FROM 'my_config_logic' WHERE 'deleted' = ?` |
@@ -511,8 +511,8 @@
 | pgsql/QueryTest.java#query6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:58 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
 | pgsql/QueryTest.java#query8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:96 | `SELECT CONCAT(t."id",t."id") FROM "t_blog" t WHERE t."deleted" = ? AND t."id" = ?` |
 | pgsql/QueryTest.java#query9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:104 | `SELECT CONCAT(t."id",t."title") FROM "t_blog" t WHERE t."deleted" = ? AND t."id" = ?` |
-| pgsql/QueryTest19.java#testMapChain | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:35：Java 的 Map 投影写成带 [Column] 的 DTO，SQL 相同；Map 的值是 Object，Java 的比较参数保持 Integer，C# 按 DTO 属性的 decimal 传参 | `SELECT t1."aaa" AS "aaa",t1."bbb" AS "bbb" FROM (SELECT t."score" AS "aaa",t."star" AS "bbb" FROM "t…` |
-| pgsql/QueryTest19.java#testMapChain2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:44：Java 的 Map 投影写成带 [Column] 的 DTO，SQL 相同；Map 的值是 Object，Java 的比较参数保持 Integer，C# 按 DTO 属性的 decimal 传参 | `SELECT t1."aaa" AS "aaa",t1."bbb" AS "bbb" FROM (SELECT (t."score" * ?) AS "aaa",t."star" AS "bbb" F…` |
+| pgsql/QueryTest19.java#testMapChain | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:34：Java 的 Map 投影写成带 [Column] 的 DTO，SQL 相同；Map 的值是 Object，Java 的比较参数保持 Integer，C# 按 DTO 属性的 decimal 传参 | `SELECT t1."aaa" AS "aaa",t1."bbb" AS "bbb" FROM (SELECT t."score" AS "aaa",t."star" AS "bbb" FROM "t…` |
+| pgsql/QueryTest19.java#testMapChain2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:43：Java 的 Map 投影写成带 [Column] 的 DTO，SQL 相同；Map 的值是 Object，Java 的比较参数保持 Integer，C# 按 DTO 属性的 decimal 传参 | `SELECT t1."aaa" AS "aaa",t1."bbb" AS "bbb" FROM (SELECT (t."score" * ?) AS "aaa",t."star" AS "bbb" F…` |
 | sqlite/SQLiteTest.java#testQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:32 |  |
 | sqlite/SQLiteTest.java#testQuery1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:39 |  |
 
@@ -540,8 +540,8 @@
 | QueryTest3.java#nativePage4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.Part2.cs:211：过滤值按 C# 种子数据的 content 调整（Java 依赖被其它用例改过的数据） | `select * from t_blog where id = ?` |
 | QueryTest3.java#testGenericKey2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.Part2.cs:177 |  |
 | doc/DocTest.java#testTopic | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/DocTest.cs:20：最后一段 Java 用 stars().as(o.stars()) 给同名列强加别名（t.'stars' AS 'stars'）；C# 列与成员同名时不写 AS | `SELECT COUNT(*) FROM 't_topic' WHERE 'title' LIKE ? AND 'create_time' <= ?` |
-| mysql8/ManyJoinTest.java#test16GroupJoinCombinePage | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:457 | `SELECT COUNT(*) FROM 't_sys_user' t` |
-| mysql8/MySQL8Test3.java#thisConfigureTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:29 | `SELECT COUNT(*) FROM 't_sys_user' t` |
+| mysql8/ManyJoinTest.java#test16GroupJoinCombinePage | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:459 | `SELECT COUNT(*) FROM 't_sys_user' t` |
+| mysql8/MySQL8Test3.java#thisConfigureTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:27 | `SELECT COUNT(*) FROM 't_sys_user' t` |
 
 ### 原生 SQL（`sql.native`，M1）
 
@@ -564,19 +564,19 @@
 | QueryTest.java#query7_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.NativeSql.cs:26 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest.java#query7_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.NativeSql.cs:26 | `SELECT 'id','create_time' AS createTime,'update_time' AS updateTime,'create_by' AS createBy,'update_…` |
 | QueryTest10.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest10.cs:26 | `SELECT t.'id' AS 'value1' FROM 't_topic' t GROUP BY t.'id'` |
-| QueryTest11.java#testx1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:51：Map 逐键投影 Java 写 MapProxy.put，C# 写字典初始化 { \"id\", o.Id }；SQL 相同 | `SELECT 1 AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND DATE_FORMAT(t.'create_time','%Y-%m-%d'…` |
+| QueryTest11.java#testx1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:52 | `SELECT 1 AS 'score' FROM 't_blog' t WHERE t.'deleted' = ? AND DATE_FORMAT(t.'create_time','%Y-%m-%d'…` |
 | QueryTest12.java#testNum1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:84 | `SELECT SUM(t.'score')-SUM(t.'score') AS 'score' FROM 't_blog' t WHERE t.'deleted' = ?` |
 | QueryTest12.java#testNum7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:123 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
 | QueryTest12.java#testSelectPropTypeColumn1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:171 | `SELECT SUM(case t.'score' when ? then 1 else 0 end) AS 'star' FROM 't_blog' t WHERE t.'deleted' = ? …` |
 | QueryTest12.java#testSelectPropTypeColumn2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:180 | `SELECT MIN(case t.'score' when ? then 1 else 0 end) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ?…` |
 | QueryTest14.java#test1119 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest14.cs:18 |  |
-| QueryTest15.java#testxxx1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:354 |  |
-| QueryTest16.java#testxxc | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:40 |  |
-| QueryTest17.java#aaaa | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:180 |  |
-| QueryTest17.java#testNativeSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:36 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'id' = ? ORDER BY RAND()` |
-| QueryTest17.java#testNativeSQL1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:48 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'id' = ? ORDER BY IFNULL('stars',?) D…` |
-| QueryTest17.java#testNativeSQL2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:57 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'id' = ? AND 'stars'!='create_time' O…` |
-| QueryTest17.java#testNativeSQL3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:68 | `SELECT RAND() AS 'value1',IFNULL(t.'stars',?) AS 'value2' FROM 't_topic' t WHERE t.'id' = ?` |
+| QueryTest15.java#testxxx1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:355 |  |
+| QueryTest16.java#testxxc | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:41 |  |
+| QueryTest17.java#aaaa | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:182 |  |
+| QueryTest17.java#testNativeSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:34 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'id' = ? ORDER BY RAND()` |
+| QueryTest17.java#testNativeSQL1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:46 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'id' = ? ORDER BY IFNULL('stars',?) D…` |
+| QueryTest17.java#testNativeSQL2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:55 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'id' = ? AND 'stars'!='create_time' O…` |
+| QueryTest17.java#testNativeSQL3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:66 | `SELECT RAND() AS 'value1',IFNULL(t.'stars',?) AS 'value2' FROM 't_topic' t WHERE t.'id' = ?` |
 | QueryTest18.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:7 |  |
 | QueryTest18.java#testClient | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:157 |  |
 | QueryTest2.java#query1231 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest2.cs:13：标量子查询里 Java 写 MAX(..) AS 'create_time'，C# 的标量投影不写别名 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE t.'create_time' = (SELECT M…` |
@@ -591,12 +591,12 @@
 | QueryTest3.java#nativePage6 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.Part2.cs:220：同 nativePage4 | `select * from t_blog where id = ?` |
 | QueryTest3.java#testSelectAs1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.Part2.cs:134 | `SELECT 100 - t.'id' AS 'stars' FROM 't_blog' t WHERE t.'deleted' = ? AND t.'id' = ?` |
 | QueryTest4.java#testSQLFuncExtension2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:74 | `SELECT t.'id' FROM 't_topic' t WHERE t.'id' = ? AND FIND_IN_SET(?,t.'id')` |
-| QueryTest5.java#test2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:127：Topic.Alias 在 C# 里不是列（ColumnIgnore），带 alias 的两段改为不含 alias；动态列清单用成员初始化表达 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t` |
+| QueryTest5.java#test2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:132：Topic.Alias 在 C# 里不是列（ColumnIgnore），带 alias 的两段改为不含 alias；动态列清单用成员初始化表达 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t` |
 | QueryTest8.java#test4x | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest8.cs:10 |  |
 | QueryTestRelationTest.java#relation10 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTestRelationTest.cs:180：Java 的 sqlConversion 在计数子查询里写了 COUNT(t1.'id') AS 'id'；C# 的计算列是表达式，子查询的列不写别名（见 QueryTest15） | `SELECT (SELECT COUNT(t1.'id') AS 'id' FROM 'school_student' t1 WHERE t1.'class_id' = t.'id') AS 'val…` |
 | mysql8/MySQL8Test2.java#testGroupConcat2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:277 | `SELECT t.'id' AS 'value1',GROUP_CONCAT(DISTINCT t.'content' SEPARATOR ?) AS 'value2' FROM 't_blog' t…` |
-| mysql8/MySQL8Test4.java#testToResultSet | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:303 |  |
-| pgsql/QueryTest19.java#concat1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:54 | `select CONCAT('a', null , 'b') as "aa"` |
+| mysql8/MySQL8Test4.java#testToResultSet | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:305 |  |
+| pgsql/QueryTest19.java#concat1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:53 | `select CONCAT('a', null , 'b') as "aa"` |
 
 ### 删除（`write.delete`，M1）
 
@@ -698,7 +698,7 @@
 | GenericWithDatabaseTest.java#updateTest30 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:152 |  |
 | QueryTest18.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:132 |  |
 | QueryTest21.java#TestReverse | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest21.cs:78 | `SELECT COUNT(*) FROM 't_topic' WHERE 'id' IS NOT NULL` |
-| QueryTest24.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:247 |  |
+| QueryTest24.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:249 |  |
 | QueryTest26.java#testQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:295 | `UPDATE 'sys_user_encrypt' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
 | QueryTest26.java#testQuery3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:305 | `UPDATE 'sys_user2' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
 | QueryTest26.java#updateConcat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:240 |  |
@@ -744,8 +744,8 @@
 | UpdateTest2.java#testUpdateNull | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest2.cs:27 | `UPDATE "t_topic" SET "title" = ? WHERE "id" = ?` |
 | UpdateTest2.java#testUpdateValueTest | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest2.cs:38：C# 的 == null 按 C# 语义翻译成 IS NULL（Java 的 eq(null) 写成 = ? 并传 null，永远不成立）；值过滤只作用于查询这一点相同 | `UPDATE "t_topic" SET "title" = ? WHERE "stars" = ?` |
 | UpdateTest2.java#update1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest2.cs:53 |  |
-| mysql8/M8BankTest.java#testaa1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:124 |  |
-| mysql8/ManyJoinTest.java#test2GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:286 | `UPDATE 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',(COUNT(?) > 0) AS '__any2__' FR…` |
+| mysql8/M8BankTest.java#testaa1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:125 |  |
+| mysql8/ManyJoinTest.java#test2GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:288 | `UPDATE 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',(COUNT(?) > 0) AS '__any2__' FR…` |
 
 ### CASE WHEN（`expr.case`，M2）
 
@@ -773,8 +773,8 @@
 | QueryTest25.java#testOrderCaseWhen | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:10 |  |
 | QueryTest3.java#propertyCaseWhen | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:187 | `SELECT (CASE WHEN t.'title' = ? THEN ? WHEN t.'title' = ? THEN ? ELSE ? END) AS 'title',t.'id' FROM …` |
 | QueryTest3.java#testCaseWhen | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:175 | `SELECT (CASE WHEN t.'title' = ? AND t.'stars' >= ? THEN ? WHEN t.'title' = ? THEN ? WHEN t.'title' =…` |
-| SubJoinTest.java#testSubJoinCaseWhen1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:53 | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
-| SubJoinTest.java#testSubJoinCaseWhen2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:53 | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
+| SubJoinTest.java#testSubJoinCaseWhen1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:54 | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
+| SubJoinTest.java#testSubJoinCaseWhen2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:54 | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
 | mysql8/MySQL8Test2.java#abc | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:129 |  |
 | pgsql/MathQueryTest.java#testPropertyMath | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/MathQueryTest.cs:91：C# 的 Math.Pow / Atan2 只有 double 重载，pow 与 atan2 的参数是 Double（Java 是 BigDecimal）；Java 的 DTO 代理 set() 同名列也写 AS，C# 同名不写 | `SELECT t."test_value" AS "test_value",ABS(t."test_value") AS "test_abs",SIGN(t."test_value") AS "tes…` |
 | pgsql/QueryTest19.java#testItem | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:197 |  |
@@ -810,13 +810,13 @@
 | QueryTest10.java#testLike1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest10.cs:182：前两段 Java 把条件之后再 leftJoin 的查询包成派生表（SELECT t2.… FROM (SELECT … WHERE …) t2 LEFT JOIN …）；C# 的条件与连接写在同一层，结果相同 | `SELECT t2.'id',t2.'content',t2.'create_time',t3.'stars' FROM (SELECT t.'id',t.'create_time',t.'updat…` |
 | QueryTest10.java#testQuery8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest10.cs:208 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'content',t.…` |
 | QueryTest10.java#testVO1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest10.cs:239：Java 的 selectAll + selectIgnores + setSubQuery 会同时选出同名的普通列（t.'star'）和子查询列（AS 'star'）；C# 的成员初始化每个属性只有一列 | `SELECT t.'id',t1.'title' AS 'field1',t2.'id' AS 'field2' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t…` |
-| QueryTest11.java#testOrder | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:389：Java 的 selectExpression 里格式化列不写别名；C# 的投影列必须对应成员，写成 AS 'create_time' | `SELECT t.'title',t.'id',DATE_FORMAT(t.'create_time','%Y-%m-%d %H:%i:%s') FROM 't_topic' t WHERE t.'t…` |
-| QueryTest11.java#testOrder1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:427：同 testOrder；JSON 参数按 System.Text.Json 的属性声明顺序序列化（name 在前），Java 的 Jackson 按字母序（age 在前） | `SELECT t.'title',t.'id',DATE_FORMAT(t.'create_time','%Y-%m-%d %H:%i:%s') FROM 't_topic_type_array' t…` |
-| QueryTest11.java#testx15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:230 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE 'create_time' >= da…` |
-| QueryTest11.java#testx16 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:240：Java 的 constant(end).plusMonths(-3) 写成 date_add(?, interval (?) month)；C# 在客户端算出结果，只传一个参数 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE ? <= 'create_time' …` |
-| QueryTest11.java#testx17 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:251 |  |
-| QueryTest11.java#testx18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:260 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE CONCAT('id','title'…` |
-| QueryTest11.java#testx21 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:284 | `SELECT YEAR(t.'create_time') AS 'value1',MONTH(t.'create_time') AS 'value2',SUM(t.'star') AS 'value3…` |
+| QueryTest11.java#testOrder | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:390：Java 的 selectExpression 里格式化列不写别名；C# 的投影列必须对应成员，写成 AS 'create_time' | `SELECT t.'title',t.'id',DATE_FORMAT(t.'create_time','%Y-%m-%d %H:%i:%s') FROM 't_topic' t WHERE t.'t…` |
+| QueryTest11.java#testOrder1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:428：同 testOrder；JSON 参数按 System.Text.Json 的属性声明顺序序列化（name 在前），Java 的 Jackson 按字母序（age 在前） | `SELECT t.'title',t.'id',DATE_FORMAT(t.'create_time','%Y-%m-%d %H:%i:%s') FROM 't_topic_type_array' t…` |
+| QueryTest11.java#testx15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:231 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE 'create_time' >= da…` |
+| QueryTest11.java#testx16 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:241：Java 的 constant(end).plusMonths(-3) 写成 date_add(?, interval (?) month)；C# 在客户端算出结果，只传一个参数 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE ? <= 'create_time' …` |
+| QueryTest11.java#testx17 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:252 |  |
+| QueryTest11.java#testx18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:261 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE CONCAT('id','title'…` |
+| QueryTest11.java#testx21 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:285 | `SELECT YEAR(t.'create_time') AS 'value1',MONTH(t.'create_time') AS 'value2',SUM(t.'star') AS 'value3…` |
 | QueryTest12.java#orderTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:14 | `SELECT 'id','stars','title','create_time' FROM 't_topic' ORDER BY 'id' ASC` |
 | QueryTest13.java#testMultiSelect | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest13.cs:39：Java 的 as(\"createTime\") 强制写了 AS 'create_time'；C# 列名与别名相同时不写 AS | `SELECT t.'id',t.'content',t.'create_time' AS 'create_time',t1.'address',t1.'id_card' FROM 't_blog' t…` |
 | QueryTest14.java#testOracle | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest14.cs:134 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
@@ -824,13 +824,13 @@
 | QueryTest14.java#testPlus_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest14.cs:29 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'create_time' < date_add(CAST(? AS DA…` |
 | QueryTest14.java#testPropertyFunc | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest14.cs:40 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE 'create_time' < CAST(? AS DATETIME)` |
 | QueryTest15.java#tes123txxx | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:247 |  |
-| QueryTest15.java#test122345 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:255：Java 用人大金仓（PG 模式）方言；C# 用 PostgreSQL 方言比对，SQL 相同 | `SELECT "id","stars","title","create_time" FROM "t_topic" WHERE TO_CHAR(("create_time")::TIMESTAMP,'Y…` |
-| QueryTest15.java#test1223456 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:261 | `SELECT "id","stars","title","create_time" FROM "t_topic" WHERE strftime('%Y年%m月%d日', "create_time") …` |
-| QueryTest15.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:267 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE DATE_FORMAT('create_time','%Y年%m月%d日'…` |
-| QueryTest15.java#testColumn | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:277 | `SELECT t.'create_time' FROM 't_topic' t WHERE t.'id' = ? AND DATE_FORMAT(t.'create_time','%Y-%m') >=…` |
-| QueryTest15.java#testFETCHER | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:289 | `SELECT t.'id',t.'create_time',t.'title' FROM 't_topic' t WHERE t.'id' = ? AND DATE_FORMAT(t.'create_…` |
-| QueryTest15.java#testa | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:301 | `SELECT DATE_FORMAT(t.'create_time','%Y-%m') AS 'value1',COUNT(*) AS 'value2' FROM 't_topic' t WHERE …` |
-| QueryTest17.java#test12234567 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:164：Java 自建 Hikari 数据源与客户端配置，没有断言 | `SELECT "id","stars","title","create_time" FROM "t_topic" WHERE TO_CHAR(("create_time")::TIMESTAMP,'Y…` |
+| QueryTest15.java#test122345 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:256 | `SELECT "id","stars","title","create_time" FROM "t_topic" WHERE TO_CHAR(("create_time")::TIMESTAMP,'Y…` |
+| QueryTest15.java#test1223456 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:262 | `SELECT "id","stars","title","create_time" FROM "t_topic" WHERE strftime('%Y年%m月%d日', "create_time") …` |
+| QueryTest15.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:268 | `SELECT 'id','stars','title','create_time' FROM 't_topic' WHERE DATE_FORMAT('create_time','%Y年%m月%d日'…` |
+| QueryTest15.java#testColumn | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:278 | `SELECT t.'create_time' FROM 't_topic' t WHERE t.'id' = ? AND DATE_FORMAT(t.'create_time','%Y-%m') >=…` |
+| QueryTest15.java#testFETCHER | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:290 | `SELECT t.'id',t.'create_time',t.'title' FROM 't_topic' t WHERE t.'id' = ? AND DATE_FORMAT(t.'create_…` |
+| QueryTest15.java#testa | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:302 | `SELECT DATE_FORMAT(t.'create_time','%Y-%m') AS 'value1',COUNT(*) AS 'value2' FROM 't_topic' t WHERE …` |
+| QueryTest17.java#test12234567 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:166：Java 自建 Hikari 数据源与客户端配置，没有断言 | `SELECT "id","stars","title","create_time" FROM "t_topic" WHERE TO_CHAR(("create_time")::TIMESTAMP,'Y…` |
 | QueryTest18.java#Sum | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:85 |  |
 | QueryTest18.java#Sum1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:92 |  |
 | QueryTest18.java#easyQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:102 |  |
@@ -883,7 +883,7 @@
 | pgsql/QueryTest.java#query7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:70 |  |
 | pgsql/QueryTest.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:166 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
 | pgsql/QueryTest.java#testDuration | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:356 |  |
-| pgsql/QueryTest19.java#datetimeformat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:62 | `SELECT t."create_time" AS "value1",TO_CHAR((t."create_time")::TIMESTAMP,'YYYY年MM-01 HH24:MI分SS秒') AS…` |
+| pgsql/QueryTest19.java#datetimeformat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:61 | `SELECT t."create_time" AS "value1",TO_CHAR((t."create_time")::TIMESTAMP,'YYYY年MM-01 HH24:MI分SS秒') AS…` |
 
 ### 通用函数（nullOrDefault、greatest、nullif、null-safe）（`func.general`，M2）
 
@@ -900,9 +900,9 @@
 | QueryTest.java#query16_1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.Joins.cs:13 | `SELECT COUNT(1) FROM (SELECT IFNULL(t1.'id',?) AS 'id',SUM(t1.'score') AS 'score' FROM 't_topic' t I…` |
 | QueryTest.java#query16_1_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.Joins.cs:13 | `SELECT COUNT(1) FROM (SELECT IFNULL(t1.'id',?) AS 'id',SUM(t1.'score') AS 'score' FROM 't_topic' t I…` |
 | QueryTest10.java#testDraft9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest10.cs:284 | `SELECT IFNULL(t.'title',?) AS 'title',t.'id' AS 'id',t.'stars' AS 'stars' FROM 't_topic' t ORDER BY …` |
-| QueryTest11.java#testx27 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:359 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE IFNULL('topic_type'…` |
-| QueryTest11.java#testx28 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:368 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE IFNULL('topic_type'…` |
-| QueryTest17.java#testOptional1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:190 |  |
+| QueryTest11.java#testx27 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:360 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE IFNULL('topic_type'…` |
+| QueryTest11.java#testx28 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:369 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE IFNULL('topic_type'…` |
+| QueryTest17.java#testOptional1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:192 |  |
 | QueryTest18.java#rangeTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.Ranges.cs:24 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest18.java#rangeTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.Ranges.cs:56 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest18.java#test15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:13 |  |
@@ -934,8 +934,8 @@
 | QueryTest4.java#testSQLFunc2_1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:86：Java 把三个参数直接写进 IFNULL（MySQL 并不接受）；C# 的 a ?? b ?? c 嵌套成 IFNULL(a,IFNULL(b,c)) | `SELECT IFNULL(t.'id',t.'title',?) FROM 't_topic' t WHERE t.'id' = ?` |
 | QueryTest4.java#testSQLFunc2_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:82 | `SELECT IFNULL(t.'id',?) FROM 't_topic' t WHERE t.'id' = ?` |
 | QueryTest4.java#testSQLFuncExtension1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:68 | `SELECT IFNULL(t.'id',?) FROM 't_topic' t WHERE t.'id' = ? AND FIND_IN_SET(?,t.'id')` |
-| QueryTest5.java#groupTest5_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:142 |  |
-| QueryTest5.java#joinTestx | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:150 | `SELECT COUNT(t2.'id') FROM (SELECT DISTINCT IFNULL(t1.'id',?) AS 'id',SUM(t1.'score') AS 'score' FRO…` |
+| QueryTest5.java#groupTest5_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:147 |  |
+| QueryTest5.java#joinTestx | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:155 | `SELECT COUNT(t2.'id') FROM (SELECT DISTINCT IFNULL(t1.'id',?) AS 'id',SUM(t1.'score') AS 'score' FRO…` |
 | QueryTest9.java#testQuery6 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest9.cs:300：Java 两处引用同一个子查询对象，别名都是 t1；C# 每处子查询各自编号（标量子查询多保留一个别名，IN 子查询是 t3）。分组键投影到属性时写 AS | `SELECT t.'id',COUNT(t.'id') AS 'star',MAX(t.'id') AS 'title' FROM 't_blog' t WHERE t.'deleted' = ? A…` |
 | fork/functions/NullSafeSqlTest.java#nullIf | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:31 | `SELECT NULLIF(t.'name', ?) AS 'value1' FROM 't_fork_user' t` |
 | fork/functions/NullSafeSqlTest.java#nullSafeEqualsBetweenColumns | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:26 | `SELECT t.'id' FROM 't_fork_post' t INNER JOIN 't_fork_user' t1 ON (t1.'id' <=> t.'user_id')` |
@@ -943,9 +943,9 @@
 | fork/functions/SmallFixesSqlTest.java#jsonArraySize | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:44 | `SELECT 'id','name','age','company_id','attrs','created_at' FROM 't_fork_user' WHERE JSON_LENGTH('att…` |
 | fork/functions/SmallFixesSqlTest.java#offsetWindowHasSpaceBeforeOrderBy | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:53 |  |
 | fork/live/NullSafeLiveTest.java#nullMatchesNullAndEmptyBecomesNull | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsLiveTest.cs:96 | `DROP TABLE {…}t_fork_user` |
-| mysql8/ManyJoinTest.java#testElement5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:33 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'co…` |
-| mysql8/ManyJoinTest.java#testElement6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:43 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'co…` |
-| mysql8/ManyJoinTest.java#testElement7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:55 | `SELECT t3.'type' AS 'value1',t3.'code' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'u…` |
+| mysql8/ManyJoinTest.java#testElement5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:31 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'co…` |
+| mysql8/ManyJoinTest.java#testElement6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:41 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'uid',t1.'co…` |
+| mysql8/ManyJoinTest.java#testElement7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:53 | `SELECT t3.'type' AS 'value1',t3.'code' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t1.'id',t1.'u…` |
 | pgsql/QueryTest.java#query10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:112 | `SELECT COALESCE(t."id",?) FROM "t_blog" t WHERE t."deleted" = ? AND t."id" = ?` |
 | pgsql/QueryTest.java#testNullDefault | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:332 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
 
@@ -960,7 +960,7 @@
 | QueryTest12.java#testNum8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:133 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
 | QueryTest12.java#testOrSub1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:143 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
 | QueryTest14.java#testMapQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest14.cs:53 | `SELECT * FROM 't_topic' WHERE 'id' = ?` |
-| QueryTest17.java#xxx123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:109 | `SELECT t.'id' AS 'my_code',GROUP_CONCAT(t1.'title' SEPARATOR ?) AS 'my_name' FROM 't_topic' t LEFT J…` |
+| QueryTest17.java#xxx123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:108 | `SELECT t.'id' AS 'my_code',GROUP_CONCAT(t1.'title' SEPARATOR ?) AS 'my_name' FROM 't_topic' t LEFT J…` |
 | QueryTest19.java#testaaa | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:167 |  |
 | QueryTest22.java#testSelectAnyElement2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest22.Part2.cs:201：Java 第二个子查询的别名跳过了 t2（写成 t3），C# 按顺序编号为 t2 | `SELECT (SELECT GROUP_CONCAT(t1.'code' SEPARATOR ?) FROM 'doc_bank_card' t1 WHERE t1.'uid' = t.'id' A…` |
 | QueryTest26.java#joiningTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:131 |  |
@@ -978,10 +978,10 @@
 | mysql8/MySQL8Test5.java#testManyLimit7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:57 | `SELECT t.'id' AS 'value1',t2.'__joining2__' AS 'value2' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'ui…` |
 | mysql8/MySQL8Test5.java#testToSelectPageResult2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:105：Java 的 eq(null) 写 = ?（参数 null）；C# 与值为 null 的变量比较按 C# 语义写 IS NULL | `SELECT t1.'id',t1.'name',t1.'create_time',t3.'__joining2__' AS '__part__column1' FROM (SELECT t.'id'…` |
 | mysql8/MySQL8Test5.java#testToSelectPageResult3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:117 | `SELECT t1.'id',t1.'name',t1.'create_time',t3.'__joining2__' AS '__part__column1' FROM (SELECT t.'id'…` |
-| pgsql/QueryTest19.java#testJoining | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:73 | `SELECT t."title" AS "value1",STRING_AGG((t."content")::TEXT, ?) AS "value2" FROM "t_blog" t WHERE t.…` |
-| pgsql/QueryTest19.java#testJoining2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:73 | `SELECT t."title" AS "value1",STRING_AGG((t."content")::TEXT, ?) AS "value2" FROM "t_blog" t WHERE t.…` |
-| pgsql/QueryTest19.java#testJoining3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:84 | `SELECT t."id",t."create_time",t."update_time",t."create_by",t."update_by",t."deleted",t."title",t."c…` |
-| pgsql/QueryTest19.java#testJoining4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:95：Java 的 Map 投影写成带 [Column] 的 DTO，SQL 相同 | `SELECT t."id",t."create_time",t."update_time",t."create_by",t."update_by",t."deleted",t."title",t."c…` |
+| pgsql/QueryTest19.java#testJoining | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:72 | `SELECT t."title" AS "value1",STRING_AGG((t."content")::TEXT, ?) AS "value2" FROM "t_blog" t WHERE t.…` |
+| pgsql/QueryTest19.java#testJoining2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:72 | `SELECT t."title" AS "value1",STRING_AGG((t."content")::TEXT, ?) AS "value2" FROM "t_blog" t WHERE t.…` |
+| pgsql/QueryTest19.java#testJoining3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:83 | `SELECT t."id",t."create_time",t."update_time",t."create_by",t."update_by",t."deleted",t."title",t."c…` |
+| pgsql/QueryTest19.java#testJoining4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:95 | `SELECT t."id",t."create_time",t."update_time",t."create_by",t."update_by",t."deleted",t."title",t."c…` |
 
 ### JSON 函数（`func.json`，M2）
 
@@ -1074,13 +1074,13 @@
 | QueryTest10.java#testDraft17 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest10.cs:120 | `SELECT t.'id' AS 'value1',REPLACE(LOWER(t.'title'),?,?) AS 'value2' FROM 't_topic' t WHERE REPLACE(L…` |
 | QueryTest10.java#testDraft18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest10.cs:131 | `SELECT t.'id' AS 'value1',STRCMP(t.'title',t.'id') AS 'value2' FROM 't_topic' t WHERE STRCMP(t.'titl…` |
 | QueryTest10.java#testDraft19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest10.cs:141 | `SELECT t.'id' AS 'value1',LPAD(t.'title', 9, ?) AS 'value2' FROM 't_topic' t WHERE LPAD(t.'title', 5…` |
-| QueryTest11.java#testx14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:218 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE SUBSTR('id',2,2) = …` |
-| QueryTest11.java#testx26 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:343：Java 的 proxy set 同名列也写 AS（t.'id' AS 'id'），C# 成员初始化同名列不写 | `SELECT t.'id' AS 'id',(CASE t.'id' WHEN ? THEN 1 ELSE 0 END) AS 'is_top',(CASE SUBSTR(t.'id',2,2) WH…` |
+| QueryTest11.java#testx14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:219 | `SELECT 'id','stars','title','topic_type','create_time' FROM 't_topic_type' WHERE SUBSTR('id',2,2) = …` |
+| QueryTest11.java#testx26 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:344：Java 的 proxy set 同名列也写 AS（t.'id' AS 'id'），C# 成员初始化同名列不写 | `SELECT t.'id' AS 'id',(CASE t.'id' WHEN ? THEN 1 ELSE 0 END) AS 'is_top',(CASE SUBSTR(t.'id',2,2) WH…` |
 | QueryTest12.java#testDoc19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.Part2.cs:124 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'t_sys_user'…` |
 | QueryTest14.java#testLikeColumn | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest14.cs:81 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
-| QueryTest17.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:79 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest17.java#test3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:79：Java 用动态 API（fx.subString(\"id\", …)）写同样的条件；C# 只有表达式写法，SQL 相同 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest17.java#textLikeFunc | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:26 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest17.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:78 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest17.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:78 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
+| QueryTest17.java#textLikeFunc | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:24 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest18.java#testSubString | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:45 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest2.java#query112 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest2.cs:62 |  |
 | QueryTest2.java#query114 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest2.cs:62 |  |
@@ -1098,8 +1098,8 @@
 | QueryTest23.java#testMathx2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest23.cs:175 | `SELECT t.'score' AS 'value1',ROUND(t.'score') AS 'value2',SIGN(t.'score') AS 'value3',ROUND(t.'score…` |
 | QueryTest23.java#testQueryConcat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest23.cs:158 |  |
 | QueryTest24.java#testContains | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:17 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest24.java#testJoinParameterCount | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:223：Java 两参 lambda 的 leftJoin 把前面的连接收成第一张表的派生表；C# 显式 Select((t, b) => t) 再连接，SQL 相同 | `SELECT SUBSTR(t2.'title',2,2) AS 'value1' FROM (SELECT t.'id',t.'stars',t.'title',t.'create_time' FR…` |
-| QueryTest24.java#testdraft1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:235：同 testJoinParameterCount | `SELECT SUBSTR(t2.'title',2,2) AS 'value1' FROM (SELECT t.'id',t.'stars',t.'title',t.'create_time' FR…` |
+| QueryTest24.java#testJoinParameterCount | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:224 | `SELECT SUBSTR(t2.'title',2,2) AS 'value1' FROM (SELECT t.'id',t.'stars',t.'title',t.'create_time' FR…` |
+| QueryTest24.java#testdraft1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:237 | `SELECT SUBSTR(t2.'title',2,2) AS 'value1' FROM (SELECT t.'id',t.'stars',t.'title',t.'create_time' FR…` |
 | QueryTest3.java#query112 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:67 |  |
 | QueryTest3.java#query114 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:67 |  |
 | QueryTest3.java#query115 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:67 |  |
@@ -1198,11 +1198,11 @@
 | fork/functions/WindowSqlTest.java#invalidArgumentsAreRejected | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:114 |  |
 | fork/functions/WindowSqlTest.java#partitionedWindowIsUnchanged | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:77 |  |
 | fork/live/WindowLiveTest.java#runningTotalRowNumberAndNtile | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsLiveTest.cs:112 | `DROP TABLE {…}t_fork_post` |
-| mysql8/ManyJoinTest.java#test111 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:482 |  |
-| mysql8/MySQL8Test3.java#nextTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:165 | `SELECT t.'type' AS 'value1',LAG(t.'type', 1) OVER (ORDER BY t.'type' ASC,t.'code' DESC) AS 'value2',…` |
-| mysql8/MySQL8Test3.java#nextTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:184 | `SELECT t.'type' AS 'value1',LAG(t.'type', 1) OVER (ORDER BY t.'type' ASC,t.'code' DESC) AS 'value2',…` |
-| mysql8/MySQL8Test3.java#nextTest2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:199：Java 的 offset() 可以不写窗口、沿用查询的排序，没有排序时运行期报错；C# 的 Sql.Over.Lag / Lead 必须传窗口，编译期就要求写出排序 |  |
-| mysql8/MySQL8Test3.java#nextTest3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:205：Java 的 offset() 不写窗口时沿用查询的排序；C# 的 Sql.Over.Lag 显式传同样的窗口，SQL 相同 | `SELECT t.'type' AS 'value1',LAG(t.'type', 1) OVER (ORDER BY t.'open_time' ASC) AS 'value2' FROM 't_b…` |
+| mysql8/ManyJoinTest.java#test111 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:484 |  |
+| mysql8/MySQL8Test3.java#nextTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:171 | `SELECT t.'type' AS 'value1',LAG(t.'type', 1) OVER (ORDER BY t.'type' ASC,t.'code' DESC) AS 'value2',…` |
+| mysql8/MySQL8Test3.java#nextTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:190 | `SELECT t.'type' AS 'value1',LAG(t.'type', 1) OVER (ORDER BY t.'type' ASC,t.'code' DESC) AS 'value2',…` |
+| mysql8/MySQL8Test3.java#nextTest2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:205：Java 的 offset() 可以不写窗口、沿用查询的排序，没有排序时运行期报错；C# 的 Sql.Over.Lag / Lead 必须传窗口，编译期就要求写出排序 |  |
+| mysql8/MySQL8Test3.java#nextTest3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:211：Java 的 offset() 不写窗口时沿用查询的排序；C# 的 Sql.Over.Lag 显式传同样的窗口，SQL 相同 | `SELECT t.'type' AS 'value1',LAG(t.'type', 1) OVER (ORDER BY t.'open_time' ASC) AS 'value2' FROM 't_b…` |
 | mysql8/MySQL8Test5.java#testOffsetChunk | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:171 |  |
 | pgsql/PartitionByTest.java#testPartitionBy16_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PartitionByTest.cs:18 | `SELECT t1."__part__column1" AS "value1",t1."__part__column2" AS "value2",t1."id" AS "value3" FROM (S…` |
 | pgsql/PartitionByTest.java#testPartitionBy16_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PartitionByTest.cs:31 | `SELECT t1."__part__column1" AS "value1",t1."__part__column2" AS "value2",t1."id" AS "value3" FROM (S…` |
@@ -1240,7 +1240,7 @@
 | mysql8/CTETest.java#cteJoinTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:32 | `WITH 'ttt' AS (SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t WHERE t.'name' = ? AN…` |
 | mysql8/CTETest.java#cteJoinTest8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:44 | `WITH 'ttt' AS (SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t WHERE t.'age' = ?) ,'…` |
 | mysql8/CTETest.java#cteTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:11 | `WITH 'ttt' AS (SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t WHERE t.'age' = ?) SE…` |
-| mysql8/M8BankTest.java#testExtraFilter4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:113 | `WITH 'with_Draft2' AS (SELECT t1.'bank_id' AS 'value1',COUNT(*) AS 'value2' FROM 't_bank_card' t1 GR…` |
+| mysql8/M8BankTest.java#testExtraFilter4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:114 | `WITH 'with_Draft2' AS (SELECT t1.'bank_id' AS 'value1',COUNT(*) AS 'value2' FROM 't_bank_card' t1 GR…` |
 | pgsql/QueryTest.java#testToWithAs2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:342 | `WITH "aa" AS (SELECT t1."id",t1."create_time",t1."update_time",t1."create_by",t1."update_by",t1."del…` |
 
 ### 分组与 having（含 rollup / cube）（`query.group`，M3）
@@ -1273,9 +1273,9 @@
 | QueryTest10.java#test4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest10.cs:327：Java 的 selectExpression(g.key1()) 把分组键按普通列选出，不写 AS；C# 的成员初始化 Id = g.Key 与 Java 的 .as(BlogEntity::getId) 一致，写 AS | `SELECT t.'id' FROM 't_blog' t WHERE t.'deleted' = ? AND t.'id' = ? GROUP BY t.'id' HAVING MAX(t.'id'…` |
 | QueryTest10.java#test5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest10.cs:339：Java 的 selectExpression(g.key1()) 把分组键按普通列选出，不写 AS；C# 的成员初始化 Id = g.Key 与 Java 的 .as(BlogEntity::getId) 一致，写 AS | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
 | QueryTest10.java#testDraft10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest10.cs:172 | `SELECT t.'id' AS 'value1',COUNT(*) AS 'value2' FROM 't_topic' t WHERE t.'title' LIKE ? AND t.'create…` |
-| QueryTest11.java#testdraft | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:378 | `SELECT t.'id' AS 'value1',COUNT(*) AS 'value2' FROM 't_topic' t GROUP BY t.'id'` |
-| QueryTest13.java#orderTest1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest13.cs:14：Java 用 MapKey 拼 Map 投影；C# 写成 DTO，[Column] 给出相同的列别名，SQL 相同 | `SELECT t2.'id',t2.'stars',t2.'title',t2.'create_time' FROM (SELECT t.'id' AS 'blogId',COUNT(*) AS 'b…` |
-| QueryTest13.java#orderTest1_1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest13.cs:14：Java 用 MapKey 拼 Map 投影；C# 写成 DTO，[Column] 给出相同的列别名，SQL 相同 | `SELECT t2.'id',t2.'stars',t2.'title',t2.'create_time' FROM (SELECT t.'id' AS 'blogId',COUNT(*) AS 'b…` |
+| QueryTest11.java#testdraft | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:379 | `SELECT t.'id' AS 'value1',COUNT(*) AS 'value2' FROM 't_topic' t GROUP BY t.'id'` |
+| QueryTest13.java#orderTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest13.cs:13 | `SELECT t2.'id',t2.'stars',t2.'title',t2.'create_time' FROM (SELECT t.'id' AS 'blogId',COUNT(*) AS 'b…` |
+| QueryTest13.java#orderTest1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest13.cs:13 | `SELECT t2.'id',t2.'stars',t2.'title',t2.'create_time' FROM (SELECT t.'id' AS 'blogId',COUNT(*) AS 'b…` |
 | QueryTest15.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:155 | `SELECT CEILING((timestampdiff(DAY, t.'birthday', NOW()) / ?)) AS 'value1',CONCAT(t.'first_name',t.'l…` |
 | QueryTest18.java#test1111 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:54 |  |
 | QueryTest19.java#testUnion1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:237 | `SELECT '未开始'AS task_status UNION ALL SELECT '进行中' UNION ALL SELECT '已完成' UNION ALL SELECT '审核中' UNIO…` |
@@ -1311,22 +1311,22 @@
 | QueryTest28.java#testQueryAggregate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest28.cs:100 | `SELECT COUNT(*) AS 'value1',AVG(t.'stars') AS 'value2' FROM 't_topic' t WHERE t.'title' LIKE CONCAT(…` |
 | QueryTest3.java#query122 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:114 | `SELECT t.'id' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'deleted' = ? AND t.'id' = t1.'id' LEFT J…` |
 | QueryTest3.java#query123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:124 | `SELECT DISTINCT t.'id' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'deleted' = ? AND t.'id' = t1.'i…` |
-| QueryTest7.java#testQuery10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:125 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
-| QueryTest7.java#testQuery11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:125 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
-| QueryTest7.java#testQuery12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:130 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
-| QueryTest7.java#testQuery13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:134 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
-| QueryTest7.java#testQuery14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:138 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
-| QueryTest7.java#testQuery15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:142 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
-| QueryTest7.java#testQuery16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:146 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
-| QueryTest7.java#testQuery17 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:150 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
-| QueryTest7.java#testQuery18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:154 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:132 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:132 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:137 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:141 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:145 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:149 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:153 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery17 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:157 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
+| QueryTest7.java#testQuery18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:161 | `SELECT t1.'id',SUM(t1.'score') AS 'score' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'deleted' = …` |
 | QueryTest9.java#havingQueryTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest9.cs:264 | `SELECT t.'id' AS 'id',COUNT(t.'id') AS 'star',MAX(t.'id') AS 'title' FROM 't_blog' t WHERE t.'delete…` |
 | fork/functions/GroupingSqlTest.java#mysqlWithRollupAndNoCube | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:138 |  |
 | fork/functions/GroupingSqlTest.java#plainGroupByIsUnchanged | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:148 |  |
 | fork/functions/GroupingSqlTest.java#postgresRollupAndCube | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:126 | `SELECT t."user_id" AS "value1",t."title" AS "value2",SUM(t."amount") AS "value3",GROUPING(t."title")…` |
 | fork/functions/GroupingSqlTest.java#rollupNeedsGroupBy | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsSqlTest.cs:153：Rollup 只定义在 GroupBy 之后的分组查询上，没有分组时写不出来（编译期保证） |  |
 | fork/live/GroupingLiveTest.java#rollupAddsGrandTotal | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsLiveTest.cs:82 | `DROP TABLE {…}t_fork_post` |
-| mysql8/M8BankTest.java#testExtraFilter3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:102 | `SELECT t.'name' AS 'value1',t3.'value2' AS 'value2' FROM 't_bank' t LEFT JOIN (SELECT t1.'bank_id' A…` |
+| mysql8/M8BankTest.java#testExtraFilter3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:103 | `SELECT t.'name' AS 'value1',t3.'value2' AS 'value2' FROM 't_bank' t LEFT JOIN (SELECT t1.'bank_id' A…` |
 | mysql8/M8BankTest.java#testUserAutoSubQueryToGroupJoin3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:54 | `SELECT t.'name' AS 'value1',COUNT((CASE WHEN IFNULL(t2.'__any2__',?) = ? THEN ? ELSE NULL END)) AS '…` |
 | mysql8/M8BankTest.java#testUserAutoSubQueryToGroupJoin3_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:65 | `SELECT t.'name' AS 'value1',COUNT((CASE WHEN t2.'__any2__' = ? THEN ? ELSE NULL END)) AS 'value2' FR…` |
 | mysql8/M8Test1.java#test23 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Test1.cs:56 | `SELECT t1.'uid' AS 'uid',t1.'count' AS 'count' FROM (SELECT t.'uid' AS 'uid',COUNT(*) AS 'count' FRO…` |
@@ -1413,15 +1413,15 @@
 | QueryTest9.java#selectThrow7 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest9.cs:62：Java 抛 EasyQuerySingleMoreElementException；C# 多于一行时抛 InvalidOperationException（与 LINQ 的 Single 一致） |  |
 | QueryTest9.java#selectThrow9 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest9.cs:66：Java 按方法分 First / Single / Find / Required 四种异常，C# 都是 NotFoundException；多于一行时 C# 抛 InvalidOperationException，消息不同 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'del…` |
 | UpdateTest.java#aaaa | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:457：Java 把 BlogEntity 全部列映射到 SysMenuDto（类型并不匹配）；C# 只投影用到的两列 |  |
-| mysql8/CTETest.java#cteTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:76 | `WITH 'm8_user_temp' AS (SELECT t.'id',t.'name' FROM 'm8_user' t WHERE t.'age' IS NULL) SELECT t2.'na…` |
-| mysql8/CrossJoinTest.java#crossJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:363 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t CROSS JOIN 't…` |
+| mysql8/CTETest.java#cteTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:77 | `WITH 'm8_user_temp' AS (SELECT t.'id',t.'name' FROM 'm8_user' t WHERE t.'age' IS NULL) SELECT t2.'na…` |
+| mysql8/CrossJoinTest.java#crossJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:369 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t CROSS JOIN 't…` |
 | mysql8/MySQL8Test2.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:13 | `SELECT t2.'id',t2.'name',t2.'create_time',t2.'__part__column1' AS '__part__column1' FROM (SELECT t.'…` |
 | mysql8/MySQL8Test2.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:26 | `SELECT t3.'id',t3.'name',t3.'create_time',t3.'__part__column1' AS '__part__column1' FROM (SELECT t.'…` |
 | mysql8/MySQL8Test2.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:46 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t LEFT JOIN (SE…` |
 | mysql8/MySQL8Test2.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:57 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t LEFT JOIN (SE…` |
 | mysql8/MySQL8Test2.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:67 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t LEFT JOIN (SE…` |
-| mysql8/MySQL8Test3.java#testDTOWhereToTableWhere | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:343 | `SELECT t2.'name' AS 'name',t2.'phone' AS 'phone',t2.'code2' AS 'code2' FROM (SELECT t.'name' AS 'nam…` |
-| mysql8/MySQL8Test3.java#testDTOWhereToTableWhere1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:353 | `SELECT t2.'name' AS 'name',t2.'phone' AS 'phone',t2.'code2' AS 'code2' FROM (SELECT t.'name' AS 'nam…` |
+| mysql8/MySQL8Test3.java#testDTOWhereToTableWhere | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:349 | `SELECT t2.'name' AS 'name',t2.'phone' AS 'phone',t2.'code2' AS 'code2' FROM (SELECT t.'name' AS 'nam…` |
+| mysql8/MySQL8Test3.java#testDTOWhereToTableWhere1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:359 | `SELECT t2.'name' AS 'name',t2.'phone' AS 'phone',t2.'code2' AS 'code2' FROM (SELECT t.'name' AS 'nam…` |
 | mysql8/MySQL8Test5.java#testWhereJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:157 |  |
 
 ### 无实体的 Map 查询、toMap（`query.map`，M3）
@@ -1431,10 +1431,10 @@
 | QueryTest.java#query22 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.NativeSql.cs:56 |  |
 | QueryTest.java#query23 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.NativeSql.cs:60 |  |
 | QueryTest14.java#testDynamicTable2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest14.cs:74 | `SELECT t1.'id' AS 'id' FROM (SELECT t.'id' AS 'id' FROM 'aaa' t) t1 LEFT JOIN (SELECT * FROM 'bbb' t…` |
-| QueryTest15.java#test1223 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:321 | `SELECT * FROM '123' WHERE 'name' = ?` |
-| QueryTest15.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:336 |  |
-| QueryTest15.java#testxxx | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:326 | `SELECT * FROM 'table1' t INNER JOIN 'table2' t1 ON t.'id1' = t1.'id2'` |
-| QueryTest16.java#test16 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:168：Java 的 Map 查询 select 之后每个 UNION 分支多占一个别名编号（t、t2，外层 t4）；C# 按实际出现的表连续编号 | `SELECT t4.'a' AS 'a',t4.'b' AS 'b' FROM ( (SELECT t.'a' AS 'a',t.'b' AS 'b' FROM 't_user' t) UNION (…` |
+| QueryTest15.java#test1223 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:322 | `SELECT * FROM '123' WHERE 'name' = ?` |
+| QueryTest15.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:337 |  |
+| QueryTest15.java#testxxx | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest15.cs:327 | `SELECT * FROM 'table1' t INNER JOIN 'table2' t1 ON t.'id1' = t1.'id2'` |
+| QueryTest16.java#test16 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:173：Java 的 Map 查询 select 之后每个 UNION 分支多占一个别名编号（t、t2，外层 t4）；C# 按实际出现的表连续编号 | `SELECT t4.'a' AS 'a',t4.'b' AS 'b' FROM ( (SELECT t.'a' AS 'a',t.'b' AS 'b' FROM 't_user' t) UNION (…` |
 | QueryTest19.java#mapJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:288 | `SELECT t.'table1Column' AS 'table1Column',t1.'table2Column' AS 'table2Column',t2.'table3Column' AS '…` |
 | QueryTest19.java#mapQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:306 | `SELECT 'id' AS 'id','age' AS 'age','id_card' AS 'id_card' FROM 'aaa' WHERE 'id' = ? AND 'name' = ?` |
 | QueryTest19.java#testMapJson | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:318 | `SELECT * FROM 'table1' t LEFT JOIN 'table2' t1 ON t1.'id1' = t.'id2' LEFT JOIN 'table3' t2 ON t2.'id…` |
@@ -1444,14 +1444,14 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| QueryTest16.java#testSubSumOracle2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:155 | `SELECT COUNT(*) FROM "t_company" WHERE "name" LIKE ?` |
+| QueryTest16.java#testSubSumOracle2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:160 | `SELECT COUNT(*) FROM "t_company" WHERE "name" LIKE ?` |
 | QueryTest18.java#testSubCountPage | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.Encryption.cs:9 | `SELECT COUNT(*) FROM 'easy-query-test'.'t_sys_user' WHERE 'phone' LIKE ?` |
 
 ### 流式读取（`query.stream`，M3）
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| QueryTest17.java#testOptional | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:190：Java 另外测了 EasyFieldCheckUtil 的字段名校验与 Stream 收集；C# 用 FirstOrDefaultAsync / ToListAsync / ToDictionary |  |
+| QueryTest17.java#testOptional | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:192：Java 另外测了 EasyFieldCheckUtil 的字段名校验与 Stream 收集；C# 用 FirstOrDefaultAsync / ToListAsync / ToDictionary |  |
 | QueryTest18.java#testChunk1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.cs:151 |  |
 | QueryTest18.java#testChunk2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.cs:151 |  |
 | QueryTest18.java#testChunk3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.cs:151 |  |
@@ -1481,8 +1481,8 @@
 | QueryTest.java#query65 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.SubQueries.cs:66：别名编号：Java 复用了执行过的查询对象，外层别名是 t7；C# 连续编号为 t4 | `SELECT t7.'id',t7.'stars',t7.'title',t7.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
 | QueryTest.java#query66 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.SubQueries.cs:78：别名编号：Java 的分支与外层是 t、t2、t4/t5、t8；C# 连续编号为 t、t1、t2/t3、t4 | `SELECT t8.'id',t8.'stars',t8.'abc' AS 'abc' FROM ( (SELECT t.'id',t.'stars',t.'title' AS 'abc' FROM …` |
 | QueryTest.java#query67 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.SubQueries.cs:92：别名编号：Java 的外层别名是 t5（中间跳号），C# 连续编号为 t2；Java 的 proxy set 同名列也写 AS，C# 成员初始化同名列不写 | `SELECT t5.'id',t5.'stars',t5.'abc' AS 'abc' FROM ( (SELECT t.'id',t.'stars',t.'title' AS 'abc' FROM …` |
-| QueryTest11.java#testx20 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:273：别名编号：Java 的 union 分支与外层是 t、t2、t4、t6；C# 连续编号 | `SELECT t6.'value1' AS 'value1',t6.'value2' AS 'value2' FROM ( (SELECT ? AS 'value1',COUNT(*) AS 'val…` |
-| mysql8/MySQL8Test3.java#testOneIsNull | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:158 |  |
+| QueryTest11.java#testx20 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:274：别名编号：Java 的 union 分支与外层是 t、t2、t4、t6；C# 连续编号 | `SELECT t6.'value1' AS 'value1',t6.'value2' AS 'value2' FROM ( (SELECT ? AS 'value1',COUNT(*) AS 'val…` |
+| mysql8/MySQL8Test3.java#testOneIsNull | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:164 |  |
 
 ### 按 DTO 自动带出（selectAutoInclude）（`dto.autoInclude`，M4）
 
@@ -1492,7 +1492,7 @@
 | DirectRelationTest.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:102 | `SELECT t.'c1',t.'c2',t.'c3',t.'c4' FROM 'direct1' t` |
 | GeneralFunctionsTest.java#testKingbaseCte | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:250 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0+0 AS "deep",t1."id",t1."parent_id",t1."content",t1."user…` |
 | QueryTest14.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest14.cs:182 | `SELECT t.'id',t.'name',t.'password' FROM 't_test_user' t` |
-| QueryTest16.java#test111 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:127 | `SELECT t.'id' AS '__relation__id' FROM 'sys_user' t WHERE t.'deleted' = ?` |
+| QueryTest16.java#test111 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:132 | `SELECT t.'id' AS '__relation__id' FROM 'sys_user' t WHERE t.'deleted' = ?` |
 | QueryTest19.java#testDoc100 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:80 | `SELECT t.'id',t.'name' FROM 't_user' t` |
 | QueryTest19.java#testDoc99 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:63 | `SELECT t.'id',t.'name' FROM 't_user' t` |
 | QueryTestRelationTest.java#testRelation | 待做 |  | `SELECT 'id','com_id','user_id','gw' FROM 'my_com_user'` |
@@ -1515,11 +1515,11 @@
 | mysql8/ManyJoinTest.java#testFlatMenuOwnerFlatValueConverter | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.Flat.cs:129 |  |
 | mysql8/MySQL8Test2.java#includePartitionBy | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:473 | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t` |
 | mysql8/MySQL8Test2.java#includePartitionBy1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:486 | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t` |
-| mysql8/MySQL8Test3.java#testQueryFirstLimit2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:408 | `SELECT t2.'code',t2.'type',t2.'open_time',t2.'uid' AS '__relation__uid' FROM (SELECT t1.'id' AS 'id'…` |
-| mysql8/MySQL8Test3.java#testTree2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:268 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'deep',t1.'id',t1.'parent_id',t1.'content',t1.'user_i…` |
-| mysql8/MySQL8Test3.java#testTree3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:300 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'deep',t1.'id',t1.'parent_id',t1.'content',t1.'user_i…` |
-| mysql8/MySQL8Test3.java#testTree4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:310 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'deep',t1.'id',t1.'parent_id',t1.'content',t1.'user_i…` |
-| mysql8/MySQL8Test3.java#testTree5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:320：异常信息用中文，说明缺的是哪个属性 |  |
+| mysql8/MySQL8Test3.java#testQueryFirstLimit2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:414 | `SELECT t2.'code',t2.'type',t2.'open_time',t2.'uid' AS '__relation__uid' FROM (SELECT t1.'id' AS 'id'…` |
+| mysql8/MySQL8Test3.java#testTree2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:274 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'deep',t1.'id',t1.'parent_id',t1.'content',t1.'user_i…` |
+| mysql8/MySQL8Test3.java#testTree3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:306 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'deep',t1.'id',t1.'parent_id',t1.'content',t1.'user_i…` |
+| mysql8/MySQL8Test3.java#testTree4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:316 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'deep',t1.'id',t1.'parent_id',t1.'content',t1.'user_i…` |
+| mysql8/MySQL8Test3.java#testTree5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:326：异常信息用中文，说明缺的是哪个属性 |  |
 | mysql8/MySQL8Test5.java#testSysDeptCTE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:312 |  |
 | pgsql/QueryCteTest.java#tree7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:128 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "deep1",t1."id",t1."parent_id",t1."name" FROM "public…` |
 | pgsql/QueryTest19.java#tree7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:128 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "deep1",t1."id",t1."parent_id",t1."name" FROM "catego…` |
@@ -1539,26 +1539,26 @@
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
 | QueryTest12.java#testDoc24 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.Part2.cs:150 | `DELETE FROM 'relation_user' t WHERE EXISTS(SELECT 1 FROM 'relation_teacher' t1 WHERE (EXISTS(SELECT …` |
-| QueryTest16.java#test1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:47：Java 的 flatElement 在 C# 里写成 Any | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t WHERE EXISTS(SELECT 1 …` |
-| QueryTest16.java#test15 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:25：Java 的 flatElement 在 C# 里写成 Any | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t WHERE (t.'name' LIKE ?…` |
-| QueryTest16.java#test2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:52：Java 的 flatElement 在 C# 里写成 Any | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN (SELECT t2.'…` |
-| QueryTest16.java#test3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:58：Java 的 flatElement 在 C# 里写成 Any | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN (SELECT t2.'…` |
-| QueryTest16.java#testDocSub | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:63：Java 的 flatElement 在 C# 里写成 Any | `SELECT t.'id',t.'name',t.'create_time' FROM 't_company' t WHERE EXISTS(SELECT 1 FROM 't_user' t1 WHE…` |
-| QueryTest17.java#testFlatElement1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:126：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'f1',t.'f2',t.'parent_id' FROM 'MyObject' t LEFT JOIN 'MyObjectParent' t1 ON t1.'id'…` |
-| QueryTest17.java#testFlatElement2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:135：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'f1',t.'f2',t.'parent_id' FROM 'MyObject' t LEFT JOIN 'MyObjectParent' t1 ON t1.'id'…` |
-| QueryTest17.java#testNop2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:147：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t4.'value1' AS 'value1',SUM(t4.'value2') AS 'value2',COUNT(t5.'type') AS 'value3' FROM (SELEC…` |
-| QueryTest17.java#testaaa | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:163：测的是 Java 代理对象的导航路径工具（EasyProxyUtil.getFullNavValue） |  |
+| QueryTest16.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:49 | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t WHERE EXISTS(SELECT 1 …` |
+| QueryTest16.java#test15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:26 | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t WHERE (t.'name' LIKE ?…` |
+| QueryTest16.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:55 | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN (SELECT t2.'…` |
+| QueryTest16.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:62 | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN (SELECT t2.'…` |
+| QueryTest16.java#testDocSub | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:68 | `SELECT t.'id',t.'name',t.'create_time' FROM 't_company' t WHERE EXISTS(SELECT 1 FROM 't_user' t1 WHE…` |
+| QueryTest17.java#testFlatElement1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:126 | `SELECT t.'id',t.'f1',t.'f2',t.'parent_id' FROM 'MyObject' t LEFT JOIN 'MyObjectParent' t1 ON t1.'id'…` |
+| QueryTest17.java#testFlatElement2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:136 | `SELECT t.'id',t.'f1',t.'f2',t.'parent_id' FROM 'MyObject' t LEFT JOIN 'MyObjectParent' t1 ON t1.'id'…` |
+| QueryTest17.java#testNop2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:149 | `SELECT t4.'value1' AS 'value1',SUM(t4.'value2') AS 'value2',COUNT(t5.'type') AS 'value3' FROM (SELEC…` |
+| QueryTest17.java#testaaa | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:165：测的是 Java 代理对象的导航路径工具（EasyProxyUtil.getFullNavValue） |  |
 | QueryTest18.java#test8_1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.cs:29：同 test8 |  |
 | QueryTest22.java#testManyGroup17 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest22.Part2.cs:60 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
 | QueryTest22.java#testManyGroup18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest22.Part2.cs:60 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |
 | QueryTest25.java#test11a | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest25.java#testToListFlat1 | 待做 |  |  |
 | QueryTest25.java#xxx22 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:150：用 Hikari 连本机 3306、替换多个内部服务另建客户端，属于 Java 的启动配置 |  |
-| QueryTest26.java#includeFlat | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:314：Java 的 include2 按路径（flatElement 连接）声明多段带出；C# 写成嵌套的 Include，每段的条件写在各自的配置里 |  |
+| QueryTest26.java#includeFlat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:315 |  |
 | QueryTestRelationTest.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTestRelationTest.cs:13 | `SELECT t.'id',t.'com_id',t.'user_id',t.'gw' FROM 'my_com_user' t LEFT JOIN 'my_company_info' t1 ON t…` |
-| SubJoinTest.java#testSubJoinCaseWhen1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:53：Java 的 flatElement 在 C# 里写成 Any | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
-| mysql8/CTETest.java#cteTest4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:66：Java 的 flatElement 在 C# 里写成 Any | `WITH 'm8_user_temp' AS (SELECT t.'id',t.'name' FROM 'm8_user' t WHERE t.'age' IS NULL) SELECT t2.'id…` |
-| mysql8/CTETest.java#cteTest6 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:88：Java 的 flatElement 在 C# 里写成 Any | `WITH 'm8_user_temp2' AS (SELECT t.'id',t.'name',t.'age',(ROW_NUMBER() OVER (PARTITION BY t.'age' ORD…` |
+| SubJoinTest.java#testSubJoinCaseWhen1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:54 | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
+| mysql8/CTETest.java#cteTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:67 | `WITH 'm8_user_temp' AS (SELECT t.'id',t.'name' FROM 'm8_user' t WHERE t.'age' IS NULL) SELECT t2.'id…` |
+| mysql8/CTETest.java#cteTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:90 | `WITH 'm8_user_temp2' AS (SELECT t.'id',t.'name',t.'age',(ROW_NUMBER() OVER (PARTITION BY t.'age' ORD…` |
 | mysql8/M8BankTest.java#test11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.GroupJoinWindows.cs:9 | `SELECT t.'name' AS 'value1',t4.'__joining3__' AS 'value2' FROM 't_sys_user' t LEFT JOIN (SELECT t3.'…` |
 | mysql8/M8BankTest.java#test12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.GroupJoinWindows.cs:21 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t3.'u…` |
 | mysql8/M8BankTest.java#test13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.GroupJoinWindows.cs:32 | `SELECT t.'name' AS 'value1',t4.'__joining3__' AS 'value2' FROM 't_sys_user' t LEFT JOIN (SELECT t3.'…` |
@@ -1566,29 +1566,29 @@
 | mysql8/M8BankTest.java#test15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.GroupJoinWindows.cs:58 | `SELECT t.'name' AS 'value1',t4.'__joining3__' AS 'value2' FROM 't_sys_user' t LEFT JOIN (SELECT t3.'…` |
 | mysql8/M8BankTest.java#test16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.GroupJoinWindows.cs:71 | `SELECT t.'name' AS 'value1',t4.'__joining3__' AS 'value2' FROM 't_sys_user' t LEFT JOIN (SELECT t3.'…` |
 | mysql8/M8BankTest.java#test17 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.GroupJoinWindows.cs:84 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t3.'u…` |
-| mysql8/M8BankTest.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:62 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t1.'type' SEPARATOR ?) FROM 't_bank_card' t1 WHERE …` |
-| mysql8/M8BankTest.java#test7_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:74 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t2.'type' SEPARATOR ?) FROM (SELECT t1.'id',t1.'uid…` |
-| mysql8/M8BankTest.java#test7_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:86 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t1.'type' SEPARATOR ?) FROM 't_bank_card' t1 WHERE …` |
-| mysql8/M8BankTest.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:98 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t4.'type' SEPARATOR ?) FROM 't_bank_card' t4 WHERE …` |
-| mysql8/M8BankTest.java#testFlatTest | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:76：Java 用 ALL_SUB_QUERY_GROUP_JOIN 行为让全部集合导航合并成分组 JOIN；C# 在查询上显式 GroupJoin(导航)，flatElement 写成 Any | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t LEFT JOIN (SELECT t1.'bank_id' AS '__group_ke…` |
+| mysql8/M8BankTest.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:63 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t1.'type' SEPARATOR ?) FROM 't_bank_card' t1 WHERE …` |
+| mysql8/M8BankTest.java#test7_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:75 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t2.'type' SEPARATOR ?) FROM (SELECT t1.'id',t1.'uid…` |
+| mysql8/M8BankTest.java#test7_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:87 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t1.'type' SEPARATOR ?) FROM 't_bank_card' t1 WHERE …` |
+| mysql8/M8BankTest.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:99 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t4.'type' SEPARATOR ?) FROM 't_bank_card' t4 WHERE …` |
+| mysql8/M8BankTest.java#testFlatTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:77 | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t LEFT JOIN (SELECT t1.'bank_id' AS '__group_ke…` |
 | mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:93 | `SELECT t.'id',t.'name',t.'create_time',(NOT (EXISTS(SELECT 1 FROM (SELECT t1.'id',t1.'uid',t1.'code'…` |
 | mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:104 | `SELECT t.'id',t.'name',t.'create_time',IFNULL(t4.'__none2__',?) AS '__part__column1' FROM 't_bank' t…` |
 | mysql8/M8OrderTest.java#testSubQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8OrderTest.cs:13 | `SELECT t.'id',t.'no',t.'price',t.'create_time' FROM 't_order' t INNER JOIN (SELECT t1.'order_id' AS …` |
 | mysql8/M8OrderTest.java#testSubQuery3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8OrderTest.cs:25 | `SELECT t.'id',t.'no',t.'price',t.'create_time' FROM 't_order' t INNER JOIN (SELECT t1.'order_id' AS …` |
-| mysql8/ManyJoinTest.java#testElement8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:85 | `SELECT t4.'__max2__' AS 'value1',t7.'type' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t3.'uid' …` |
-| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:207：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin24 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:216：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:235：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:244：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/MySQL8Test3.java#testFlatElement | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:43：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'name' FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',(COUNT(?)…` |
-| mysql8/MySQL8Test3.java#testFlatElement1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:43：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'name' FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',(COUNT(?)…` |
-| mysql8/MySQL8Test3.java#testFlatElement2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:53：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'name' FROM 'm8_province' t WHERE EXISTS(SELECT 1 FROM 'm8_city' t1 WHERE t1.'pid' =…` |
-| mysql8/MySQL8Test3.java#testFlatElement3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:63：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'name' FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',(COUNT(?)…` |
-| mysql8/MySQL8Test3.java#testGroupJoin | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:74：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'name' FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',(COUNT(?)…` |
-| mysql8/MySQL8Test3.java#testGroupJoin2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:83：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'name' FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',(COUNT(?)…` |
-| mysql8/MySQL8Test3.java#testGroupJoin3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:94：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'name' FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',(COUNT(?)…` |
-| mysql8/MySQL8Test3.java#testGroupJoin4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:106：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'name' FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',(COUNT(?)…` |
-| mysql8/MySQL8Test3.java#testMany2Many | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:117：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同 | `SELECT t.'id',t.'name',t.'order' FROM 'm8_parent' t LEFT JOIN (SELECT t2.'parent_id' AS '__group_key…` |
+| mysql8/ManyJoinTest.java#testElement8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:83 | `SELECT t4.'__max2__' AS 'value1',t7.'type' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t3.'uid' …` |
+| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:206 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin24 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:216 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:236 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:246 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/MySQL8Test3.java#testFlatElement | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:42 | `SELECT t.'id',t.'name' FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',(COUNT(?)…` |
+| mysql8/MySQL8Test3.java#testFlatElement1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:42 | `SELECT t.'id',t.'name' FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',(COUNT(?)…` |
+| mysql8/MySQL8Test3.java#testFlatElement2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:53 | `SELECT t.'id',t.'name' FROM 'm8_province' t WHERE EXISTS(SELECT 1 FROM 'm8_city' t1 WHERE t1.'pid' =…` |
+| mysql8/MySQL8Test3.java#testFlatElement3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:64 | `SELECT t.'id',t.'name' FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',(COUNT(?)…` |
+| mysql8/MySQL8Test3.java#testGroupJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:76 | `SELECT t.'id',t.'name' FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',(COUNT(?)…` |
+| mysql8/MySQL8Test3.java#testGroupJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:86 | `SELECT t.'id',t.'name' FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',(COUNT(?)…` |
+| mysql8/MySQL8Test3.java#testGroupJoin3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:98 | `SELECT t.'id',t.'name' FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',(COUNT(?)…` |
+| mysql8/MySQL8Test3.java#testGroupJoin4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:111 | `SELECT t.'id',t.'name' FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',(COUNT(?)…` |
+| mysql8/MySQL8Test3.java#testMany2Many | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:123 | `SELECT t.'id',t.'name',t.'order' FROM 'm8_parent' t LEFT JOIN (SELECT t2.'parent_id' AS '__group_key…` |
 | mysql8/MySQL8Test5.java#testManyLimit1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:240 | `SELECT t.'id' AS 'value1',t6.'__joining2__' AS 'value2' FROM 'm8_user' t LEFT JOIN (SELECT t4.'__gro…` |
 | mysql8/MySQL8Test5.java#testManyLimit1_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:263 | `SELECT t.'id' AS 'value1',t6.'__joining2__' AS 'value2' FROM 'm8_user' t LEFT JOIN (SELECT t4.'__gro…` |
 | mysql8/MySQL8Test5.java#testManyLimit1_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:275 | `SELECT t.'id' AS 'value1',t6.'__joining2__' AS 'value2',t6.'__joining3__' AS 'value3' FROM 'm8_user'…` |
@@ -1644,8 +1644,8 @@
 | QueryTest23.java#testJoin3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest23.cs:80 |  |
 | QueryTest23.java#testMany2Many2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest23.cs:148 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_user_account' t LEFT JOIN …` |
 | QueryTest23.java#testMany2Many2_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest23.cs:148 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_user_account' t LEFT JOIN …` |
-| mysql8/M8BankTest.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:40 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
-| mysql8/M8BankTest.java#testExtraFilter5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:151 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count2__',0) AS 'value2' FROM 't_bank' t LEFT JOIN (SELECT …` |
+| mysql8/M8BankTest.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:41 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
+| mysql8/M8BankTest.java#testExtraFilter5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:152 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count2__',0) AS 'value2' FROM 't_bank' t LEFT JOIN (SELECT …` |
 | mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountToGroupTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:47 | `SELECT t.'id',t.'name',t.'create_time',IFNULL(t2.'__count2__',0) AS '__part__column1' FROM 't_bank' …` |
 | mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountToGroupTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:81 | `SELECT t.'id',t.'name',t.'create_time',IFNULL(t2.'__count2__',0) AS '__part__column1',IFNULL(t2.'__c…` |
 | mysql8/M8BankTest.java#whereSubQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:135 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
@@ -1655,16 +1655,16 @@
 | mysql8/M8BankTest.java#whereSubQuery4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:178 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
 | mysql8/M8OrderTest.java#testSubQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8OrderTest.cs:19 | `SELECT t.'id',t.'no',t.'price',t.'create_time' FROM 't_order' t INNER JOIN (SELECT t1.'id',t1.'order…` |
 | mysql8/M8OrderTest.java#testSubQuery4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8OrderTest.cs:31：异常信息用中文，说明缺主键、该怎样声明排序 |  |
-| mysql8/ManyJoinTest.java#manyJoinMany2Many10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:170 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t1…` |
-| mysql8/ManyJoinTest.java#manyJoinMany2Many2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:99 | `SELECT t.'id',t.'name' FROM 'school_class' t LEFT JOIN (SELECT t2.'class_id' AS '__class_id__',t1.'i…` |
-| mysql8/ManyJoinTest.java#manyJoinMany2Many3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:110 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/ManyJoinTest.java#manyJoinMany2Many3_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:119 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t2…` |
-| mysql8/ManyJoinTest.java#manyJoinMany2Many3_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:129 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t2…` |
-| mysql8/ManyJoinTest.java#manyJoinMany2Many4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:139 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/ManyJoinTest.java#manyJoinMany2Many4_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:149 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t2…` |
-| mysql8/ManyJoinTest.java#testElement3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:71 | `SELECT t2.'__max2__' AS 'value1',t5.'type' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' …` |
-| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:195 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
-| mysql8/ManyJoinTest.java#testManyJoinGroup | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:180 |  |
+| mysql8/ManyJoinTest.java#manyJoinMany2Many10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:168 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t1…` |
+| mysql8/ManyJoinTest.java#manyJoinMany2Many2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:97 | `SELECT t.'id',t.'name' FROM 'school_class' t LEFT JOIN (SELECT t2.'class_id' AS '__class_id__',t1.'i…` |
+| mysql8/ManyJoinTest.java#manyJoinMany2Many3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:108 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#manyJoinMany2Many3_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:117 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t2…` |
+| mysql8/ManyJoinTest.java#manyJoinMany2Many3_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:127 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t2…` |
+| mysql8/ManyJoinTest.java#manyJoinMany2Many4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:137 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#manyJoinMany2Many4_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:147 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time' FROM 'm8_user2' t LEFT JOIN (SELECT t2…` |
+| mysql8/ManyJoinTest.java#testElement3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:69 | `SELECT t2.'__max2__' AS 'value1',t5.'type' AS 'value2' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' …` |
+| mysql8/ManyJoinTest.java#testMany2Many2GroupJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:193 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
+| mysql8/ManyJoinTest.java#testManyJoinGroup | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:178 |  |
 | mysql8/MySQL8Test2.java#testPageSelectSubQueryCount | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:137 | `SELECT COUNT(*) FROM 't_bank' t` |
 
 ### include 带出导航（`nav.include`，M4）
@@ -1692,15 +1692,15 @@
 | mysql8/M8IncludeOrderTest.java#testOrder | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8IncludeOrderTest.cs:7 |  |
 | mysql8/M8Test1.java#testRelationColumns1 | 待做 |  | `SELECT 'user_id','user_name','user_age','create_time','book_ids' FROM 'm8_user_book_ids'` |
 | mysql8/M8Test1.java#testSelfTargetTypeDiff | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Test1.cs:67：Java 的异常来自 MySQL 驱动（Cannot determine value type from string 'u1'）；C# 在把父键转成目标列的类型时就抛出 FormatException |  |
-| mysql8/MySQL8Test3.java#testQueryFirstLimit1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:374 | `SELECT t2.'id' AS 'id',t2.'uid' AS 'uid',t2.'code' AS 'code',t2.'type' AS 'type',t2.'bank_id' AS 'ba…` |
-| mysql8/MySQL8Test4.java#includeOneTest1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:253：Java 的 firstCard 是 OneToOne + limit 1 + orderByProps 的导航；C# 写成 Include(BankCards, q => q.OrderBy(OpenTime).Take(1))，SQL 相同 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
+| mysql8/MySQL8Test3.java#testQueryFirstLimit1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:380 | `SELECT t2.'id' AS 'id',t2.'uid' AS 'uid',t2.'code' AS 'code',t2.'type' AS 'type',t2.'bank_id' AS 'ba…` |
+| mysql8/MySQL8Test4.java#includeOneTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:254 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
 | mysql8/MySQL8Test4.java#testAll | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:154 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE NOT (EXISTS(SELEC…` |
 | mysql8/MySQL8Test4.java#testAll1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:167 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE NOT (EXISTS(SELEC…` |
 | mysql8/MySQL8Test4.java#testAll2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:179 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE NOT (EXISTS(SELEC…` |
 | mysql8/MySQL8Test4.java#testAllGroupJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:191 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
 | mysql8/MySQL8Test4.java#testAllGroupJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:203 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
-| mysql8/MySQL8Test4.java#testIncludeIdOnly1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:280 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
-| mysql8/MySQL8Test4.java#testIncludeIdOnly2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:291 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
+| mysql8/MySQL8Test4.java#testIncludeIdOnly1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:282 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
+| mysql8/MySQL8Test4.java#testIncludeIdOnly2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:293 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
 | mysql8/MySQL8Test5.java#selectJoinInclude | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:164 |  |
 | pgsql/QueryTest19.java#test | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:216 |  |
 | pgsql/QueryTest19.java#testAll | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:114 | `SELECT t."id",t."name",t."phone",t."age" FROM "doc_user" t WHERE NOT (EXISTS(SELECT 1 FROM "doc_bank…` |
@@ -1735,7 +1735,7 @@
 | QueryTest.java#query63 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.SubQueries.cs:18 | `SELECT t.'id',t.'stars',t.'title',t.'create_time',(SELECT COUNT(t1.'id') FROM 't_blog' t1 WHERE t1.'…` |
 | QueryTest.java#query63_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.SubQueries.cs:33 | `SELECT t.'id',t.'stars',t.'title',t.'create_time',(SELECT SUM(t1.'star') FROM 't_blog' t1 WHERE t1.'…` |
 | QueryTest.java#query64 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.SubQueries.cs:52 | `SELECT t.'id',t.'stars',t.'title',(SELECT COUNT(t1.'id') FROM 't_blog' t1 WHERE t1.'deleted' = ? AND…` |
-| QueryTest11.java#testx5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:123 | `SELECT t.'id',t.'stars',t.'title',t.'create_time',(SELECT SUM(t1.'star') FROM 't_blog' t1 WHERE t1.'…` |
+| QueryTest11.java#testx5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest11.cs:124 | `SELECT t.'id',t.'stars',t.'title',t.'create_time',(SELECT SUM(t1.'star') FROM 't_blog' t1 WHERE t1.'…` |
 | QueryTest12.java#testAny1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:30 | `SELECT 1 FROM 't_topic' WHERE 'title' = ? ORDER BY CASE WHEN 'id' IS NULL THEN 1 ELSE 0 END ASC,'id'…` |
 | QueryTest12.java#testDoc1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:280 | `SELECT t.'id',t.'name' FROM 'school_class' t WHERE EXISTS(SELECT 1 FROM 'school_student' t1 WHERE t1…` |
 | QueryTest12.java#testDoc10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.Part2.cs:64 | `SELECT t.'id',t.'create_time',t.'username',t.'phone',t.'id_card',t.'address' FROM 'easy-query-test'.…` |
@@ -1752,12 +1752,12 @@
 | QueryTest12.java#testDoc9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.Part2.cs:54 | `SELECT t.'id',t.'create_time',t.'username',t.'phone',t.'id_card',t.'address' FROM 'easy-query-test'.…` |
 | QueryTest12.java#testNum2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:92 | `SELECT (SUM(t.'score') - SUM(t.'score')) AS 'score' FROM 't_blog' t WHERE t.'deleted' = ?` |
 | QueryTest12.java#testNum3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.cs:92 | `SELECT (SUM(t.'score') - SUM(t.'score')) FROM 't_blog' t WHERE t.'deleted' = ?` |
-| QueryTest16.java#docSub | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:72 | `SELECT t.'id' AS 'value1',(NOT (EXISTS(SELECT 1 FROM 't_user' t1 WHERE t1.'company_id' = t.'id' LIMI…` |
-| QueryTest16.java#test19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:86 | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t WHERE EXISTS(SELECT 1 …` |
-| QueryTest16.java#test20 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:102 | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN 't_company' …` |
-| QueryTest16.java#testSubSum | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:96 | `SELECT t1.'id' AS 'value1',IFNULL((SELECT SUM(t2.'age') FROM 't_user' t2 WHERE t2.'company_id' = t1.…` |
-| QueryTest16.java#testSubSumOracle | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:137 | `SELECT t1."id" AS "value1",NVL((SELECT SUM(t2."age") FROM "t_user" t2 WHERE t2."company_id" = t1."id…` |
-| QueryTest17.java#testFlatElement5 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:158：Java 用例体全部注释掉了 | `SELECT t.'id',t.'f1',t.'f2',t.'parent_id' FROM 'MyObject' t LEFT JOIN 'MyObjectParent' t1 ON t1.'id'…` |
+| QueryTest16.java#docSub | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:77 | `SELECT t.'id' AS 'value1',(NOT (EXISTS(SELECT 1 FROM 't_user' t1 WHERE t1.'company_id' = t.'id' LIMI…` |
+| QueryTest16.java#test19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:91 | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t WHERE EXISTS(SELECT 1 …` |
+| QueryTest16.java#test20 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:107 | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN 't_company' …` |
+| QueryTest16.java#testSubSum | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:101 | `SELECT t1.'id' AS 'value1',IFNULL((SELECT SUM(t2.'age') FROM 't_user' t2 WHERE t2.'company_id' = t1.…` |
+| QueryTest16.java#testSubSumOracle | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:142 | `SELECT t1."id" AS "value1",NVL((SELECT SUM(t2."age") FROM "t_user" t2 WHERE t2."company_id" = t1."id…` |
+| QueryTest17.java#testFlatElement5 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest17.cs:160：Java 用例体全部注释掉了 | `SELECT t.'id',t.'f1',t.'f2',t.'parent_id' FROM 'MyObject' t LEFT JOIN 'MyObjectParent' t1 ON t1.'id'…` |
 | QueryTest18.java#testCount | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:68 |  |
 | QueryTest18.java#testSubCountLimitSelect1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.Encryption.cs:41 | `SELECT t1.'id' AS 'value1',t1.'phone' AS 'value2',(SELECT COUNT(*) FROM 't_blog' t2 WHERE t2.'delete…` |
 | QueryTest18.java#testSubCountPage1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.Encryption.cs:28 | `SELECT COUNT(*) FROM 'easy-query-test'.'t_sys_user' WHERE 'phone' <> ?` |
@@ -1790,12 +1790,12 @@
 | QueryTest3.java#nativePage2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.Part2.cs:193 | `select * from t_topicxx` |
 | QueryTest4.java#query1233 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:9 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t WHERE t.'create_time' = (SELECT M…` |
 | QueryTest5.java#joinTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:27 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
-| QueryTest5.java#joinTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:53 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
-| QueryTest5.java#joinTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:65 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
-| QueryTest5.java#joinTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:77 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
-| QueryTest5.java#joinTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:88 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
-| QueryTest5.java#joinTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:99 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
-| QueryTest5.java#joinTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:109 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
+| QueryTest5.java#joinTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:58 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
+| QueryTest5.java#joinTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:70 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
+| QueryTest5.java#joinTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:82 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
+| QueryTest5.java#joinTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:93 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
+| QueryTest5.java#joinTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:104 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
+| QueryTest5.java#joinTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:114 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
 | Relation2Test.java#test10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/Relation2Test.cs:57 | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE (SELECT MAX(t1.'name') FROM 'my_school_student…` |
 | Relation2Test.java#test10_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/Relation2Test.cs:57 | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE (SELECT MAX(t1.'name') FROM 'my_school_student…` |
 | Relation2Test.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/Relation2Test.cs:34 | `SELECT t.'id',t.'name' FROM 'my_school_class' t WHERE (SELECT COUNT(*) FROM 'my_school_student' t1 W…` |
@@ -1821,37 +1821,37 @@
 | SubJoinTest.java#testSubJoinSum2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:28 | `SELECT IFNULL((SELECT SUM(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id…` |
 | SubJoinTest.java#testSubJoinSumDistinct | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:31 | `SELECT IFNULL((SELECT SUM(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
 | SubJoinTest.java#testSubJoinSumDistinct2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:31 | `SELECT IFNULL((SELECT SUM(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
-| mysql8/M8BankTest.java#fromSubQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:136 | `SELECT t2.'vo1' AS 'vo1',t2.'vo2' AS 'vo2',t2.'vo3' AS 'vo3',t2.'bank_card_count' AS 'bank_card_coun…` |
+| mysql8/M8BankTest.java#fromSubQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:137 | `SELECT t2.'vo1' AS 'vo1',t2.'vo2' AS 'vo2',t2.'vo3' AS 'vo3',t2.'bank_card_count' AS 'bank_card_coun…` |
 | mysql8/M8BankTest.java#testQueryBankAndCardExplicitCountTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:36 | `SELECT t.'id',t.'name',t.'create_time',(SELECT COUNT(t1.'id') FROM 't_bank_card' t1 WHERE t1.'bank_i…` |
 | mysql8/M8BankTest.java#testQueryBankAndCardExplicitCountTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:68 | `SELECT t.'id',t.'name',t.'create_time',(SELECT COUNT(t1.'id') FROM 't_bank_card' t1 WHERE t1.'bank_i…` |
 | mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:27 | `SELECT t.'id',t.'name',t.'create_time',(SELECT COUNT(*) FROM 't_bank_card' t1 WHERE t1.'bank_id' = t…` |
 | mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:57 | `SELECT t.'id',t.'name',t.'create_time',(SELECT COUNT(*) FROM 't_bank_card' t1 WHERE t1.'bank_id' = t…` |
-| mysql8/M8BankTest.java#testUserAutoSubQueryToGroupJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:160 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time',IFNULL(t2.'__count2__',0) AS '__part__colum…` |
-| mysql8/M8BankTest.java#testUserAutoSubQueryToGroupJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:170 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time',t2.'__count2__' AS '__part__column1' FROM '…` |
+| mysql8/M8BankTest.java#testUserAutoSubQueryToGroupJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:161 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time',IFNULL(t2.'__count2__',0) AS '__part__colum…` |
+| mysql8/M8BankTest.java#testUserAutoSubQueryToGroupJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:171 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time',t2.'__count2__' AS '__part__column1' FROM '…` |
 | mysql8/M8BankTest.java#whereSubQuery1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:126 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE EXISTS(SELECT 1 F…` |
 | mysql8/M8BankTest.java#whereSubQuery5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:187 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (SELECT COUNT(*) …` |
 | mysql8/M8QueryTest.java#whereObject5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8QueryTest.cs:47 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
 | mysql8/M8Test1.java#testMany | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Test1.cs:42 |  |
 | mysql8/M8Test1.java#testRelationColumns | 待做 |  | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time',t.'book_ids' FROM 'm8_user_book_ids' t…` |
-| mysql8/ManyJoinTest.java#manyGroupTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:13 |  |
-| mysql8/ManyJoinTest.java#test10GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:371 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test11GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:383 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test12GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:398 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test13GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:410 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test14GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:423 | `SELECT t.'name' AS 'value1' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',COUNT…` |
-| mysql8/ManyJoinTest.java#test15GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:435 | `SELECT t.'name' AS 'value1' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',MAX(t…` |
-| mysql8/ManyJoinTest.java#test16GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:446 | `SELECT t.'name' AS 'value1' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',MAX((…` |
-| mysql8/ManyJoinTest.java#test3GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:296 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test4GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:309 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test5GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:321 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test6GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:334 | `SELECT t.'name' AS 'value1',IFNULL(t3.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test7GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:346 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test8GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:359 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#test9GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:359 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
-| mysql8/ManyJoinTest.java#testGroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:275 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#manyGroupTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:11 |  |
+| mysql8/ManyJoinTest.java#test10GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:373 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test11GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:385 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test12GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:400 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test13GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:412 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test14GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:425 | `SELECT t.'name' AS 'value1' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',COUNT…` |
+| mysql8/ManyJoinTest.java#test15GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:437 | `SELECT t.'name' AS 'value1' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',MAX(t…` |
+| mysql8/ManyJoinTest.java#test16GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:448 | `SELECT t.'name' AS 'value1' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',MAX((…` |
+| mysql8/ManyJoinTest.java#test3GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:298 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test4GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:311 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test5GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:323 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test6GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:336 | `SELECT t.'name' AS 'value1',IFNULL(t3.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test7GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:348 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test8GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:361 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#test9GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:361 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
+| mysql8/ManyJoinTest.java#testGroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:277 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count3__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
 | mysql8/ManyJoinTest.java#testMany2Many2GroupJoin3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:226 | `SELECT t.'id',t.'name',t.'age',t.'create_time' FROM 'm8_user' t LEFT JOIN (SELECT t2.'user_id' AS '_…` |
 | mysql8/MySQL8Test2.java#testAA | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:288 |  |
-| mysql8/MySQL8Test3.java#testDTO1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:149 |  |
+| mysql8/MySQL8Test3.java#testDTO1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:155 |  |
 | mysql8/MySQL8Test4.java#testPartition2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:45：Java 的 DTO Proxy 逐列 set 时同名列也写 AS（t.'id' AS 'id'）；C# 的成员初始化与 Java 的 select(DTO.class) 一致，同名不写 | `SELECT t.'id' AS 'id',t.'name' AS 'name',t5.'type' AS 'third_card_type',t5.'code' AS 'third_card_cod…` |
 | mysql8/MySQL8Test4.java#testPartition3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:64：Java 的 DTO Proxy 逐列 set 时同名列也写 AS（t.'id' AS 'id'）；C# 的成员初始化与 Java 的 select(DTO.class) 一致，同名不写 | `SELECT t.'id' AS 'id',t.'name' AS 'name',t5.'type' AS 'third_card_type',t5.'code' AS 'third_card_cod…` |
 | mysql8/MySQL8Test4.java#testSubQueryCountCompareNull1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:84 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (SELECT COUNT(*) …` |
@@ -1860,19 +1860,19 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| QueryTest11.java#testCTE1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:162 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
-| QueryTest7.java#testCTE1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:162 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
-| QueryTest7.java#testCTE1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:166 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
-| QueryTest7.java#testCTE2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:170 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
-| QueryTest7.java#testCTE3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:175 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
-| QueryTest7.java#testCTE4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:179 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
-| QueryTest7.java#testCTE5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:179 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
-| QueryTest7.java#testCTE6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:179 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
-| QueryTest7.java#testCTE7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:182 | `WITH RECURSIVE 'abc' AS ( (SELECT 0 AS 'xyz',t1.'id',t1.'stars',t1.'title',t1.'create_time' FROM 't_…` |
+| QueryTest11.java#testCTE1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:169 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
+| QueryTest7.java#testCTE1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:169 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
+| QueryTest7.java#testCTE1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:173 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
+| QueryTest7.java#testCTE2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:177 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
+| QueryTest7.java#testCTE3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:182 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
+| QueryTest7.java#testCTE4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:186 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
+| QueryTest7.java#testCTE5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:186 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
+| QueryTest7.java#testCTE6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:186 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'stars',t1.'title',t1.'create_t…` |
+| QueryTest7.java#testCTE7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:189 | `WITH RECURSIVE 'abc' AS ( (SELECT 0 AS 'xyz',t1.'id',t1.'stars',t1.'title',t1.'create_time' FROM 't_…` |
 | mysql8/MySQL8Test2.java#cteViewTree1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:383 |  |
 | mysql8/MySQL8Test2.java#cteViewTree2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:394 |  |
-| mysql8/MySQL8Test3.java#testTree | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:239 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'parent_id',t1.'content',t1.'us…` |
-| mysql8/MySQL8Test3.java#testTree_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:259 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'parent_id',t1.'content',t1.'us…` |
+| mysql8/MySQL8Test3.java#testTree | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:245 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'parent_id',t1.'content',t1.'us…` |
+| mysql8/MySQL8Test3.java#testTree_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:265 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'parent_id',t1.'content',t1.'us…` |
 | pgsql/QueryTest19.java#cteViewTree1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:383：PostgreSQL 版的同一用例（只执行不断言）；视图实体的表只建在 MySQL 夹具里，在这里一并验证 |  |
 | pgsql/QueryTest19.java#testToTreeList | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:21 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
 | pgsql/QueryTest19.java#testToTreeList2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:33 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
@@ -1949,36 +1949,36 @@
 | mysql8/M8Save2Test.java#testOne2OneChange | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save2Test.cs:171 | `SELECT 'id','name','code' FROM 'm8_save_root'` |
 | mysql8/M8Save2Test.java#testOne2OneChange2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save2Test.cs:197 | `SELECT 'id','name','code' FROM 'm8_save_root'` |
 | mysql8/M8Save2Test.java#testOne2OneChange3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save2Test.cs:221：异常信息用中文，说明哪个子对象的外键已指向别的父对象 |  |
-| mysql8/M8Save3Test.java#many2manySetNullInsert | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:152 | `INSERT INTO 'm8_role3' ('role_id','role_name') VALUES (?,?)` |
-| mysql8/M8Save3Test.java#testOwnershipChange1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:92：Java 的 include2 写成嵌套 Include(a => a.M8SaveB, b => b.Include(...)) | `UPDATE 'm8_save_b' SET 'pid' = ? WHERE 'id' = ?` |
-| mysql8/M8Save3Test.java#testOwnershipChange1_1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:95：Java 的 include2 写成嵌套 Include(a => a.M8SaveB, b => b.Include(...)) | `UPDATE 'm8_save_b' SET 'pid' = ? WHERE 'id' = ?` |
-| mysql8/M8Save3Test.java#testOwnershipChange2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:99：Java 的 include2 写成嵌套 Include(a => a.M8SaveB, b => b.Include(...)) | `DELETE FROM 'm8_save_d' WHERE 'id' = ?` |
-| mysql8/M8Save3Test.java#testOwnershipChange3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:120：Java 的 include2 写成嵌套 Include(a => a.M8SaveB, b => b.Include(...)) | `DELETE FROM 'm8_save_d' WHERE 'id' = ?` |
+| mysql8/M8Save3Test.java#many2manySetNullInsert | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:154 | `INSERT INTO 'm8_role3' ('role_id','role_name') VALUES (?,?)` |
+| mysql8/M8Save3Test.java#testOwnershipChange1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:91 | `UPDATE 'm8_save_b' SET 'pid' = ? WHERE 'id' = ?` |
+| mysql8/M8Save3Test.java#testOwnershipChange1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:95 | `UPDATE 'm8_save_b' SET 'pid' = ? WHERE 'id' = ?` |
+| mysql8/M8Save3Test.java#testOwnershipChange2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:100 | `DELETE FROM 'm8_save_d' WHERE 'id' = ?` |
+| mysql8/M8Save3Test.java#testOwnershipChange3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:122 | `DELETE FROM 'm8_save_d' WHERE 'id' = ?` |
 | mysql8/M8Save4Test.java#testToManyToMany1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save4Test.cs:37 |  |
 | mysql8/M8Save4Test.java#testToManyToMany2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save4Test.cs:57 | `SELECT 'a','b','c' FROM 'm8_many1' WHERE 'a' = ?` |
 | mysql8/M8SaveTest.java#test2One1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:96 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
 | mysql8/M8SaveTest.java#test2One2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:126：异常信息用中文，说明导航没有被追踪、该怎样改 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
 | mysql8/M8SaveTest.java#test2One3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:151 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
 | mysql8/M8SaveTest.java#test2One4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:193 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testDeleteAll | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:216：Java 的 include2 按路径写多段带出；C# 写成嵌套的 Include | `DELETE FROM 'm8_save_root_many_one' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testMany2Many1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:367 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testMany2Many2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:409 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testMany2Many3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:435：异常信息用中文，说明导航没有被追踪、该怎样改 |  |
-| mysql8/M8SaveTest.java#testMany2Many4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:454 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testMany2Many5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:438：异常信息用中文，说明导航没有被追踪、该怎样改 |  |
-| mysql8/M8SaveTest.java#testMany2Many6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:470 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testMany2Many7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:489 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testMany2ManyMiddle1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:507 | `DELETE FROM 'm8_save_root_middle_many' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testMany2ManyMiddle2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:525 |  |
-| mysql8/M8SaveTest.java#testMany2ManyMiddle3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:539：异常信息用中文，说明是哪条导航上业务键相同 |  |
-| mysql8/M8SaveTest.java#testOne2Many1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:239 |  |
-| mysql8/M8SaveTest.java#testOne2Many2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:252 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testOne2Many2_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:275 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testOne2Many3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:296 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testOne2Many4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:321 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testOne2Many5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:340：异常信息用中文，说明导航没有被追踪、该怎样改 |  |
-| mysql8/M8SaveTest.java#testOne2Many6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:354 |  |
-| mysql8/M8SaveTest.java#testPathAggregateRoot | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:556：异常信息用中文，说明列出的导航是别的聚合根 |  |
+| mysql8/M8SaveTest.java#testDeleteAll | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:217 | `DELETE FROM 'm8_save_root_many_one' WHERE 'id' = ?` |
+| mysql8/M8SaveTest.java#testMany2Many1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:368 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
+| mysql8/M8SaveTest.java#testMany2Many2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:410 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
+| mysql8/M8SaveTest.java#testMany2Many3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:436：异常信息用中文，说明导航没有被追踪、该怎样改 |  |
+| mysql8/M8SaveTest.java#testMany2Many4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:455 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
+| mysql8/M8SaveTest.java#testMany2Many5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:439：异常信息用中文，说明导航没有被追踪、该怎样改 |  |
+| mysql8/M8SaveTest.java#testMany2Many6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:471 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
+| mysql8/M8SaveTest.java#testMany2Many7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:490 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
+| mysql8/M8SaveTest.java#testMany2ManyMiddle1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:508 | `DELETE FROM 'm8_save_root_middle_many' WHERE 'id' = ?` |
+| mysql8/M8SaveTest.java#testMany2ManyMiddle2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:526 |  |
+| mysql8/M8SaveTest.java#testMany2ManyMiddle3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:540：异常信息用中文，说明是哪条导航上业务键相同 |  |
+| mysql8/M8SaveTest.java#testOne2Many1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:240 |  |
+| mysql8/M8SaveTest.java#testOne2Many2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:253 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
+| mysql8/M8SaveTest.java#testOne2Many2_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:276 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
+| mysql8/M8SaveTest.java#testOne2Many3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:297 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
+| mysql8/M8SaveTest.java#testOne2Many4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:322 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
+| mysql8/M8SaveTest.java#testOne2Many5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:341：异常信息用中文，说明导航没有被追踪、该怎样改 |  |
+| mysql8/M8SaveTest.java#testOne2Many6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:355 |  |
+| mysql8/M8SaveTest.java#testPathAggregateRoot | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:557：异常信息用中文，说明列出的导航是别的聚合根 |  |
 
 ### 追踪与差异更新（`tracking`，M5）
 
@@ -2001,20 +2001,20 @@
 | QueryTest27.java#testDiff2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest27.cs:225 |  |
 | QueryTest28.java#testQueryAggregate | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest28.cs:113：Java 的 where(..).sumBigDecimal 里 ELSE 的 0 是 Integer，分组上的 sum(..).filter 是 Long；C# 只有 Sql.Sum(x, 条件) 一个入口，统一用 Long | `SELECT COUNT(*) AS 'value1',SUM((CASE WHEN t.'title' LIKE CONCAT('%',?,'%') THEN t.'stars' ELSE ? EN…` |
 | QueryTest28.java#testQueryAggregate1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest28.cs:113：Java 的 where(..).sumBigDecimal 里 ELSE 的 0 是 Integer，分组上的 sum(..).filter 是 Long；C# 只有 Sql.Sum(x, 条件) 一个入口，统一用 Long | `SELECT COUNT(*) AS 'value1',SUM((CASE WHEN t.'title' LIKE CONCAT('%',?,'%') THEN t.'stars' ELSE ? EN…` |
-| QueryTest6.java#joinTest1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest6.cs:10：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
-| QueryTest6.java#joinTest2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest6.cs:20：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
-| QueryTest6.java#joinTest3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest6.cs:30：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
-| QueryTest6.java#joinTest4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest6.cs:40：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
-| QueryTest6.java#joinTest5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest6.cs:50：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
-| QueryTest6.java#joinTest6 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest6.cs:60：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
-| QueryTest6.java#joinTest7 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest6.cs:70：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
-| QueryTest7.java#joinTest1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:10：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
-| QueryTest7.java#joinTest2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:20：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
-| QueryTest7.java#joinTest3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:30：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
-| QueryTest7.java#joinTest4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:40：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
-| QueryTest7.java#joinTest5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:50：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
-| QueryTest7.java#joinTest6 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:60：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
-| QueryTest7.java#joinTest7 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:70：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
+| QueryTest6.java#joinTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest6.cs:11 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
+| QueryTest6.java#joinTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest6.cs:22 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
+| QueryTest6.java#joinTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest6.cs:33 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
+| QueryTest6.java#joinTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest6.cs:44 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
+| QueryTest6.java#joinTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest6.cs:55 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
+| QueryTest6.java#joinTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest6.cs:66 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
+| QueryTest6.java#joinTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest6.cs:77 | `SELECT DISTINCT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' =…` |
+| QueryTest7.java#joinTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:11 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
+| QueryTest7.java#joinTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:22 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
+| QueryTest7.java#joinTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:33 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
+| QueryTest7.java#joinTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:44 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
+| QueryTest7.java#joinTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:55 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
+| QueryTest7.java#joinTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:66 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
+| QueryTest7.java#joinTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:77 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
 | RelationTest.java#testOneToOne | 待做 |  | `SELECT 'id','name' FROM 'school_class'` |
 | TrackTest.java#track1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/TrackTest.cs:21 |  |
 | TrackTest.java#track2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/TrackTest.cs:36 |  |
@@ -2045,7 +2045,7 @@
 | UpdateTest.java#updateTrackParameterTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:371 | `UPDATE 'aaaxxx' SET 'stars' = ?,'create_time' = ? WHERE 'id' = ? AND 'title' = ?` |
 | UpdateTest1.java#updateTest51 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest1.cs:75 |  |
 | UpdateTest1.java#updateTestUpdate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest1.cs:108 | `UPDATE 't_topic' SET 'title' = ?,'create_time' = ? WHERE 'id' = ?` |
-| mysql8/ManyJoinTest.java#testManyJoinGroup1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:186 |  |
+| mysql8/ManyJoinTest.java#testManyJoinGroup1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:184 |  |
 
 ### 乐观锁版本（`version`，M5）
 
@@ -2109,7 +2109,7 @@
 | UpdateTest.java#updateTestBatch | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:310：批量：Java 用 JDBC batch 一条语句多组参数，C# 每个实体一条语句；Java 的 ignoreVersion 留到版本号（M5.3） |  |
 | UpdateTest.java#updateTestBatch1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:318：同 updateTestBatch |  |
 | UpdateTest.java#updateTestBatch2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:326：同 updateTestBatch |  |
-| mysql8/MySQL8Test3.java#batchTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:127 |  |
+| mysql8/MySQL8Test3.java#batchTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:133 |  |
 
 ### upsert（`write.upsert`，M5）
 
@@ -2497,13 +2497,13 @@
 | QueryTest3.java#orderTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.Part2.cs:158 |  |
 | QueryTest3.java#query124 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:30 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'dele…` |
 | QueryTest3.java#query124_5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:35 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'dele…` |
-| QueryTest4.java#joinTest1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:175：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
-| QueryTest4.java#joinTest2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:194：同 joinTest1 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
-| QueryTest4.java#joinTest3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:211：同 joinTest1 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
-| QueryTest4.java#joinTest4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:227：同 joinTest1 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
-| QueryTest4.java#joinTest5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:242：同 joinTest1 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
-| QueryTest4.java#joinTest6 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:257：同 joinTest1 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
-| QueryTest4.java#joinTest7 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:271：同 joinTest1 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
+| QueryTest4.java#joinTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:176 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
+| QueryTest4.java#joinTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:196 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
+| QueryTest4.java#joinTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:214 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
+| QueryTest4.java#joinTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:231 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
+| QueryTest4.java#joinTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:247 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
+| QueryTest4.java#joinTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:263 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
+| QueryTest4.java#joinTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:278 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' L…` |
 | QueryTestRelationTest.java#relationTest0 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTestRelationTest.cs:200 | `SELECT t.'id',t.'com_id',t.'user_id',t.'gw' FROM 'my_com_user' t WHERE EXISTS(SELECT 1 FROM 'my_sign…` |
 | QueryTestRelationTest.java#relationTest0_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTestRelationTest.cs:70 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t WHERE t.'com_id' = ?` |
 | QueryTestRelationTest.java#relationTest0_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTestRelationTest.cs:88 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t LEFT JOIN 'my_com_user…` |
@@ -2517,9 +2517,9 @@
 | QueryTestRelationTest.java#testDirectWhere | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTestRelationTest.cs:138 | `SELECT t.'id',t.'com_id',t.'user_id',t.'time',t.'content' FROM 'my_sign_up' t` |
 | doc/DocTest.java#test1 | 待做 |  | `SELECT COUNT(*) FROM 't_sys_user' WHERE 'name' LIKE ? AND 'phone' LIKE ? AND 'create_time' >= ? AND …` |
 | mysql8/ExampleTest.java#sampleTest1 | 待做 |  |  |
-| mysql8/M8BankTest.java#test10 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:109：Java 的 filterConfigure(NotNullOrEmptyValueFilter) 在 C# 里用 WhereIf 表达，这里条件都有值，SQL 相同 | `SELECT t.'code' AS 'value1',t2.'name' AS 'value2',t1.'name' AS 'value3' FROM 't_bank_card' t LEFT JO…` |
-| mysql8/M8BankTest.java#test4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:28：Java 给子查询单独配了值过滤；C# 的 UseValueFilter 作用于整条查询，这里条件都有值，SQL 相同 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (SELECT COUNT(*) …` |
-| mysql8/M8BankTest.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:111 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t` |
+| mysql8/M8BankTest.java#test10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.cs:110 | `SELECT t.'code' AS 'value1',t2.'name' AS 'value2',t1.'name' AS 'value3' FROM 't_bank_card' t LEFT JO…` |
+| mysql8/M8BankTest.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:29 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (SELECT COUNT(*) …` |
+| mysql8/M8BankTest.java#test9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:112 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t` |
 | mysql8/M8QueryTest.java#whereObject1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8QueryTest.cs:28 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
 | mysql8/M8QueryTest.java#whereObject2 | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
 | mysql8/M8QueryTest.java#whereObject3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8QueryTest.cs:37 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE EXISTS(SELECT 1 F…` |
@@ -2543,9 +2543,9 @@
 | mysql8/MySQL8Test2.java#testMerge4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:367 | `SELECT COUNT(*) FROM 'm8_province' t WHERE t.'name' LIKE CONCAT('%',?,'%')` |
 | mysql8/MySQL8Test2.java#testMerge5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:352 | `SELECT COUNT(*) FROM 'm8_province' t LEFT JOIN (SELECT t1.'pid' AS '__group_key1__',COUNT((CASE WHEN…` |
 | mysql8/MySQL8Test2.java#testSumCount | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:296 | `SELECT IFNULL(t2.'__sum2__',0) AS 'value1',IFNULL(t2.'__sum3__',0) AS 'value2' FROM 'm8_province' t …` |
-| mysql8/MySQL8Test3.java#testDynamicJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:15 |  |
+| mysql8/MySQL8Test3.java#testDynamicJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:13 |  |
 | mysql8/MySQL8Test4.java#testFilter | 待做 |  | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN 't_sys_user' …` |
-| mysql8/MySQL8Test4.java#testFilterAndDependency | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:317：Java 的 filter(…) 在 C# 里直接写条件，firstCard 写成 BankCards.OrderBy(OpenTime).First()；SQL 相同 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t2.'i…` |
+| mysql8/MySQL8Test4.java#testFilterAndDependency | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:320 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t2.'i…` |
 | mysql8/MySQL8Test4.java#testSubQueryCountCompareNull2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:95 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
 | mysql8/MySQL8Test4.java#testTimeAfterNull2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:117 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
 | mysql8/MySQL8Test4.java#testTimeBeforeNull2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:136 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
@@ -2706,16 +2706,16 @@
 | QueryTest27.java#testAAA45 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest27.cs:186 | `SELECT t.'id',t.'create_time',t.'username',t.'phone',t.'id_card',t.'address' FROM 'easy-query-test'.…` |
 | QueryTest28.java#testQueryMap2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest28.cs:142 | `SELECT 'id' FROM 't_topic' WHERE 'id' = ?` |
 | QueryTest4.java#queryFirstSingle | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest4.cs:140 | `SELECT 'id','create_time','username','phone','id_card','address' FROM 'easy-query-test'.'sys_123' WH…` |
-| QueryTest5.java#joinTest1_1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:31：Java 在分组查询上直接聚合；C# 投影成每组一个聚合值再执行，SQL 相同 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| QueryTest5.java#joinTest1_2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:32：同 joinTest1_1 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| QueryTest5.java#joinTest1_3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:32：同 joinTest1_1 | `SELECT AVG(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
-| QueryTest5.java#joinTest1_4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:33：同 joinTest1_1 | `SELECT AVG(t2.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topi…` |
-| QueryTest5.java#joinTest1_5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:33：同 joinTest1_1 | `SELECT AVG(t2.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topi…` |
-| QueryTest5.java#joinTest1_6 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:34：同 joinTest1_1 | `SELECT AVG(t2.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topi…` |
-| QueryTest5.java#joinTest1_7 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:34：同 joinTest1_1 | `SELECT AVG(t2.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topi…` |
-| QueryTest5.java#joinTest1_8 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:35：同 joinTest1_1 | `SELECT AVG(t2.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topi…` |
-| QueryTest5.java#joinTest1_9 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:35：同 joinTest1_1 | `SELECT AVG(t2.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topi…` |
-| QueryTest5.java#joinTestx1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:164 | `SELECT t.'title',t.'content',t.'url',t.'star',t.'publish_time',t.'score',t.'status',t.'order',t.'is_…` |
+| QueryTest5.java#joinTest1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:32 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| QueryTest5.java#joinTest1_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:34 | `SELECT SUM(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| QueryTest5.java#joinTest1_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:34 | `SELECT AVG(t.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topic…` |
+| QueryTest5.java#joinTest1_4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:36 | `SELECT AVG(t2.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topi…` |
+| QueryTest5.java#joinTest1_5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:36 | `SELECT AVG(t2.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topi…` |
+| QueryTest5.java#joinTest1_6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:38 | `SELECT AVG(t2.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topi…` |
+| QueryTest5.java#joinTest1_7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:38 | `SELECT AVG(t2.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topi…` |
+| QueryTest5.java#joinTest1_8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:40 | `SELECT AVG(t2.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topi…` |
+| QueryTest5.java#joinTest1_9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:40 | `SELECT AVG(t2.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topi…` |
+| QueryTest5.java#joinTestx1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:169 | `SELECT t.'title',t.'content',t.'url',t.'star',t.'publish_time',t.'score',t.'status',t.'order',t.'is_…` |
 | UpdateTest.java#mapUpdateTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:262 | `UPDATE 'aaa' SET 'name' = ? WHERE 'id' = ?` |
 | UpdateTest.java#testColumnConfigure2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:439 | `UPDATE 'xxxxx' SET 'stars' = ifnull('stars',0)+? WHERE 'id' = ?` |
 | UpdateTest.java#testColumnConfigure3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:448 | `UPDATE 'xxxxx' SET 'id' = ?,'stars' = ? WHERE 'id' = ?` |

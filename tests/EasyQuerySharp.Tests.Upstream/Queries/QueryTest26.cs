@@ -311,7 +311,8 @@ public sealed class QueryTest26(MySqlFixture fixture) : MySqlTest(fixture)
     }
 
     // Java 用例没有断言：include2 按路径写多段带出（经过集合的 flatElement），每段带自己的条件；C# 写成嵌套的 Include
-    [Fact, Upstream("QueryTest26.java#includeFlat", Deviation = "Java 的 include2 按路径（flatElement 连接）声明多段带出；C# 写成嵌套的 Include，每段的条件写在各自的配置里")]
+    // 写法与 Java 不同、SQL 一致：Java 的 include2 按路径（flatElement 连接）声明多段带出；C# 写成嵌套的 Include，每段的条件写在各自的配置里
+    [Fact, Upstream("QueryTest26.java#includeFlat")]
     public async Task IncludeFlat()
     {
         await Db.Query<SchoolClass>()

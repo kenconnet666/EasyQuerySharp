@@ -28,11 +28,16 @@ public sealed class QueryTest5(MySqlFixture fixture) : MySqlTest(fixture)
     public void JoinTest1() => Assert.Equal(Sql(10), Base10().Select(KeyAndCount10).ToSql());
 
     // Java 在分组查询上直接调用 sum / avg（结果取第一组）；C# 投影成每组一个值后读取
-    [Theory, Upstream("QueryTest5.java#joinTest1_1", Deviation = "Java 在分组查询上直接聚合；C# 投影成每组一个聚合值再执行，SQL 相同"),
-     Upstream("QueryTest5.java#joinTest1_2", Deviation = "同 joinTest1_1"), Upstream("QueryTest5.java#joinTest1_3", Deviation = "同 joinTest1_1"),
-     Upstream("QueryTest5.java#joinTest1_4", Deviation = "同 joinTest1_1"), Upstream("QueryTest5.java#joinTest1_5", Deviation = "同 joinTest1_1"),
-     Upstream("QueryTest5.java#joinTest1_6", Deviation = "同 joinTest1_1"), Upstream("QueryTest5.java#joinTest1_7", Deviation = "同 joinTest1_1"),
-     Upstream("QueryTest5.java#joinTest1_8", Deviation = "同 joinTest1_1"), Upstream("QueryTest5.java#joinTest1_9", Deviation = "同 joinTest1_1")]
+    // 写法与 Java 不同、SQL 一致：Java 在分组查询上直接聚合；C# 投影成每组一个聚合值再执行，SQL 相同
+    [Theory, Upstream("QueryTest5.java#joinTest1_1"),
+     // 写法与 Java 不同、SQL 一致：Java 在分组查询上直接聚合；C# 投影成每组一个聚合值再执行，SQL 相同
+     Upstream("QueryTest5.java#joinTest1_2"), Upstream("QueryTest5.java#joinTest1_3"),
+     // 写法与 Java 不同、SQL 一致：Java 在分组查询上直接聚合；C# 投影成每组一个聚合值再执行，SQL 相同
+     Upstream("QueryTest5.java#joinTest1_4"), Upstream("QueryTest5.java#joinTest1_5"),
+     // 写法与 Java 不同、SQL 一致：Java 在分组查询上直接聚合；C# 投影成每组一个聚合值再执行，SQL 相同
+     Upstream("QueryTest5.java#joinTest1_6"), Upstream("QueryTest5.java#joinTest1_7"),
+     // 写法与 Java 不同、SQL 一致：Java 在分组查询上直接聚合；C# 投影成每组一个聚合值再执行，SQL 相同
+     Upstream("QueryTest5.java#joinTest1_8"), Upstream("QueryTest5.java#joinTest1_9")]
     [InlineData("SUM", 1)]
     [InlineData("AVG", 1)]
     [InlineData("AVG", 3)]

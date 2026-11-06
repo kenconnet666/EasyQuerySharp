@@ -172,7 +172,8 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
 
     // ---------- joinTest：多表上的全套条件、排序、分组 ----------
 
-    [Fact, Upstream("QueryTest4.java#joinTest1", Deviation = "Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0")]
+    // 写法与 Java 不同、SQL 一致：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0
+    [Fact, Upstream("QueryTest4.java#joinTest1")]
     public void JoinTest1() =>
         Assert.Equal(Sql(10), Db.Query<Topic>()
             .LeftJoin<Topic>((t, t1) => t.Id == t1.Id).LeftJoin<Topic>((t, t1, t2) => t.Id == t2.Id)
@@ -191,7 +192,8 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
             .Select(g => new Topic { Id = g.Column(e => e.Item1.Id), Stars = (int)g.Count(e => e.Item1.Id) })
             .ToSql());
 
-    [Fact, Upstream("QueryTest4.java#joinTest2", Deviation = "同 joinTest1")]
+    // 写法与 Java 不同、SQL 一致：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0
+    [Fact, Upstream("QueryTest4.java#joinTest2")]
     public void JoinTest2() =>
         Assert.Equal(Sql(9), Db.Query<Topic>()
             .LeftJoin<Topic>((t, t1) => t.Id == t1.Id).LeftJoin<Topic>((t, t1, t2) => t.Id == t2.Id)
@@ -208,7 +210,8 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
             .Select(g => new Topic { Id = g.Column(e => e.Item1.Id), Stars = (int)g.Count(e => e.Item1.Id) })
             .ToSql());
 
-    [Fact, Upstream("QueryTest4.java#joinTest3", Deviation = "同 joinTest1")]
+    // 写法与 Java 不同、SQL 一致：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0
+    [Fact, Upstream("QueryTest4.java#joinTest3")]
     public void JoinTest3() =>
         Assert.Equal(Sql(8), Db.Query<Topic>()
             .LeftJoin<Topic>((t, t1) => t.Id == t1.Id).LeftJoin<Topic>((t, t1, t2) => t.Id == t2.Id)
@@ -224,7 +227,8 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
             .Select(g => new Topic { Id = g.Column(e => e.Item1.Id), Stars = (int)g.Count(e => e.Item1.Id) })
             .ToSql());
 
-    [Fact, Upstream("QueryTest4.java#joinTest4", Deviation = "同 joinTest1")]
+    // 写法与 Java 不同、SQL 一致：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0
+    [Fact, Upstream("QueryTest4.java#joinTest4")]
     public void JoinTest4() =>
         Assert.Equal(Sql(7), Db.Query<Topic>()
             .LeftJoin<Topic>((t, t1) => t.Id == t1.Id).LeftJoin<Topic>((t, t1, t2) => t.Id == t2.Id)
@@ -239,7 +243,8 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
             .Select(g => new Topic { Id = g.Column(e => e.Item1.Id), Stars = (int)g.Count(e => e.Item1.Id) })
             .ToSql());
 
-    [Fact, Upstream("QueryTest4.java#joinTest5", Deviation = "同 joinTest1")]
+    // 写法与 Java 不同、SQL 一致：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0
+    [Fact, Upstream("QueryTest4.java#joinTest5")]
     public void JoinTest5() =>
         Assert.Equal(Sql(6), Db.Query<Topic>()
             .LeftJoin<Topic>((t, t1) => t.Id == t1.Id).LeftJoin<Topic>((t, t1, t2) => t.Id == t2.Id)
@@ -254,7 +259,8 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
             .Select(g => new Topic { Id = g.Column(e => e.Item1.Id), Stars = (int)g.Count(e => e.Item1.Id) })
             .ToSql());
 
-    [Fact, Upstream("QueryTest4.java#joinTest6", Deviation = "同 joinTest1")]
+    // 写法与 Java 不同、SQL 一致：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0
+    [Fact, Upstream("QueryTest4.java#joinTest6")]
     public void JoinTest6() =>
         Assert.Equal(Sql(5), Db.Query<Topic>()
             .LeftJoin<Topic>((t, t1) => t.Id == t1.Id).LeftJoin<Topic>((t, t1, t2) => t.Id == t2.Id)
@@ -268,7 +274,8 @@ public sealed class QueryTest4(MySqlFixture fixture) : MySqlTest(fixture)
             .Select(g => new Topic { Id = g.Column(e => e.Item1.Id), Stars = (int)g.Count(e => e.Item1.Id) })
             .ToSql());
 
-    [Fact, Upstream("QueryTest4.java#joinTest7", Deviation = "同 joinTest1")]
+    // 写法与 Java 不同、SQL 一致：Java 的 id 是字符串，ge / gt 等比较在 C# 里写成 string.Compare(..) >= 0
+    [Fact, Upstream("QueryTest4.java#joinTest7")]
     public void JoinTest7() =>
         Assert.Equal(Sql(4), Db.Query<Topic>()
             .LeftJoin<Topic>((t, t1) => t.Id == t1.Id).LeftJoin<Topic>((t, t1, t2) => t.Id == t2.Id)

@@ -22,7 +22,8 @@ public sealed class QueryTest16(MySqlFixture fixture) : MySqlTest(fixture)
         AssertStatement(Db.Query<SysUser>().Where(user => user.Name!.Contains("小明") || user.Company!.Name!.Contains("JAVA企业")).ToStatement(),
             "SELECT t.`id`,t.`company_id`,t.`name`,t.`age`,t.`create_time` FROM `t_user` t LEFT JOIN `t_company` t1 ON t1.`id` = t.`company_id` WHERE (t.`name` LIKE ? OR t1.`name` LIKE ?)", "%小明%(String),%JAVA企业%(String)");
 
-    [Fact, Upstream("QueryTest16.java#test15", Deviation = "Java 的 flatElement 在 C# 里写成 Any")]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement 在 C# 里写成 Any
+    [Fact, Upstream("QueryTest16.java#test15")]
     public void Test15() =>
         AssertStatement(Db.Query<SysUser>().Where(user => user.Name!.Contains("小明") || user.Roles!.Any(r => r.Name!.Contains("管理员"))).ToStatement(),
             "SELECT t.`id`,t.`company_id`,t.`name`,t.`age`,t.`create_time` FROM `t_user` t WHERE (t.`name` LIKE ? OR EXISTS(SELECT 1 FROM `t_role` t1 WHERE EXISTS(SELECT 1 FROM `t_user_role` t2 WHERE t2.`role_id` = t1.`id` AND t2.`user_id` = t.`id` LIMIT 1) AND t1.`name` LIKE ? LIMIT 1))", "%小明%(String),%管理员%(String)");
@@ -44,23 +45,27 @@ public sealed class QueryTest16(MySqlFixture fixture) : MySqlTest(fixture)
         await Db.Query<Topic>().Where(b => b.Id == "123").Select(t => new Draft<double, int>(Sql.Raw<double>("RAND()"), Sql.Raw<int>("IFNULL({0},{1})", t.Stars ?? 1, 2))).ToListAsync(Ct);
     }
 
-    [Fact, Upstream("QueryTest16.java#test1", Deviation = "Java 的 flatElement 在 C# 里写成 Any")]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement 在 C# 里写成 Any
+    [Fact, Upstream("QueryTest16.java#test1")]
     public void Test1() =>
         AssertStatement(Db.Query<SysUser>().Where(s => s.Roles!.Any(r => r.Menus!.Any(menu => menu.Route == "/admin"))).ToStatement(), "SELECT t.`id`,t.`company_id`,t.`name`,t.`age`,t.`create_time` FROM `t_user` t WHERE EXISTS(SELECT 1 FROM `t_role` t1 WHERE EXISTS(SELECT 1 FROM `t_user_role` t2 WHERE t2.`role_id` = t1.`id` AND t2.`user_id` = t.`id` LIMIT 1) AND EXISTS(SELECT 1 FROM `t_menu` t3 WHERE EXISTS(SELECT 1 FROM `t_role_menu` t4 WHERE t4.`menu_id` = t3.`id` AND t4.`role_id` = t1.`id` LIMIT 1) AND t3.`route` = ? LIMIT 1) LIMIT 1)", "/admin(String)");
 
     // Java 的 roles().mode(GROUP_JOIN)：GroupJoin(s => s.Roles)
-    [Fact, Upstream("QueryTest16.java#test2", Deviation = "Java 的 flatElement 在 C# 里写成 Any")]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement 在 C# 里写成 Any
+    [Fact, Upstream("QueryTest16.java#test2")]
     public void Test2() =>
         AssertStatement(Db.Query<SysUser>().GroupJoin(s => s.Roles).Where(s => s.Roles!.Any(r => r.Menus!.Any(menu => menu.Route == "/admin"))).ToStatement(),
             "SELECT t.`id`,t.`company_id`,t.`name`,t.`age`,t.`create_time` FROM `t_user` t LEFT JOIN (SELECT t2.`user_id` AS `__group_key1__`,(COUNT(?) > 0) AS `__any2__` FROM `t_role` t1 INNER JOIN `t_user_role` t2 ON t1.`id` = t2.`role_id` WHERE EXISTS(SELECT 1 FROM `t_menu` t5 WHERE EXISTS(SELECT 1 FROM `t_role_menu` t6 WHERE t6.`menu_id` = t5.`id` AND t6.`role_id` = t1.`id` LIMIT 1) AND t5.`route` = ? LIMIT 1) GROUP BY t2.`user_id`) t4 ON t4.`__group_key1__` = t.`id` WHERE IFNULL(t4.`__any2__`,?) = ?", "1(Integer),/admin(String),false(Boolean),true(Boolean)");
 
     // Java 的 ALL_SUB_QUERY_GROUP_JOIN：GroupJoinAll()，分组子查询里的集合导航同样合并
-    [Fact, Upstream("QueryTest16.java#test3", Deviation = "Java 的 flatElement 在 C# 里写成 Any")]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement 在 C# 里写成 Any
+    [Fact, Upstream("QueryTest16.java#test3")]
     public void Test3() =>
         AssertStatement(Db.Query<SysUser>().GroupJoinAll().Where(s => s.Roles!.Any(r => r.Menus!.Any(menu => menu.Route == "/admin"))).ToStatement(),
             "SELECT t.`id`,t.`company_id`,t.`name`,t.`age`,t.`create_time` FROM `t_user` t LEFT JOIN (SELECT t2.`user_id` AS `__group_key1__`,(COUNT(?) > 0) AS `__any2__` FROM `t_role` t1 INNER JOIN `t_user_role` t2 ON t1.`id` = t2.`role_id` LEFT JOIN (SELECT t6.`role_id` AS `__group_key1__`,(COUNT(?) > 0) AS `__any2__` FROM `t_menu` t5 INNER JOIN `t_role_menu` t6 ON t5.`id` = t6.`menu_id` WHERE t5.`route` = ? GROUP BY t6.`role_id`) t8 ON t8.`__group_key1__` = t1.`id` WHERE IFNULL(t8.`__any2__`,?) = ? GROUP BY t2.`user_id`) t4 ON t4.`__group_key1__` = t.`id` WHERE IFNULL(t4.`__any2__`,?) = ?", "1(Integer),1(Integer),/admin(String),false(Boolean),true(Boolean),false(Boolean),true(Boolean)");
 
-    [Fact, Upstream("QueryTest16.java#testDocSub", Deviation = "Java 的 flatElement 在 C# 里写成 Any")]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement 在 C# 里写成 Any
+    [Fact, Upstream("QueryTest16.java#testDocSub")]
     public void TestDocSub()
     {
         AssertStatement(Db.Query<Company>().Where(com => com.Users!.Where(u => u.Age > 18).Any()).ToStatement(), "SELECT t.`id`,t.`name`,t.`create_time` FROM `t_company` t WHERE EXISTS(SELECT 1 FROM `t_user` t1 WHERE t1.`company_id` = t.`id` AND t1.`age` > ? LIMIT 1)", "18(Integer)");

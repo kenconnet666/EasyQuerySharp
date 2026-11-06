@@ -50,7 +50,8 @@ public sealed class SubJoinTest(MySqlFixture fixture) : MySqlTest(fixture)
     public Task TestSubJoinMin() => AssertSql(s => s.Books!.Min(b => b.Author!.Age), "SELECT (SELECT MIN(t2.`age`) FROM `sub_join_book` t1 LEFT JOIN `sub_join_author` t2 ON t2.`id` = t1.`author_id` WHERE t1.`uid` = t.`id`) AS `value1` FROM `sub_join_user` t WHERE t.`id` = ?", "SELECT (SELECT MIN(t2.`age`) FROM `sub_join_book` t1 LEFT JOIN `sub_join_author` t2 ON t2.`id` = t1.`author_id` WHERE t1.`uid` = t.`id`) FROM `sub_join_user` t WHERE t.`id` = ?");
 
     // 排序里的 CASE WHEN 判断集合里是否存在；Java 的 flatElement().name().eq(..) 与 any(..) 同样渲染成 EXISTS
-    [Fact, Upstream("SubJoinTest.java#testSubJoinCaseWhen1", Deviation = "Java 的 flatElement 在 C# 里写成 Any"), Upstream("SubJoinTest.java#testSubJoinCaseWhen1_1"), Upstream("SubJoinTest.java#testSubJoinCaseWhen2")]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement 在 C# 里写成 Any
+    [Fact, Upstream("SubJoinTest.java#testSubJoinCaseWhen1"), Upstream("SubJoinTest.java#testSubJoinCaseWhen1_1"), Upstream("SubJoinTest.java#testSubJoinCaseWhen2")]
     public async Task TestSubJoinCaseWhen()
     {
         using var listen = SqlCapture.Listen();

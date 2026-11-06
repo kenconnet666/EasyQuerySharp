@@ -11,8 +11,6 @@ namespace EasyQuerySharp.Tests.Upstream.Queries;
 /// </summary>
 public sealed class QueryTest17(MySqlFixture fixture) : MySqlTest(fixture)
 {
-    private const string FlatElement = "Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同";
-
     // 按属性名取列；只选部分列 / 再追加一列（Java 的 _concat）
     [Fact, Upstream("QueryTest17.java#test11")]
     public async Task Test11()
@@ -76,7 +74,8 @@ public sealed class QueryTest17(MySqlFixture fixture) : MySqlTest(fixture)
     }
 
     // 各字符串函数（Java 的 subString / concat / toUpper / trim / replace / leftPad / length / compareTo）
-    [Fact, Upstream("QueryTest17.java#test1"), Upstream("QueryTest17.java#test3", Deviation = "Java 用动态 API（fx.subString(\"id\", …)）写同样的条件；C# 只有表达式写法，SQL 相同")]
+    // 写法与 Java 不同、SQL 一致：Java 用动态 API（fx.subString(\"id\", …)）写同样的条件；C# 只有表达式写法，SQL 相同
+    [Fact, Upstream("QueryTest17.java#test1"), Upstream("QueryTest17.java#test3")]
     public async Task Test1()
     {
         using var listen = SqlCapture.Listen();
@@ -123,7 +122,8 @@ public sealed class QueryTest17(MySqlFixture fixture) : MySqlTest(fixture)
     private static readonly EasyDb MySqlOnly = TestKit.SqlOnly.Db("mysql");
 
     // 对一导航之后的集合导航
-    [Fact, Upstream("QueryTest17.java#testFlatElement1", Deviation = FlatElement)]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同
+    [Fact, Upstream("QueryTest17.java#testFlatElement1")]
     public void TestFlatElement1()
     {
         TestKit.SqlOnly.AssertStatement(MySqlOnly.Query<MyObject>().Where(m => m.Parent!.Children!.Where(o => string.Compare(o.Name, "3") > 0).Any()).ToStatement(),
@@ -132,7 +132,8 @@ public sealed class QueryTest17(MySqlFixture fixture) : MySqlTest(fixture)
             "SELECT t.`id`,t.`f1`,t.`f2`,t.`parent_id` FROM `MyObject` t LEFT JOIN `MyObjectParent` t1 ON t1.`id` = t.`parent_id` WHERE EXISTS(SELECT 1 FROM `MyObjectParentChildren` t2 WHERE t2.`parent_id` = t1.`id` AND t2.`name` > ? LIMIT 1)", "3(String)");
     }
 
-    [Fact, Upstream("QueryTest17.java#testFlatElement2", Deviation = FlatElement)]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同
+    [Fact, Upstream("QueryTest17.java#testFlatElement2")]
     public void TestFlatElement2()
     {
         TestKit.SqlOnly.AssertStatement(MySqlOnly.Query<MyObject>()
@@ -144,7 +145,8 @@ public sealed class QueryTest17(MySqlFixture fixture) : MySqlTest(fixture)
     }
 
     // 带导航条件的查询投影后再连接、分组
-    [Fact, Upstream("QueryTest17.java#testNop2", Deviation = FlatElement)]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同
+    [Fact, Upstream("QueryTest17.java#testNop2")]
     public void TestNop2()
     {
         TestKit.SqlOnly.AssertStatement(MySqlOnly.Query<MyObject>()

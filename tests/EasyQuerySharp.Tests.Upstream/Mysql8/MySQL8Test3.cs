@@ -9,8 +9,6 @@ namespace EasyQuerySharp.Tests.Upstream.Mysql8;
 /// </summary>
 public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
 {
-    private const string FlatElement = "Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同";
-
     // Java 用例没有断言：值全为空时条件都去掉
     [Fact, Upstream("mysql8/MySQL8Test3.java#testDynamicJoin")]
     public async Task TestDynamicJoin()
@@ -40,7 +38,8 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
 
     private const string ProvinceCityAreaSql = "SELECT t.`id`,t.`name` FROM `m8_province` t LEFT JOIN (SELECT t1.`pid` AS `__group_key1__`,(COUNT(?) > 0) AS `__any2__` FROM `m8_city` t1 LEFT JOIN (SELECT t3.`cid` AS `__group_key1__`,(COUNT(?) > 0) AS `__any2__` FROM `m8_area` t3 WHERE t3.`name` = ? GROUP BY t3.`cid`) t4 ON t4.`__group_key1__` = t1.`id` WHERE IFNULL(t4.`__any2__`,?) = ? GROUP BY t1.`pid`) t2 ON t2.`__group_key1__` = t.`id` WHERE IFNULL(t2.`__any2__`,?) = ?";
 
-    [Fact, Upstream("mysql8/MySQL8Test3.java#testFlatElement", Deviation = FlatElement), Upstream("mysql8/MySQL8Test3.java#testFlatElement1", Deviation = FlatElement)]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testFlatElement"), Upstream("mysql8/MySQL8Test3.java#testFlatElement1")]
     public async Task TestFlatElement()
     {
         using var listen = SqlCapture.Listen();
@@ -50,7 +49,8 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
     }
 
     // 不合并时是两层 EXISTS
-    [Fact, Upstream("mysql8/MySQL8Test3.java#testFlatElement2", Deviation = FlatElement)]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testFlatElement2")]
     public async Task TestFlatElement2()
     {
         using var listen = SqlCapture.Listen();
@@ -60,7 +60,8 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
     }
 
     // 三层分组合并：省 → 市 → 区 → 楼
-    [Fact, Upstream("mysql8/MySQL8Test3.java#testFlatElement3", Deviation = FlatElement)]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testFlatElement3")]
     public async Task TestFlatElement3()
     {
         using var listen = SqlCapture.Listen();
@@ -71,7 +72,8 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
     }
 
     // 主表主键的等值条件下推进分组子查询（先过滤再分组）
-    [Fact, Upstream("mysql8/MySQL8Test3.java#testGroupJoin", Deviation = FlatElement)]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testGroupJoin")]
     public async Task TestGroupJoin()
     {
         using var listen = SqlCapture.Listen();
@@ -80,7 +82,8 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
         listen.AssertParams("1(Integer),杭州(String),p1(String),false(Boolean),true(Boolean),p1(String)");
     }
 
-    [Fact, Upstream("mysql8/MySQL8Test3.java#testGroupJoin2", Deviation = FlatElement)]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testGroupJoin2")]
     public async Task TestGroupJoin2()
     {
         using var listen = SqlCapture.Listen();
@@ -91,7 +94,8 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
     }
 
     // 全由主键条件组成的 OR 整组下推
-    [Fact, Upstream("mysql8/MySQL8Test3.java#testGroupJoin3", Deviation = FlatElement)]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testGroupJoin3")]
     public async Task TestGroupJoin3()
     {
         using var listen = SqlCapture.Listen();
@@ -103,7 +107,8 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
     }
 
     // 两层都下推：区的分组子查询按市的 id、市的分组子查询按省的 id
-    [Fact, Upstream("mysql8/MySQL8Test3.java#testGroupJoin4", Deviation = FlatElement)]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testGroupJoin4")]
     public async Task TestGroupJoin4()
     {
         using var listen = SqlCapture.Listen();
@@ -114,7 +119,8 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
     }
 
     // 多对多：下推到中间表的列
-    [Fact, Upstream("mysql8/MySQL8Test3.java#testMany2Many", Deviation = FlatElement)]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testMany2Many")]
     public async Task TestMany2Many()
     {
         using var listen = SqlCapture.Listen();
@@ -211,9 +217,8 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
         listen.AssertSql("SELECT t.`type` AS `value1`,LAG(t.`type`, 1) OVER (ORDER BY t.`open_time` ASC) AS `value2` FROM `t_bank_card` t ORDER BY t.`open_time` ASC");
     }
 
-    private const string FirstCard = "Java 的 firstCard 是 OneToOne + limit 1 + orderByProps 的导航；C# 写成 BankCards.OrderBy(c => c.OpenTime).First()，SQL 相同";
-
-    [Fact, Upstream("mysql8/MySQL8Test3.java#testQueryFirstLimit3", Deviation = FirstCard)]
+    // 写法与 Java 不同、SQL 一致：Java 的 firstCard 是 OneToOne + limit 1 + orderByProps 的导航；C# 写成 BankCards.OrderBy(c => c.OpenTime).First()，SQL 相同
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testQueryFirstLimit3")]
     public async Task TestQueryFirstLimit3()
     {
         using var listen = SqlCapture.Listen();
@@ -222,7 +227,8 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
         listen.AssertParams("1(Integer),123(String)");
     }
 
-    [Fact, Upstream("mysql8/MySQL8Test3.java#testQueryFirstLimit4", Deviation = FirstCard)]
+    // 写法与 Java 不同、SQL 一致：Java 的 firstCard 是 OneToOne + limit 1 + orderByProps 的导航；C# 写成 BankCards.OrderBy(c => c.OpenTime).First()，SQL 相同
+    [Fact, Upstream("mysql8/MySQL8Test3.java#testQueryFirstLimit4")]
     public async Task TestQueryFirstLimit4()
     {
         using var listen = SqlCapture.Listen();

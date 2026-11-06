@@ -48,7 +48,8 @@ public sealed class QueryTest11(MySqlFixture fixture) : MySqlTest(fixture)
     }
 
     // Java 的 sqlSegment("1").asAnyType(..)：C# 的 Sql.Raw<T>("1")；Map 投影见类注释
-    [Fact, Upstream("QueryTest11.java#testx1", Deviation = "Map 逐键投影 Java 写 MapProxy.put，C# 写字典初始化 { \"id\", o.Id }；SQL 相同")]
+    // 写法与 Java 不同、SQL 一致：Map 逐键投影 Java 写 MapProxy.put，C# 写字典初始化 { \"id\", o.Id }；SQL 相同
+    [Fact, Upstream("QueryTest11.java#testx1")]
     public async Task Testx1()
     {
         using (var listen = SqlCapture.Listen())

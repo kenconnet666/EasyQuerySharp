@@ -106,7 +106,8 @@ public sealed partial class M8BankTest(Mysql8Fixture fixture) : Mysql8Test(fixtu
         listen.AssertParams("小明(String)");
     }
 
-    [Fact, Upstream("mysql8/M8BankTest.java#test10", Deviation = "Java 的 filterConfigure(NotNullOrEmptyValueFilter) 在 C# 里用 WhereIf 表达，这里条件都有值，SQL 相同")]
+    // 写法与 Java 不同、SQL 一致：Java 的 filterConfigure(NotNullOrEmptyValueFilter) 在 C# 里用 WhereIf 表达，这里条件都有值，SQL 相同
+    [Fact, Upstream("mysql8/M8BankTest.java#test10")]
     public async Task Test10()
     {
         using var listen = SqlCapture.Listen();

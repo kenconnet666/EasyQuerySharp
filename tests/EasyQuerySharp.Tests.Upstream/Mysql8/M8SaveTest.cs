@@ -213,7 +213,8 @@ public sealed class M8SaveTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
     }
 
     // 删除根：已加载的子对象从深到浅先删（中间表行、子对象的一对一），最后删根
-    [Fact, Upstream("mysql8/M8SaveTest.java#testDeleteAll", Deviation = "Java 的 include2 按路径写多段带出；C# 写成嵌套的 Include")]
+    // 写法与 Java 不同、SQL 一致：Java 的 include2 按路径写多段带出；C# 写成嵌套的 Include
+    [Fact, Upstream("mysql8/M8SaveTest.java#testDeleteAll")]
     public async Task TestDeleteAll()
     {
         var rootId = await Before();

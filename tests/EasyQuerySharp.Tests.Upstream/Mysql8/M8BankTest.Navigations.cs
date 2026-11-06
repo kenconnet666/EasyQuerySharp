@@ -25,7 +25,8 @@ public sealed partial class M8BankTest
     }
 
     // Java 的 subQueryConfigure(…, filterConfigure(NotNullOrEmptyValueFilter)) 只影响值为空的条件，这里条件都有值
-    [Fact, Upstream("mysql8/M8BankTest.java#test4", Deviation = "Java 给子查询单独配了值过滤；C# 的 UseValueFilter 作用于整条查询，这里条件都有值，SQL 相同")]
+    // 写法与 Java 不同、SQL 一致：Java 给子查询单独配了值过滤；C# 的 UseValueFilter 作用于整条查询，这里条件都有值，SQL 相同
+    [Fact, Upstream("mysql8/M8BankTest.java#test4")]
     public async Task Test4()
     {
         using var listen = SqlCapture.Listen();

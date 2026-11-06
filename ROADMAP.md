@@ -76,7 +76,7 @@ R → 1 → 2 → 3 → 4 → 5。
   - 引入 `Microsoft.CodeAnalysis.PublicApiAnalyzers`（只在开发期用），建立公共 API 基线。
 - [x] R.4 落地删减：search 的 45 个、SQL Server 2008 的 13 个用例在 `tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs` 标为不适用；文档站、AOT、原 M9 已记进 BACKLOG。
 - [x] R.5 文档对齐现状：`architecture.md` 按实际的模块、管线、抽象、分析器重写；0001–0003 按实现修订并改为已定（0002 的级联保存改指 0004）；`parity.md` 的 C# 写法按实际 API 刷新，状态列改成对应的阶段；旧 ROADMAP 里标 `[~]` 的项逐个核对，剩余内容已在阶段 1–4 或 BACKLOG 里。
-- [ ] R.6 复核偏离：把 224 条偏离按原因分类（C# 类型系统、API 形状、Java 的 bug、功能缺口），属于功能缺口的改回待做。重点看 nav.flat（26 条）、tracking（17 条）、save.aggregate（14 条）。
+- [x] R.6 复核偏离：224 条里 80 条只是 C# 写法不同、SQL 与 Java 逐字一致（flatElement 写成 Any、include2 写成嵌套 Include、字符串比较写成 `string.Compare`、Map 投影写成带 `[Column]` 的 DTO 等），改为已移植，理由留作注释；剩下 144 条是参数类型、别名编号、异常文本、C# 语义或 Java 自身的 bug 带来的真实差异。藏着功能缺口的几条记在 1.5、1.7、1.8。
 - [ ] R.7 代码走查：找出重复代码、死代码和过长的文件（`QueryBase`、`SqlDialect`、`SqlRenderer`、`SavePlan`），整理单独提交。
 
 完成标准：文档与代码一致；对标表里的待做只剩各阶段计划内的项；CI 全绿。
@@ -91,13 +91,14 @@ R → 1 → 2 → 3 → 4 → 5。
 - [ ] 1.2 沿导航拉平取列表：用 LINQ 的 `SelectMany`（`q.SelectMany(a => a.Bs).SelectMany(b => b.Cs).Select(c => c.Name)`）。用例是 QueryTest25 testToListFlat1 / test11a 和 RelationTest testOneToOne；做完后复核 nav.flat 的偏离能不能改回已移植。
 - [ ] 1.3 值对象 `[ValueObject]`。
 - [ ] 1.4 不追踪时的差异更新 `db.Update<T>().Changes(before, after)`。
-- [ ] 1.5 批量写入走 `DbBatch`。
+- [ ] 1.5 批量写入走 `DbBatch`。做完后复核按"每个实体一条语句"记的偏离：DeleteTest testBatchDelete、InsertTest testIncrement、UpdateTest updateTestBatch / updateTestBatch1 / updateTestBatch2。
 - [ ] 1.6 `Returning()`：PG 的 UPDATE / DELETE … RETURNING，其余方言在渲染期报错（fork ReturningSqlTest、ReturningLiveTest）。
-- [ ] 1.7 窗口取值函数省略排序时，沿用查询的 ORDER BY。
+- [ ] 1.7 窗口取值函数省略排序时，沿用查询的 ORDER BY；做完后 MySQL8Test3 nextTest3 的偏离改回已移植。
 - [ ] 1.8 零散用例：
   - QueryTest25 test11a1 / topicIntegerTest / xxx、QueryTest26 testAAA；
   - QueryTestRelationTest testRelation（Include 的配置并入平铺带出、分页后再按段取）；
   - fork ProxySmokeTest；
+  - 偏离里的功能缺口：M8BankTest whereSubQuery3（与集合导航同表的显式 EXISTS 也并进分组合并）、pgsql QueryTest19 tree7_2（树查询的层级列投影进 DTO 的同名属性）；
   - 骨架：GeneralFunctionsTest testDoubleConcat / MySQLInsertIgnore2UpdateKey / MySQLInsertIgnore2UpdateKey2，NumberFunctionsTest subQueryMySQL。
 
 ## 阶段 2 第一档方言
