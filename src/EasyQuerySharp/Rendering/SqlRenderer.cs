@@ -72,7 +72,7 @@ public sealed class SqlRenderer
             if (row > 0) r.Append(",");
             r.Append("(").WriteList(insert.Rows[row], ",").Append(")");
         }
-        if (insert.Conflict is { } conflict) dialect.WriteInsertConflict(r, conflict);
+        if (insert.Conflict is not null) dialect.WriteInsertConflict(r, insert);
         if (insert.Returning.Count > 0) dialect.WriteInsertReturning(r, insert.Returning);
         return r.Build();
     }

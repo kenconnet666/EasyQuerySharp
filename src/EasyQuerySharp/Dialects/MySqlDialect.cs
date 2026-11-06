@@ -53,10 +53,17 @@ public class MySqlDialect : SqlDialect
         if (mode == GroupByMode.Rollup) renderer.Append(" WITH ROLLUP");
     }
 
-    /// <summary>忽略冲突用 <c>INSERT IGNORE</c>。</summary>
-    public override string InsertKeyword(InsertStatement insert) => insert.Conflict is { Ignore: true } ? "INSERT IGNORE INTO " : "INSERT INTO ";
+    /// <summary>
+    /// 忽略冲突不写 <c>INSERT IGNORE</c>，改写成 <c>ON DUPLICATE KEY UPDATE 主键 = VALUES(主键)</c>（对应 Java 的 mysqlInsertIgnoreToUpdateKey）：
+    /// INSERT IGNORE 把类型不符、超长这类错误也降成警告，这样只忽略键冲突。实体要有非自增的主键。
+    /// 用法：<c>o.Use(new MySqlDialect { IgnoreConflictAsKeyUpdate = true }, dataSource)</c>。
+    /// </summary>
+    public bool IgnoreConflictAsKeyUpdate { get; init; }
 
-    /// <summary><c>ON DUPLICATE KEY UPDATE `c` = VALUES(`c`), …</c>（与 Java 的 MySQL 方言逐字一致）；没有要更新的列时不写。</summary>
+    /// <summary>忽略冲突用 <c>INSERT IGNORE</c>（<see cref="IgnoreConflictAsKeyUpdate"/> 时除外）。</summary>
+    public override string InsertKeyword(InsertStatement insert) =>
+        insert.Conflict is { Ignore: true } && !IgnoreConflictAsKeyUpdate ? "INSERT IGNORE INTO " : "INSERT INTO ";
+
     /// <summary>
     /// 值里含 % 或 _ 时转义后写成 <c>x LIKE CONCAT('%',?,'%') ESCAPE '\\'</c>（与 Java 的 MySQLLikeFunctionTemplateGenerator 一致），
     /// 否则是普通的 <c>x LIKE ?</c>。
@@ -76,15 +83,25 @@ public class MySqlDialect : SqlDialect
         renderer.Append(") ESCAPE '\\\\'");
     }
 
-    /// <inheritdoc />
-    public override void WriteInsertConflict(Rendering.SqlRenderer renderer, InsertConflict conflict)
+    /// <summary><c>ON DUPLICATE KEY UPDATE `c` = VALUES(`c`), …</c>（与 Java 的 MySQL 方言逐字一致）；没有要更新的列时不写。</summary>
+    public override void WriteInsertConflict(Rendering.SqlRenderer renderer, InsertStatement insert)
     {
-        if (conflict.Ignore || conflict.UpdateColumns!.Count == 0) return;
-        renderer.Append(" ON DUPLICATE KEY UPDATE ").Append(string.Join(", ", conflict.UpdateColumns.Select(c =>
+        var conflict = insert.Conflict!;
+        var columns = !conflict.Ignore ? conflict.UpdateColumns!.Select(c => c.Name).ToList()
+            : IgnoreConflictAsKeyUpdate ? KeyUpdateColumns(insert) : [];
+        if (columns.Count == 0) return;
+        renderer.Append(" ON DUPLICATE KEY UPDATE ").Append(string.Join(", ", columns.Select(c =>
         {
-            var name = QuoteIdentifier(c.Name);
+            var name = QuoteIdentifier(c);
             return $"{name} = VALUES({name})";
         })));
+    }
+
+    private static List<string> KeyUpdateColumns(InsertStatement insert)
+    {
+        var keys = insert.Table.Entity.KeyColumns.Where(k => !k.IsGenerated).Select(k => k.Name).ToList();
+        return keys.Count > 0 ? keys
+            : throw new InvalidOperationException($"{insert.Table.Entity.Type.Name} 没有非自增的主键：MySQL 的忽略冲突改写不成 ON DUPLICATE KEY UPDATE 主键 = VALUES(主键)");
     }
 
     /// <summary>与 Java 版逐字一致的建表格式：每列 <c>`列` 类型 NULL [ COMMENT '…'],</c> 一行，主键单独一行，<c>Engine=InnoDB</c>。</summary>

@@ -118,6 +118,8 @@ EasyQuerySharp.DateTruncUnit.Week = 3 -> EasyQuerySharp.DateTruncUnit
 EasyQuerySharp.DateTruncUnit.Year = 0 -> EasyQuerySharp.DateTruncUnit
 EasyQuerySharp.Dialects.FunctionWriter
 EasyQuerySharp.Dialects.MySqlDialect
+EasyQuerySharp.Dialects.MySqlDialect.IgnoreConflictAsKeyUpdate.get -> bool
+EasyQuerySharp.Dialects.MySqlDialect.IgnoreConflictAsKeyUpdate.init -> void
 EasyQuerySharp.Dialects.MySqlDialect.MySqlDialect() -> void
 EasyQuerySharp.Dialects.OracleDialect
 EasyQuerySharp.Dialects.OracleDialect.OracleDialect() -> void
@@ -1708,7 +1710,7 @@ override EasyQuerySharp.Dialects.MySqlDialect.Name.get -> string!
 override EasyQuerySharp.Dialects.MySqlDialect.QuoteIdentifier(string! identifier) -> string!
 override EasyQuerySharp.Dialects.MySqlDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
 override EasyQuerySharp.Dialects.MySqlDialect.WriteGroupBy(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! keys, EasyQuerySharp.SqlAst.GroupByMode mode) -> void
-override EasyQuerySharp.Dialects.MySqlDialect.WriteInsertConflict(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.InsertConflict! conflict) -> void
+override EasyQuerySharp.Dialects.MySqlDialect.WriteInsertConflict(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.InsertStatement! insert) -> void
 override EasyQuerySharp.Dialects.MySqlDialect.WriteJoinedDelete(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.DeleteStatement! statement) -> void
 override EasyQuerySharp.Dialects.MySqlDialect.WriteJoinedUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
 override EasyQuerySharp.Dialects.MySqlDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
@@ -2069,7 +2071,7 @@ virtual EasyQuerySharp.Dialects.SqlDialect.RecursiveWith.get -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.SupportsWriteReturning.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteGroupBy(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! keys, EasyQuerySharp.SqlAst.GroupByMode mode) -> void
-virtual EasyQuerySharp.Dialects.SqlDialect.WriteInsertConflict(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.InsertConflict! conflict) -> void
+virtual EasyQuerySharp.Dialects.SqlDialect.WriteInsertConflict(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.InsertStatement! insert) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteInsertOutput(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! returning) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteInsertReturning(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! returning) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteJoinedDelete(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.DeleteStatement! statement) -> void

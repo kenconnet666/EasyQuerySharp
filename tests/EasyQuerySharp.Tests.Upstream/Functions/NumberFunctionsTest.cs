@@ -72,83 +72,36 @@ public sealed class NumberFunctionsTest
         SqlOnly.AssertStatement(Db.Query<BlogEntity>().Select(b => new Draft<decimal?, int?, long?, decimal?>(Sql.Sum(b.Score), (int?)Sql.SumDistinct(b.Score), (long?)Sql.SumDistinct(b.Score), Sql.SumDistinct(b.Score, b.Title!.Contains("小说")))).ToStatement(), sql, parameters);
     }
 
-    [Fact(Skip = "待移植")]
-    [Upstream("NumberFunctionsTest.java#subQueryMySQL", Pending = true)]
-    public Task SubQueryMySQL()
-    {
-        // 期望 SQL：SELECT IFNULL(t2.`__any7__`,?) AS `value1` FROM `t_sys_user` t LEFT JOIN (SELECT t1.`uid` AS `__group_key1__`,COUNT(t1.`id`) AS `__count2__`,(COUNT(*) > 0) AS `__any3__`,(COUNT((CASE WHEN t1.`uid` IS NULL THEN ? ELSE NULL END)) > 0) AS `__any4__`,(COUNT(*) <= 0) AS `__none5__`,(COUNT((CASE WHEN t1.`uid` IS NULL THEN ? ELSE NULL END)) <= 0) AS `__none6__`,(COUNT((CASE WHEN t1.`id` <> ? THEN ? ELSE NULL END)) > 0) AS `__any7__` FROM `t_bank_card` t1 GROUP BY t1.`uid`) t2 ON t2.`__group_key1__` = t.`id` WHERE IFNULL(t2.`__count2__`,0) > ? AND IFNULL(t2.`__any3__`,?) = ? AND IFNULL(t2.`__any4__`,?) = ? AND IFNULL(t2.`__any4__`,?) = ? AND IFNULL(t2.`__none5__`,?) = ? AND IFNULL(t2.`__none6__`,?) = ? AND IFNULL(t2.`__none6__`,?) = ?
-        // 期望参数：false(Boolean),1(Integer),1(Integer),1(String),1(Integer),1(Long),false(Boolean),true(Boolean),false(Boolean),true(Boolean),false(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean)
-        // Java 原文：
-        // ListenerContextManager listenerContextManager = new ListenerContextManager();
-        // EasyEntityQuery easyEntityQuery = create(listenerContextManager, new MySQLDatabaseConfiguration());
-        // listenerContextManager.startCreateListen();
-        // 
-        // 
-        // try {
-        //     easyEntityQuery.queryable(SysUser.class)
-        //             .subQueryToGroupJoin(o -> o.bankCards())
-        //             .where(t_blog -> {
-        //                 t_blog.bankCards().count(s -> s.id()).gt(1L);
-        //                 t_blog.bankCards().any();
-        //                 t_blog.bankCards().where(bc->bc.uid().isNull()).any();
-        //                 t_blog.bankCards().any(bc->bc.uid().isNull());
-        //                 t_blog.bankCards().none();
-        //                 t_blog.bankCards().where(bc->bc.uid().isNull()).none();
-        //                 t_blog.bankCards().none(bc->bc.uid().isNull());
-        //             })
-        //             .select(t_blog -> Select.DRAFT.of(
-        //                     t_blog.bankCards().where(u -> u.id().ne("1")).anyValue()
-        //             )).toList();
-        // } catch (Exception ignored) {
-        //     System.out.println(ignored);
-        // }
-        // ListenerContext listenerContext = listenerContextManager.getListenContext();
-        // listenerContextManager.clear();
-        // 
-        // Assert.assertNotNull(listenerContext.getJdbcExecuteAfterArg());
-        // JdbcExecuteAfterArg jdbcExecuteAfterArg = listenerContext.getJdbcExecuteAfterArg();
-        // Assert.assertEquals("SELECT IFNULL(t2.`__any7__`,?) AS `value1` FROM `t_sys_user` t LEFT JOIN (SELECT t1.`uid` AS `__group_key1__`,COUNT(t1.`id`) AS `__count2__`,(COUNT(*) > 0) AS `__any3__`,(COUNT((CASE WHEN t1.`uid` IS NULL THEN ? ELSE NULL END)) > 0) AS `__any4__`,(COUNT(*) <= 0) AS `__none5__`,(COUNT((CASE WHEN t1.`uid` IS NULL THEN ? ELSE NULL END)) <= 0) AS `__none6__`,(COUNT((CASE WHEN t1.`id` <> ? THEN ? ELSE NULL END)) > 0) AS `__any7__` FROM `t_bank_card` t1 GROUP BY t1.`uid`) t2 ON t2.`__group_key1__` = t.`id` WHERE IFNULL(t2.`__count2__`,0) > ? AND IFNULL(t2.`__any3__`,?) = ? AND IFNULL(t2.`__any4__`,?) = ? AND IFNULL(t2.`__any4__`,?) = ? AND IFNULL(t2.`__none5__`,?) = ? AND IFNULL(t2.`__none6__`,?) = ? AND IFNULL(t2.`__none6__`,?) = ?", jdbcExecuteAfterArg.getBeforeArg().getSql());
-        // Assert.assertEquals("false(Boolean),1(Integer),1(Integer),1(String),1(Integer),1(Long),false(Boolean),true(Boolean),false(Boolean),true(Boolean),false(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean)", EasySQLUtil.sqlParameterToString(jdbcExecuteAfterArg.getBeforeArg().getSqlParameters().get(0)));
-        return Task.CompletedTask;
-    }
+    // 合并成分组 JOIN 的各种计数与 any / none：同样的条件只算一列（where(..).any() 与 any(..) 共用 __any4__）
+    [Fact, Upstream("NumberFunctionsTest.java#subQueryMySQL")]
+    public void SubQueryMySQL() =>
+        SqlOnly.AssertStatement(SqlOnly.Db("mysql").Query<Mysql8.SysUser>().GroupJoin(o => o.BankCards)
+                .Where(u => u.BankCards!.Select(s => s.Id).LongCount() > 1L
+                            && u.BankCards!.Any()
+                            && u.BankCards!.Where(bc => bc.Uid == null).Any()
+                            && u.BankCards!.Any(bc => bc.Uid == null)
+                            && !u.BankCards!.Any()
+                            && !u.BankCards!.Where(bc => bc.Uid == null).Any()
+                            && !u.BankCards!.Any(bc => bc.Uid == null))
+                .Select(u => new Draft<bool>(u.BankCards!.Where(x => x.Id != "1").Any()))
+                .ToStatement(),
+            "SELECT IFNULL(t2.`__any7__`,?) AS `value1` FROM `t_sys_user` t LEFT JOIN (SELECT t1.`uid` AS `__group_key1__`,COUNT(t1.`id`) AS `__count2__`,(COUNT(*) > 0) AS `__any3__`,(COUNT((CASE WHEN t1.`uid` IS NULL THEN ? ELSE NULL END)) > 0) AS `__any4__`,(COUNT(*) <= 0) AS `__none5__`,(COUNT((CASE WHEN t1.`uid` IS NULL THEN ? ELSE NULL END)) <= 0) AS `__none6__`,(COUNT((CASE WHEN t1.`id` <> ? THEN ? ELSE NULL END)) > 0) AS `__any7__` FROM `t_bank_card` t1 GROUP BY t1.`uid`) t2 ON t2.`__group_key1__` = t.`id` WHERE IFNULL(t2.`__count2__`,0) > ? AND IFNULL(t2.`__any3__`,?) = ? AND IFNULL(t2.`__any4__`,?) = ? AND IFNULL(t2.`__any4__`,?) = ? AND IFNULL(t2.`__none5__`,?) = ? AND IFNULL(t2.`__none6__`,?) = ? AND IFNULL(t2.`__none6__`,?) = ?",
+            "false(Boolean),1(Integer),1(Integer),1(String),1(Integer),1(Long),false(Boolean),true(Boolean),false(Boolean),true(Boolean),false(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean)");
 
-    [Fact(Skip = "待移植")]
+    // 同 subQueryMySQL：Oracle 没有布尔列，any / none 写成 CASE WHEN … THEN true ELSE false END
+    [Fact(Skip = "阶段 2（Oracle）：条件作为值投影时要写成 CASE WHEN … THEN ? ELSE ? END")]
     [Upstream("NumberFunctionsTest.java#subQueryORACLE", Pending = true)]
-    public Task SubQueryORACLE()
-    {
-        // 期望 SQL：SELECT NVL(t2."__any7__",?) AS "value1" FROM "t_sys_user" t LEFT JOIN (SELECT t1."uid" AS "__group_key1__",COUNT(t1."id") AS "__count2__",(CASE WHEN (COUNT(*) > 0) THEN ? ELSE ? END) AS "__any3__",(CASE WHEN (COUNT((CASE WHEN t1."uid" IS NULL THEN ? ELSE NULL END)) > 0) THEN ? ELSE ? END) AS "__any4__",(CASE WHEN (COUNT(*) <= 0) THEN ? ELSE ? END) AS "__none5__",(CASE WHEN (COUNT((CASE WHEN t1."uid" IS NULL THEN ? ELSE NULL END)) <= 0) THEN ? ELSE ? END) AS "__none6__",(CASE WHEN (COUNT((CASE WHEN t1."id" <> ? THEN ? ELSE NULL END)) > 0) THEN ? ELSE ? END) AS "__any7__" FROM "t_bank_card" t1 GROUP BY t1."uid") t2 ON t2."__group_key1__" = t."id" WHERE NVL(t2."__count2__",0) > ? AND NVL(t2."__any3__",?) = ? AND NVL(t2."__any4__",?) = ? AND NVL(t2."__any4__",?) = ? AND NVL(t2."__none5__",?) = ? AND NVL(t2."__none6__",?) = ? AND NVL(t2."__none6__",?) = ?
-        // 期望参数：false(Boolean),true(Boolean),false(Boolean),1(Integer),true(Boolean),false(Boolean),true(Boolean),false(Boolean),1(Integer),true(Boolean),false(Boolean),1(String),1(Integer),true(Boolean),false(Boolean),1(Long),false(Boolean),true(Boolean),false(Boolean),true(Boolean),false(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean)
-        // Java 原文：
-        // ListenerContextManager listenerContextManager = new ListenerContextManager();
-        // EasyEntityQuery easyEntityQuery = create(listenerContextManager, new OracleDatabaseConfiguration());
-        // listenerContextManager.startCreateListen();
-        // 
-        // 
-        // try {
-        //     easyEntityQuery.queryable(SysUser.class)
-        //             .subQueryToGroupJoin(o -> o.bankCards())
-        //             .where(t_blog -> {
-        //                 t_blog.bankCards().count(s -> s.id()).gt(1L);
-        //                 t_blog.bankCards().any();
-        //                 t_blog.bankCards().where(bc->bc.uid().isNull()).any();
-        //                 t_blog.bankCards().any(bc->bc.uid().isNull());
-        //                 t_blog.bankCards().none();
-        //                 t_blog.bankCards().where(bc->bc.uid().isNull()).none();
-        //                 t_blog.bankCards().none(bc->bc.uid().isNull());
-        //             })
-        //             .select(t_blog -> Select.DRAFT.of(
-        //                     t_blog.bankCards().where(u -> u.id().ne("1")).anyValue()
-        //             )).toList();
-        // } catch (Exception ignored) {
-        //     System.out.println(ignored);
-        // }
-        // ListenerContext listenerContext = listenerContextManager.getListenContext();
-        // listenerContextManager.clear();
-        // 
-        // Assert.assertNotNull(listenerContext.getJdbcExecuteAfterArg());
-        // JdbcExecuteAfterArg jdbcExecuteAfterArg = listenerContext.getJdbcExecuteAfterArg();
-        // Assert.assertEquals("SELECT NVL(t2.\"__any7__\",?) AS \"value1\" FROM \"t_sys_user\" t LEFT JOIN (SELECT t1.\"uid\" AS \"__group_key1__\",COUNT(t1.\"id\") AS \"__count2__\",(CASE WHEN (COUNT(*) > 0) THEN ? ELSE ? END) AS \"__any3__\",(CASE WHEN (COUNT((CASE WHEN t1.\"uid\" IS NULL THEN ? ELSE NULL END)) > 0) THEN ? ELSE ? END) AS \"__any4__\",(CASE WHEN (COUNT(*) <= 0) THEN ? ELSE ? END) AS \"__none5__\",(CASE WHEN (COUNT((CASE WHEN t1.\"uid\" IS NULL THEN ? ELSE NULL END)) <= 0) THEN ? ELSE ? END) AS \"__none6__\",(CASE WHEN (COUNT((CASE WHEN t1.\"id\" <> ? THEN ? ELSE NULL END)) > 0) THEN ? ELSE ? END) AS \"__any7__\" FROM \"t_bank_card\" t1 GROUP BY t1.\"uid\") t2 ON t2.\"__group_key1__\" = t.\"id\" WHERE NVL(t2.\"__count2__\",0) > ? AND NVL(t2.\"__any3__\",?) = ? AND NVL(t2.\"__any4__\",?) = ? AND NVL(t2.\"__any4__\",?) = ? AND NVL(t2.\"__none5__\",?) = ? AND NVL(t2.\"__none6__\",?) = ? AND NVL(t2.\"__none6__\",?) = ?", jdbcExecuteAfterArg.getBeforeArg().getSql());
-        // Assert.assertEquals("false(Boolean),true(Boolean),false(Boolean),1(Integer),true(Boolean),false(Boolean),true(Boolean),false(Boolean),1(Integer),true(Boolean),false(Boolean),1(String),1(Integer),true(Boolean),false(Boolean),1(Long),false(Boolean),true(Boolean),false(Boolean),true(Boolean),false(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean)", EasySQLUtil.sqlParameterToString(jdbcExecuteAfterArg.getBeforeArg().getSqlParameters().get(0)));
-        return Task.CompletedTask;
-    }
+    public void SubQueryORACLE() =>
+        SqlOnly.AssertStatement(SqlOnly.Db("oracle").Query<Mysql8.SysUser>().GroupJoin(o => o.BankCards)
+                .Where(u => u.BankCards!.Select(s => s.Id).LongCount() > 1L
+                            && u.BankCards!.Any()
+                            && u.BankCards!.Where(bc => bc.Uid == null).Any()
+                            && u.BankCards!.Any(bc => bc.Uid == null)
+                            && !u.BankCards!.Any()
+                            && !u.BankCards!.Where(bc => bc.Uid == null).Any()
+                            && !u.BankCards!.Any(bc => bc.Uid == null))
+                .Select(u => new Draft<bool>(u.BankCards!.Where(x => x.Id != "1").Any()))
+                .ToStatement(),
+            "SELECT NVL(t2.\"__any7__\",?) AS \"value1\" FROM \"t_sys_user\" t LEFT JOIN (SELECT t1.\"uid\" AS \"__group_key1__\",COUNT(t1.\"id\") AS \"__count2__\",(CASE WHEN (COUNT(*) > 0) THEN ? ELSE ? END) AS \"__any3__\",(CASE WHEN (COUNT((CASE WHEN t1.\"uid\" IS NULL THEN ? ELSE NULL END)) > 0) THEN ? ELSE ? END) AS \"__any4__\",(CASE WHEN (COUNT(*) <= 0) THEN ? ELSE ? END) AS \"__none5__\",(CASE WHEN (COUNT((CASE WHEN t1.\"uid\" IS NULL THEN ? ELSE NULL END)) <= 0) THEN ? ELSE ? END) AS \"__none6__\",(CASE WHEN (COUNT((CASE WHEN t1.\"id\" <> ? THEN ? ELSE NULL END)) > 0) THEN ? ELSE ? END) AS \"__any7__\" FROM \"t_bank_card\" t1 GROUP BY t1.\"uid\") t2 ON t2.\"__group_key1__\" = t.\"id\" WHERE NVL(t2.\"__count2__\",0) > ? AND NVL(t2.\"__any3__\",?) = ? AND NVL(t2.\"__any4__\",?) = ? AND NVL(t2.\"__any4__\",?) = ? AND NVL(t2.\"__none5__\",?) = ? AND NVL(t2.\"__none6__\",?) = ? AND NVL(t2.\"__none6__\",?) = ?",
+            "false(Boolean),true(Boolean),false(Boolean),1(Integer),true(Boolean),false(Boolean),true(Boolean),false(Boolean),1(Integer),true(Boolean),false(Boolean),1(String),1(Integer),true(Boolean),false(Boolean),1(Long),false(Boolean),true(Boolean),false(Boolean),true(Boolean),false(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean)");
 }

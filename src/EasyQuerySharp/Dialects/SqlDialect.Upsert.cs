@@ -49,8 +49,9 @@ public abstract partial class SqlDialect
     /// 写 VALUES 之后的冲突处理。默认是 PostgreSQL / SQLite 的写法（与 Java 的 PostgresSQLInsertSQLExpression 一致）：
     /// <c>ON CONFLICT (k) DO NOTHING</c>、<c>ON CONFLICT (k) DO UPDATE SET `c` = EXCLUDED.`c`</c>；没有要更新的列时不写。
     /// </summary>
-    public virtual void WriteInsertConflict(SqlRenderer renderer, InsertConflict conflict)
+    public virtual void WriteInsertConflict(SqlRenderer renderer, InsertStatement insert)
     {
+        var conflict = insert.Conflict!;
         if (conflict.Ignore)
         {
             renderer.Append(" ON CONFLICT");

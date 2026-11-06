@@ -137,62 +137,19 @@ public sealed class GeneralFunctionsTest
         SqlOnly.AssertStatement(Db.Query<DocBankCard>().Where(b => b.Type!.EndsWith("30%")).ToStatement(), sql, parameters);
     }
 
-    [Fact(Skip = "待移植")]
-    [Upstream("GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey", Pending = true)]
-    public Task MySQLInsertIgnore2UpdateKey()
-    {
-        // 期望 SQL：INSERT INTO `doc_bank_card` (`id`,`code`,`type`) VALUES (?,?,?) ON DUPLICATE KEY UPDATE `id` = VALUES(`id`)
-        // 期望参数：123(String),code(String),123(String)
-        // Java 原文：
-        // ListenerContextManager listenerContextManager = new ListenerContextManager();
-        // EasyEntityQuery easyEntityQuery = create2(listenerContextManager, new MySQLDatabaseConfiguration());
-        // listenerContextManager.startCreateListen();
-        // 
-        // try {
-        //     DocBankCard docBankCard = new DocBankCard();
-        //     docBankCard.setId("123");
-        //     docBankCard.setCode("code");
-        //     docBankCard.setType("123");
-        // 
-        //     easyEntityQuery.insertable(docBankCard).onConflictThen(null).executeRows();
-        // } catch (Exception ignored) {
-        // 
-        // }
-        // ListenerContext listenerContext = listenerContextManager.getListenContext();
-        // listenerContextManager.clear();
-        // 
-        // Assert.assertNotNull(listenerContext.getJdbcExecuteAfterArg());
-        // JdbcExecuteAfterArg jdbcExecuteAfterArg = listenerContext.getJdbcExecuteAfterArg();
-        // Assert.assertEquals("INSERT INTO `doc_bank_card` (`id`,`code`,`type`) VALUES (?,?,?) ON DUPLICATE KEY UPDATE `id` = VALUES(`id`)", jdbcExecuteAfterArg.getBeforeArg().getSql());
-        // Assert.assertEquals("123(String),code(String),123(String)", EasySQLUtil.sqlParameterToString(jdbcExecuteAfterArg.getBeforeArg().getSqlParameters().get(0)));
-        return Task.CompletedTask;
-    }
+    // Java 的 mysqlInsertIgnoreToUpdateKey：忽略冲突写成 ON DUPLICATE KEY UPDATE 主键 = VALUES(主键)，不用 INSERT IGNORE
+    private static readonly EasyDb IgnoreAsKeyUpdate = new(o => o.Use(new EasyQuerySharp.Dialects.MySqlDialect { IgnoreConflictAsKeyUpdate = true }));
 
-    [Fact(Skip = "待移植")]
-    [Upstream("GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey2", Pending = true)]
-    public Task MySQLInsertIgnore2UpdateKey2()
-    {
-        // Java 原文：
-        // ListenerContextManager listenerContextManager = new ListenerContextManager();
-        // EasyEntityQuery easyEntityQuery = create2(listenerContextManager, new MySQLDatabaseConfiguration());
-        // listenerContextManager.startCreateListen();
-        // 
-        // String error=null;
-        // try {
-        // 
-        //     TopicAuto entity = new TopicAuto();
-        //     entity.setStars(123);
-        //     entity.setTitle("123");
-        // 
-        //     easyEntityQuery.insertable(entity).onConflictThen(null).executeRows();
-        // } catch (Exception ex) {
-        //     error=ex.getMessage();
-        // }
-        // 
-        // Assert.assertEquals("[MySQL INSERT IGNORE INTO TO DUPLICATE KEY UPDATE] No non-auto-increment primary key found.", error);
-        return Task.CompletedTask;
-    }
+    [Fact, Upstream("GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey")]
+    public void MySQLInsertIgnore2UpdateKey() =>
+        SqlOnly.AssertStatement(IgnoreAsKeyUpdate.Insert(new DocBankCard { Id = "123", Code = "code", Type = "123" }).OnConflictIgnore().ToStatement(),
+            "INSERT INTO `doc_bank_card` (`id`,`code`,`type`) VALUES (?,?,?) ON DUPLICATE KEY UPDATE `id` = VALUES(`id`)", "123(String),code(String),123(String)");
 
+    // 只有自增主键：改写不了，报错
+    [Fact, Upstream("GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey2", Deviation = "异常文本不同：Java 是英文的 [MySQL INSERT IGNORE INTO TO DUPLICATE KEY UPDATE] No non-auto-increment primary key found.")]
+    public void MySQLInsertIgnore2UpdateKey2() =>
+        Assert.Contains("没有非自增的主键", Assert.Throws<InvalidOperationException>(() =>
+            IgnoreAsKeyUpdate.Insert(new TopicAuto { Stars = 123, Title = "123" }).OnConflictIgnore().ToSql()).Message);
     // 自增主键不写进 INSERT
     [Fact, Upstream("GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey3")]
     public void MySQLInsertIgnore2UpdateKey3() =>

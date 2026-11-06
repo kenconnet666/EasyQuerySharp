@@ -109,19 +109,32 @@ public sealed class PgQueryTest19(PgFixture fixture) : PgTest(fixture)
         listen.AssertParams("1(String)");
     }
 
-    private const string NoDeepInProjection = "Java 的 DTO 属性名与层级列同名时自动带上层级；C# 的投影里引用不到层级列，DTO 的 Deep1 不赋值，SQL 相同";
-
-    // 树结果再连接一张表，投影成 DTO 后拼树
-    [Fact, Upstream("pgsql/QueryTest19.java#tree7_1"), Upstream("pgsql/QueryTest19.java#tree7_2", Deviation = NoDeepInProjection)]
+    // 树结果再连接一张表，投影成 DTO 后拼树；层级列叫 deep，与 DTO 的 Deep1 对不上，不赋值
+    [Fact, Upstream("pgsql/QueryTest19.java#tree7_1")]
     public async Task Tree7_1()
     {
         using var listen = SqlCapture.Listen();
         var tree = await Db.Query<MyCategory>().Where(m => m.Id == "1").AsTreeCte(o => o.DeepColumnName = "deep")
             .LeftJoin<MyCategory>((m, b2) => m.Id == b2.Id)
             .Select((m1, m2) => new MyCategoryVO4 { Id = m1.Id, ParentId = m1.ParentId, Name = m1.Name, JoinName = m2.Name }).ToTreeAsync(Ct);
-        Assert.Single(tree);
+        Assert.Null(Assert.Single(tree).Deep1);
         listen.AssertSql("WITH RECURSIVE \"as_tree_cte\" AS ( (SELECT 0 AS \"deep\",t1.\"id\",t1.\"parent_id\",t1.\"name\" FROM \"category\" t1 WHERE t1.\"id\" = ?)  UNION ALL  (SELECT t2.\"deep\" + 1 AS \"deep\",t3.\"id\",t3.\"parent_id\",t3.\"name\" FROM \"as_tree_cte\" t2 INNER JOIN \"category\" t3 ON t3.\"parent_id\" = t2.\"id\") ) SELECT t.\"id\",t.\"parent_id\",t.\"name\",t6.\"name\" AS \"join_name\",t.\"deep\" FROM \"as_tree_cte\" t LEFT JOIN \"category\" t6 ON t.\"id\" = t6.\"id\"");
         listen.AssertParams("1(String)");
+    }
+
+    // 层级列改叫 deep1，与 DTO 的 Deep1 同名：按列名填上层级，根是 0
+    [Fact, Upstream("pgsql/QueryTest19.java#tree7_2")]
+    public async Task Tree7_2()
+    {
+        using var listen = SqlCapture.Listen();
+        var tree = await Db.Query<MyCategory>().Where(m => m.Id == "1").AsTreeCte(o => o.DeepColumnName = "deep1")
+            .LeftJoin<MyCategory>((m, b2) => m.Id == b2.Id)
+            .Select((m1, m2) => new MyCategoryVO4 { Id = m1.Id, ParentId = m1.ParentId, Name = m1.Name, JoinName = m2.Name }).ToTreeAsync(Ct);
+        listen.AssertSql("WITH RECURSIVE \"as_tree_cte\" AS ( (SELECT 0 AS \"deep1\",t1.\"id\",t1.\"parent_id\",t1.\"name\" FROM \"category\" t1 WHERE t1.\"id\" = ?)  UNION ALL  (SELECT t2.\"deep1\" + 1 AS \"deep1\",t3.\"id\",t3.\"parent_id\",t3.\"name\" FROM \"as_tree_cte\" t2 INNER JOIN \"category\" t3 ON t3.\"parent_id\" = t2.\"id\") ) SELECT t.\"id\",t.\"parent_id\",t.\"name\",t6.\"name\" AS \"join_name\",t.\"deep1\" FROM \"as_tree_cte\" t LEFT JOIN \"category\" t6 ON t.\"id\" = t6.\"id\"");
+        listen.AssertParams("1(String)");
+        var root = Assert.Single(tree);
+        Assert.Equal(0L, root.Deep1);
+        Assert.All(root.Children!, c => Assert.Equal(1L, c.Deep1));
     }
 
     // 自动映射成 DTO 再拼树；层级列改名为 deep1，DTO 的 Deep 对不上，不赋值

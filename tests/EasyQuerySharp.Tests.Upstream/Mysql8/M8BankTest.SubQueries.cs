@@ -164,8 +164,8 @@ public sealed partial class M8BankTest
         listen.AssertParams("1(Integer),储蓄卡(String),null(null),2(String),false(Boolean),true(Boolean)");
     }
 
-    // Java 把手写的 exists(subQueryable(…)) 也合并进了声明的分组；C# 的 Sql.Exists 照写成 EXISTS
-    [Fact, Upstream("mysql8/M8BankTest.java#whereSubQuery3", Deviation = "Java 把与导航同表的显式 EXISTS 也改写进分组合并；C# 只合并集合导航上的聚合，显式 Sql.Exists 照写成 EXISTS 子查询")]
+    // 声明了分组合并，但显式 Sql.Exists 不经过导航：不生成 LEFT JOIN，照写成 EXISTS 子查询（Java 同）
+    [Fact, Upstream("mysql8/M8BankTest.java#whereSubQuery3")]
     public async Task WhereSubQuery3()
     {
         using var listen = SqlCapture.Listen();

@@ -15,7 +15,7 @@
 
 ## 现状（2026-11-06）
 
-- 对标：已移植 1817、偏离 140、不适用 136、骨架 6、待做 305。
+- 对标：已移植 1821、偏离 139、不适用 136、骨架 3、待做 305。
 - 待做的分布：方言 206，平台能力 82（分库分表 48、code-first 14、表名 / schema / link 14、按对象筛选 6），其余零散 17。
 - 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
 
@@ -85,8 +85,8 @@ R → 1 → 2 → 3 → 4 → 5。
   - RelationTest testOneToOne（include2 按路径带出多段、各段带条件，再 select 到 VO）；
   - QueryTestRelationTest testRelation（Include 的配置并入平铺带出、分页后再按段取）；
   - fork ProxySmokeTest；
-  - 偏离里的功能缺口：M8BankTest whereSubQuery3（与集合导航同表的显式 EXISTS 也并进分组合并）、pgsql QueryTest19 tree7_2（树查询的层级列投影进 DTO 的同名属性）；
-  - 骨架：GeneralFunctionsTest testDoubleConcat / MySQLInsertIgnore2UpdateKey / MySQLInsertIgnore2UpdateKey2，NumberFunctionsTest subQueryMySQL。
+  - [x] 复核"功能缺口"：M8BankTest whereSubQuery3（Java 的显式 EXISTS 本来就不并进分组合并）、pgsql QueryTest19 tree7_2（层级列同名映射早已实现）都与 Java 一致，改回已移植；
+  - [x] 骨架：MySQLInsertIgnore2UpdateKey / 2（`new MySqlDialect { IgnoreConflictAsKeyUpdate = true }`，对应 Java 的 mysqlInsertIgnoreToUpdateKey）、NumberFunctionsTest subQueryMySQL；testDoubleConcat 用的是 Kingbase 方言，挪到 3.4。
 
 ## 阶段 2 第一档方言
 
@@ -94,7 +94,7 @@ R → 1 → 2 → 3 → 4 → 5。
   - Upstream 夹具改用 UpperCamelCase 命名；
   - 移植 MsSQLQueryTest、MsSQLUpdateJoinTest、MSSQLTest1、MSSQLMathQueryTest 共 38 个用例；
   - CI 的 mssql 任务加跑 Upstream 的 Mssql 命名空间。
-- [ ] 2.2 Oracle：实库验证；补骨架 NumberFunctionsTest subQueryORACLE。
+- [ ] 2.2 Oracle：实库验证；NumberFunctionsTest subQueryORACLE（用例已写好，缺条件作为值投影时的 `CASE WHEN … THEN ? ELSE ? END`）。
 - [ ] 2.3 UPDATE / DELETE 里用对一导航（`write.join`），在 SQL Server、Oracle、SQLite 上补齐（现在抛 NotSupportedException）；`DateTrunc` 也在这三个方言上补齐。
 - [ ] 2.4 L3 `LiveSuite` 从现在的 4 组扩到 TS 的 23 组，`LiveSuiteOptions` 按方言裁剪能力；在第一档的每个库上全部通过（MySQL 8.0.18、MariaDB 各算一个库）。
 
@@ -108,7 +108,7 @@ R → 1 → 2 → 3 → 4 → 5。
   - fork 的 HanaSqlTest、HanaTextSqlTest、三个 live 用例，以及 InsertSelect / JsonValueConverter 的 HANA 用例；
   - HANA Express 压低内存后进 CI，跑不起来就退回本地验证。
 - [ ] 3.3 DuckDB（进程内运行，CI 直接跑）：DuckDBQueryTest、AllTypeTest、DuckDBMathQueryTest，以及 duckdb 版的 M8Save4Test。
-- [ ] 3.4 PG 家族：Kingbase（MyKingbaseESTest，骨架 testKingbaseCte）、openGauss。
+- [ ] 3.4 PG 家族：Kingbase（MyKingbaseESTest，骨架 testKingbaseCte、GeneralFunctionsTest testDoubleConcat）、openGauss。
 - [ ] 3.5 ClickHouse（ClickHouseTest）、TDengine、Db2：Java 用例很少或没有，主要靠裁剪后的 L3 套件验证。
 - [ ] 3.6 H2 的 74 个用例：与方言无关的改到 SQLite 上移植，标为偏离；只测 H2 方言本身的标为不适用。
 - [ ] 3.7 跨方言的零散用例：ForUpdateDialectToSQLSmokeTest 剩下的方言、NullSafeSqlTest nullSafeEqualsPerDialect。
