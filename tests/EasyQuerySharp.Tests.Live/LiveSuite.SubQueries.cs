@@ -62,6 +62,11 @@ public abstract partial class LiveSuite
         var rows = await db.Query<User>().OrderBy(u => u.Id).Select(u => new Draft<string, string?>(u.Name, u.LatestPost!.Title)).ToListAsync(Ct);
         Assert.Equal([("alice", "sql 100%"), ("bob", "hello"), ("carol", null)], rows.Select(r => (r.Value1, r.Value2)));
         Assert.Equal(["bob"], await db.Query<User>().Where(u => u.LatestPost!.Title == "hello").Select(u => u.Name).ToListAsync(Ct));
+
+        // 与 null 比较：条件、投影、隐式子查询
+        Assert.Equal(["carol"], await db.Query<User>().Where(u => u.LatestPost == null).Select(u => u.Name).ToListAsync(Ct));
+        Assert.Equal([true, true, false], await db.Query<User>().OrderBy(u => u.Id).Select(u => u.LatestPost != null).ToListAsync(Ct));
+        Assert.Equal(["acme"], await db.Query<Company>().Where(c => c.Users!.Any(u => u.LatestPost != null)).Select(c => c.Name).ToListAsync(Ct));
     }
 
     // IN / NOT IN 一个子查询，以及标量子查询（金额高于平均值 503.6875 的只有 2000.00 那篇）

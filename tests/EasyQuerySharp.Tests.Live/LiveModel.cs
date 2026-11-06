@@ -51,8 +51,8 @@ public class User
     [Navigate(RelationType.OneToMany, TargetProperties = [nameof(Post.UserId)], ExtraFilter = nameof(BigPostFilter))]
     public List<Post>? BigPosts { get; set; }
 
-    /// <summary>每个用户最新的一篇帖子（对应 TS 的 oneOfMany）：一对一导航按 id 倒序取 1 条。</summary>
-    [Navigate(RelationType.OneToOne, TargetProperties = [nameof(Post.UserId)], PartitionOrder = PartitionOrder.KeyDescending, OrderBy = "Id desc", Limit = 1)]
+    /// <summary>每个用户最新的一篇帖子（对应 TS 的 oneOfMany）：一对一导航按 id 倒序取 1 条（取那一行按声明的 OrderBy，不用写 PartitionOrder）。</summary>
+    [Navigate(RelationType.OneToOne, TargetProperties = [nameof(Post.UserId)], OrderBy = "Id desc", Limit = 1)]
     public Post? LatestPost { get; set; }
 
     private static Expression<Func<Post, bool>> BigPostFilter => p => p.Amount > 100;

@@ -787,10 +787,11 @@ EasyQuerySharp.Metadata.NavigationMetadata.Target.get -> EasyQuerySharp.Metadata
 EasyQuerySharp.Metadata.NavigationMetadata.TargetColumns.get -> System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Metadata.ColumnMetadata!>!
 EasyQuerySharp.Metadata.NavigationMetadata.TargetMappingColumns.get -> System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Metadata.ColumnMetadata!>!
 EasyQuerySharp.Metadata.PartitionOrder
-EasyQuerySharp.Metadata.PartitionOrder.Key = 0 -> EasyQuerySharp.Metadata.PartitionOrder
-EasyQuerySharp.Metadata.PartitionOrder.KeyDescending = 3 -> EasyQuerySharp.Metadata.PartitionOrder
-EasyQuerySharp.Metadata.PartitionOrder.Navigation = 2 -> EasyQuerySharp.Metadata.PartitionOrder
-EasyQuerySharp.Metadata.PartitionOrder.None = 1 -> EasyQuerySharp.Metadata.PartitionOrder
+EasyQuerySharp.Metadata.PartitionOrder.Default = 0 -> EasyQuerySharp.Metadata.PartitionOrder
+EasyQuerySharp.Metadata.PartitionOrder.Key = 1 -> EasyQuerySharp.Metadata.PartitionOrder
+EasyQuerySharp.Metadata.PartitionOrder.KeyDescending = 4 -> EasyQuerySharp.Metadata.PartitionOrder
+EasyQuerySharp.Metadata.PartitionOrder.Navigation = 3 -> EasyQuerySharp.Metadata.PartitionOrder
+EasyQuerySharp.Metadata.PartitionOrder.None = 2 -> EasyQuerySharp.Metadata.PartitionOrder
 EasyQuerySharp.Metadata.RelationType
 EasyQuerySharp.Metadata.RelationType.ManyToMany = 3 -> EasyQuerySharp.Metadata.RelationType
 EasyQuerySharp.Metadata.RelationType.ManyToOne = 1 -> EasyQuerySharp.Metadata.RelationType

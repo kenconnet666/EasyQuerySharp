@@ -62,6 +62,10 @@ SELECT t."name" FROM "t_user" t LEFT JOIN (SELECT t1."id",t1."author_id",t1."cat
 SELECT t."name",t3."title" AS "top",t3."views" FROM "t_user" t LEFT JOIN (SELECT t1."id",t1."author_id",t1."category_id",t1."title",t1."status",t1."views",t1."published_at",(ROW_NUMBER() OVER (PARTITION BY t1."author_id" ORDER BY t1."views" DESC)) AS "__row__" FROM "t_post" t1) t3 ON (t3."author_id" = t."id" AND t3."__row__" = ?) WHERE t3."views" >= ? ORDER BY t."id" ASC;
 -- params: [1, 1000]
 
+-- RankedToOneNull：声明了条数的对一导航判空：有没有那一行
+SELECT t."name" FROM "t_user" t LEFT JOIN (SELECT t1."id",t1."author_id",t1."category_id",t1."title",t1."status",t1."views",t1."published_at",(ROW_NUMBER() OVER (PARTITION BY t1."author_id" ORDER BY t1."views" DESC)) AS "__row__" FROM "t_post" t1) t3 ON (t3."author_id" = t."id" AND t3."__row__" = ?) WHERE t3."id" IS NULL ORDER BY t."id" ASC;
+-- params: [1]
+
 -- DirectMapping：直达导航：[Navigate(DirectMapping = …)]
 SELECT t."title",t2."name" AS "company" FROM "t_post" t LEFT JOIN "t_user" t1 ON t1."id" = t."author_id" LEFT JOIN "t_company" t2 ON t2."id" = t1."company_id" WHERE t2."city" = ? ORDER BY t."id" ASC;
 -- params: ['上海']

@@ -309,13 +309,21 @@ internal sealed partial class ExpressionTranslator
     // 实体按主键判空；值对象是它的列全为 NULL（不为 null 是至少一列有值）
     private SqlExpr NullCheck(Expression operand, bool negated)
     {
-        if (BindingOf(operand) is ValueObjectBinding valueObject)
+        var binding = BindingOf(operand);
+        if (binding is ValueObjectBinding valueObject)
         {
             var columns = valueObject.Metadata.Columns.Select(c => (SqlExpr)new IsNullExpr(valueObject.Owner.EntityTable.Column(c), negated)).ToList();
             return columns.Count == 1 ? columns[0] : negated ? LogicalExpr.GroupedOr(columns) : LogicalExpr.Grouped(columns);
         }
-        if (BindingOf(operand) is not EntityBinding { Entity.KeyColumns: { Count: > 0 } keys } entity) return new IsNullExpr(Translate(operand), negated);
-        var checks = keys.Select(k => (SqlExpr)new IsNullExpr(entity.EntityTable.Column(k), negated)).ToList();
+        // 实体表，或按实体读的派生表（声明了条数的对一导航取到的那一行、投影整个实体后的派生表）
+        var entity = binding switch
+        {
+            EntityBinding e => e.Entity,
+            DerivedBinding { Entity: { } derived } => derived,
+            _ => null,
+        };
+        if (entity is not { KeyColumns: { Count: > 0 } keys }) return new IsNullExpr(Translate(operand), negated);
+        var checks = keys.Select(k => (SqlExpr)new IsNullExpr(binding!.OwnerColumn(k), negated)).ToList();
         return checks.Count == 1 ? checks[0] : LogicalExpr.Grouped(checks);
     }
 
