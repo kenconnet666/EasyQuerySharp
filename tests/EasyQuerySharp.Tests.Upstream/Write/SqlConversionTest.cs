@@ -56,6 +56,12 @@ public sealed class SqlConversionTest(MySqlFixture fixture) : MySqlTest(fixture)
         Assert.Equal("UPDATE `xxxxx` SET `username` = ?,`phone` = to_base64(AES_ENCRYPT(?,?)),`id_card` = ?,`address` = ?,`create_time` = ? WHERE `id` = ?",
             (await Failed(() => Db.Update(User()).AsTable("xxxxx").ExecuteAsync(Ct))).Text);
 
+    // 查询换表后照样解密：表不存在，执行失败时取发出的 SQL（两个 Java 用例只差空格）
+    [Fact, Upstream("UpdateTest.java#updateTest26"), Upstream("UpdateTest.java#updateTest26_1")]
+    public async Task UpdateTest26() =>
+        Assert.Equal("SELECT `id`,`username`,AES_DECRYPT(from_base64(`phone`),?) AS `phone`,`id_card`,`address`,`create_time` FROM `x123` WHERE `id` = ? LIMIT 1",
+            (await Failed(() => Db.Query<SysUserSQLEncryption>().AsTable("x123").Where(o => o.Id == "7").FirstAsync("未找到对应的数据", Ct))).Text);
+
     [Fact, Upstream("UpdateTest.java#updateTest27"), Upstream("UpdateTest.java#updateTest27_1")]
     public async Task UpdateTest27() =>
         Assert.Equal("UPDATE `x123` SET `phone` = to_base64(AES_ENCRYPT(?,?)) WHERE `id` = ?",
