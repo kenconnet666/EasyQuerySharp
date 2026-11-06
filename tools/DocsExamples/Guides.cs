@@ -9,7 +9,7 @@ namespace EasyQuerySharp.Docs;
 /// 指南（docs/guide/*.md）里的代码与 SQL 由卡片生成，不手写第二份。指南里有两种区域，区域之间的内容整段重写：
 /// <list type="bullet">
 /// <item><c>&lt;!-- card: 页面/方法名 sql=mysql,pgsql --&gt;</c> … <c>&lt;!-- /card --&gt;</c>：卡片的方法体，再给 <c>sql=</c> 列出的每种方言接一段它发出的 SQL（不写 <c>sql=</c> 时只有代码）；</item>
-/// <item><c>&lt;!-- snippet: 名字 --&gt;</c> … <c>&lt;!-- /snippet --&gt;</c>：docs/examples 里 <c>// &lt;snippet:名字&gt;</c> 与 <c>// &lt;/snippet:名字&gt;</c> 之间的代码，用于实体声明、配置这类不是卡片的代码。</item>
+/// <item><c>&lt;!-- snippet: 名字 --&gt;</c> … <c>&lt;!-- /snippet --&gt;</c>：docs/examples 或示例模型（samples/EasyQuerySharp.Samples）里 <c>// &lt;snippet:名字&gt;</c> 与 <c>// &lt;/snippet:名字&gt;</c> 之间的代码，用于实体声明、配置这类不是卡片的代码。</item>
 /// </list>
 /// 这样指南里的每段代码都随 DocsExamples 一起编译、在 SQLite 上实跑，SQL 随渲染器更新。
 /// </summary>
@@ -27,7 +27,8 @@ internal static partial class Guides
         if (!Directory.Exists(guides)) return;
         var sources = Directory.GetFiles(Path.Combine(root, "docs", "examples"), "*.cs").Order(StringComparer.Ordinal).ToList();
         var cards = ReadCards(sources);
-        var snippets = ReadSnippets(sources, problems);
+        // 示例模型（samples）里的实体、拦截器也可以作为片段引用
+        var snippets = ReadSnippets([.. sources, .. Directory.GetFiles(Path.Combine(root, "samples", "EasyQuerySharp.Samples"), "*.cs").Order(StringComparer.Ordinal)], problems);
         foreach (var path in Directory.GetFiles(guides, "*.md").Order(StringComparer.Ordinal))
         {
             var name = "docs/guide/" + Path.GetFileName(path);
@@ -107,7 +108,7 @@ internal static partial class Guides
             {
                 var name = m.Groups["name"].Value;
                 if (!snippets.TryAdd(name, Dedent(m.Groups["body"].Value.Split('\n'))))
-                    problems.Add($"代码片段 {name} 重名（docs/examples/{Path.GetFileName(source)}）");
+                    problems.Add($"代码片段 {name} 重名（{Path.GetFileName(source)}）");
             }
         }
         return snippets;

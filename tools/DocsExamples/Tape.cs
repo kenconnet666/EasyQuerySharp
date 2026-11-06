@@ -160,11 +160,31 @@ internal sealed class TapeCommand(Tape tape, SqliteCommand inner) : DbCommand
         var table = (DataTable)tape.Execute(inner, c =>
         {
             using var reader = c.ExecuteReader();
-            var t = new DataTable { Locale = System.Globalization.CultureInfo.InvariantCulture };
-            t.Load(reader);
-            return t;
+            return ReadTable(reader);
         })!;
         return table.CreateDataReader();
+    }
+
+    // 列的类型取第一个非 NULL 的值的类型：SQLite 的表达式列没有声明类型，第一行是 NULL 时 GetFieldType 报的是 byte[]，
+    // DataTable.Load 按它建列，后面的整数就装不进去了
+    private static DataTable ReadTable(SqliteDataReader reader)
+    {
+        var rows = new List<object[]>();
+        while (reader.Read())
+        {
+            var values = new object[reader.FieldCount];
+            reader.GetValues(values);
+            rows.Add(values);
+        }
+        var table = new DataTable { Locale = System.Globalization.CultureInfo.InvariantCulture };
+        for (var i = 0; i < reader.FieldCount; i++)
+        {
+            var type = rows.Select(r => r[i]).FirstOrDefault(v => v is not DBNull)?.GetType() ?? reader.GetFieldType(i);
+            var name = reader.GetName(i);
+            table.Columns.Add(table.Columns.Contains(name) ? name + "_" + i : name, type);
+        }
+        foreach (var row in rows) table.Rows.Add(row);
+        return table;
     }
 
     protected override void Dispose(bool disposing)

@@ -15,6 +15,8 @@
     <ItemGroup>
         <ProjectReference Include="..\..\src\EasyQuerySharp\EasyQuerySharp.csproj" />
         <ProjectReference Include="..\..\samples\EasyQuerySharp.Samples\EasyQuerySharp.Samples.csproj" />
+        <!-- 卡片和使用者的代码一样经过 [Projection] 生成器与分析器 -->
+        <ProjectReference Include="..\..\src\EasyQuerySharp.Generator\EasyQuerySharp.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <ItemGroup>
