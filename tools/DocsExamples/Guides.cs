@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace EasyQuerySharp.Docs;
 
 /// <summary>
-/// 指南（docs/guide/*.md）里的代码与 SQL 由卡片生成，不手写第二份。指南里有两种区域，区域之间的内容整段重写：
+/// 指南（docs/guide/*.md）与仓库根的 README.md 里的代码与 SQL 由卡片生成，不手写第二份。有两种区域，区域之间的内容整段重写：
 /// <list type="bullet">
 /// <item><c>&lt;!-- card: 页面/方法名 sql=mysql,pgsql --&gt;</c> … <c>&lt;!-- /card --&gt;</c>：卡片的方法体，再给 <c>sql=</c> 列出的每种方言接一段它发出的 SQL（不写 <c>sql=</c> 时只有代码）；</item>
 /// <item><c>&lt;!-- snippet: 名字 --&gt;</c> … <c>&lt;!-- /snippet --&gt;</c>：docs/examples 或示例模型（samples/EasyQuerySharp.Samples）里 <c>// &lt;snippet:名字&gt;</c> 与 <c>// &lt;/snippet:名字&gt;</c> 之间的代码，用于实体声明、配置这类不是卡片的代码。</item>
@@ -29,9 +29,10 @@ internal static partial class Guides
         var cards = ReadCards(sources);
         // 示例模型（samples）里的实体、拦截器也可以作为片段引用
         var snippets = ReadSnippets([.. sources, .. Directory.GetFiles(Path.Combine(root, "samples", "EasyQuerySharp.Samples"), "*.cs").Order(StringComparer.Ordinal)], problems);
-        foreach (var path in Directory.GetFiles(guides, "*.md").Order(StringComparer.Ordinal))
+        // 指南之外，仓库根的 README 也用同样的区域引用卡片
+        foreach (var path in Directory.GetFiles(guides, "*.md").Order(StringComparer.Ordinal).Append(Path.Combine(root, "README.md")))
         {
-            var name = "docs/guide/" + Path.GetFileName(path);
+            var name = Path.GetRelativePath(root, path).Replace('\\', '/');
             var original = File.ReadAllText(path).ReplaceLineEndings("\n");
             var text = CardRegion().Replace(original, m => RenderCard(m, name, cards, sql, problems));
             text = SnippetRegion().Replace(text, m => RenderSnippet(m, name, snippets, problems));

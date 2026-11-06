@@ -46,7 +46,7 @@ public static class TableNameExamples
         await db.ExecuteSqlAsync("CREATE TABLE t_tag_archive AS SELECT * FROM t_tag WHERE 1 = 0");
         try
         {
-            await db.Insert(new Tag { Id = 100, Name = "归档" }).AsTable("t_tag_archive").ExecuteAsync();
+            await db.Insert(new Tag { Name = "归档" }).AsTable("t_tag_archive").ExecuteAsync();
             return await db.Update<Tag>().AsSchema("main").Set(t => t.Name, "ORM 框架").Where(t => t.Id == 1).ExecuteAsync();
         }
         finally

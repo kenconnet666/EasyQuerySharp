@@ -1,6 +1,7 @@
 using EasyQuerySharp.Execution;
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.Querying;
+using EasyQuerySharp.Samples;
 using Microsoft.Data.Sqlite;
 
 namespace EasyQuerySharp.Docs;
@@ -84,6 +85,22 @@ public static class GettingStartedExamples
             .OrderBy(c => c.Id)
             .Select(c => new CompanyCard(c.Name, c.Employees!.Count(), c.Employees!.OrderBy(e => e.Id).Select(e => e.Name).ToList()))
             .ToListAsync();
+
+    /// <summary>README 里的结果行。</summary>
+    public sealed record UserCard(string Name, string? Company, long Posts, List<string> Titles);
+
+    [Example("start", "README 的例子：隐式 JOIN、隐式子查询、对象树、分页")]
+    public static Task<Page<UserCard>> Readme(EasyDb db) =>
+        db.Query<User>()
+            .Where(u => u.Company!.City == "杭州")                       // 对一导航：隐式 LEFT JOIN
+            .Where(u => u.Posts!.Any(p => p.Views >= 1000))              // 集合导航：EXISTS 子查询
+            .OrderBy(u => u.Name)
+            .Select(u => new UserCard(
+                u.Name,
+                u.Company!.Name,
+                u.Posts!.Count(),                                         // 标量子查询
+                u.Posts!.OrderByDescending(p => p.Views).Select(p => p.Title).ToList()))   // 对象树：按父键一次批量查询
+            .ToPageAsync(1, 10);
 
     [Example("start", "分页")]
     public static Task<Page<string>> FirstPage(EasyDb db) =>
