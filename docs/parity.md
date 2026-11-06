@@ -57,7 +57,7 @@
 | upsert | `write.upsert` | 13 | `.OnConflictIgnore(冲突列?)` / `.OnConflictUpdate(更新列?, 冲突列?)`：MySQL（INSERT IGNORE / ON DUPLICATE KEY UPDATE）、PG 与 SQLite（ON CONFLICT）、SQL Server 与 Oracle（单行 MERGE） | 阶段 1 |
 | 写哪些列、批量执行 | `write.strategy` | 26 | `.Columns(ColumnStrategy.OnlyNotNull)`，全局默认 `EasyDbOptions.UpdateStrategy`；批量写入走 `DbBatch`（阶段 1） | 阶段 1 |
 | UPDATE / DELETE 里用导航 | `write.join` | 10 | `db.Update<Card>().Set(c => new Card { Type = c.User!.Name }).Where(c => c.User!.Name!.Contains("x"))`：对一导航生成 JOIN。MySQL：`UPDATE t INNER JOIN … SET` / `DELETE t FROM … JOIN`；PostgreSQL：`UPDATE … FROM` / `DELETE … USING`；SQL Server、Oracle、SQLite 在阶段 2 | 阶段 2 |
-| 追踪与差异更新 | `tracking` | 62 | `using var tracking = db.BeginTracking();` 后查出的实体被追踪，`db.Update(entity)` 只更新改过的列；`AsTracking()` / `AsNoTracking()`；`db.GetTrackedChanges(entity)`；不追踪时的 `db.Update<T>().Changes(before, after)` 在阶段 1 | 阶段 1 |
+| 追踪与差异更新 | `tracking` | 62 | `using var tracking = db.BeginTracking();` 后查出的实体被追踪，`db.Update(entity)` 只更新改过的列；`AsTracking()` / `AsNoTracking()`；`db.GetTrackedChanges(entity)`；不追踪时 `db.Update(after).Changes(before)` 只写两份之间不同的列 | 完成 |
 | 聚合根保存 | `save.aggregate` | 39 | `db.Save(root).ExecuteAsync()`（必须在追踪作用域与事务里）；级联声明 `[Navigate(Cascade = Cascade.Delete)]`；`.With(SaveBehavior.X)`、`.SavePath(..)`、`.RemoveRoot()`、`[SaveKey]`，见 [0004](decisions/0004-aggregate-save.md) | 完成 |
 
 ## 列规则与扩展

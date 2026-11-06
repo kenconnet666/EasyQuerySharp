@@ -56,6 +56,17 @@ public sealed class PublicApiTest(MySqlFixture fixture) : MySqlTest(fixture)
             Db.Update<Topic>().SetIf(true, t => t.Title, "a").SetIf(false, t => t.Stars, 1).WhereById("x").ToSql());
 
     [Fact]
+    public void ChangesWritesOnlyTheColumnsThatDiffer()
+    {
+        var before = new Topic { Id = "1", Title = "a", Stars = 1, CreateTime = new DateTime(2020, 1, 1) };
+        var after = new Topic { Id = "1", Title = "b", Stars = 1, CreateTime = before.CreateTime };
+        Assert.Equal("UPDATE `t_topic` SET `title` = ? WHERE `id` = ?", Db.Update(after).Changes(before).ToSql());
+        // 没有不同的列：不发语句
+        Assert.Throws<InvalidOperationException>(() => Db.Update(new Topic { Id = "1", Title = "a" }).Changes(new Topic { Id = "1", Title = "a" }).ToSql());
+        Assert.Throws<InvalidOperationException>(() => Db.Update(after, before).Changes(before));
+    }
+
+    [Fact]
     public void DecrementIfSkipsFalseConditions() =>
         Assert.Equal("UPDATE `t_topic` SET `stars` = `stars` - ? WHERE `id` = ?",
             Db.Update<Topic>().DecrementIf(true, t => t.Stars, 1).DecrementIf(false, t => t.Stars, 2).WhereById("x").ToSql());

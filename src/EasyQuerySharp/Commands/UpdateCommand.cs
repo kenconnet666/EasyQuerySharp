@@ -36,6 +36,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     private List<ColumnMetadata>? _whereColumns;
     private List<string>? _onlyColumns;
     private List<string>? _ignoredColumns;
+    private T? _before;
 
     internal UpdateCommand(EasyDb db, IReadOnlyList<T>? entities) : base(db, entities)
     {
@@ -116,6 +117,20 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
 
     /// <summary><paramref name="condition"/> 为 true 时才自减。</summary>
     public UpdateCommand<T> DecrementIf<TValue>(bool condition, Expression<Func<T, TValue>> column, TValue by) => condition ? Decrement(column, by) : this;
+
+    /// <summary>
+    /// 不追踪时的差异更新：只写 <paramref name="before"/> 与要更新的实体之间值不同的列（主键除外），没有不同就不发语句；
+    /// 用 <see cref="WhereColumns"/> 时定位列取 <paramref name="before"/> 的值。只能用在更新一个实体时：
+    /// <c>db.Update(after).Changes(before)</c>。显式的列策略、<see cref="SetColumns"/> 优先于它。
+    /// </summary>
+    public UpdateCommand<T> Changes(T before)
+    {
+        ArgumentNullException.ThrowIfNull(before);
+        if (Entities is not [var after]) throw new InvalidOperationException("Changes 只能用在更新一个实体时：db.Update(after).Changes(before)");
+        if (ReferenceEquals(before, after)) throw new ArgumentException("before 与要更新的实体是同一个对象，比不出差异：传修改前的副本", nameof(before));
+        _before = before;
+        return this;
+    }
 
     /// <summary>按实体更新时写哪些列；显式指定后优先于追踪的差异（与 Java 的优先级一致：用户设置 &gt; 追踪 &gt; 默认）。</summary>
     public UpdateCommand<T> Columns(ColumnStrategy strategy)
@@ -236,8 +251,10 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     private void AddEntitySets(UpdateStatement update, EntityTableSource table, T entity, Tracking.TrackedEntry? tracked)
     {
         var skipped = _sets.Select(s => s.Column).ToHashSet(StringComparer.Ordinal);
-        // 显式策略、显式列优先；否则追踪的实体只写变化的列（与 Java 的优先级一致：用户设置 > 追踪 > 默认）
-        var changed = _strategy is null && _onlyColumns is null && tracked is not null ? tracked.ChangedColumns().ToHashSet() : null;
+        // 显式策略、显式列优先；否则 Changes 给出的原值、追踪的快照只写变化的列（与 Java 的优先级一致：用户设置 > 追踪 > 默认）
+        var changed = _strategy is not null || _onlyColumns is not null ? null
+            : _before is not null ? Entity.Columns.Where(c => !c.IsPrimaryKey && !Equals(c.GetProviderValue(_before), c.GetProviderValue(entity))).ToHashSet()
+            : tracked?.ChangedColumns().ToHashSet();
         // 定位列不写进 SET；差异更新时定位列取原始值，改过的定位列照常写；显式指定的列照常写（与 Java 一致）
         if (_whereColumns is not null && changed is null && _onlyColumns is null) skipped.UnionWith(_whereColumns.Select(c => c.PropertyName));
         // 没有显式策略、也不是差异更新时用全局的默认策略（Java 的 updateStrategy）
@@ -274,7 +291,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         var tracked = Db.Tracker.Find(entity);
         return _whereColumns.Select(c =>
         {
-            var value = tracked is not null ? tracked.Original[c] : c.GetProviderValue(entity);
+            var value = _before is not null ? c.GetProviderValue(_before) : tracked is not null ? tracked.Original[c] : c.GetProviderValue(entity);
             return value is null
                 ? (SqlExpr)new IsNullExpr(table.Column(c), false)
                 : new BinaryExpr(table.Column(c), SqlBinaryOperator.Equal, ExpressionTranslator.WriteValue(c, value));

@@ -70,6 +70,23 @@ public abstract partial class LiveSuite
         Assert.Equal(1, (await db.Query<User>().FindAsync(1L, Ct))!.Age);
     }
 
+    // 不追踪的差异更新：只写和修改前不同的列，别人同时改过的其它列不会被覆盖
+    [Fact]
+    public async Task UpdatesOnlyChangedColumnsWithoutTracking()
+    {
+        var db = await SeededAsync();
+        var before = (await db.Query<User>().FindAsync(1L, Ct))!;
+        var after = (await db.Query<User>().FindAsync(1L, Ct))!;
+        after.Age = 31;
+        await db.Update<User>().Set(u => u.Name, "renamed").Where(u => u.Id == 1).ExecuteAsync(Ct);
+        Assert.Equal(1, await db.Update(after).Changes(before).ExecuteAsync(Ct));
+        var row = (await db.Query<User>().FindAsync(1L, Ct))!;
+        Assert.Equal(("renamed", 31), (row.Name, row.Age));
+        // 两份一样：不发语句
+        var same = (await db.Query<User>().FindAsync(1L, Ct))!;
+        Assert.Equal(0, await db.Update(same).Changes(row).ExecuteAsync(Ct));
+    }
+
     // 同一个异步方法里先后开几个事务：提交、回滚后环境事务真正结束，之后的语句不再走旧事务，也能再开新事务
     [Fact]
     public async Task RunsTransactionsOneAfterAnotherInTheSameMethod()

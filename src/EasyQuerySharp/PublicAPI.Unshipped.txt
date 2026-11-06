@@ -66,6 +66,7 @@ EasyQuerySharp.Commands.SaveCommand<T>.RemoveRoot() -> EasyQuerySharp.Commands.S
 EasyQuerySharp.Commands.SaveCommand<T>.SavePath(params System.Linq.Expressions.Expression<System.Func<T!, object?>!>![]! paths) -> EasyQuerySharp.Commands.SaveCommand<T!>!
 EasyQuerySharp.Commands.SaveCommand<T>.With(EasyQuerySharp.Commands.SaveBehavior behavior) -> EasyQuerySharp.Commands.SaveCommand<T!>!
 EasyQuerySharp.Commands.UpdateCommand<T>
+EasyQuerySharp.Commands.UpdateCommand<T>.Changes(T! before) -> EasyQuerySharp.Commands.UpdateCommand<T!>!
 EasyQuerySharp.Commands.UpdateCommand<T>.ColumnSql<TValue>(System.Linq.Expressions.Expression<System.Func<T!, TValue>!>! column, string! template) -> EasyQuerySharp.Commands.UpdateCommand<T!>!
 EasyQuerySharp.Commands.UpdateCommand<T>.Columns(EasyQuerySharp.Commands.ColumnStrategy strategy) -> EasyQuerySharp.Commands.UpdateCommand<T!>!
 EasyQuerySharp.Commands.UpdateCommand<T>.Decrement<TValue>(System.Linq.Expressions.Expression<System.Func<T!, TValue>!>! column, TValue by) -> EasyQuerySharp.Commands.UpdateCommand<T!>!
