@@ -40,6 +40,9 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     /// </summary>
     public IReadOnlyList<NavigationMetadata> Via { get; init; } = [];
 
+    /// <summary>已在内存里的实体上带出（LoadIncludeAsync）：单表的子查询不写别名（与 Java 的 loadInclude 一致）。</summary>
+    public bool Unaliased { get; init; }
+
     /// <summary>经过的导航来自直达导航（<see cref="NavigationMetadata.DirectPath"/>）：中间表按 Java 直达导航的格式查（见 IncludeRunner）。</summary>
     public bool DirectVia { get; init; }
 
@@ -49,10 +52,10 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     /// <summary>
     /// 带出整个导航（Include / LoadIncludeAsync）的计划；直达导航展开成沿路径的各段导航，最后一段是带出的导航。
     /// </summary>
-    public static IncludePlan ForNavigation(MetadataRegistry registry, NavigationMetadata navigation, Func<QueryState, QueryState>? configure)
+    public static IncludePlan ForNavigation(MetadataRegistry registry, NavigationMetadata navigation, Func<QueryState, QueryState>? configure, bool unaliased = false)
     {
         if (navigation.DirectPath.Count == 0)
-            return new IncludePlan(navigation, navigation.Target.Type, null, [], navigation.IsCollection) { Configure = configure };
+            return new IncludePlan(navigation, navigation.Target.Type, null, [], navigation.IsCollection) { Configure = configure, Unaliased = unaliased };
         var chain = new List<NavigationMetadata>();
         var entity = navigation.Self;
         foreach (var name in navigation.DirectPath)
@@ -64,6 +67,7 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
         return new IncludePlan(chain[^1], chain[^1].Target.Type, null, [], navigation.IsCollection)
         {
             Configure = configure,
+            Unaliased = unaliased,
             Via = chain[..^1],
             DirectVia = true,
         };

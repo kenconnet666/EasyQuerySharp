@@ -53,7 +53,7 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
     private void SaveChildren(object entity, bool tracked, int depth)
     {
         var meta = db.Metadata.Get(entity.GetType());
-        foreach (var name in meta.NavigationProperties.Keys)
+        foreach (var name in NavigationOrder(entity, meta, tracked))
         {
             var nav = db.Metadata.FindNavigation(meta, name)!;
             var kind = KindOf(nav, meta);
@@ -83,6 +83,14 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
             else if (nav.Mapping is not null) SaveMappings(entity, nav, Items(value), original, depth);
             else SaveOwned(entity, nav, value, original, tracked, depth);
         }
+    }
+
+    // 已追踪的对象按加载导航的先后（与 Java 按 include 的顺序一致），没加载的排在后面（只用来检查）；新对象按声明顺序
+    private IEnumerable<string> NavigationOrder(object entity, EntityMetadata meta, bool tracked)
+    {
+        if (!tracked) return meta.NavigationProperties.Keys;
+        var loaded = db.Tracker.LoadedNavigations(entity);
+        return loaded.Concat(meta.NavigationProperties.Keys.Except(loaded, StringComparer.Ordinal));
     }
 
     // 多对一（别的聚合根）：从不级联，只把目标的键回填到本对象的外键
@@ -207,7 +215,7 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
     private void DeleteChildren(object entity, int depth)
     {
         var meta = db.Metadata.Get(entity.GetType());
-        foreach (var name in meta.NavigationProperties.Keys)
+        foreach (var name in db.Tracker.LoadedNavigations(entity))
         {
             var nav = db.Metadata.FindNavigation(meta, name)!;
             if (KindOf(nav, meta) != NavigationKind.ValueObject || nav.Cascade != Cascade.Delete || nav.DirectPath.Count > 0) continue;

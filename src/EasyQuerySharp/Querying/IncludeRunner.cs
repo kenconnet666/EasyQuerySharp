@@ -38,7 +38,9 @@ internal static partial class IncludeRunner
             };
             // 平铺带出（Java 的 @NavigateFlat）单表不写别名；其余带出的子查询在 Java 里总带别名 t
             var flat = plan.FlatPaths is not null;
-            var state = (plan.Configure?.Invoke(baseState) ?? baseState) with { ForceAlias = !flat };
+            var configured = plan.Configure?.Invoke(baseState) ?? baseState;
+            // LoadIncludeAsync 的单表子查询不写别名（Java 的 loadInclude）；按父对象取段时包成派生表，照常写
+            var state = configured with { ForceAlias = !flat && !(plan.Unaliased && configured.Limit is null && configured.Offset is null) };
             // 带出的子数据没写排序、条数时按导航声明的（Java 的 orderByProps、limit）
             if (state.OrderBys.IsEmpty && nav.DefaultOrder.Count > 0)
                 state = state with { OrderBys = [.. nav.DefaultOrder.Select(o => new OrderSpec(o.Key, o.Descending))] };

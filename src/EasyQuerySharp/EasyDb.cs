@@ -72,7 +72,7 @@ public sealed class EasyDb
         if (Translation.ExpressionTranslator.StripConvert(navigation.Body) is not System.Linq.Expressions.MemberExpression { Expression: System.Linq.Expressions.ParameterExpression, Member: System.Reflection.PropertyInfo property })
             throw new ArgumentException($"LoadIncludeAsync 需要直接的导航属性，如 u => u.Posts：{navigation}", nameof(navigation));
         var nav = Metadata.FindNavigation(Metadata.Get<T>(), property.Name) ?? throw new ArgumentException($"{typeof(T).Name}.{property.Name} 不是导航属性", nameof(navigation));
-        var plan = IncludePlan.ForNavigation(Metadata, nav, configure);
+        var plan = IncludePlan.ForNavigation(Metadata, nav, configure, unaliased: true);
         foreach (var entity in entities)
             if (entity is not null) plan.RegisterLoaded(entity, property);
         return IncludeRunner.RunAsync(this, [plan], IncludeContext.Default with { Track = Tracker.Active }, cancellationToken);

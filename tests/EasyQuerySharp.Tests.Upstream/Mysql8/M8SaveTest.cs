@@ -146,4 +146,128 @@ public sealed class M8SaveTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
             Assert.Contains("M8SaveRoot.M8SaveRootOne 没有被追踪", ex.Message);
         });
     }
+
+    // LoadIncludeAsync 加载的导航同样算追踪（不写别名）
+    [Fact, Upstream("mysql8/M8SaveTest.java#test2One3")]
+    public async Task Test2One3()
+    {
+        var rootId = await Before();
+        M8SaveRootOne? removed = null;
+        async Task<M8SaveRoot> Load()
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).SingleAsync(Ct);
+            await Db.LoadIncludeAsync([root], m => m.M8SaveRootOne, Ct);
+            return root;
+        }
+        void AssertLoaded(SqlCapture.Scope listen)
+        {
+            listen.AssertSql(0, "SELECT `id`,`name`,`code` FROM `m8_save_root` WHERE `id` = ?");
+            listen.AssertSql(1, "SELECT `id`,`root_id`,`name` FROM `m8_save_root_one` WHERE `root_id` IN (?)");
+            listen.AssertParams(1, $"{rootId}(String)");
+        }
+        await Invoke(async listen =>
+        {
+            var root = await Load();
+            removed = root.M8SaveRootOne;
+            root.M8SaveRootOne = null;
+            await Save(root);
+            Assert.Equal(3, listen.Events.Count);
+            AssertLoaded(listen);
+            listen.AssertSql(2, "DELETE FROM `m8_save_root_one` WHERE `id` = ?");
+            listen.AssertParams(2, $"{removed!.Id}(String)");
+        });
+        await Invoke(async listen =>
+        {
+            var root = await Load();
+            Assert.Null(root.M8SaveRootOne);
+            root.M8SaveRootOne = removed;
+            await Save(root);
+            Assert.Equal(3, listen.Events.Count);
+            AssertLoaded(listen);
+            listen.AssertSql(2, "INSERT INTO `m8_save_root_one` (`id`,`root_id`) VALUES (?,?)");
+            listen.AssertParams(2, $"{removed!.Id}(String),{rootId}(String)");
+        });
+    }
+
+    // 只保存一个根，另一个查出来的根不受影响
+    [Fact, Upstream("mysql8/M8SaveTest.java#test2One4")]
+    public async Task Test2One4()
+    {
+        await DeleteAll();
+        var rootId = await InsertOne();
+        var rootId2 = await InsertOne();
+        await Invoke(async listen =>
+        {
+            var root = await RootWithOne(rootId);
+            var removed = root.M8SaveRootOne;
+            root.M8SaveRootOne = null;
+            await Db.Query<M8SaveRoot>().WhereById(rootId2).SingleAsync(Ct);
+            await Save(root);
+            Assert.Equal(4, listen.Events.Count);
+            AssertLoadedRootWithOne(listen, rootId);
+            listen.AssertSql(2, "SELECT `id`,`name`,`code` FROM `m8_save_root` WHERE `id` = ?");
+            listen.AssertParams(2, $"{rootId2}(String)");
+            listen.AssertSql(3, "DELETE FROM `m8_save_root_one` WHERE `id` = ?");
+            listen.AssertParams(3, $"{removed!.Id}(String)");
+        });
+    }
+
+    // 删除根：已加载的子对象从深到浅先删（中间表行、子对象的一对一），最后删根
+    [Fact, Upstream("mysql8/M8SaveTest.java#testDeleteAll", Deviation = "Java 的 include2 按路径写多段带出；C# 写成嵌套的 Include")]
+    public async Task TestDeleteAll()
+    {
+        var rootId = await Before();
+        await Invoke(async listen =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId)
+                .Include(t => t.M8SaveRootOne).Include(t => t.M8SaveRootOne2).Include(t => t.M8SaveRoot2ManyList)
+                .Include(t => t.M8SaveRootManyList, m => m.Include(x => x.M8SaveRootManyOne))
+                .SingleAsync(Ct);
+            await Save(s => s.RemoveRoot(), root);
+            Assert.Equal(14, listen.Events.Count);
+            listen.AssertSql(7, "DELETE FROM `m8_save_root_many_one` WHERE `id` = ?");
+            listen.AssertSql(8, "DELETE FROM `m8_save_root_one` WHERE `id` = ?");
+            listen.AssertSql(9, "DELETE FROM `m8_save_root_middle_many` WHERE `root_id` = ? AND `many_id` = ?");
+            listen.AssertSql(10, "DELETE FROM `m8_save_root_middle_many` WHERE `root_id` = ? AND `many_id` = ?");
+            listen.AssertSql(11, "DELETE FROM `m8_save_root_many` WHERE `id` = ?");
+            listen.AssertSql(12, "DELETE FROM `m8_save_root_many` WHERE `id` = ?");
+            listen.AssertSql(13, "DELETE FROM `m8_save_root` WHERE `id` = ?");
+        });
+    }
+
+    // 一对多：保留一个、新加一个、拿掉一个，根也改了名
+    [Fact, Upstream("mysql8/M8SaveTest.java#testOne2Many1")]
+    public async Task TestOne2Many1()
+    {
+        var rootId = await Before();
+        await Invoke(async _ =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).Include(m => m.M8SaveRootManyList).SingleAsync(Ct);
+            root.Name = "namenew2";
+            root.M8SaveRootManyList = [root.M8SaveRootManyList![0], new M8SaveRootMany { Name = "newOneToMany2" }];
+            await Save(root);
+        });
+    }
+
+    [Fact, Upstream("mysql8/M8SaveTest.java#testOne2Many2")]
+    public async Task TestOne2Many2()
+    {
+        var rootId = await Before();
+        await Invoke(async listen =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).Include(m => m.M8SaveRootManyList).SingleAsync(Ct);
+            var list = root.M8SaveRootManyList!;
+            var remove = list[1];
+            list.RemoveAt(1);
+            var added = new M8SaveRootMany { Name = "newOneToMany2" };
+            list.Add(added);
+            await Save(root);
+            Assert.Equal(4, listen.Events.Count);
+            listen.AssertSql(1, "SELECT t.`id`,t.`root_id`,t.`name` FROM `m8_save_root_many` t WHERE t.`root_id` IN (?)");
+            listen.AssertSql(2, "DELETE FROM `m8_save_root_many` WHERE `id` = ?");
+            listen.AssertParams(2, $"{remove.Id}(String)");
+            listen.AssertSql(3, "INSERT INTO `m8_save_root_many` (`id`,`root_id`,`name`) VALUES (?,?,?)");
+            listen.AssertParams(3, $"{added.Id}(String),{rootId}(String),newOneToMany2(String)");
+        });
+    }
 }

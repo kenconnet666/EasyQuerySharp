@@ -107,6 +107,10 @@ internal sealed class Tracker(MetadataRegistry metadata)
             && navigations.TryGetValue(navigation, out children!);
     }
 
+    /// <summary>父实体在追踪查询里加载过的导航名，按加载的先后（Java 按 include 的顺序处理导航）。</summary>
+    public IReadOnlyList<string> LoadedNavigations(object owner) =>
+        _current.Value is { Depth: > 0 } state && state.Loaded.TryGetValue(owner, out var navigations) ? [.. navigations.Keys] : [];
+
     /// <summary>追踪键（实体类型 + 主键值）；主键为 null 时返回 null。</summary>
     public string? TrackKeyOf(object entity)
     {
