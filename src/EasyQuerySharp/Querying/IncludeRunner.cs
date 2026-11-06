@@ -15,16 +15,17 @@ internal static partial class IncludeRunner
 {
     /// <summary>
     /// 执行 <paramref name="plans"/>。子查询沿用主查询的拦截器选择（主查询 DisableInterceptors 时子数据同样不过滤，与 Java 一致）、
-    /// 配置参数和分组大小：父键多于分组大小时分成几条查询。
+    /// 配置参数和分组大小：父键多于分组大小时分成几条查询；中间表、带排序的多对多一条查完，IN 按分组大小拆成 OR（与 Java 一致）。
     /// </summary>
     public static async Task RunAsync(EasyDb db, IReadOnlyList<IncludePlan> plans, IncludeContext context, CancellationToken ct)
     {
+        var groupSize = context.GroupSize ?? db.Options.IncludeGroupSize;
         foreach (var plan in plans)
         {
             if (plan.Pending.Count == 0) continue;
             var nav = plan.Navigation;
 
-            var links = await ResolveLinksAsync(db, plan, ct).ConfigureAwait(false);
+            var links = await ResolveLinksAsync(db, plan, groupSize, ct).ConfigureAwait(false);
             if (links.Count == 0)
             {
                 // 一个子对象也没有：追踪查询照样记下"加载过、为空"
@@ -56,9 +57,15 @@ internal static partial class IncludeRunner
 
             var childrenByKey = new Dictionary<CompositeKey, List<object?>>();
             var nested = new List<IReadOnlyList<IncludePlan>>();
-            foreach (var targets in links.Select(l => l.Target).Distinct().Chunk(context.GroupSize ?? db.Options.IncludeGroupSize))
+            // 带排序的多对多（Java 的 EqualsManyToManyMappingOrderRowsGetter）：每个父对象的子数据按查询结果的顺序，不按中间表的顺序；
+            // 按目标键分批时一个父对象的子数据会落在几批里、各批分别排序，所以一条查完（Java 的 ignoreGroupSize）
+            var orderedManyToMany = nav.Mapping is not null && !state.OrderBys.IsEmpty;
+            var targetKeys = links.Select(l => l.Target).Distinct().ToArray();
+            IEnumerable<CompositeKey[]> chunks = orderedManyToMany ? [targetKeys] : targetKeys.Chunk(groupSize);
+            var firstRow = new Dictionary<CompositeKey, int>();
+            foreach (var targets in chunks)
             {
-                var compiled = CompileChunk(db, nav, state, targets, context);
+                var compiled = CompileChunk(db, nav, state, targets, groupSize, context);
                 var statement = SqlRenderer.Render(db.Options.Dialect, compiled.Sql);
                 var rows = await db.Executor.QueryAsync(statement, r => (Child: compiled.Query.Shaper(r), Key: CompositeKey.Read(r, compiled.Query.RelationOrdinals)), ct)
                     .ConfigureAwait(false);
@@ -67,6 +74,7 @@ internal static partial class IncludeRunner
                     if (key is null) continue;
                     if (!childrenByKey.TryGetValue(key.Value, out var list)) childrenByKey[key.Value] = list = [];
                     list.Add(child);
+                    firstRow.TryAdd(key.Value, firstRow.Count);
                 }
                 nested.Add(compiled.Query.Includes);
             }
@@ -76,6 +84,7 @@ internal static partial class IncludeRunner
                 foreach (var children in childrenByKey.Values)
                     for (var i = 0; i < children.Count; i++)
                         if (children[i] is { } child) children[i] = db.Tracker.AttachQueried(child);
+            if (orderedManyToMany) links = [.. links.OrderBy(l => firstRow.GetValueOrDefault(l.Target, int.MaxValue))];
             foreach (var (parent, target) in links)
             {
                 if (!plan.Pending.TryGetValue(parent, out var sinks) || !childrenByKey.TryGetValue(target, out var children)) continue;
@@ -102,10 +111,11 @@ internal static partial class IncludeRunner
     }
 
     // 按一组目标键编译带出查询；子数据带了 Take / Skip 时每个父对象各取一段，不是整体取一段
-    private static (CompiledQuery<object?> Query, SelectQuery Sql) CompileChunk(EasyDb db, NavigationMetadata nav, QueryState state, CompositeKey[] targets, IncludeContext context)
+    private static (CompiledQuery<object?> Query, SelectQuery Sql) CompileChunk(
+        EasyDb db, NavigationMetadata nav, QueryState state, CompositeKey[] targets, int groupSize, IncludeContext context)
     {
         CompiledQuery<object?> CompileFor(QueryState s, IReadOnlyCollection<CompositeKey> keys) => QueryCompiler.Compile<object?>(
-            s with { Wheres = s.Wheres.Add(WithExtraFilter(KeyFilter(nav, keys), nav.ExtraFilter)) }, relationKeys: nav.TargetColumns);
+            s with { Wheres = s.Wheres.Add(WithExtraFilter(KeyFilter(nav, keys, groupSize), nav.ExtraFilter)) }, relationKeys: nav.TargetColumns);
 
         // 外层从取好段的来源按子对象的投影取列，关联键写成 __relation__
         (CompiledQuery<object?> Query, SelectQuery Sql) Outer(TableSource source, bool aliased)
@@ -133,7 +143,7 @@ internal static partial class IncludeRunner
             // 每个父对象一段：取整个实体、按这个父对象的键过滤（单列写 =）、排序、取段，投影写在外层，外层不写 AS（与 Java 一致）
             var parts = targets.Select(t => QueryCompiler.Compile<object?>(state with
             {
-                Selector = null, Wheres = state.Wheres.Add(WithExtraFilter(KeyFilter(nav, [t], single: true), nav.ExtraFilter)),
+                Selector = null, Wheres = state.Wheres.Add(WithExtraFilter(KeyFilter(nav, [t], groupSize, single: true), nav.ExtraFilter)),
             }).Sql).ToList();
             return Outer(new UnionTableSource(parts, all: true) { IndependentAliases = true }, aliased: false);
         }

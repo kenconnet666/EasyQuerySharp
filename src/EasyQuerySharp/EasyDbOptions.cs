@@ -109,7 +109,10 @@ public sealed class EasyDbOptions
         set => field = Mutable(value);
     } = IncludeLimitMode.Partition;
 
-    /// <summary>带出查询每次最多按多少个父键查（<c>IN (…)</c> 的项数，超出时分成几条查询；对应 Java 的 relationGroupSize），默认 512。</summary>
+    /// <summary>
+    /// 带出查询每次最多按多少个父键查（<c>IN (…)</c> 的项数，超出时分成几条查询；对应 Java 的 relationGroupSize），默认 512。
+    /// 多对多的中间表和带排序的多对多只查一条，IN 按这个大小拆成 OR。
+    /// </summary>
     public int IncludeGroupSize
     {
         get;

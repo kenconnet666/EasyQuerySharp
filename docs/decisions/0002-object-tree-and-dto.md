@@ -77,7 +77,7 @@ public sealed class PostVo : IAutoIncludeConfigure<Post>
 
 1. **隐藏的键列**：拼装要用父主键和子表外键，DTO 没选这些列时，规划器自动补上，物化完再丢掉。
 2. **从叶子往根构造**：record 是不可变的，所以先把根行读进缓冲，再跑子查询，最后从叶子往根构造。构造代码在运行时编译，按形状缓存。
-3. **IN 列表的参数上限**：键先去重，每条带出查询最多带 `IncludeGroupSize`（默认 512）个父键，超出时分成几条；`MaxInClauseSize` 再把单个 IN 拆成 OR（Oracle 的 `IN` 最多 1000 项）。
+3. **IN 列表的参数上限**：键先去重，每条带出查询最多带 `IncludeGroupSize`（默认 512）个父键，超出时分成几条；`MaxInClauseSize` 再把单个 IN 拆成 OR（Oracle 的 `IN` 最多 1000 项）。两处例外与 Java 一致：多对多的中间表、导航上有排序的多对多只查一条，IN 按 `IncludeGroupSize` 拆成 `(… IN (…) OR … IN (…))`——分批会把一个父对象的子数据拆到几批里，各批分别排序就拼乱了；带排序的多对多按目标表查询结果的顺序挂到父对象上，不按中间表的顺序。
 4. **流式读取**：投影里有带出时不能 `AsAsyncEnumerable()`（会报错，要用 `ToListAsync`）。按批流式读取对象树（每批跑一次子查询）记在 BACKLOG。
 5. **一致性**：多次查询之间数据可能被改；需要时把整组查询放进同一个事务。`.AsSnapshot()` 记在 BACKLOG。
 6. **分页**：只作用在根查询上，所以 `ToPageAsync` 的分页数和总数天然正确，计数查询不带子查询。
