@@ -10,7 +10,7 @@ public sealed class MSSQLMathQueryTest(MsSqlFixture fixture) : MsSqlTest(fixture
 {
     // Java 的 floor() 在 SQL Server 上写成"非负用 FLOOR、负数用 CEILING"（即截断），对负数得到的不是向下取整，且 Java 自己的断言（setScale(0, FLOOR)）会因此失败；
     // C# 的 Math.Floor 仍写 FLOOR
-    private const string FloorDeviation = MathQueryTest.DoubleParams + "；Java 把 floor 写成与 truncate 相同的 CASE（对负数是 Java 的 bug），C# 写 FLOOR";
+    private const string FloorDeviation = "C# 的 Math.Pow / Atan2 只有 double 重载，pow 与 atan2 的参数是 Double（Java 是 BigDecimal），SQL Server 的 atan2 模板里同一个参数写六次；Java 的 DTO 代理 set() 同名列也写 AS，C# 同名不写；Java 把 floor 写成与 truncate 相同的 CASE（对负数是 Java 的 bug），C# 写 FLOOR";
 
     [Fact, Upstream("mssql/MSSQLMathQueryTest.java#testPropertyMath", Deviation = FloorDeviation)]
     public async Task TestPropertyMath()
