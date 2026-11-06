@@ -21,6 +21,9 @@ public static class SqlFunctionNames
     /// <summary>(a, b)：null 安全的相等（两边都为 NULL 也算相等），作为条件使用。MySQL <c>&lt;=&gt;</c>、PG <c>IS NOT DISTINCT FROM</c>、SQLite <c>IS</c>。</summary>
     public const string NullSafeEquals = "NullSafeEquals";
 
+    /// <summary>(value, csv)：value 在逗号分隔的列表 csv 里，作为条件使用。MySQL <c>FIND_IN_SET</c>，PG <c>= ANY(string_to_array(..))</c>，其余拼逗号后查位置。</summary>
+    public const string InCsv = "InCsv";
+
     /// <summary>(json, key)：对象成员，仍是 JSON。</summary>
     public const string JsonGet = "JsonGet";
 

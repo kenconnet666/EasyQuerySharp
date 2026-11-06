@@ -129,6 +129,7 @@ public class MySqlDialect : SqlDialect
         base.RegisterFunctions(f);
         f[SqlFunctionNames.NullOrDefault] = Call("IFNULL");
         f[SqlFunctionNames.NullSafeEquals] = Template("({0} <=> {1})");
+        f[SqlFunctionNames.InCsv] = Template("FIND_IN_SET({0},{1})");
         // JSON：键写进路径字面量（与 Java 的 JSONObjectFieldSQLFunction 等一致，数组下标的逗号后没有空格）
         f[SqlFunctionNames.JsonGet] = Template("JSON_EXTRACT({0}, '$.{1}')");
         f[SqlFunctionNames.JsonGetIndex] = Template("JSON_EXTRACT({0},'$[{1}]')");

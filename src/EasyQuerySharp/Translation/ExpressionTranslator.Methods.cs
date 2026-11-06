@@ -127,6 +127,9 @@ internal sealed partial class ExpressionTranslator
                 var (left, right) = TranslatePair(call.Arguments[0], call.Arguments[1]);
                 return new FunctionExpr(SqlFunctionNames.NullSafeEquals, [left, right]) { IsPredicate = true };
             }
+            // 列表是普通字符串，不随值的列做值转换，两边分别翻译
+            case nameof(Sql.InCsv):
+                return new FunctionExpr(SqlFunctionNames.InCsv, [Translate(StripConvert(call.Arguments[0])), Translate(call.Arguments[1])]) { IsPredicate = true };
             case nameof(Sql.IsoDayOfWeek):
                 return new FunctionExpr(SqlFunctionNames.DatePartOf(DatePart.IsoDayOfWeek), [Translate(call.Arguments[0])]);
             case nameof(Sql.Constant):

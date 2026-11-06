@@ -36,11 +36,19 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
             names.Length == 0 ? entity.KeyColumns : names.Select(entity.GetColumn).ToList();
 
         var mapping = attribute.Mapping is null ? null : Get(attribute.Mapping);
-        if (attribute.Relation == RelationType.ManyToMany && mapping is null)
+        var selfColumns = Columns(self, attribute.SelfProperties);
+        var targetColumns = Columns(target, attribute.TargetProperties);
+        if (attribute.KeyMatch == KeyMatch.SelfCsv)
+        {
+            if (attribute.Relation != RelationType.ManyToMany || mapping is not null || attribute.DirectMapping.Length > 0
+                || selfColumns.Count != 1 || targetColumns.Count != 1 || selfColumns[0].ClrType != typeof(string))
+                throw new InvalidOperationException($"{self.Type.Name}.{property.Name} 的 KeyMatch.SelfCsv 要用在没有中间表的多对多导航上，本表一个 string 列存逗号分隔的目标键、目标一列");
+        }
+        else if (attribute.Relation == RelationType.ManyToMany && mapping is null)
             throw new InvalidOperationException($"{self.Type.Name}.{property.Name} 是多对多导航，需要指定 Mapping（中间表实体）");
 
         return new NavigationMetadata(property, attribute, self, target,
-            Columns(self, attribute.SelfProperties), Columns(target, attribute.TargetProperties),
+            selfColumns, targetColumns,
             mapping,
             mapping is null ? [] : attribute.SelfMappingProperties.Select(mapping.GetColumn).ToList(),
             mapping is null ? [] : attribute.TargetMappingProperties.Select(mapping.GetColumn).ToList(),

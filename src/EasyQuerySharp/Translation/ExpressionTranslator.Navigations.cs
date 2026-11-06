@@ -237,6 +237,8 @@ internal sealed partial class ExpressionTranslator
             link.Limit = 1;
             relation.Add(new ExistsExpr(link, negated: false));
         }
+        else if (nav.KeyMatch == KeyMatch.SelfCsv)
+            relation.Add(new FunctionExpr(SqlFunctionNames.InCsv, [table.Column(nav.TargetColumns[0]), owner.OwnerColumn(nav.SelfColumns[0])]) { IsPredicate = true });
         else
         {
             var keys = nav.TargetColumns

@@ -28,8 +28,12 @@ public sealed class NavigationMetadata
         PartitionOrder = attribute.PartitionOrder;
         Limit = attribute.Limit > 0 ? attribute.Limit : null;
         Cascade = attribute.Cascade;
+        KeyMatch = attribute.KeyMatch;
         DefaultOrder = ParseOrder(attribute.OrderBy, target.Type);
     }
+
+    /// <summary>键怎样算匹配（<see cref="NavigateAttribute.KeyMatch"/>）。</summary>
+    public KeyMatch KeyMatch { get; }
 
     /// <summary>聚合保存时的级联方式（<see cref="NavigateAttribute.Cascade"/>）。</summary>
     public Cascade Cascade { get; }

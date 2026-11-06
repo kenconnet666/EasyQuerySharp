@@ -26,6 +26,7 @@ internal sealed partial class ExpressionTranslator
             current = mc.Arguments[0];
         }
         if (CollectionNavigation(current) is not var (owner, nav)) return null;
+        if (nav.KeyMatch != KeyMatch.Equal) throw Unsupported(call, $"{nav} 的键是逗号列表，不能按父行分区取第几个元素");
         chain.Reverse();
         var elementAt = call.Method.Name.StartsWith(nameof(Enumerable.ElementAt), System.StringComparison.Ordinal);
         var index = elementAt ? Convert.ToInt32(ClientEvaluator.Evaluate(call.Arguments[1]), System.Globalization.CultureInfo.InvariantCulture) : 0;

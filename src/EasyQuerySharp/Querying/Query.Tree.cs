@@ -69,7 +69,7 @@ public sealed partial class Query<T>
     // 指向自身类型的集合导航（Java 的 getTreeNavigateMetadata）
     private static NavigationMetadata? TreeNavigation(MetadataRegistry metadata, EntityMetadata entity) =>
         entity.NavigationProperties.Keys.Select(name => metadata.FindNavigation(entity, name))
-            .FirstOrDefault(n => n is { IsCollection: true } && n.Target.Type == entity.Type);
+            .FirstOrDefault(n => n is { IsCollection: true, KeyMatch: KeyMatch.Equal } && n.Target.Type == entity.Type);
 
     /// <summary>
     /// 读出后按父子键拼成树（对应 Java 的 toTreeList）：子节点挂到实体上指向自身的集合导航里，兄弟之间保持查询的顺序。

@@ -17,6 +17,7 @@
 - [0002 对象树与 DTO](decisions/0002-object-tree-and-dto.md)：所有写法归一成投影表达式；对一用 JOIN、对多分层批量查询；三种 DTO 写法；Include、级联保存、树。
 - [0003 测试对标](decisions/0003-testing-and-parity.md)：逐条移植 Java 用例；SQL 文本与 Java 对齐；测试分四层；本地与 CI 的分工。
 - [0004 聚合根保存](decisions/0004-aggregate-save.md)：按追踪快照的差异保存整个聚合；级联声明、导航分类、差异与语句顺序。
+- [0005 关联键的匹配方式](decisions/0005-relation-key-match.md)：`KeyMatch.SelfCsv`（本表一列存逗号分隔的目标键）与 `Sql.InCsv` 的各方言写法、三种场景与限制。
 
 ## 设计
 

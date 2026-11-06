@@ -16,3 +16,5 @@
 - 跟进上游新增的用例：对标基准冻结在 `sql-test` 2315 个（上游 main 3.3.1 已到 2410 个）。1.0 之后另起工作项，用 `ParityTests --rescan` 对比差异。
 - 带出查询的父键在 PG 上写成 `= ANY(?)`，只占一个参数（旧 ROADMAP 4.4）：现在按 `IncludeGroupSize` 分批 IN，够用；基准显示参数绑定是瓶颈时再做。
 - 投影里直接写非导航的关联查询（`Select(o => new { o.No, Lines = db.Query<Line>().Where(l => l.OrderNo == o.No).ToList() })`），规划器自动按键批量（旧 ROADMAP 4.9）：现在用 `FillMany` / `FillOne` 表达，Java 的 fill 用例都已覆盖。
+- 任意关联条件的导航（TS 的 `r.manyOn(.., (a, b) => b.id.inCsv(a.ids))`）：查询时本表自连接成派生表按主键对上，带出要在内存里求逆；现在只有 `KeyMatch.SelfCsv`（0005）。
+- 逗号列表键的带出在 MySQL 上是 `FIND_IN_SET(列,?)`，用不上索引：目标表大时可以改成拆好的 `IN (…)`；现在与 Java 一致。

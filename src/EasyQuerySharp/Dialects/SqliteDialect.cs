@@ -85,6 +85,8 @@ public class SqliteDialect : SqlDialect
         base.RegisterFunctions(f);
         f[SqlFunctionNames.Length] = Call("LENGTH");
         f[SqlFunctionNames.NullSafeEquals] = Template("({0} IS {1})");
+        // instr 精确匹配、区分大小写；LIKE 不区分 ASCII 大小写，键里的 % _ 还会被当通配符
+        f[SqlFunctionNames.InCsv] = Template("(instr(',' || {1} || ',', ',' || {0} || ',') > 0)");
         // JSON：json_extract 对标量返回 SQL 值、对对象 / 数组返回 JSON 文本，取值与取文本同一个写法
         f[SqlFunctionNames.JsonGet] = Template("json_extract({0},'$.{1}')");
         f[SqlFunctionNames.JsonGetIndex] = Template("json_extract({0},'$[{1}]')");

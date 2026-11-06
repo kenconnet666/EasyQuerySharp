@@ -157,6 +157,7 @@ public class OracleDialect : SqlDialect
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {
         base.RegisterFunctions(f);
+        f[SqlFunctionNames.InCsv] = Template("(INSTR(',' || {1} || ',', ',' || {0} || ',') > 0)");
         f[SqlFunctionNames.NullOrDefault] = Call("NVL");
         f[SqlFunctionNames.Concat] = Infix(" || ");
         f[SqlFunctionNames.Length] = Call("LENGTH");

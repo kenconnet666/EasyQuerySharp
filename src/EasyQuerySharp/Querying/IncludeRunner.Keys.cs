@@ -16,6 +16,8 @@ internal static partial class IncludeRunner
     /// </summary>
     private static async Task<List<(CompositeKey Parent, CompositeKey Target)>> ResolveLinksAsync(EasyDb db, IncludePlan plan, CancellationToken ct)
     {
+        if (plan.Via.FirstOrDefault(v => v.KeyMatch != KeyMatch.Equal) is { } csvStep)
+            throw new NotSupportedException($"带出路径经过的 {csvStep} 的键是逗号列表，不能作为中间一段");
         var links = plan.Pending.Keys.Select(k => (Parent: k, Target: k)).ToList();
         for (var i = 0; i < plan.Via.Count && links.Count > 0; i++)
         {
@@ -28,7 +30,7 @@ internal static partial class IncludeRunner
         }
         if (plan.Navigation.Mapping is { } mapping && links.Count > 0)
             links = Compose(links, await LoadLinksAsync(db, plan.Navigation, mapping, links.Select(l => l.Target), ct).ConfigureAwait(false));
-        return links;
+        return plan.Navigation.KeyMatch == KeyMatch.SelfCsv ? SplitCsv(links, plan.Navigation.TargetColumns[0].ClrType) : links;
 
         // (父, 中间键) 与 (中间键, 下一段键) 连成 (父, 下一段键)；同一对只留一个
         static List<(CompositeKey Parent, CompositeKey Target)> Compose(List<(CompositeKey Parent, CompositeKey Target)> links, List<(CompositeKey From, CompositeKey To)> step)
@@ -36,6 +38,37 @@ internal static partial class IncludeRunner
             var byFrom = step.ToLookup(s => s.From, s => s.To);
             return links.SelectMany(l => byFrom[l.Target].Select(to => (l.Parent, Target: to))).Distinct().ToList();
         }
+    }
+
+    // 父键是逗号列表：拆成 (父, 目标键) 对，与 FIND_IN_SET 一样不去空格；空项、转不成目标键类型的项不匹配任何目标
+    private static List<(CompositeKey Parent, CompositeKey Target)> SplitCsv(List<(CompositeKey Parent, CompositeKey Target)> links, Type keyType) =>
+        links.SelectMany(l => ((string)l.Target.First).Split(',')
+                .Select(item => TryConvert(item, keyType) is { } key ? CompositeKey.Of([key]) : null)
+                .OfType<CompositeKey>().Select(target => (l.Parent, Target: target)))
+            .Distinct().ToList();
+
+    private static object? TryConvert(string item, Type type)
+    {
+        if (item.Length == 0) return null;
+        try
+        {
+            return ValueReader.ConvertTo(item, type);
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
+    }
+
+    // 按目标键取子数据的条件：键是逗号列表时写成 Sql.InCsv(目标键, "k1,k2,…")（与 Java 的 FIND_IN_SET 一致），否则 IN / 复合键 OR
+    private static LambdaExpression KeyFilter(NavigationMetadata nav, IReadOnlyCollection<CompositeKey> keys)
+    {
+        if (nav.KeyMatch == KeyMatch.Equal) return KeyIn(nav.Target.Type, nav.TargetColumns, keys);
+        var p = Expression.Parameter(nav.Target.Type, "x");
+        var column = nav.TargetColumns[0];
+        var list = string.Join(",", keys.Select(k => Convert.ToString(k.First, System.Globalization.CultureInfo.InvariantCulture)).Distinct());
+        return Expression.Lambda(Expression.Call(typeof(Sql).GetMethod(nameof(Sql.InCsv))!.MakeGenericMethod(column.Property.PropertyType),
+            Expression.Property(p, column.Property), Expression.Constant(list)), p);
     }
 
     /// <summary>

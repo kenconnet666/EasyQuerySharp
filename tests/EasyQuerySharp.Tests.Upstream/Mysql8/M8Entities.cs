@@ -123,6 +123,37 @@ public class M8UserBook
     public decimal? BookPrice { get; set; }
 }
 
+/// <summary>对应 Java：mysql8/entity/M8UserBookIds（book_ids 存逗号分隔的书 id，导航按 relationPropertyStrategy = "find_in_set" 匹配）。</summary>
+[Table("m8_user_book_ids")]
+public class M8UserBookIds
+{
+    [Column(PrimaryKey = true)]
+    public string? UserId { get; set; }
+
+    public string? UserName { get; set; }
+
+    public int? UserAge { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+
+    public string? BookIds { get; set; }
+
+    [Navigate(RelationType.ManyToMany, SelfProperties = [nameof(BookIds)], TargetProperties = [nameof(M8UserBook2.BookId)], KeyMatch = KeyMatch.SelfCsv)]
+    public List<M8UserBook2>? Books { get; set; }
+}
+
+/// <summary>对应 Java：mysql8/entity/M8UserBook2。</summary>
+[Table("m8_user_book2")]
+public class M8UserBook2
+{
+    [Column(PrimaryKey = true)]
+    public string? BookId { get; set; }
+
+    public string? BookName { get; set; }
+
+    public decimal? BookPrice { get; set; }
+}
+
 /// <summary>对应 Java：mysql8/entity/M8UserRole。</summary>
 [Table("m8_user_role")]
 public class M8UserRole

@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1815、偏离 140、不适用 136、骨架 6、待做 307。
+合计：已移植 1817、偏离 140、不适用 136、骨架 6、待做 305。
 
 ## 按能力
 
@@ -37,8 +37,8 @@
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 51 | 1 | 3 | 0 | 1 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 61 | 2 | 2 | 2 | 0 |
-| include 带出导航 | `nav.include` | M4 | 37 | 35 | 1 | 0 | 0 | 1 |
-| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 137 | 3 | 1 | 0 | 1 |
+| include 带出导航 | `nav.include` | M4 | 37 | 36 | 1 | 0 | 0 | 0 |
+| 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 138 | 3 | 1 | 0 | 0 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 23 | 2 | 0 | 0 | 0 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 5 | 2 | 1 | 0 | 1 |
 | 列加密 | `column.encryption` | M5 | 8 | 8 | 0 | 0 | 0 | 0 |
@@ -1690,7 +1690,7 @@
 | mysql8/M8IncludeLimitTest.java#testIncludeLimitPagingUnionAll | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8IncludeLimitTest.cs:42 |  |
 | mysql8/M8IncludeOrderTest.java#testOrde2r | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8IncludeOrderTest.cs:16 |  |
 | mysql8/M8IncludeOrderTest.java#testOrder | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8IncludeOrderTest.cs:7 |  |
-| mysql8/M8Test1.java#testRelationColumns1 | 待做 |  | `SELECT 'user_id','user_name','user_age','create_time','book_ids' FROM 'm8_user_book_ids'` |
+| mysql8/M8Test1.java#testRelationColumns1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8RelationColumnsTest.cs:38 | `SELECT 'user_id','user_name','user_age','create_time','book_ids' FROM 'm8_user_book_ids'` |
 | mysql8/M8Test1.java#testSelfTargetTypeDiff | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Test1.cs:67：Java 的异常来自 MySQL 驱动（Cannot determine value type from string 'u1'）；C# 在把父键转成目标列的类型时就抛出 FormatException |  |
 | mysql8/MySQL8Test3.java#testQueryFirstLimit1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:391 | `SELECT t2.'id' AS 'id',t2.'uid' AS 'uid',t2.'code' AS 'code',t2.'type' AS 'type',t2.'bank_id' AS 'ba…` |
 | mysql8/MySQL8Test4.java#includeOneTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:254 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
@@ -1832,7 +1832,7 @@
 | mysql8/M8BankTest.java#whereSubQuery5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:187 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (SELECT COUNT(*) …` |
 | mysql8/M8QueryTest.java#whereObject5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8QueryTest.cs:47 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
 | mysql8/M8Test1.java#testMany | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Test1.cs:42 |  |
-| mysql8/M8Test1.java#testRelationColumns | 待做 |  | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time',t.'book_ids' FROM 'm8_user_book_ids' t…` |
+| mysql8/M8Test1.java#testRelationColumns | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8RelationColumnsTest.cs:27 | `SELECT t.'user_id',t.'user_name',t.'user_age',t.'create_time',t.'book_ids' FROM 'm8_user_book_ids' t…` |
 | mysql8/ManyJoinTest.java#manyGroupTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:11 |  |
 | mysql8/ManyJoinTest.java#test10GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:373 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |
 | mysql8/ManyJoinTest.java#test11GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:385 | `SELECT t.'name' AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 't_sys_user' t LEFT JOIN (SEL…` |

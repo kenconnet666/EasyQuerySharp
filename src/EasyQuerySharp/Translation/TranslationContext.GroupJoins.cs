@@ -15,8 +15,9 @@ internal sealed partial class TranslationContext
     /// </summary>
     public GroupJoinPlan? GroupJoinFor(SourceBinding owner, NavigationMetadata navigation, GroupJoinWindow? window = null, NavigationTableOptions options = default)
     {
-        // 所属方可以是实体表，也可以是投影了整个实体的派生表（如 Part 的 Entity）
-        if (owner.OwnerEntity is null) return null;
+        // 所属方可以是实体表，也可以是投影了整个实体的派生表（如 Part 的 Entity）。
+        // 键是逗号列表时一行目标属于多个父行，没法按目标的键分组：照常写成子查询（与 Java 一致，见 0005）
+        if (owner.OwnerEntity is null || navigation.KeyMatch != KeyMatch.Equal) return null;
         if (parent is not null && !Owns(owner.Table)) return parent.GroupJoinFor(owner, navigation, window, options);
         var spec = GroupJoinSpecs.LastOrDefault(s => s.Member == navigation.Property.Name && s.OwnerType.IsAssignableFrom(navigation.Self.Type));
         if (spec is { Enabled: false } || (spec is null && !navigation.GroupJoin && !GroupJoinAll)) return null;

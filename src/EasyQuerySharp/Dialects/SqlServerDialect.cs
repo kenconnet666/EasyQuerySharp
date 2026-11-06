@@ -161,6 +161,8 @@ public class SqlServerDialect : SqlDialect
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {
         base.RegisterFunctions(f);
+        // 用 + 拼接：列表为 NULL 时整体为 NULL，不会误匹配
+        f[SqlFunctionNames.InCsv] = Template("(CHARINDEX(',' + CAST({0} AS NVARCHAR(MAX)) + ',', ',' + {1} + ',') > 0)");
         f[SqlFunctionNames.NullOrDefault] = Call("ISNULL");
         f[SqlFunctionNames.Length] = Call("LEN");
         f[SqlFunctionNames.Trim] = (r, a) => r.Append("LTRIM(RTRIM(").Write(a[0]).Append("))");

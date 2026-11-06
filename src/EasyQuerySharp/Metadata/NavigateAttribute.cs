@@ -16,6 +16,19 @@ public enum RelationType
     ManyToMany,
 }
 
+/// <summary>导航两端的键怎样算匹配（对应 Java 的 relationPropertyStrategy），见 0005。</summary>
+public enum KeyMatch
+{
+    /// <summary>键相等（默认）。</summary>
+    Equal,
+
+    /// <summary>
+    /// 本表的一列存逗号分隔的目标键（如 <c>book_ids = "1,2"</c>），目标键在列表里就算匹配；不去空格，NULL 或空串不匹配。
+    /// 只能用在没有中间表的多对多导航上，本表、目标各一列。MySQL 写 <c>FIND_IN_SET</c>，其余方言见 <see cref="Sql.InCsv{T}"/>。
+    /// </summary>
+    SelfCsv,
+}
+
 /// <summary>集合导航取第几个元素、取一段行时，链上没写排序的话组内按什么排（对应 Java 的 PartitionOrderEnum）。</summary>
 public enum PartitionOrder
 {
@@ -110,4 +123,10 @@ public sealed class NavigateAttribute(RelationType relation) : Attribute
 
     /// <summary>聚合保存（<c>db.Save(root)</c>）时这条导航怎样级联，见 <see cref="Metadata.Cascade"/> 与 0004；默认 <see cref="Cascade.Auto"/>。</summary>
     public Cascade Cascade { get; init; }
+
+    /// <summary>
+    /// 键怎样算匹配，默认相等。<see cref="Metadata.KeyMatch.SelfCsv"/>：本表一列存逗号分隔的目标键，
+    /// 如 <c>[Navigate(RelationType.ManyToMany, SelfProperties = [nameof(BookIds)], TargetProperties = [nameof(Book.Id)], KeyMatch = KeyMatch.SelfCsv)]</c>。
+    /// </summary>
+    public KeyMatch KeyMatch { get; init; }
 }

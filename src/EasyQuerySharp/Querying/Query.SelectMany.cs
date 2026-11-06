@@ -49,7 +49,7 @@ public sealed partial class Query<T>
         {
             parameters.Add(element);
             state = QueryStates.AddJoin(state, new EntitySource(nav.Target.Type) { Join = JoinKind.Inner,
-                On = Expression.Lambda(KeysEqual(element, nav.TargetColumns, owner, nav.SelfColumns, nav.ExtraFilter), parameters) });
+                On = Expression.Lambda(KeysEqual(element, nav.TargetColumns, owner, nav.SelfColumns, nav.ExtraFilter, nav.KeyMatch), parameters) });
         }
         var body = new ExpressionTranslator.ParameterReplacer(resultSelector.Parameters[0], owner).Visit(resultSelector.Body);
         body = new ExpressionTranslator.ParameterReplacer(resultSelector.Parameters[1], element).Visit(body);
@@ -80,23 +80,28 @@ public sealed partial class Query<T>
         return nav;
     }
 
-    // 每对关联列相等（两边类型不同时都转成可空的同一类型），再加上导航的固定条件（参数换成被连接的表）
+    // 每对关联列相等（两边类型不同时都转成可空的同一类型），再加上导航的固定条件（参数换成被连接的表）；
+    // 键是逗号列表时写成 Sql.InCsv(目标键, 本表列)
     private static Expression KeysEqual(ParameterExpression joined, IReadOnlyList<ColumnMetadata> joinedColumns,
-        ParameterExpression other, IReadOnlyList<ColumnMetadata> otherColumns, LambdaExpression? extraFilter)
+        ParameterExpression other, IReadOnlyList<ColumnMetadata> otherColumns, LambdaExpression? extraFilter, KeyMatch match = KeyMatch.Equal)
     {
         Expression? condition = null;
-        for (var i = 0; i < joinedColumns.Count; i++)
-        {
-            Expression left = Expression.Property(joined, joinedColumns[i].Property), right = Expression.Property(other, otherColumns[i].Property);
-            if (left.Type != right.Type)
+        if (match == KeyMatch.SelfCsv)
+            condition = Expression.Call(typeof(Sql).GetMethod(nameof(Sql.InCsv))!.MakeGenericMethod(joinedColumns[0].Property.PropertyType),
+                Expression.Property(joined, joinedColumns[0].Property), Expression.Property(other, otherColumns[0].Property));
+        else
+            for (var i = 0; i < joinedColumns.Count; i++)
             {
-                var common = typeof(Nullable<>).MakeGenericType(Nullable.GetUnderlyingType(left.Type) ?? left.Type);
-                left = Expression.Convert(left, common);
-                right = Expression.Convert(right, common);
+                Expression left = Expression.Property(joined, joinedColumns[i].Property), right = Expression.Property(other, otherColumns[i].Property);
+                if (left.Type != right.Type)
+                {
+                    var common = typeof(Nullable<>).MakeGenericType(Nullable.GetUnderlyingType(left.Type) ?? left.Type);
+                    left = Expression.Convert(left, common);
+                    right = Expression.Convert(right, common);
+                }
+                var equal = Expression.Equal(left, right);
+                condition = condition is null ? equal : Expression.AndAlso(condition, equal);
             }
-            var equal = Expression.Equal(left, right);
-            condition = condition is null ? equal : Expression.AndAlso(condition, equal);
-        }
         if (extraFilter is not null)
             condition = Expression.AndAlso(condition!, new ExpressionTranslator.ParameterReplacer(extraFilter.Parameters[0], joined).Visit(extraFilter.Body));
         return condition!;

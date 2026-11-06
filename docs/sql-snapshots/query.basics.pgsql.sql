@@ -29,6 +29,10 @@ SELECT UPPER(t."title") AS "title",(t."views" + ?) AS "next_views",(t."views" >=
 -- SelectNavigation：经导航取关联表的列
 SELECT t."title",t."views",t1."name" AS "author",t2."name" AS "company" FROM "t_post" t LEFT JOIN "t_user" t1 ON t1."id" = t."author_id" LEFT JOIN "t_company" t2 ON t2."id" = t1."company_id" ORDER BY t."id" ASC LIMIT 2;
 
+-- InCsv：值在逗号分隔的列表里：Sql.InCsv
+SELECT t."title" FROM "t_post" t WHERE ((t."id")::text = ANY(string_to_array(?,','))) ORDER BY t."id" ASC;
+-- params: ['1,3']
+
 -- PreviousRow：窗口函数：按查询的排序取上一行
 SELECT t."title",t."views",LAG(t."views", 1, ?) OVER (ORDER BY t."published_at" ASC,t."id" ASC) AS "previous_views" FROM "t_post" t ORDER BY t."published_at" ASC,t."id" ASC;
 -- params: [0]

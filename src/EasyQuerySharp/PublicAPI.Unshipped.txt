@@ -604,6 +604,9 @@ EasyQuerySharp.Metadata.InsertIgnoreAttribute
 EasyQuerySharp.Metadata.InsertIgnoreAttribute.InsertIgnoreAttribute() -> void
 EasyQuerySharp.Metadata.JsonValueConverter<T>
 EasyQuerySharp.Metadata.JsonValueConverter<T>.JsonValueConverter() -> void
+EasyQuerySharp.Metadata.KeyMatch
+EasyQuerySharp.Metadata.KeyMatch.Equal = 0 -> EasyQuerySharp.Metadata.KeyMatch
+EasyQuerySharp.Metadata.KeyMatch.SelfCsv = 1 -> EasyQuerySharp.Metadata.KeyMatch
 EasyQuerySharp.Metadata.LogicDeleteAttribute
 EasyQuerySharp.Metadata.LogicDeleteAttribute.LogicDeleteAttribute(EasyQuerySharp.Metadata.LogicDeleteStrategy strategy = EasyQuerySharp.Metadata.LogicDeleteStrategy.Boolean) -> void
 EasyQuerySharp.Metadata.LogicDeleteAttribute.Strategy.get -> EasyQuerySharp.Metadata.LogicDeleteStrategy
@@ -643,6 +646,8 @@ EasyQuerySharp.Metadata.NavigateAttribute.ExtraMappingFilter.get -> string?
 EasyQuerySharp.Metadata.NavigateAttribute.ExtraMappingFilter.init -> void
 EasyQuerySharp.Metadata.NavigateAttribute.GroupJoin.get -> bool
 EasyQuerySharp.Metadata.NavigateAttribute.GroupJoin.init -> void
+EasyQuerySharp.Metadata.NavigateAttribute.KeyMatch.get -> EasyQuerySharp.Metadata.KeyMatch
+EasyQuerySharp.Metadata.NavigateAttribute.KeyMatch.init -> void
 EasyQuerySharp.Metadata.NavigateAttribute.Limit.get -> int
 EasyQuerySharp.Metadata.NavigateAttribute.Limit.init -> void
 EasyQuerySharp.Metadata.NavigateAttribute.Mapping.get -> System.Type?
@@ -672,6 +677,7 @@ EasyQuerySharp.Metadata.NavigationMetadata.ExtraMappingFilter.get -> System.Linq
 EasyQuerySharp.Metadata.NavigationMetadata.GroupJoin.get -> bool
 EasyQuerySharp.Metadata.NavigationMetadata.IncludeOn.get -> (EasyQuerySharp.Metadata.ColumnMetadata! Column, object! Value)?
 EasyQuerySharp.Metadata.NavigationMetadata.IsCollection.get -> bool
+EasyQuerySharp.Metadata.NavigationMetadata.KeyMatch.get -> EasyQuerySharp.Metadata.KeyMatch
 EasyQuerySharp.Metadata.NavigationMetadata.Limit.get -> int?
 EasyQuerySharp.Metadata.NavigationMetadata.Mapping.get -> EasyQuerySharp.Metadata.EntityMetadata?
 EasyQuerySharp.Metadata.NavigationMetadata.PartitionOrder.get -> EasyQuerySharp.Metadata.PartitionOrder
@@ -1652,6 +1658,7 @@ const EasyQuerySharp.SqlAst.SqlFunctionNames.EqualsWith = "EqualsWith" -> string
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Exp = "EXP" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Floor = "FLOOR" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Grouping = "GROUPING" -> string!
+const EasyQuerySharp.SqlAst.SqlFunctionNames.InCsv = "InCsv" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.IndexOf = "IndexOf" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.JsonContainsKey = "JsonContainsKey" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.JsonGet = "JsonGet" -> string!
@@ -1941,6 +1948,7 @@ static EasyQuerySharp.Sql.Group(bool predicate) -> bool
 static EasyQuerySharp.Sql.Identifier(string! name) -> EasyQuerySharp.SqlIdentifier!
 static EasyQuerySharp.Sql.In<T>(this T value, EasyQuerySharp.Querying.Query<T>! subQuery) -> bool
 static EasyQuerySharp.Sql.In<T>(this T value, params T[]! values) -> bool
+static EasyQuerySharp.Sql.InCsv<T>(T value, string? csv) -> bool
 static EasyQuerySharp.Sql.IsoDayOfWeek(this System.DateOnly value) -> int
 static EasyQuerySharp.Sql.IsoDayOfWeek(this System.DateTime value) -> int
 static EasyQuerySharp.Sql.Json(object? document) -> EasyQuerySharp.JsonNode!

@@ -141,6 +141,13 @@ public static partial class Sql
     /// </summary>
     public static bool EqualsNullSafe<T>(this T value, T other) => throw OnlyInQuery();
 
+    /// <summary>
+    /// <paramref name="value"/> 在逗号分隔的列表 <paramref name="csv"/> 里（对应 MySQL 的 <c>FIND_IN_SET</c>、TS 版的 inCsv）：不去空格，
+    /// <paramref name="csv"/> 为 NULL 时不匹配。PG 写 <c>(值)::text = ANY(string_to_array(列表,','))</c>，SQLite / Oracle 用 <c>instr</c>、
+    /// SQL Server 用 <c>CHARINDEX</c> 在两头补了逗号的列表里找。导航上的 <see cref="Metadata.KeyMatch.SelfCsv"/> 就写成它。
+    /// </summary>
+    public static bool InCsv<T>(T value, string? csv) => throw OnlyInQuery();
+
     /// <summary>ISO 星期几：周一 1 … 周日 7（C# 的 <c>x.DayOfWeek</c> 是周日 0 … 周六 6）。</summary>
     public static int IsoDayOfWeek(this DateTime value) => throw OnlyInQuery();
 

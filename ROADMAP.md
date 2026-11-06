@@ -15,8 +15,8 @@
 
 ## 现状（2026-11-06）
 
-- 对标：已移植 1815、偏离 140、不适用 136、骨架 6、待做 307。
-- 待做的分布：方言 206，平台能力 82（分库分表 48、code-first 14、表名 / schema / link 14、按对象筛选 6），其余零散 19。
+- 对标：已移植 1817、偏离 140、不适用 136、骨架 6、待做 305。
+- 待做的分布：方言 206，平台能力 82（分库分表 48、code-first 14、表名 / schema / link 14、按对象筛选 6），其余零散 17。
 - 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
 
 ## 已定的取舍
@@ -74,11 +74,7 @@ R → 1 → 2 → 3 → 4 → 5。
 
 ## 阶段 1 核心收尾
 
-- [ ] 1.1 关联键匹配策略（Java 的 `relationPropertyStrategy`）：
-  - 先写决策文档 0005；
-  - 在导航上声明匹配策略，内置"逗号分隔 id"的实现，并按方言渲染（MySQL 用 `FIND_IN_SET`，PG 用 `= ANY(string_to_array(..))`，SQLite 拼接逗号后用 LIKE）；
-  - 隐式子查询、分组合并、Include、DTO 自动带出都能用；聚合保存不支持；
-  - 用例：M8Test1 testRelationColumns / testRelationColumns1。
+- [x] 1.1 关联键匹配策略（Java 的 `relationPropertyStrategy`，决策 [0005](docs/decisions/0005-relation-key-match.md)）：`[Navigate(.., KeyMatch = KeyMatch.SelfCsv)]` 表示本表一列存逗号分隔的目标键，`Sql.InCsv` 按方言渲染（MySQL `FIND_IN_SET`、PG `= ANY(string_to_array(..))`、SQLite / Oracle `instr`、SQL Server `CHARINDEX`）；条件 / 隐式子查询、Include、DTO 自动带出、SelectMany 都能用，分组合并回退成子查询，取元素、按父对象取段报不支持。M8Test1 testRelationColumns / testRelationColumns1 移植。
 - [x] 1.2 沿集合导航展开 `SelectMany`：按 LINQ 语义写成 INNER JOIN（多对多经中间表，导航的固定条件与逻辑删除写进 ON，保留重复），连着写的 SelectMany 和之后的 Where / OrderBy / Select 直接作用在最后连接的表上；父查询分页、去重、分组、投影过时先包成派生表；支持查询语法 `from a in q from b in a.Bs`。Java 的 testToListFlat1 记为偏离（Java 逐层带出再去重）。
 - [x] 1.3 值对象 `[ValueObject]`（对应 TS 的 `embed()`；Java 的 `@ValueObject` 已弃用，没有用例）：几列合成实体上的嵌套对象，可嵌套、可换前缀；条件、隐式子查询、整体投影、按结构映射到 DTO、插入、`Set` 整个或部分写入、建表都支持。
 - [x] 1.4 不追踪时的差异更新 `db.Update(after).Changes(before)`：只写两份之间不同的列，没有不同就不发语句；`WhereColumns` 的定位值取修改前的。

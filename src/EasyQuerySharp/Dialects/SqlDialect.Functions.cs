@@ -48,6 +48,7 @@ public abstract partial class SqlDialect
         f[SqlFunctionNames.EqualsWith] = (r, a) => r.Append("(CASE ").Write(a[0]).Append(" WHEN ").Write(a[1]).Append(" THEN 1 ELSE 0 END)");
         f[SqlFunctionNames.NullIf] = Template("NULLIF({0}, {1})");
         f[SqlFunctionNames.NullSafeEquals] = Template("(({0} = {1}) OR ({0} IS NULL AND {1} IS NULL))");
+        f[SqlFunctionNames.InCsv] = Template("(({0})::text = ANY(string_to_array({1},',')))");
         foreach (var unit in Enum.GetValues<DateTruncUnit>())
             f[SqlFunctionNames.DateTrunc(unit)] = (_, _) => throw new NotSupportedException($"{Name} 方言不支持 DateTrunc({unit})");
         foreach (var json in new[] { SqlFunctionNames.JsonGet, SqlFunctionNames.JsonGetIndex, SqlFunctionNames.JsonText, SqlFunctionNames.JsonTextIndex, SqlFunctionNames.JsonLength, SqlFunctionNames.JsonContainsKey })

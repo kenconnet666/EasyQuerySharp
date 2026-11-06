@@ -101,13 +101,15 @@ internal static partial class IncludeRunner
     private static (CompiledQuery<object?> Query, SelectQuery Sql) CompileChunk(EasyDb db, NavigationMetadata nav, QueryState state, CompositeKey[] targets, IncludeContext context)
     {
         CompiledQuery<object?> CompileFor(QueryState s, IReadOnlyCollection<CompositeKey> keys) => QueryCompiler.Compile<object?>(
-            s with { Wheres = s.Wheres.Add(WithExtraFilter(KeyIn(nav.Target.Type, nav.TargetColumns, keys), nav.ExtraFilter)) }, relationKeys: nav.TargetColumns);
+            s with { Wheres = s.Wheres.Add(WithExtraFilter(KeyFilter(nav, keys), nav.ExtraFilter)) }, relationKeys: nav.TargetColumns);
 
         if (state.Limit is null && state.Offset is null)
         {
             var compiled = CompileFor(state, targets);
             return (compiled, compiled.Sql);
         }
+        // 取段要按父对象分区，逗号列表的键里一行子数据属于多个父对象
+        if (nav.KeyMatch != KeyMatch.Equal) throw new NotSupportedException($"{nav} 的键是逗号列表，带出时不能按父对象取一段（Take / Skip / Limit）");
         if (db.Options.IncludeLimitMode == IncludeLimitMode.UnionAll)
         {
             var parts = targets.Select(t => CompileFor(state, [t])).ToList();

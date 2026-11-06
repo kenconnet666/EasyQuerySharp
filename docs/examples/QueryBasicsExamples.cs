@@ -73,6 +73,10 @@ public static class QueryBasicsExamples
             .Select(p => new PostWithAuthor(p.Title, p.Views, p.Author!.Name, p.Author!.Company!.Name))
             .ToListAsync();
 
+    [Example("query/basics", "值在逗号分隔的列表里：Sql.InCsv")]
+    public static Task<List<string>> InCsv(EasyDb db) =>
+        db.Query<Post>().Where(p => Sql.InCsv(p.Id, "1,3")).OrderBy(p => p.Id).Select(p => p.Title).ToListAsync();
+
     /// <summary>帖子的浏览量与上一篇的浏览量（第一篇是 0）。</summary>
     public sealed record ViewsChange(string Title, int Views, int PreviousViews);
 
