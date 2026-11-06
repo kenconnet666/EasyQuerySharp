@@ -137,6 +137,7 @@ public abstract partial class LiveSuite
     [Fact]
     public async Task WalksASelfReferencingTree()
     {
+        SkipUnless(Options.RecursiveCte, "递归 CTE");
         var db = await SeededAsync();
         await db.Insert(
             new Dept { Id = 1, ParentId = null, Name = "hq" },

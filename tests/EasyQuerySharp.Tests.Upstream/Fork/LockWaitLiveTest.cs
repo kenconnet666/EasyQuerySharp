@@ -5,18 +5,19 @@ namespace EasyQuerySharp.Tests.Upstream.Fork;
 
 /// <summary>
 /// 对应 Java fork：live/LockWaitLiveTest.java。一个事务锁住 p1 时，另一个事务 NOWAIT 立即报锁冲突、SKIP LOCKED 只拿到其余的行。
-/// Java 跑 MySQL 8.0.18、PG 17、HANA；这里跑本地必测的 MySQL 8.4 与 PG 17。
+/// Java 跑 MySQL 8.0.18、PG 17、HANA；这里跑 MySQL 8.4、PG 17 与 HANA（没有配置的库跳过）。
 /// </summary>
-public sealed class LockWaitLiveTest(Mysql8Fixture mysql, PgFixture pg)
+public sealed class LockWaitLiveTest(Mysql8Fixture mysql, PgFixture pg, HanaFixture hana)
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Theory, Upstream("fork/live/LockWaitLiveTest.java#noWaitFailsAndSkipLockedSkips")]
     [InlineData("mysql")]
     [InlineData("pg")]
+    [InlineData("hana")]
     public async Task NoWaitFailsAndSkipLockedSkips(string database)
     {
-        var db = database == "mysql" ? mysql.Db : pg.Db;
+        var db = database switch { "mysql" => mysql.Db, "pg" => pg.Db, _ => hana.Db };
         await db.CodeFirst.DropTablesIfExistsAsync([typeof(ForkPost)], Ct);
         await db.CodeFirst.CreateTablesAsync([typeof(ForkPost)], Ct);
         await db.Insert(new[] { Post("p1"), Post("p2"), Post("p3") }).ExecuteAsync(Ct);

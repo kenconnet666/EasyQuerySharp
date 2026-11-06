@@ -222,6 +222,7 @@ public abstract partial class LiveSuite
     [Fact]
     public async Task RunsRecursiveTreeCte()
     {
+        SkipUnless(Options.RecursiveCte, "递归 CTE");
         var db = await SeededAsync();
         var bodies = await db.Query<Comment>().AsTreeCte(c => c.Id, c => c.PostId, childFilter: c => c.Body == "none").Select(c => c.Body).ToListAsync(Ct);
         Assert.Equal(["nice", "thanks"], bodies.Order(StringComparer.Ordinal));

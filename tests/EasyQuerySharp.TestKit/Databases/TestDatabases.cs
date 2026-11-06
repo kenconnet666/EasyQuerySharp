@@ -17,12 +17,16 @@ namespace EasyQuerySharp.TestKit.Databases;
 /// <param name="Factory">ADO.NET 驱动工厂。</param>
 /// <param name="ParameterPrefix">驱动认的命名参数前缀，Oracle 是 <c>:</c>，DuckDB 是 <c>$</c>，其余是 <c>@</c>。</param>
 /// <param name="InProcessConnectionString">进程内数据库的固定连接串；为 null 表示要从环境读。</param>
+/// <param name="DatabaseKeyword">连接串里选库的键；HANA 一个租户里按 schema 隔离，是 <c>Current Schema</c>。</param>
+/// <param name="MissingDriver">驱动没装时的说明（驱动不在 nuget.org 上、要另装客户端的库）；不为 null 时按没有配置处理。</param>
 public sealed record TestDatabase(
     string Key,
     string DisplayName,
     DbProviderFactory Factory,
     string ParameterPrefix = "@",
-    string? InProcessConnectionString = null)
+    string? InProcessConnectionString = null,
+    string DatabaseKeyword = "Database",
+    string? MissingDriver = null)
 {
     /// <summary>连接串所在的环境变量名。</summary>
     public string EnvironmentVariable => $"EQS_{Key.ToUpperInvariant()}_CS";
@@ -61,20 +65,22 @@ public sealed record TestDatabase(
     public string? TryConnectionString(string? database = null)
     {
         var connectionString = InProcessConnectionString ?? LocalEnvironment.Get(EnvironmentVariable);
-        if (connectionString is null)
+        if (connectionString is null || MissingDriver is not null)
         {
-            if (IsRequired) Assert.Fail($"EQS_REQUIRE_DBS 要求 {Key}，但没有配置 {EnvironmentVariable}");
+            if (IsRequired) Assert.Fail($"EQS_REQUIRE_DBS 要求 {Key}，但{(connectionString is null ? $"没有配置 {EnvironmentVariable}" : MissingDriver)}");
             return null;
         }
         if (database is null) return connectionString;
         var builder = Factory.CreateConnectionStringBuilder()!;
         builder.ConnectionString = connectionString;
-        builder["Database"] = database;
+        builder[DatabaseKeyword] = database;
         return builder.ConnectionString;
     }
 
     /// <summary>没有配置时跳过测试的说明。</summary>
-    public string SkipReason => $"没有配置 {EnvironmentVariable}，跳过 {DisplayName}（本地运行 infra/dev/db.sh 生成 .local/db.env）";
+    public string SkipReason => MissingDriver is not null && LocalEnvironment.Get(EnvironmentVariable) is not null
+        ? $"{MissingDriver}，跳过 {DisplayName}"
+        : $"没有配置 {EnvironmentVariable}，跳过 {DisplayName}（本地运行 infra/dev/db.sh 生成 .local/db.env）";
 
     /// <summary>创建数据源（交给 EasyDb）。</summary>
     public DbDataSource CreateDataSource(string? database = null) => Factory.CreateDataSource(ConnectionString(database));
@@ -110,8 +116,11 @@ public static class TestDatabases
     /// <summary>DuckDB（进程内）：连接串里的 <c>:memory:</c> 每条连接各是一个库，用例要共享数据时自己指定临时文件。</summary>
     public static readonly TestDatabase DuckDb = new("duckdb", "DuckDB", DuckDBClientFactory.Instance, ParameterPrefix: "$", InProcessConnectionString: "Data Source=:memory:");
 
+    /// <summary>SAP HANA Express 2.0：驱动在运行时从本机的 HANA 客户端加载（见 <see cref="HanaDriver"/>），按 schema 隔离。</summary>
+    public static readonly TestDatabase Hana = HanaDriver.Database();
+
     /// <summary>全部登记的数据库。</summary>
-    public static IReadOnlyList<TestDatabase> All { get; } = [Sqlite, MySql, MySql8018, MariaDb, PostgreSql, SqlServer, Oracle, DuckDb];
+    public static IReadOnlyList<TestDatabase> All { get; } = [Sqlite, MySql, MySql8018, MariaDb, PostgreSql, SqlServer, Oracle, DuckDb, Hana];
 
     /// <summary><c>EQS_REQUIRE_DBS</c>（逗号分隔的 Key）里列出的必须可用的数据库。</summary>
     public static IReadOnlySet<string> RequiredKeys { get; } =
