@@ -14,11 +14,11 @@ internal sealed class UpdateSetCollector(IEnumerable<string> assigned)
     /// <summary>按追加顺序的 SET。</summary>
     public List<(string Property, object? Value)> Sets { get; } = [];
 
-    public bool IsSet(LambdaExpression column) => _assigned.Contains(ExpressionTranslator.MemberOf(column).Name);
+    public bool IsSet(LambdaExpression column) => _assigned.Contains(ExpressionTranslator.MemberPath(column));
 
     public void Set(LambdaExpression column, object? value)
     {
-        var property = ExpressionTranslator.MemberOf(column).Name;
+        var property = ExpressionTranslator.MemberPath(column);
         if (_assigned.Add(property)) Sets.Add((property, value));
     }
 }

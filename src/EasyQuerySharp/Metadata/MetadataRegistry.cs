@@ -90,6 +90,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
 
         var ignored = table?.IgnoreProperties ?? [];
         var navigations = new Dictionary<string, (PropertyInfo, NavigateAttribute)>(StringComparer.Ordinal);
+        var valueObjects = new Dictionary<string, ValueObjectMetadata>(StringComparer.Ordinal);
         foreach (var property in OrderedProperties(type))
         {
             if (property.GetCustomAttribute<NavigateAttribute>() is { } navigate)
@@ -97,25 +98,14 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
                 navigations[property.Name] = (property, navigate);
                 continue;
             }
-            if (!IsMappable(property) || ignored.Contains(property.Name, StringComparer.OrdinalIgnoreCase)) continue;
-            var attr = property.GetCustomAttribute<ColumnAttribute>();
-            var computed = property.GetCustomAttribute<ComputedAttribute>() is { } c ? ComputedExpression(type, property, c.ExpressionMember) : null;
-            var column = new ColumnMetadata(property, attr?.Name ?? NameConversion.Convert(property.Name))
+            if (ignored.Contains(property.Name, StringComparer.OrdinalIgnoreCase)) continue;
+            if (property.GetCustomAttribute<ValueObjectAttribute>() is { } valueObject)
             {
-                IsPrimaryKey = attr?.PrimaryKey ?? false,
-                IsGenerated = attr?.Generated ?? false,
-                GeneratedSql = attr?.GeneratedSql,
-                KeyGenerator = attr?.KeyGenerator is { } keyGenerator ? CreateKeyGenerator(keyGenerator, property) : null,
-                AutoSelect = attr?.AutoSelect ?? true,
-                InsertIgnore = property.IsDefined(typeof(InsertIgnoreAttribute)) || computed is not null,
-                UpdateIgnore = property.IsDefined(typeof(UpdateIgnoreAttribute)) || computed is not null,
-                Computed = computed,
-                UpdateWhenTrackedChanged = property.GetCustomAttribute<UpdateIgnoreAttribute>()?.WhenTrackedChanged ?? false,
-                Converter = CreateConverter(type, property, attr?.Converter),
-                SqlConversion = attr?.SqlConversion is { } conversion ? CreateSqlConversion(conversion, property) : null,
-                DbType = attr?.DbType,
-                Comment = attr?.Comment,
-            };
+                columns.AddRange(ExpandValueObject(type, [], property, valueObject, "", false, valueObjects));
+                continue;
+            }
+            if (!IsMappable(property)) continue;
+            var column = CreateColumn(type, [], property, NameConversion.Convert(property.Name), false);
             columns.Add(column);
 
             if (property.GetCustomAttribute<LogicDeleteAttribute>() is { } ld)
@@ -146,7 +136,64 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
             VersionColumn = versionColumn,
             VersionStrategy = version?.Strategy ?? VersionStrategy.Increment,
             NavigationProperties = navigations,
+            ValueObjects = valueObjects,
         };
+    }
+
+    private static ColumnMetadata CreateColumn(Type entityType, IReadOnlyList<PropertyInfo> ownerPath, PropertyInfo property, string defaultName, bool inNullableValueObject)
+    {
+        var attr = property.GetCustomAttribute<ColumnAttribute>();
+        var computed = property.GetCustomAttribute<ComputedAttribute>() is { } c ? ComputedExpression(entityType, property, c.ExpressionMember) : null;
+        return new ColumnMetadata(ownerPath, property, attr?.Name ?? defaultName)
+        {
+            IsPrimaryKey = attr?.PrimaryKey ?? false,
+            IsGenerated = attr?.Generated ?? false,
+            GeneratedSql = attr?.GeneratedSql,
+            KeyGenerator = attr?.KeyGenerator is { } keyGenerator ? CreateKeyGenerator(keyGenerator, property) : null,
+            AutoSelect = attr?.AutoSelect ?? true,
+            InsertIgnore = property.IsDefined(typeof(InsertIgnoreAttribute)) || computed is not null,
+            UpdateIgnore = property.IsDefined(typeof(UpdateIgnoreAttribute)) || computed is not null,
+            Computed = computed,
+            UpdateWhenTrackedChanged = property.GetCustomAttribute<UpdateIgnoreAttribute>()?.WhenTrackedChanged ?? false,
+            Converter = CreateConverter(entityType, property, attr?.Converter),
+            SqlConversion = attr?.SqlConversion is { } conversion ? CreateSqlConversion(conversion, property) : null,
+            DbType = attr?.DbType,
+            Comment = attr?.Comment,
+            InNullableValueObject = inNullableValueObject,
+        };
+    }
+
+    // 值对象展开成本表上的列（嵌套的值对象递归展开）。前缀默认是外层前缀 + "属性的列名_"，显式的 Prefix 是完整前缀
+    private List<ColumnMetadata> ExpandValueObject(Type entityType, IReadOnlyList<PropertyInfo> ownerPath, PropertyInfo property, ValueObjectAttribute attribute,
+        string outerPrefix, bool outerNullable, Dictionary<string, ValueObjectMetadata> valueObjects)
+    {
+        var type = property.PropertyType;
+        var where = $"{entityType.Name}.{string.Join(".", ownerPath.Select(o => o.Name).Append(property.Name))}";
+        if (!type.IsClass || ScalarTypes.IsScalar(type)) throw new InvalidOperationException($"{where} 是值对象，类型要是类（不能是结构体或标量）");
+        if (type.GetConstructor(Type.EmptyTypes) is null) throw new InvalidOperationException($"{where} 是值对象，{type.Name} 要有无参构造函数");
+        if (!property.CanWrite) throw new InvalidOperationException($"{where} 是值对象，属性要可写");
+
+        List<PropertyInfo> path = [.. ownerPath, property];
+        var prefix = attribute.Prefix ?? outerPrefix + NameConversion.Convert(property.Name) + "_";
+        var nullable = outerNullable || new NullabilityInfoContext().Create(property).ReadState == NullabilityState.Nullable;
+        var columns = new List<ColumnMetadata>();
+        foreach (var member in OrderedProperties(type))
+        {
+            if (member.GetCustomAttribute<ValueObjectAttribute>() is { } nested)
+            {
+                columns.AddRange(ExpandValueObject(entityType, path, member, nested, prefix, nullable, valueObjects));
+                continue;
+            }
+            if (!IsMappable(member)) continue;
+            var column = CreateColumn(entityType, path, member, prefix + NameConversion.Convert(member.Name), nullable);
+            if (column.IsPrimaryKey || column.IsGenerated) throw new InvalidOperationException($"{where}.{member.Name}：值对象里不能有主键或自增列");
+            columns.Add(column);
+        }
+        if (columns.Count == 0) throw new InvalidOperationException($"{where} 是值对象，但 {type.Name} 没有可映射的属性");
+        var shape = new EntityMetadata(type, "", null, null, columns.Select(c => c.WithOwnerPath(c.OwnerPath.Skip(path.Count).ToList())).ToList()) { IsValueObject = true };
+        var key = string.Join(".", path.Select(o => o.Name));
+        valueObjects[key] = new ValueObjectMetadata(key, property, columns, shape);
+        return columns;
     }
 
     // 基类属性在前，同一类型内按声明顺序（MetadataToken 递增即声明顺序）；派生类重写的属性只保留一次

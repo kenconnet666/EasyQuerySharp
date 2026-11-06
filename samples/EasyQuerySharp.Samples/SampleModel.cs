@@ -6,7 +6,7 @@ using EasyQuerySharp.Metadata;
 namespace EasyQuerySharp.Samples;
 
 // 全部文档卡片共用的业务模型：一个技术社区。公司、部门、员工，用户发帖、评论、互相关注，社区商店卖课程和会员。
-// 与 TS 版 apps/docs/src/site/model.ts 一致；门店（值对象）与支付（多态）等 C# 版有了对应能力再加。
+// 与 TS 版 apps/docs/src/site/model.ts 一致；支付（多态）等 C# 版有了对应能力再加。
 
 /// <summary>公司：南风智能没有员工。</summary>
 [Table("t_company")]
@@ -396,6 +396,41 @@ public class Ticket
     public string Contact { get; set; } = "";
 
     public DateTime? TouchedAt { get; set; }
+}
+
+/// <summary>门店：地址是值对象，在库里展开成几列（address_city、address_street、geo_lat、geo_lng）。</summary>
+[Table("t_shop")]
+public class Shop
+{
+    [Column(PrimaryKey = true, Generated = true)]
+    public long Id { get; set; }
+
+    [Column(DbType = "VARCHAR(50)")]
+    public string Name { get; set; } = "";
+
+    [ValueObject]
+    public ShopAddress Address { get; set; } = new();
+}
+
+/// <summary>门店地址（值对象），里面再嵌一个坐标。</summary>
+public class ShopAddress
+{
+    [Column(DbType = "VARCHAR(20)")]
+    public string City { get; set; } = "";
+
+    [Column(DbType = "VARCHAR(100)")]
+    public string? Street { get; set; }
+
+    [ValueObject(Prefix = "geo_")]
+    public GeoPoint Geo { get; set; } = new();
+}
+
+/// <summary>坐标。</summary>
+public class GeoPoint
+{
+    public double Lat { get; set; }
+
+    public double Lng { get; set; }
 }
 
 /// <summary>示例用的可逆"加密"：确定性的，所以能按密文比较。真实项目换成 AES 这类加密。</summary>

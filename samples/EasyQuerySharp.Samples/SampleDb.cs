@@ -18,7 +18,7 @@ public static class SampleDb
     public static IReadOnlyList<Type> Tables { get; } =
     [
         typeof(Company), typeof(Department), typeof(User), typeof(Profile), typeof(Category), typeof(Post), typeof(Comment),
-        typeof(Tag), typeof(PostTag), typeof(Follow), typeof(Product), typeof(Order), typeof(OrderItem), typeof(Doc), typeof(Ticket),
+        typeof(Tag), typeof(PostTag), typeof(Follow), typeof(Product), typeof(Order), typeof(OrderItem), typeof(Doc), typeof(Ticket), typeof(Shop),
     ];
 
     /// <summary>示例的 EasyDb：给定方言与数据源，挂上示例模型的拦截器。</summary>

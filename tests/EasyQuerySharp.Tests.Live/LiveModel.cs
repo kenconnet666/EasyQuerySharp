@@ -112,3 +112,47 @@ public sealed class ProfileAddress
 
     public int? Zip { get; set; }
 }
+
+/// <summary>门店：地址与联系方式是值对象（与 TS 版 embed.test 的 Shop 相同）。</summary>
+[Table("t_live_shop")]
+public class Shop
+{
+    [Column(PrimaryKey = true, Generated = true)]
+    public long Id { get; set; }
+
+    public string Name { get; set; } = "";
+
+    [ValueObject]
+    public ShopAddress Address { get; set; } = new();
+
+    [ValueObject]
+    public ShopContact? Contact { get; set; }
+}
+
+/// <summary>门店地址（值对象，里面再嵌一个坐标）。</summary>
+public class ShopAddress
+{
+    public string Province { get; set; } = "";
+
+    public string City { get; set; } = "";
+
+    public string? Street { get; set; }
+
+    [ValueObject(Prefix = "geo_")]
+    public GeoPoint Geo { get; set; } = new();
+}
+
+/// <summary>坐标。</summary>
+public class GeoPoint
+{
+    public double Lat { get; set; }
+
+    public double Lng { get; set; }
+}
+
+/// <summary>联系方式（可空的值对象）。</summary>
+public class ShopContact
+{
+    [Column("tel")]
+    public string? Phone { get; set; }
+}

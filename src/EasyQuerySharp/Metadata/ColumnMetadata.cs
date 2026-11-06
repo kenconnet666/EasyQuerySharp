@@ -3,23 +3,38 @@ using System.Reflection;
 
 namespace EasyQuerySharp.Metadata;
 
-/// <summary>一个映射到列的属性。由 <see cref="MetadataRegistry"/> 构建并缓存，运行期只读。</summary>
+/// <summary>
+/// 一个映射到列的属性。由 <see cref="MetadataRegistry"/> 构建并缓存，运行期只读。
+/// 值对象里的列（见 <see cref="ValueObjectAttribute"/>）从实体沿 <see cref="OwnerPath"/> 走到值对象，再取 <see cref="Property"/>。
+/// </summary>
 public sealed class ColumnMetadata
 {
-    internal ColumnMetadata(PropertyInfo property, string name)
+    internal ColumnMetadata(PropertyInfo property, string name) : this([], property, name)
     {
-        Property = property;
-        Name = name;
-        ClrType = property.PropertyType;
-        Getter = CompileGetter(property);
-        Setter = property.CanWrite ? CompileSetter(property) : null;
     }
 
-    /// <summary>对应的属性。</summary>
+    internal ColumnMetadata(IReadOnlyList<PropertyInfo> ownerPath, PropertyInfo property, string name)
+    {
+        OwnerPath = ownerPath;
+        Property = property;
+        PropertyName = string.Join(".", ownerPath.Select(o => o.Name).Append(property.Name));
+        Name = name;
+        ClrType = property.PropertyType;
+        Getter = CompileGetter(ownerPath, property);
+        Setter = property.CanWrite ? CompileSetter(ownerPath, property) : null;
+    }
+
+    /// <summary>对应的属性（值对象里的列是值对象上的属性）。</summary>
     public PropertyInfo Property { get; }
 
-    /// <summary>属性名。</summary>
-    public string PropertyName => Property.Name;
+    /// <summary>从实体走到值对象经过的属性；普通列为空。</summary>
+    public IReadOnlyList<PropertyInfo> OwnerPath { get; }
+
+    /// <summary>属性名；值对象里的列是从实体起的路径，如 <c>Address.City</c>。</summary>
+    public string PropertyName { get; }
+
+    /// <summary>所在的值对象（或外层的值对象）本身可空：建表时这一列可空。</summary>
+    internal bool InNullableValueObject { get; init; }
 
     /// <summary>列名（未加引号）。</summary>
     public string Name { get; }
@@ -79,23 +94,53 @@ public sealed class ColumnMetadata
         return Converter is null ? value : Converter.ToProvider(value);
     }
 
-    /// <inheritdoc />
-    public override string ToString() => $"{Property.DeclaringType?.Name}.{PropertyName} → {Name}";
+    /// <summary>同一列换一条路径（单独物化值对象时，列相对值对象）。</summary>
+    internal ColumnMetadata WithOwnerPath(IReadOnlyList<PropertyInfo> ownerPath) => new(ownerPath, Property, Name)
+    {
+        IsPrimaryKey = IsPrimaryKey, IsGenerated = IsGenerated, KeyGenerator = KeyGenerator, GeneratedSql = GeneratedSql, AutoSelect = AutoSelect,
+        Computed = Computed, InsertIgnore = InsertIgnore, UpdateIgnore = UpdateIgnore, UpdateWhenTrackedChanged = UpdateWhenTrackedChanged,
+        Converter = Converter, SqlConversion = SqlConversion, DbType = DbType, Comment = Comment, InNullableValueObject = InNullableValueObject,
+    };
 
-    private static Func<object, object?> CompileGetter(PropertyInfo property)
+    /// <inheritdoc />
+    public override string ToString() => $"{(OwnerPath.Count > 0 ? OwnerPath[0] : Property).DeclaringType?.Name}.{PropertyName} → {Name}";
+
+    // 沿路径取值，路上的值对象为 null 时整列读成 null
+    private static Func<object, object?> CompileGetter(IReadOnlyList<PropertyInfo> ownerPath, PropertyInfo property)
     {
         var obj = Expression.Parameter(typeof(object), "o");
-        var body = Expression.Convert(Expression.Property(Expression.Convert(obj, property.DeclaringType!), property), typeof(object));
-        return Expression.Lambda<Func<object, object?>>(body, obj).Compile();
+        var root = Expression.Convert(obj, (ownerPath.Count > 0 ? ownerPath[0] : property).DeclaringType!);
+        return Expression.Lambda<Func<object, object?>>(Read(root, 0), obj).Compile();
+
+        Expression Read(Expression instance, int depth)
+        {
+            if (depth == ownerPath.Count) return Expression.Convert(Expression.Property(instance, property), typeof(object));
+            var owner = Expression.Variable(ownerPath[depth].PropertyType, "owner" + depth);
+            return Expression.Block([owner],
+                Expression.Assign(owner, Expression.Property(instance, ownerPath[depth])),
+                Expression.Condition(Expression.Equal(owner, Expression.Constant(null, owner.Type)),
+                    Expression.Constant(null, typeof(object)), Read(owner, depth + 1)));
+        }
     }
 
-    private static Action<object, object?> CompileSetter(PropertyInfo property)
+    // 沿路径赋值，路上的值对象为 null 时先用无参构造函数建出来
+    private static Action<object, object?> CompileSetter(IReadOnlyList<PropertyInfo> ownerPath, PropertyInfo property)
     {
         var obj = Expression.Parameter(typeof(object), "o");
         var value = Expression.Parameter(typeof(object), "v");
-        var body = Expression.Assign(
-            Expression.Property(Expression.Convert(obj, property.DeclaringType!), property),
-            Expression.Convert(value, property.PropertyType));
-        return Expression.Lambda<Action<object, object?>>(body, obj, value).Compile();
+        var variables = new List<ParameterExpression>();
+        var steps = new List<Expression>();
+        Expression current = Expression.Convert(obj, (ownerPath.Count > 0 ? ownerPath[0] : property).DeclaringType!);
+        foreach (var owner in ownerPath)
+        {
+            var next = Expression.Variable(owner.PropertyType, owner.Name);
+            variables.Add(next);
+            steps.Add(Expression.Assign(next, Expression.Property(current, owner)));
+            steps.Add(Expression.IfThen(Expression.Equal(next, Expression.Constant(null, owner.PropertyType)),
+                Expression.Block(Expression.Assign(next, Expression.New(owner.PropertyType)), Expression.Assign(Expression.Property(current, owner), next))));
+            current = next;
+        }
+        steps.Add(Expression.Assign(Expression.Property(current, property), Expression.Convert(value, property.PropertyType)));
+        return Expression.Lambda<Action<object, object?>>(Expression.Block(variables, steps), obj, value).Compile();
     }
 }

@@ -21,6 +21,7 @@ public static class SampleData
         await db.Insert(OrderItems).ExecuteAsync(ct);
         await db.Insert(Docs).ExecuteAsync(ct);
         await db.Insert(Tickets).ExecuteAsync(ct);
+        await db.Insert(Shops).ExecuteAsync(ct);
     }
 
     // 每次调用都新建对象：插入会回填主键等，不能在多个库之间共用实例
@@ -169,6 +170,13 @@ public static class SampleData
         new() { OrderId = order, ProductId = product, Quantity = quantity, Price = price };
 
     private static Doc[] Docs => [new() { Title = "接入指南", CreatedBy = "林晓" }, new() { Title = "发布清单", CreatedBy = "周航" }];
+
+    private static Shop[] Shops =>
+    [
+        new() { Name = "西湖店", Address = new ShopAddress { City = "杭州", Street = "文三路 90 号", Geo = new GeoPoint { Lat = 30.28, Lng = 120.13 } } },
+        new() { Name = "滨江店", Address = new ShopAddress { City = "杭州", Street = null, Geo = new GeoPoint { Lat = 30.21, Lng = 120.21 } } },
+        new() { Name = "静安店", Address = new ShopAddress { City = "上海", Street = "南京西路 1266 号", Geo = new GeoPoint { Lat = 31.23, Lng = 121.45 } } },
+    ];
 
     // 两个租户；这里是明文，库里存的是密文
     private static Ticket[] Tickets =>

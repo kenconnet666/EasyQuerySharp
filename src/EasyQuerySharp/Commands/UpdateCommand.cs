@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using System.Reflection;
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.Rendering;
 using EasyQuerySharp.SqlAst;
@@ -42,27 +41,53 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     {
     }
 
-    /// <summary>用成员初始化表达式设置多列，值可以引用原列：<c>t => new Topic { Stars = t.Stars + 1 }</c>。</summary>
+    /// <summary>
+    /// 用成员初始化表达式设置多列，值可以引用原列：<c>t => new Topic { Stars = t.Stars + 1 }</c>。
+    /// 值对象可以整个赋值（<c>Address = address</c>，为 null 时它的列都写 NULL），也可以只写其中几项（<c>Address = new Address { City = "hz" }</c>）。
+    /// </summary>
     public UpdateCommand<T> Set(Expression<Func<T, T>> setter)
     {
         if (setter.Body is not MemberInitExpression init)
             throw new ArgumentException("Set 需要成员初始化表达式，如 t => new Topic { Title = \"x\" }", nameof(setter));
-        foreach (var binding in init.Bindings.Cast<MemberAssignment>())
-            _sets.Add(new SetSpec(binding.Member, Expression.Lambda(binding.Expression, setter.Parameters), SetKind.Expression));
+        foreach (var binding in init.Bindings.Cast<MemberAssignment>()) AddSet(binding.Member.Name, binding.Expression, setter.Parameters);
         return this;
+    }
+
+    private void AddSet(string path, Expression value, IReadOnlyList<ParameterExpression> parameters)
+    {
+        if (!Entity.ValueObjects.TryGetValue(path, out var valueObject))
+        {
+            _sets.Add(new SetSpec(path, Expression.Lambda(value, parameters), SetKind.Expression));
+            return;
+        }
+        if (value is MemberInitExpression members)
+        {
+            foreach (var binding in members.Bindings.Cast<MemberAssignment>()) AddSet(path + "." + binding.Member.Name, binding.Expression, parameters);
+            return;
+        }
+        // 整个值对象：不引用原行时先在客户端求出来，各列取它的值（为 null 时都写 NULL）；引用原行时各列取对应的成员
+        var usesRow = ClientEvaluator.MustTranslate(value);
+        var evaluated = usesRow ? null : ClientEvaluator.Evaluate(value);
+        foreach (var (column, relative) in valueObject.Columns.Zip(valueObject.Shape.Columns))
+        {
+            Expression columnValue = usesRow
+                ? relative.OwnerPath.Append(relative.Property).Aggregate(value, Expression.Property)
+                : Expression.Constant(evaluated is null ? null : relative.Getter(evaluated), typeof(object));
+            _sets.Add(new SetSpec(column.PropertyName, Expression.Lambda(columnValue, parameters), SetKind.Expression));
+        }
     }
 
     /// <summary>把一列设为常量值。</summary>
     public UpdateCommand<T> Set<TValue>(Expression<Func<T, TValue>> column, TValue value)
     {
-        _sets.Add(new SetSpec(ExpressionTranslator.MemberOf(column), Expression.Lambda(Expression.Constant(value, typeof(TValue)), column.Parameters), SetKind.Expression));
+        _sets.Add(new SetSpec(ExpressionTranslator.MemberPath(column), Expression.Lambda(Expression.Constant(value, typeof(TValue)), column.Parameters), SetKind.Expression));
         return this;
     }
 
     /// <summary>把一列设为表达式的值（可以引用原列）。</summary>
     public UpdateCommand<T> Set<TValue>(Expression<Func<T, TValue>> column, Expression<Func<T, TValue>> value)
     {
-        _sets.Add(new SetSpec(ExpressionTranslator.MemberOf(column), value, SetKind.Expression));
+        _sets.Add(new SetSpec(ExpressionTranslator.MemberPath(column), value, SetKind.Expression));
         return this;
     }
 
@@ -75,14 +100,14 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     /// <summary>自增：<c>col = col + ?</c>（对应 Java 的 increment）。</summary>
     public UpdateCommand<T> Increment<TValue>(Expression<Func<T, TValue>> column, TValue by)
     {
-        _sets.Add(new SetSpec(ExpressionTranslator.MemberOf(column), Expression.Lambda(Expression.Constant(by, typeof(TValue)), column.Parameters), SetKind.Increment));
+        _sets.Add(new SetSpec(ExpressionTranslator.MemberPath(column), Expression.Lambda(Expression.Constant(by, typeof(TValue)), column.Parameters), SetKind.Increment));
         return this;
     }
 
     /// <summary>自减：<c>col = col - ?</c>（对应 Java 的 decrement）。</summary>
     public UpdateCommand<T> Decrement<TValue>(Expression<Func<T, TValue>> column, TValue by)
     {
-        _sets.Add(new SetSpec(ExpressionTranslator.MemberOf(column), Expression.Lambda(Expression.Constant(by, typeof(TValue)), column.Parameters), SetKind.Decrement));
+        _sets.Add(new SetSpec(ExpressionTranslator.MemberPath(column), Expression.Lambda(Expression.Constant(by, typeof(TValue)), column.Parameters), SetKind.Decrement));
         return this;
     }
 
@@ -105,14 +130,14 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     /// </summary>
     public UpdateCommand<T> SetColumns(Expression<Func<T, object?>> columns)
     {
-        _onlyColumns = ExpressionTranslator.MemberNames(columns);
+        _onlyColumns = ColumnPaths(columns);
         return this;
     }
 
     /// <summary>按实体更新时不写这些列（对应 Java 的 setIgnoreColumns）：<c>db.Update(blog).IgnoreColumns(b =&gt; new { b.CreateTime, b.CreateBy })</c>。</summary>
     public UpdateCommand<T> IgnoreColumns(Expression<Func<T, object?>> columns)
     {
-        _ignoredColumns = ExpressionTranslator.MemberNames(columns);
+        _ignoredColumns = ColumnPaths(columns);
         return this;
     }
 
@@ -123,7 +148,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     /// </summary>
     public UpdateCommand<T> WhereColumns(Expression<Func<T, object?>> columns)
     {
-        var names = ExpressionTranslator.MemberNames(columns);
+        var names = ColumnPaths(columns);
         _whereColumns = Entity.Columns.Where(c => names.Contains(c.PropertyName)).ToList();
         return this;
     }
@@ -135,9 +160,15 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     public UpdateCommand<T> ColumnSql<TValue>(Expression<Func<T, TValue>> column, string template)
     {
         ArgumentException.ThrowIfNullOrEmpty(template);
-        _columnSql[ExpressionTranslator.MemberOf(column).Name] = template;
+        _columnSql[ExpressionTranslator.MemberPath(column)] = template;
         return this;
     }
+
+    // 列清单里的属性路径，整个值对象展开成它的各列
+    private List<string> ColumnPaths(LambdaExpression columns) =>
+        ExpressionTranslator.MemberNames(columns)
+            .SelectMany(path => Entity.ValueObjects.TryGetValue(path, out var valueObject) ? valueObject.Columns.Select(c => c.PropertyName) : [path])
+            .ToList();
 
     /// <summary>渲染第一条语句（按实体更新时是第一个实体的语句），不执行；没有要写的列时抛出异常。</summary>
     public string ToSql() => ToStatement().Text;
@@ -204,7 +235,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
 
     private void AddEntitySets(UpdateStatement update, EntityTableSource table, T entity, Tracking.TrackedEntry? tracked)
     {
-        var skipped = _sets.Select(s => s.Member.Name).ToHashSet(StringComparer.Ordinal);
+        var skipped = _sets.Select(s => s.Column).ToHashSet(StringComparer.Ordinal);
         // 显式策略、显式列优先；否则追踪的实体只写变化的列（与 Java 的优先级一致：用户设置 > 追踪 > 默认）
         var changed = _strategy is null && _onlyColumns is null && tracked is not null ? tracked.ChangedColumns().ToHashSet() : null;
         // 定位列不写进 SET；差异更新时定位列取原始值，改过的定位列照常写；显式指定的列照常写（与 Java 一致）
@@ -255,7 +286,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     // 按条件更新：拦截器追加的列（修改人、修改时间…）写在用户的列之后，用户已经 Set 过的列跳过
     private void AddInterceptorSets(UpdateStatement update, EntityTableSource table)
     {
-        foreach (var (property, value) in Db.Interceptors.ConditionUpdateSets(typeof(T), _sets.Select(s => s.Member.Name), Interceptors))
+        foreach (var (property, value) in Db.Interceptors.ConditionUpdateSets(typeof(T), _sets.Select(s => s.Column), Interceptors))
         {
             var column = Entity.GetColumn(property);
             update.Sets.Add((table.Column(column), ExpressionTranslator.ParameterFromModel(column, value)));
@@ -267,7 +298,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     {
         foreach (var set in _sets)
         {
-            var column = scope.Table.Column(Entity.GetColumn(set.Member.Name));
+            var column = scope.Table.Column(Entity.GetColumn(set.Column));
             var value = ExpressionTranslator.ApplyConverter(scope.Translate(set.Value, predicate: false), column, write: true);
             update.Sets.Add((column, set.Kind switch
             {
@@ -286,5 +317,6 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         Decrement,
     }
 
-    private sealed record SetSpec(MemberInfo Member, LambdaExpression Value, SetKind Kind);
+    // Column 是属性路径（值对象里的列如 Address.City）
+    private sealed record SetSpec(string Column, LambdaExpression Value, SetKind Kind);
 }

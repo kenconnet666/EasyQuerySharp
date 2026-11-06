@@ -81,6 +81,13 @@ internal sealed partial class ExpressionTranslator
         MemberExpression { Expression: { } inner } m when BindingOf(inner) is TupleBinding tuple => tuple.Item(m.Member.Name),
         // 派生表里嵌着的整个实体 x.b → 只含它那些列的派生绑定
         MemberExpression { Expression: { } inner } m when BindingOf(inner) is DerivedBinding derived && derived.Nested(m.Member.Name) is { } nested => nested,
+        // 值对象 x.Address、嵌套的 x.Address.Geo → 实体表上的那几列
+        MemberExpression { Expression: { } inner } m when BindingOf(inner) switch
+        {
+            EntityBinding entity => entity.ValueObject(m.Member.Name),
+            ValueObjectBinding valueObject => valueObject.ValueObject(m.Member.Name),
+            _ => null,
+        } is { } valueObjectBinding => valueObjectBinding,
         // 对一导航 x.User → 隐式 JOIN 的目标表
         MemberExpression m => ToOneNavigation(m),
         // 带配置的对一导航 Sql.AsTable(x.User, "..") → 按配置单独 JOIN 的目标表
@@ -115,19 +122,24 @@ internal sealed partial class ExpressionTranslator
         Parameter(column, column.Converter is null ? value : column.Converter.ToProvider(value));
 
     /// <summary>直接的属性访问 <c>t =&gt; t.Title</c>（可以有类型转换）指向的成员；不是属性访问时抛出带上下文的异常。</summary>
-    internal static System.Reflection.MemberInfo MemberOf(LambdaExpression selector) =>
-        StripConvert(selector.Body) is MemberExpression m
-            ? m.Member
-            : throw new ArgumentException($"需要直接的属性访问，如 t => t.Title：{selector}", nameof(selector));
+    internal static string MemberPath(LambdaExpression selector) =>
+        MemberPath(StripConvert(selector.Body)) ?? throw new ArgumentException($"需要直接的属性访问，如 t => t.Title：{selector}", nameof(selector));
+
+    // 从参数起的属性路径：t.Title 是 Title，值对象里的 t.Address.City 是 Address.City；不是属性访问链时为 null
+    private static string? MemberPath(Expression e) => e switch
+    {
+        MemberExpression { Expression: ParameterExpression } m => m.Member.Name,
+        MemberExpression { Expression: { } inner } m when MemberPath(StripConvert(inner)) is { } owner => owner + "." + m.Member.Name,
+        _ => null,
+    };
 
     /// <summary>列清单 <c>t =&gt; t.A</c> 或 <c>t =&gt; new { t.A, t.B }</c> 里的属性名，按书写顺序、去重。</summary>
     internal static List<string> MemberNames(LambdaExpression selector)
     {
         var body = StripConvert(selector.Body);
         IEnumerable<Expression> parts = body is NewExpression n ? n.Arguments : [body];
-        return parts.Select(p => StripConvert(p) is MemberExpression m
-                ? m.Member.Name
-                : throw new ArgumentException($"列清单只能写属性访问，如 t => new {{ t.Id, t.Title }}：{selector}", nameof(selector)))
+        return parts.Select(p => MemberPath(StripConvert(p))
+                ?? throw new ArgumentException($"列清单只能写属性访问，如 t => new {{ t.Id, t.Title }}：{selector}", nameof(selector)))
             .Distinct(StringComparer.Ordinal)
             .ToList();
     }
@@ -287,8 +299,14 @@ internal sealed partial class ExpressionTranslator
         return new BinaryExpr(AsValue(left), negated ? SqlBinaryOperator.NotEqual : SqlBinaryOperator.Equal, AsValue(right));
     }
 
+    // 实体按主键判空；值对象是它的列全为 NULL（不为 null 是至少一列有值）
     private SqlExpr NullCheck(Expression operand, bool negated)
     {
+        if (BindingOf(operand) is ValueObjectBinding valueObject)
+        {
+            var columns = valueObject.Metadata.Columns.Select(c => (SqlExpr)new IsNullExpr(valueObject.Owner.EntityTable.Column(c), negated)).ToList();
+            return columns.Count == 1 ? columns[0] : negated ? LogicalExpr.GroupedOr(columns) : LogicalExpr.Grouped(columns);
+        }
         if (BindingOf(operand) is not EntityBinding { Entity.KeyColumns: { Count: > 0 } keys } entity) return new IsNullExpr(Translate(operand), negated);
         var checks = keys.Select(k => (SqlExpr)new IsNullExpr(entity.EntityTable.Column(k), negated)).ToList();
         return checks.Count == 1 ? checks[0] : LogicalExpr.Grouped(checks);

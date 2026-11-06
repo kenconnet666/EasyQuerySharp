@@ -73,6 +73,14 @@ public static class QueryBasicsExamples
             .Select(p => new PostWithAuthor(p.Title, p.Views, p.Author!.Name, p.Author!.Company!.Name))
             .ToListAsync();
 
+    /// <summary>门店与它的坐标。</summary>
+    public sealed record ShopPoint(string Name, GeoPoint Geo);
+
+    [Example("query/basics", "值对象：按成员过滤、整体投影")]
+    public static Task<List<ShopPoint>> ValueObjects(EasyDb db) =>
+        db.Query<Shop>().Where(s => s.Address.City == "杭州" && s.Address.Street != null)
+            .Select(s => new ShopPoint(s.Name, s.Address.Geo)).ToListAsync();
+
     [Example("query/basics", "沿集合导航展开")]
     public static Task<List<string>> FlattenNavigations(EasyDb db) =>
         db.Query<Company>().Where(c => c.Id == 1).SelectMany(c => c.Users).SelectMany(u => u.Following)

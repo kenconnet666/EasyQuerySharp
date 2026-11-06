@@ -68,7 +68,7 @@
 | 逻辑删除 | `logicDelete` | 10 | `[LogicDelete(LogicDeleteStrategy.Boolean)]` / `DeletedTime` / `DeletedTimestamp`；自定义策略实现 `ILogicDeleteStrategy`，`options.AddLogicDeleteStrategy("名字", 策略)`；不改实体时 `options.ApplyLogicDelete(..)` | 完成 |
 | 乐观锁 | `version` | 13 | `[Version]`（整数列 +1；`VersionStrategy.NewGuid`）；按条件写入必须 `.WithVersion(v)` 或 `.IgnoreVersion()`；冲突时影响 0 行，用 `ExecuteAsync(1, "msg")` 抛 `ConcurrencyException` | 完成 |
 | 列加密 | `column.encryption` | 8 | `[Encryption(typeof(AesBase64EncryptionStrategy))]` / `Sm4HexEncryptionStrategy`，与 Java 的密文兼容，支持分段 LIKE；库端加解密用 `[Column(SqlConversion = typeof(…))]` | 完成 |
-| 值转换、枚举 | `column.converter` | 9 | `[Column(Converter = typeof(JsonValueConverter<Attrs>))]`；枚举默认按数字存，`[StoreAsName]` 或 `EnumNameConverter<T>` 按名字存；值对象 `[ValueObject]` 在阶段 1 | 阶段 1 |
+| 值转换、枚举 | `column.converter` | 9 | `[Column(Converter = typeof(JsonValueConverter<Attrs>))]`；枚举默认按数字存，`[StoreAsName]` 或 `EnumNameConverter<T>` 按名字存；值对象 `[ValueObject]` 见下面 TS 版独有的能力 | 阶段 3 |
 | 自增、生成列 | `column.generated` | 0 | `[Column(Generated = true)]` / `[Column(KeyGenerator = typeof(…))]` / `GeneratedSql` | 完成 |
 
 用例数为 0 的一项，是因为 TS 的分类规则里，对应 Java 的目录在 `sql-test` 下没有用例，能力本身仍要做。
@@ -125,7 +125,7 @@
 
 | 能力 | TS 写法 | C# | 状态 |
 |---|---|---|---|
-| 值对象 | `embed()` | `[ValueObject]` 扁平列（Java 也有 `@ValueObject`） | 阶段 1 |
+| 值对象 | `embed()` | `[ValueObject]`：几列合成实体上的嵌套对象，列名默认"属性_子属性"，`Prefix` 换前缀，可以嵌套；`s.Address.City` 是一列，`s.Address == null` 是列全为 NULL；可整体投影、按结构映射到 DTO、`Set` 整个或部分写入（Java 的 `@ValueObject` 已弃用） | 完成 |
 | 计算属性 | `defineComputed` | `[Computed(nameof(静态表达式))]` | 完成 |
 | 多态（判别联合） | `entity.union` | 判别列加子类 | BACKLOG |
 | 只读库 | `db.readonly()` | `db.AsReadOnly()` | BACKLOG |

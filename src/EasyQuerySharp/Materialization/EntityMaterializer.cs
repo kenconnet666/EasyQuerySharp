@@ -11,11 +11,13 @@ public static class EntityMaterializer
 
     /// <summary>
     /// 从第 <paramref name="start"/> 列起依次读 <paramref name="columns"/> 对应的值，写入新建的实体。
-    /// <paramref name="nullWhenKeyNull"/> 为 true 时，主键列全为 NULL 就返回 null（LEFT JOIN 没连上的行）。
+    /// <paramref name="nullWhenKeyNull"/> 为 true 时，主键列全为 NULL 就返回 null（LEFT JOIN 没连上的行）；值对象是列全为 NULL 时返回 null。
     /// </summary>
     public static object? Read(DbDataReader reader, int start, EntityMetadata entity, IReadOnlyList<ColumnMetadata> columns, bool nullWhenKeyNull)
     {
         if (nullWhenKeyNull && entity.KeyColumns.Count > 0 && AllKeysNull(reader, start, columns)) return null;
+        // 单独投影的值对象：列全为 NULL 时就是 null
+        if (nullWhenKeyNull && entity.IsValueObject && Enumerable.Range(start, columns.Count).All(reader.IsDBNull)) return null;
 
         var instance = entity.Factory();
         for (var i = 0; i < columns.Count; i++)

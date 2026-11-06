@@ -543,6 +543,7 @@ EasyQuerySharp.Metadata.ColumnMetadata.IsGenerated.get -> bool
 EasyQuerySharp.Metadata.ColumnMetadata.IsPrimaryKey.get -> bool
 EasyQuerySharp.Metadata.ColumnMetadata.KeyGenerator.get -> EasyQuerySharp.Metadata.IKeyGenerator?
 EasyQuerySharp.Metadata.ColumnMetadata.Name.get -> string!
+EasyQuerySharp.Metadata.ColumnMetadata.OwnerPath.get -> System.Collections.Generic.IReadOnlyList<System.Reflection.PropertyInfo!>!
 EasyQuerySharp.Metadata.ColumnMetadata.Property.get -> System.Reflection.PropertyInfo!
 EasyQuerySharp.Metadata.ColumnMetadata.PropertyName.get -> string!
 EasyQuerySharp.Metadata.ColumnMetadata.Setter.get -> System.Action<object!, object?>?
@@ -706,6 +707,10 @@ EasyQuerySharp.Metadata.ValueConverter<TModel, TProvider>
 EasyQuerySharp.Metadata.ValueConverter<TModel, TProvider>.ModelType.get -> System.Type!
 EasyQuerySharp.Metadata.ValueConverter<TModel, TProvider>.ProviderType.get -> System.Type!
 EasyQuerySharp.Metadata.ValueConverter<TModel, TProvider>.ValueConverter() -> void
+EasyQuerySharp.Metadata.ValueObjectAttribute
+EasyQuerySharp.Metadata.ValueObjectAttribute.Prefix.get -> string?
+EasyQuerySharp.Metadata.ValueObjectAttribute.Prefix.init -> void
+EasyQuerySharp.Metadata.ValueObjectAttribute.ValueObjectAttribute() -> void
 EasyQuerySharp.Metadata.VersionAttribute
 EasyQuerySharp.Metadata.VersionAttribute.Strategy.get -> EasyQuerySharp.Metadata.VersionStrategy
 EasyQuerySharp.Metadata.VersionAttribute.VersionAttribute(EasyQuerySharp.Metadata.VersionStrategy strategy = EasyQuerySharp.Metadata.VersionStrategy.Increment) -> void

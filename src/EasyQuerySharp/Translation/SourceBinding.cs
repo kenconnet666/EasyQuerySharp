@@ -42,6 +42,30 @@ internal sealed class EntityBinding(EntityTableSource table) : SourceBinding
     /// <inheritdoc />
     public override SqlExpr? Member(MemberInfo member) =>
         table.Entity.FindColumn(member.Name) is { } column ? table.Column(column) : null;
+
+    /// <summary>实体上的值对象 <c>x.Address</c>；不是值对象时为 null。</summary>
+    public ValueObjectBinding? ValueObject(string member) =>
+        Entity.ValueObjects.TryGetValue(member, out var valueObject) ? new ValueObjectBinding(this, valueObject) : null;
+}
+
+/// <summary>实体上的值对象 <c>x.Address</c>（见 <see cref="ValueObjectAttribute"/>）：它的成员是实体表上的列，嵌套的值对象再往下取。</summary>
+internal sealed class ValueObjectBinding(EntityBinding owner, ValueObjectMetadata valueObject) : SourceBinding
+{
+    /// <inheritdoc />
+    public override TableSource Table => owner.Table;
+
+    /// <summary>值对象所在的实体表。</summary>
+    public EntityBinding Owner => owner;
+
+    /// <summary>值对象的元数据。</summary>
+    public ValueObjectMetadata Metadata => valueObject;
+
+    /// <inheritdoc />
+    public override SqlExpr? Member(MemberInfo member) =>
+        owner.Entity.FindColumn(valueObject.Path + "." + member.Name) is { } column ? owner.EntityTable.Column(column) : null;
+
+    /// <summary>嵌套的值对象 <c>x.Address.Geo</c>；不是值对象时为 null。</summary>
+    public ValueObjectBinding? ValueObject(string member) => owner.ValueObject(valueObject.Path + "." + member);
 }
 
 /// <summary>

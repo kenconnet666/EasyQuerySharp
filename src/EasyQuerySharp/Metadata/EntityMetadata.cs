@@ -73,6 +73,12 @@ public sealed class EntityMetadata
     /// <summary>创建实体实例（需要无参构造函数）。</summary>
     internal Func<object> Factory { get; }
 
+    /// <summary>值对象属性（见 <see cref="ValueObjectAttribute"/>），按从实体起的路径（<c>Address</c>、<c>Address.Geo</c>）。</summary>
+    internal IReadOnlyDictionary<string, ValueObjectMetadata> ValueObjects { get; init; } = new Dictionary<string, ValueObjectMetadata>();
+
+    /// <summary>这是值对象自己的形状（只用来物化单独投影出的值对象，没有表）。</summary>
+    internal bool IsValueObject { get; init; }
+
     /// <summary>按属性名取列；不是映射列时返回 null。</summary>
     public ColumnMetadata? FindColumn(string propertyName) => _byProperty.GetValueOrDefault(propertyName);
 

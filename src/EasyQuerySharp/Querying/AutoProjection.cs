@@ -71,9 +71,12 @@ internal static class AutoProjection
         return new Translation.ExpressionTranslator.ParameterReplacer(parameter, row).Visit(lambda.Body);
     }
 
-    // 同名的列；带值转换器的列（如 JSON 对象列）属性类型兼容时同样映射，读取时照样转换
+    // 同名的列；带值转换器的列（如 JSON 对象列）属性类型兼容时同样映射，读取时照样转换；同名同类型的值对象整个映射
     private static MemberExpression? ColumnValue(EntityMetadata source, Expression row, PropertyInfo property)
     {
+        if (source.ValueObjects.Values.FirstOrDefault(v => v.Property.DeclaringType!.IsAssignableFrom(source.Type)
+                && string.Equals(v.Property.Name, property.Name, StringComparison.OrdinalIgnoreCase)) is { } valueObject)
+            return property.PropertyType.IsAssignableFrom(valueObject.Property.PropertyType) ? Expression.Property(row, valueObject.Property) : null;
         var column = source.Columns.FirstOrDefault(c => string.Equals(c.PropertyName, property.Name, StringComparison.OrdinalIgnoreCase));
         if (column is null) return null;
         var mappable = ScalarTypes.IsScalar(property.PropertyType) || (column.Converter is not null && property.PropertyType.IsAssignableFrom(column.ClrType));

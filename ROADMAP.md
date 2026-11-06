@@ -80,7 +80,7 @@ R → 1 → 2 → 3 → 4 → 5。
   - 隐式子查询、分组合并、Include、DTO 自动带出都能用；聚合保存不支持；
   - 用例：M8Test1 testRelationColumns / testRelationColumns1。
 - [x] 1.2 沿集合导航展开 `SelectMany`：按 LINQ 语义写成 INNER JOIN（多对多经中间表，导航的固定条件与逻辑删除写进 ON，保留重复），连着写的 SelectMany 和之后的 Where / OrderBy / Select 直接作用在最后连接的表上；父查询分页、去重、分组、投影过时先包成派生表；支持查询语法 `from a in q from b in a.Bs`。Java 的 testToListFlat1 记为偏离（Java 逐层带出再去重）。
-- [ ] 1.3 值对象 `[ValueObject]`。
+- [x] 1.3 值对象 `[ValueObject]`（对应 TS 的 `embed()`；Java 的 `@ValueObject` 已弃用，没有用例）：几列合成实体上的嵌套对象，可嵌套、可换前缀；条件、隐式子查询、整体投影、按结构映射到 DTO、插入、`Set` 整个或部分写入、建表都支持。
 - [ ] 1.4 不追踪时的差异更新 `db.Update<T>().Changes(before, after)`。
 - [ ] 1.5 批量写入走 `DbBatch`。做完后复核按"每个实体一条语句"记的偏离：DeleteTest testBatchDelete、InsertTest testIncrement、UpdateTest updateTestBatch / updateTestBatch1 / updateTestBatch2。
 - [ ] 1.6 `Returning()`：PG 的 UPDATE / DELETE … RETURNING，其余方言在渲染期报错（fork ReturningSqlTest、ReturningLiveTest）。

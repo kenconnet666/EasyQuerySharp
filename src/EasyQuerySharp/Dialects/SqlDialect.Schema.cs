@@ -56,7 +56,7 @@ public abstract partial class SqlDialect
         _ => throw new NotSupportedException($"{column} 的类型 {type.Name} 没有默认的列类型，请用 [Column(DbType = …)] 指定"),
     };
 
-    /// <summary>列是否可空：主键与非可空值类型不可空，其余可空（与 Java 版一致）。</summary>
+    /// <summary>列是否可空：主键与非可空值类型不可空，其余可空（与 Java 版一致）；可空的值对象里的列都可空。</summary>
     protected static bool IsNullable(Metadata.ColumnMetadata column) =>
-        !column.IsPrimaryKey && (!column.ClrType.IsValueType || Nullable.GetUnderlyingType(column.ClrType) is not null);
+        !column.IsPrimaryKey && (column.InNullableValueObject || !column.ClrType.IsValueType || Nullable.GetUnderlyingType(column.ClrType) is not null);
 }

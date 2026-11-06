@@ -101,7 +101,12 @@ internal sealed partial class ProjectionCompiler(ExpressionTranslator translator
     private Expression Shape(Expression body, MemberInfo? member, bool topLevel)
     {
         if (translator.BindingOf(body) is { } binding)
-            return binding is DerivedBinding { Entity: null } dto ? ShapeDerivedDto(dto, body.Type, topLevel, member) : ShapeEntity(binding, body.Type, topLevel, member);
+            return binding switch
+            {
+                DerivedBinding { Entity: null } dto => ShapeDerivedDto(dto, body.Type, topLevel, member),
+                ValueObjectBinding valueObject => ShapeValueObject(valueObject, body.Type, topLevel, member),
+                _ => ShapeEntity(binding, body.Type, topLevel, member),
+            };
 
         switch (body)
         {
@@ -193,6 +198,24 @@ internal sealed partial class ProjectionCompiler(ExpressionTranslator translator
         return Expression.Convert(
             Expression.Call(EntityMaterializer.ReadMethod, _reader, Expression.Constant(start), Expression.Constant(entity),
                 Expression.Constant(columns), Expression.Constant(!topLevel)),
+            type);
+    }
+
+    // 整个值对象 x.Address：它在实体表上的列依次选出，按值对象自己的形状物化，列全为 NULL 时是 null
+    private Expression ShapeValueObject(ValueObjectBinding binding, Type type, bool topLevel, MemberInfo? member)
+    {
+        var start = _columns.Count;
+        var shape = binding.Metadata.Shape;
+        foreach (var (column, relative) in binding.Metadata.Columns.Zip(shape.Columns))
+        {
+            var sql = binding.Owner.EntityTable.Column(column);
+            var memberName = topLevel ? relative.PropertyName : member is null ? null : member.Name + "." + relative.PropertyName;
+            if (column.SqlConversion is { } conversion) AddColumn(conversion.ReadOf(sql), column.Name, memberName, forceAlias: true);
+            else AddColumn(sql, null, memberName);
+        }
+        return Expression.Convert(
+            Expression.Call(EntityMaterializer.ReadMethod, _reader, Expression.Constant(start), Expression.Constant(shape),
+                Expression.Constant(shape.Columns), Expression.Constant(true)),
             type);
     }
 
