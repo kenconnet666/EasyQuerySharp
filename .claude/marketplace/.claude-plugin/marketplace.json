@@ -1,0 +1,12 @@
+{
+  "name": "easy-query-sharp",
+  "description": "In-repo plugin marketplace that only serves this project's Claude Code plugins",
+  "owner": { "name": "easy-query-sharp" },
+  "plugins": [
+    {
+      "name": "easy-query-sharp-lsp",
+      "source": "./easy-query-sharp-lsp",
+      "description": "Native LSP for C#, served by csharp-ls pinned in dotnet-tools.json"
+    }
+  ]
+}

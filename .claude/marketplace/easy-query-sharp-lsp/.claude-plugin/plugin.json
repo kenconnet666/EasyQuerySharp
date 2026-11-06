@@ -1,0 +1,6 @@
+{
+  "name": "easy-query-sharp-lsp",
+  "version": "1.0.0",
+  "description": "C# language server (csharp-ls, pinned in the repo's dotnet-tools.json) for the LSP tool and post-edit diagnostics. It loads EasyQuerySharp.slnx with the .NET 10 SDK from ~/.dotnet, the same SDK the build uses",
+  "author": { "name": "easy-query-sharp" }
+}
