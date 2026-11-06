@@ -22,6 +22,14 @@ public class SqlServerDialect : SqlDialect
     /// <inheritdoc />
     public override string RecursiveWith => "WITH ";
 
+    /// <summary><c>STRING_AGG(x, ?) WITHIN GROUP (ORDER BY …)</c>（与 Java 的 MsSQLJoiningSQLFunction 一致）。</summary>
+    public override void WriteOrderedStringJoin(SqlRenderer renderer, OrderedStringJoinExpr join)
+    {
+        renderer.Append(join.Distinct ? "STRING_AGG(DISTINCT " : "STRING_AGG(").Write(join.Value).Append(", ").Write(join.Separator).Append(") WITHIN GROUP (");
+        WriteOrderBy(renderer, join.Orders);
+        renderer.Append(")");
+    }
+
     /// <summary>
     /// 自增键用 <c>OUTPUT INSERTED.[id]</c> 随插入一起返回（单独再查 <c>SCOPE_IDENTITY()</c> 不在同一个作用域，拿到的是 NULL）。
     /// </summary>

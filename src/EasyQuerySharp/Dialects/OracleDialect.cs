@@ -117,9 +117,21 @@ public class OracleDialect : SqlDialect
         }
     }
 
-    /// <summary>值里含 % 或 _ 时，包含 / 开头 / 结尾改写成 INSTR，避免被当成通配符（与 Java 版一致）。</summary>
+    /// <summary>
+    /// 值里含 % 或 _ 时，包含 / 开头 / 结尾改写成 INSTR，避免被当成通配符（与 Java 版一致）；
+    /// 模式在 SQL 里拼（<c>Sql.LikeContains</c> 等）时值先转成字符再拼 %：<c>LIKE ('%'||TO_CHAR(?)||'%')</c>（与 Java 的 OracleLikeSQLFunction 一致）。
+    /// </summary>
     public override void WriteLike(SqlRenderer renderer, LikeExpr predicate)
     {
+        if (!predicate.HasWildcardValue && predicate is { Pattern: FunctionExpr { Name: SqlFunctionNames.Concat }, Value: not null })
+        {
+            renderer.Write(predicate.Operand).Append(predicate.Negated ? " NOT LIKE (" : " LIKE (");
+            if (predicate.Mode != LikeMode.StartsWith) renderer.Append("'%'||");
+            renderer.Append("TO_CHAR(").Write(predicate.Value).Append(")");
+            if (predicate.Mode != LikeMode.EndsWith) renderer.Append("||'%'");
+            renderer.Append(")");
+            return;
+        }
         if (!predicate.HasWildcardValue)
         {
             base.WriteLike(renderer, predicate);
@@ -147,12 +159,14 @@ public class OracleDialect : SqlDialect
     }
 
     /// <summary>Oracle 原生支持 NULLS FIRST / LAST（Java 的 OracleOrderByNullsModeSQLFunction）。</summary>
-    public override void WriteOrderByItem(Rendering.SqlRenderer renderer, OrderByItem item)
+    protected override bool NativeNullsOrder => true;
+
+    /// <summary><c>LISTAGG(TO_CHAR(x), ?) WITHIN GROUP(ORDER BY …)</c>（与 Java 的 OracleJoiningSQLFunction 一致，达梦沿用）。</summary>
+    public override void WriteOrderedStringJoin(SqlRenderer renderer, OrderedStringJoinExpr join)
     {
-        renderer.Write(item.Expr);
-        if (item.Raw) return;
-        renderer.Append(item.Descending ? " DESC" : " ASC");
-        if (item.Nulls is { } nulls) renderer.Append(nulls == NullsOrder.Last ? " NULLS LAST" : " NULLS FIRST");
+        renderer.Append(join.Distinct ? "LISTAGG(DISTINCT TO_CHAR(" : "LISTAGG(TO_CHAR(").Write(join.Value).Append("), ").Write(join.Separator).Append(") WITHIN GROUP(");
+        WriteOrderBy(renderer, join.Orders);
+        renderer.Append(")");
     }
 
     /// <inheritdoc />
@@ -199,8 +213,8 @@ public class OracleDialect : SqlDialect
         f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("LISTAGG(TO_CHAR(").Write(a[0]).Append("), ").Write(a[1]).Append(") WITHIN GROUP(ORDER BY 1)");
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("LISTAGG(DISTINCT TO_CHAR(").Write(a[0]).Append("), ").Write(a[1]).Append(") WITHIN GROUP(ORDER BY 1)");
         f[SqlFunctionNames.DateFormat] = (r, a) => r.Append("TO_CHAR(").Write(a[0]).Append(",'").Append(OracleDateFormat(((LiteralExpr)a[1]).Sql)).Append("')");
-        // 相差：两个日期相减得到天数，再拆成 DAY / HOUR / MINUTE / SECOND 累加（与 Java 一致）
-        const string interval = "NUMTODSINTERVAL(({1}+0)-({0}+0),'DAY')";
+        // 相差：两个日期相减得到间隔，再拆成 DAY / HOUR / MINUTE / SECOND 累加（与 Java 一致）
+        var interval = DateDiffInterval;
         f[SqlFunctionNames.Now] = Template("SYSTIMESTAMP");
         f[SqlFunctionNames.Random] = Template("DBMS_RANDOM.VALUE()");
         f[SqlFunctionNames.UtcNow] = Template("SYS_EXTRACT_UTC(SYSTIMESTAMP)");
@@ -234,6 +248,9 @@ public class OracleDialect : SqlDialect
                      + (unit == DateUnit.Millisecond ? "*1000" : ""),
             });
     }
+
+    /// <summary>日期相差用的间隔表达式（<c>{0}</c> 起点、<c>{1}</c> 终点）：两个日期相减得到天数，再转成 DAY TO SECOND 间隔。</summary>
+    protected virtual string DateDiffInterval => "NUMTODSINTERVAL(({1}+0)-({0}+0),'DAY')";
 
     // 与 Java 的 OracleDateTimeFormatSQLFunction.formatDefault 一致：格式记号与 :/-_ 空格原样转换，其余文字用双引号括起来
     private static readonly System.Text.RegularExpressions.Regex DateFormatToken = new("yyyy|yy|MM|dd|HH|hh|mm|ss|[MdHhmsa:/_ -]");

@@ -1738,6 +1738,7 @@ override EasyQuerySharp.Dialects.OracleDialect.ClrColumnType(System.Type! type, 
 override EasyQuerySharp.Dialects.OracleDialect.InsertConflictUsesMerge.get -> bool
 override EasyQuerySharp.Dialects.OracleDialect.MergeSourceSuffix.get -> string!
 override EasyQuerySharp.Dialects.OracleDialect.Name.get -> string!
+override EasyQuerySharp.Dialects.OracleDialect.NativeNullsOrder.get -> bool
 override EasyQuerySharp.Dialects.OracleDialect.ParameterPlaceholder(int index) -> string!
 override EasyQuerySharp.Dialects.OracleDialect.RecursiveCteColumnList.get -> bool
 override EasyQuerySharp.Dialects.OracleDialect.RecursiveWith.get -> string!
@@ -1746,7 +1747,7 @@ override EasyQuerySharp.Dialects.OracleDialect.WriteInsertReturning(EasyQuerySha
 override EasyQuerySharp.Dialects.OracleDialect.WriteJoinedDelete(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.DeleteStatement! statement) -> void
 override EasyQuerySharp.Dialects.OracleDialect.WriteJoinedUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
 override EasyQuerySharp.Dialects.OracleDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
-override EasyQuerySharp.Dialects.OracleDialect.WriteOrderByItem(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderByItem! item) -> void
+override EasyQuerySharp.Dialects.OracleDialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
 override EasyQuerySharp.Dialects.OracleDialect.WritePagedSelect(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query, System.Action! writeUnpaged) -> void
 override EasyQuerySharp.Dialects.PostgreSqlDialect.CastTemplate(System.Type! targetType) -> string!
 override EasyQuerySharp.Dialects.PostgreSqlDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
@@ -1777,6 +1778,7 @@ override EasyQuerySharp.Dialects.SqlServerDialect.WriteJoinedDelete(EasyQuerySha
 override EasyQuerySharp.Dialects.SqlServerDialect.WriteJoinedUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
 override EasyQuerySharp.Dialects.SqlServerDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
 override EasyQuerySharp.Dialects.SqlServerDialect.WriteLock(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.RowLock rowLock) -> void
+override EasyQuerySharp.Dialects.SqlServerDialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
 override EasyQuerySharp.Dialects.SqlServerDialect.WritePaging(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
 override EasyQuerySharp.Dialects.SqlServerDialect.WriteSelectHead(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
 override EasyQuerySharp.Dialects.SqliteDialect.CastTemplate(System.Type! targetType) -> string!
@@ -2074,6 +2076,7 @@ static EasyQuerySharp.WindowBound.UnboundedPreceding.get -> EasyQuerySharp.Windo
 static EasyQuerySharp.WindowBound.operator !=(EasyQuerySharp.WindowBound left, EasyQuerySharp.WindowBound right) -> bool
 static EasyQuerySharp.WindowBound.operator ==(EasyQuerySharp.WindowBound left, EasyQuerySharp.WindowBound right) -> bool
 virtual EasyQuerySharp.Dialects.FunctionWriter.Invoke(EasyQuerySharp.Rendering.SqlRenderer! r, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! args) -> void
+virtual EasyQuerySharp.Dialects.OracleDialect.DateDiffInterval.get -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.AliasedWriteUsesFrom.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.CastTemplate(System.Type! targetType) -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
@@ -2089,6 +2092,7 @@ virtual EasyQuerySharp.Dialects.SqlDialect.InsertKeyword(EasyQuerySharp.SqlAst.I
 virtual EasyQuerySharp.Dialects.SqlDialect.LastInsertIdQuery.get -> string?
 virtual EasyQuerySharp.Dialects.SqlDialect.MergeSourceSuffix.get -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.MergeTerminator.get -> string!
+virtual EasyQuerySharp.Dialects.SqlDialect.NativeNullsOrder.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.ParameterName(int index) -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.ParameterPlaceholder(int index) -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.ParameterWrap(string? columnDbType) -> (string! Before, string! After)?
