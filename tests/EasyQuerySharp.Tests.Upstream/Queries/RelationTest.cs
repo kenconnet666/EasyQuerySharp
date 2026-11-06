@@ -4,7 +4,7 @@ namespace EasyQuerySharp.Tests.Upstream.Queries;
 /// 对应 Java：RelationTest.java 的省市区带出（include）、班级学生的导航条件、投影到导航对象。
 /// Java 的 include(o -> o.cities(), cq -> cq.include(…)) 对应 C# 的 Include(o => o.Cities, q => q.Include(…))。
 /// </summary>
-public sealed class RelationTest(MySqlFixture fixture) : MySqlTest(fixture)
+public sealed partial class RelationTest(MySqlFixture fixture) : MySqlTest(fixture)
 {
     private static void AssertTree(List<Province> provinces)
     {
