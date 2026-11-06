@@ -97,7 +97,7 @@
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | 13 | — | 不做 |
 | 达梦 | `dialect.dameng` | 51 | DM.DmProvider；方言继承 Oracle | 第二档，阶段 3 |
 | 人大金仓 / openGauss | `dialect.kingbase` | 2 | Npgsql；与 PG 共用方言 | 第二档，阶段 3 |
-| DuckDB | `dialect.duckdb` | 16 | DuckDB.NET | 第二档，阶段 3 |
+| DuckDB | `dialect.duckdb` | 16 | DuckDB.NET.Data.Full（只在测试项目里引用）；`options.UseDuckDb(..)` | 第二档，完成 |
 | ClickHouse | `dialect.clickhouse` | 4 | ClickHouse.Client | 第二档，阶段 3 |
 | SAP HANA | `dialect.hana` | 18 | SAP HANA ADO.NET 驱动 | 第二档，阶段 3 |
 | Db2 / TDengine | 没有用例 | — | Net.IBM.Data.Db2 / TDengine.Connector | 第二档，阶段 3 |

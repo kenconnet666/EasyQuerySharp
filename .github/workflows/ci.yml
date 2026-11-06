@@ -2,7 +2,7 @@
 # 而 require-dbs 列出的数据库连不上时判失败，防止服务容器没起来时测试被静默跳过。
 #
 # 分工（见 docs/decisions/0003-testing-and-parity.md）：
-#   core      SQLite + MySQL 8.4 + PostgreSQL 17：本地也必测的三个库，按测试项目 / 命名空间拆成并行的几片
+#   core      SQLite + MySQL 8.4 + PostgreSQL 17：本地也必测的三个库，按测试项目 / 命名空间拆成并行的几片；进程内的 DuckDB 不需要服务，随这几片一起跑
 #   checks    对照表与文档卡片快照，不连库
 #   其余任务  只跑实库测试项目，每个任务一种数据库；本地按需用 infra/dev 的 profile 复现
 # 镜像版本与 digest 和 infra/dev/compose.yaml 保持一致。密码只用于 CI 里的临时容器。

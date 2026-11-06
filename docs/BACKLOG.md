@@ -19,3 +19,6 @@
 - 任意关联条件的导航（TS 的 `r.manyOn(.., (a, b) => b.id.inCsv(a.ids))`）：查询时本表自连接成派生表按主键对上，带出要在内存里求逆；现在只有 `KeyMatch.SelfCsv`（0005）。
 - 逗号列表键的带出在 MySQL 上是 `FIND_IN_SET(列,?)`，用不上索引：目标表大时可以改成拆好的 `IN (…)`；现在与 Java 一致。
 - SQL Server 的 `Sql.LikeContains` / `LikeStartsWith` / `LikeEndsWith` 遇到含 `%` 或 `_` 的常量值：Java 的 MsSQLLikeSQLFunction 写成 `CHARINDEX(值,列) > 0` 一类，C# 沿用 `LIKE ? ESCAPE '\'`（语义相同、SQL 不同，没有 Java 用例覆盖）；要逐字对齐时再改。
+- 日期 `ToString(format)` 只转换 `yyyy` / `MM` / `dd` / `HH` / `mm` / `ss` 六个格式符，`yy`、`M`、`d`、`H`、`h`、`m`、`s`、`tt` 等单字母格式符在各方言里都原样当文字输出（Java 的 DuckDB、MySQL 等方言有对应的转换）：结果静默不对，要补的话各方言一起补。
+- DuckDB 的日期相差用 `DATEDIFF`（与 Java 一致），数的是跨过的边界：03:59 到 04:01 算 1 小时；`(a - b).TotalHours` 在 .NET 里是整段时长（0 小时）。要对齐 .NET 时改用 `date_sub`。
+- 文档卡片的 SQL 快照（`tools/DocsExamples`）只渲染第一档的 5 个方言；第二档方言（DuckDB 等）要不要进快照，到阶段 5 写指南时再定。
