@@ -8,6 +8,7 @@ namespace EasyQuerySharp.Dialects;
 /// DuckDB 方言（进程内的分析型数据库，1.5 实测）。SQL 与 PostgreSQL 接近，继承 PostgreSQL 方言，只覆盖差异。
 /// 驱动用 DuckDB.NET：<c>o.UseDuckDb(DuckDBClientFactory.Instance.CreateDataSource("Data Source=my.duckdb"))</c>。
 /// 没有行锁（<c>FOR UPDATE</c> 直接报错）；自增列用序列实现（DuckDB 不支持 IDENTITY）。
+/// DuckDB.NET 在最后一个连接关闭时关库（落盘），应用里要长期留一个连接不关，否则每条语句都重新打开库，慢得多。
 /// </summary>
 public class DuckDbDialect : PostgreSqlDialect
 {

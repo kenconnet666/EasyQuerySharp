@@ -104,10 +104,10 @@ public sealed class DuckDBQueryTest(DuckDbFixture fixture) : DuckDbTest(fixture)
     }
 
     // 格式串里的占位符超出参数个数：翻译时报错
-    [Fact, Upstream("duckdb/DuckDBQueryTest.java#testConcat2")]
+    [Fact, Upstream("duckdb/DuckDBQueryTest.java#testConcat2", Deviation = "Java 断言 EasyQueryInvalidOperationException 和它的文本（Mismatch: provided 3 arguments…），C# 只核对翻译时抛出异常")]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "CA2241", Justification = "故意写错占位符，验证翻译时报错")]
     public async Task TestConcat2() =>
-        await Assert.ThrowsAnyAsync<Exception>(() => Db.Query<BlogEntity>().Where(b => string.Format("你好:{0}我叫{1}你好吗?我今年{2}岁了,{3}你呢", b.Title, b.Star, 12) == "比较一下").ToListAsync(Ct));
+        await Assert.ThrowsAnyAsync<ArgumentOutOfRangeException>(() => Db.Query<BlogEntity>().Where(b => string.Format("你好:{0}我叫{1}你好吗?我今年{2}岁了,{3}你呢", b.Title, b.Star, 12) == "比较一下").ToListAsync(Ct));
 
     // ---- read_xlsx：DuckDB 的表函数当表用。Java 把函数写在 @Table 里（keyword = false，不加引号）；C# 在查询上用 AsTableSegment 整体替换表引用。
     // 只核对 SQL、不执行：read_xlsx 在 excel 扩展里（要联网安装），还要有 ducktest.xlsx

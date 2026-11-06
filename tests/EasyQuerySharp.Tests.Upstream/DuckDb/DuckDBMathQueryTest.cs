@@ -8,7 +8,9 @@ namespace EasyQuerySharp.Tests.Upstream.DuckDb;
 /// </summary>
 public sealed class DuckDBMathQueryTest(DuckDbFixture fixture) : DuckDbTest(fixture)
 {
-    [Fact, Upstream("duckdb/DuckDBMathQueryTest.java#testPropertyMath", Deviation = MathQueryTest.DoubleParams)]
+    private const string DoubleParams = "C# 的 Math.Pow / Atan2 只有 double 重载，pow 与 atan2 的参数是 Double（Java 是 BigDecimal）；Java 的 DTO 代理 set() 同名列也写 AS，C# 同名不写";
+
+    [Fact, Upstream("duckdb/DuckDBMathQueryTest.java#testPropertyMath", Deviation = DoubleParams)]
     public async Task TestPropertyMath()
     {
         await MathAssert.SeedAsync(Db, Ct);
