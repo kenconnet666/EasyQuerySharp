@@ -63,10 +63,7 @@ R → 1 → 2 → 3 → 4 → 5。
 ## R 整理（不加新功能）
 
 - [x] R.1 冻结对标基准：`tools/ParityTests` 的对照表和 `--check` 只读快照，快照记下来源（现有基准取自 fork，commit 未记录）；`--scaffold` / `--show` 从本机 Java 仓库取方法体，缺 fork 部分也能用；`--rescan` 才改写快照。
-- [ ] R.2 正确性问题：
-  - 环境事务结束后没有真正弹出 AsyncLocal：`EndAsync` 是 async 方法，里面的赋值不会传回调用方。同一个 async 方法里循环开事务时，已经结束的事务会串成链表，每条语句都要遍历一遍，造成泄漏、越跑越慢。改成在 AsyncLocal 里放可变的 holder。
-  - 嵌套事务：已经在事务里时，`BeginTransaction` 抛异常（对齐 Java 的 `repeat begin transaction`）。现在的做法是另开一个连接、另起一个事务。
-  - 追踪作用域在并行查询时共用同一个普通 `Dictionary`：要么加锁，要么检测到并发时报错。
+- [x] R.2 正确性问题：环境事务改成每个库一个可变 holder，结束时清空（原来在 async 方法里赋值不回流，已结束的事务一直挂在调用方流程上）；已在事务里再开事务抛异常（对齐 Java）；追踪作用域的共享状态加锁，可以并行查询。
 - [ ] R.3 修正 API（1.0 之前一次改完）：
   - `ToAsyncEnumerable()` 改名 `AsAsyncEnumerable()`；
   - `db.QuerySql<T>(..)`（返回可组合的查询）改名 `db.FromSql<T>(..)`；
