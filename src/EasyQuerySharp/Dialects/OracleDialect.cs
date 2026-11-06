@@ -43,6 +43,31 @@ public class OracleDialect : SqlDialect
         }
     }
 
+    /// <summary>
+    /// Oracle 没有 UPDATE … FROM：写成按 ROWID 对上的 MERGE，连接与条件都在 USING 的查询里：
+    /// <c>MERGE INTO "a" eq_w USING (SELECT t.ROWID AS "__rid__",值 AS "__v0__",… FROM "a" t INNER JOIN "b" t1 ON … WHERE …) eq_src
+    /// ON (eq_w.ROWID = eq_src."__rid__") WHEN MATCHED THEN UPDATE SET eq_w."c" = eq_src."__v0__",…</c>。
+    /// </summary>
+    public override void WriteJoinedUpdate(SqlRenderer renderer, UpdateStatement update)
+    {
+        var rowId = QuoteIdentifier("__rid__");
+        renderer.Append("MERGE INTO ").WriteTableName(update.Table).Append(" eq_w USING (SELECT " + update.Table.Alias + ".ROWID AS " + rowId);
+        for (var i = 0; i < update.Sets.Count; i++) renderer.Append(",").Write(update.Sets[i].Value).Append(" AS " + QuoteIdentifier($"__v{i}__"));
+        renderer.Append(" FROM ").WriteTable(update.Table);
+        foreach (var join in update.Joins) renderer.WriteJoin(join);
+        renderer.WriteWhere(update.Where).Append(") eq_src ON (eq_w.ROWID = eq_src." + rowId + ") WHEN MATCHED THEN UPDATE SET ");
+        for (var i = 0; i < update.Sets.Count; i++)
+            renderer.Append((i > 0 ? "," : "") + "eq_w." + QuoteIdentifier(update.Sets[i].Column.Name) + " = eq_src." + QuoteIdentifier($"__v{i}__"));
+    }
+
+    /// <summary><c>DELETE FROM "a" WHERE ROWID IN (SELECT t.ROWID FROM "a" t INNER JOIN "b" t1 ON … WHERE …)</c>。</summary>
+    public override void WriteJoinedDelete(SqlRenderer renderer, DeleteStatement statement)
+    {
+        renderer.Append("DELETE FROM ").WriteTableName(statement.Table).Append(" WHERE ROWID IN (SELECT " + statement.Table.Alias + ".ROWID FROM ").WriteTable(statement.Table);
+        foreach (var join in statement.Joins) renderer.WriteJoin(join);
+        renderer.WriteWhere(statement.Where).Append(")");
+    }
+
     /// <inheritdoc />
     public override string RecursiveWith => "WITH ";
 
@@ -158,6 +183,10 @@ public class OracleDialect : SqlDialect
     {
         base.RegisterFunctions(f);
         f[SqlFunctionNames.BooleanValue] = CaseBoolean;
+        foreach (var (unit, format) in new[] { (DateTruncUnit.Year, "YYYY"), (DateTruncUnit.Quarter, "Q"), (DateTruncUnit.Month, "MM"), (DateTruncUnit.Week, "IW"), (DateTruncUnit.Day, "DD"), (DateTruncUnit.Hour, "HH24"), (DateTruncUnit.Minute, "MI") })
+            f[SqlFunctionNames.DateTrunc(unit)] = Template("TRUNC({0}, '" + format + "')");
+        // TRUNC 没有到秒的格式：转成 DATE 就去掉了秒以下的部分
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Second)] = Template("CAST({0} AS DATE)");
         f[SqlFunctionNames.InCsv] = Template("(INSTR(',' || {1} || ',', ',' || {0} || ',') > 0)");
         f[SqlFunctionNames.NullOrDefault] = Call("NVL");
         f[SqlFunctionNames.Concat] = Infix(" || ");

@@ -26,7 +26,7 @@
 | 能力 | key | 用例数 | C# 写法 | 状态 |
 |---|---|---|---|---|
 | 字符串函数 | `func.string` | 131 | 优先映射 BCL：`Contains` / `StartsWith` / `Trim` / `ToUpper` / `Substring` / `IndexOf` / `Length` / `Replace` / `PadLeft`；没有 BCL 对应的用扩展方法：`Like` / `NotLike`；`Contains` 等对应 Java 的 like（`LIKE ?`，% 在参数里），`LikeContains` / `LikeStartsWith` / `LikeEndsWith` 对应 Java 的 contains / startsWith / endsWith（`LIKE CONCAT('%',?,'%')`） | 阶段 1 |
-| 日期函数 | `func.date` | 101 | `AddDays` / `AddMonths` / `.Year` / `.DayOfWeek` / `ToString("yyyy-MM")`（格式串按方言翻译）/ `Sql.Now()`；日期相减 `(end - start).TotalDays` / `.Days` / `.TotalHours`（对应 Java 的 duration）；`DateTime` / `DateOnly` / `DateTimeOffset`；日期截断 `p.CreatedAt.DateTrunc(DateTruncUnit.Month)`（MySQL / PG，其余方言随阶段 2、3） | 完成 |
+| 日期函数 | `func.date` | 101 | `AddDays` / `AddMonths` / `.Year` / `.DayOfWeek` / `ToString("yyyy-MM")`（格式串按方言翻译）/ `Sql.Now()`；日期相减 `(end - start).TotalDays` / `.Days` / `.TotalHours`（对应 Java 的 duration）；`DateTime` / `DateOnly` / `DateTimeOffset`；日期截断 `p.CreatedAt.DateTrunc(DateTruncUnit.Month)`（MySQL、PG、SQLite、SQL Server 2022 的 DATETRUNC、Oracle 的 TRUNC；周从周一起） | 完成 |
 | 通用函数 | `func.general` | 59 | `??`（nullOrDefault）/ `x.NullIf(y)` / `x.EqualsNullSafe(y)`（按方言写 `<=>` / `IS NOT DISTINCT FROM` / `IS`）/ `Sql.Random()` | 阶段 3 |
 | 字符串聚合 | `func.joining` | 29 | `g.StringJoin(p => p.Name, ",")`，集合导航上写 `string.Join(",", u.Posts.Select(p => p.Name))`；链上的 `OrderBy` / `ThenBy` 写进聚合 | 完成 |
 | JSON 函数 | `func.json` | 12 | `Sql.Json(u.Attrs).Get / Text / Value<T> / Length / ContainsKey`；方言专属的在 `Sql.MySql.Json(..)` / `Sql.Pg.Jsonb(..)` 下 | 完成 |
@@ -56,7 +56,7 @@
 | 删除 | `write.delete` | 25 | `db.Delete<T>().Where(..).ExecuteAsync()`；没有条件时必须写 `.All()`；逻辑删除的实体要真删时用 `.Hard()`；条件里可以用集合导航和对一导航 | 阶段 1 |
 | upsert | `write.upsert` | 13 | `.OnConflictIgnore(冲突列?)` / `.OnConflictUpdate(更新列?, 冲突列?)`：MySQL（INSERT IGNORE / ON DUPLICATE KEY UPDATE）、PG 与 SQLite（ON CONFLICT）、SQL Server 与 Oracle（单行 MERGE）；MySQL 上忽略冲突也可以写成 `ON DUPLICATE KEY UPDATE 主键 = VALUES(主键)`（`new MySqlDialect { IgnoreConflictAsKeyUpdate = true }`） | 完成 |
 | 写哪些列、批量执行 | `write.strategy` | 26 | `.Columns(ColumnStrategy.OnlyNotNull)`，全局默认 `EasyDbOptions.UpdateStrategy`；`.Batch()` 按 SQL 分组一次发出（驱动支持时走 `DbBatch`），不在事务里时每组一个事务 | 完成 |
-| UPDATE / DELETE 里用导航 | `write.join` | 10 | `db.Update<Card>().Set(c => new Card { Type = c.User!.Name }).Where(c => c.User!.Name!.Contains("x"))`：对一导航生成 JOIN。MySQL：`UPDATE t INNER JOIN … SET` / `DELETE t FROM … JOIN`；PostgreSQL：`UPDATE … FROM` / `DELETE … USING`；SQL Server、Oracle、SQLite 在阶段 2 | 阶段 2 |
+| UPDATE / DELETE 里用导航 | `write.join` | 10 | `db.Update<Card>().Set(c => new Card { Type = c.User!.Name }).Where(c => c.User!.Name!.Contains("x"))`：对一导航生成 JOIN。MySQL：`UPDATE t INNER JOIN … SET` / `DELETE t FROM … JOIN`；PostgreSQL：`UPDATE … FROM` / `DELETE … USING`；SQL Server：`UPDATE t SET … FROM … JOIN` / `DELETE t FROM … JOIN`；SQLite：`UPDATE … AS t … FROM` / `DELETE … AS t WHERE EXISTS(…)`；Oracle：按 ROWID 的 `MERGE` / `DELETE … WHERE ROWID IN (…)` | 完成 |
 | 追踪与差异更新 | `tracking` | 62 | `using var tracking = db.BeginTracking();` 后查出的实体被追踪，`db.Update(entity)` 只更新改过的列；`AsTracking()` / `AsNoTracking()`；`db.GetTrackedChanges(entity)`；不追踪时 `db.Update(after).Changes(before)` 只写两份之间不同的列 | 完成 |
 | 聚合根保存 | `save.aggregate` | 39 | `db.Save(root).ExecuteAsync()`（必须在追踪作用域与事务里）；级联声明 `[Navigate(Cascade = Cascade.Delete)]`；`.With(SaveBehavior.X)`、`.SavePath(..)`、`.RemoveRoot()`、`[SaveKey]`，见 [0004](decisions/0004-aggregate-save.md) | 完成 |
 

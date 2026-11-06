@@ -163,6 +163,9 @@ public class SqlServerDialect : SqlDialect
         base.RegisterFunctions(f);
         // 用 + 拼接：列表为 NULL 时整体为 NULL，不会误匹配
         f[SqlFunctionNames.BooleanValue] = CaseBoolean;
+        // SQL Server 2022 起的 DATETRUNC；周按 ISO 从周一起（与其余方言一致）
+        foreach (var unit in Enum.GetValues<DateTruncUnit>())
+            f[SqlFunctionNames.DateTrunc(unit)] = Template("DATETRUNC(" + (unit == DateTruncUnit.Week ? "iso_week" : unit.ToString().ToLowerInvariant()) + ", {0})");
         f[SqlFunctionNames.InCsv] = Template("(CHARINDEX(',' + CAST({0} AS NVARCHAR(MAX)) + ',', ',' + {1} + ',') > 0)");
         f[SqlFunctionNames.NullOrDefault] = Call("ISNULL");
         f[SqlFunctionNames.Length] = Call("LEN");

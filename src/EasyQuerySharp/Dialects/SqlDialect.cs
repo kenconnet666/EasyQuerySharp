@@ -89,6 +89,20 @@ public abstract partial class SqlDialect
     public virtual void WriteJoinedUpdate(SqlRenderer renderer, UpdateStatement update) =>
         throw new NotSupportedException($"{Name} 方言还不支持在 UPDATE 里使用对一导航（需要 JOIN），请改写成子查询");
 
+    /// <summary>
+    /// 连接的表逗号分隔，ON 条件按连接顺序并入 WHERE、排在原条件前面：<c>"b" t1 , "c" t2 WHERE ON… AND 原条件</c>。
+    /// 写入时的导航连接都是 INNER JOIN，所以与 JOIN 写法等价（PostgreSQL 的 UPDATE … FROM / DELETE … USING、SQLite、EXISTS 子查询共用）。
+    /// </summary>
+    protected static void WriteCommaJoinedTables(SqlRenderer renderer, IReadOnlyList<JoinClause> joins, IReadOnlyList<SqlExpr> where)
+    {
+        for (var i = 0; i < joins.Count; i++)
+        {
+            if (i > 0) renderer.Append(" , ");
+            renderer.WriteTable(joins[i].Table);
+        }
+        renderer.WriteWhere([.. joins.Where(j => j.On is not null).Select(j => j.On!), .. where]);
+    }
+
     /// <summary>写带连接的 DELETE（条件里用到对一导航）。默认不支持；MySQL 写成 <c>DELETE t FROM … JOIN</c>，PostgreSQL 写成 <c>DELETE FROM … USING</c>。</summary>
     public virtual void WriteJoinedDelete(SqlRenderer renderer, DeleteStatement statement) =>
         throw new NotSupportedException($"{Name} 方言还不支持在 DELETE 里使用对一导航（需要 JOIN），请改写成子查询");

@@ -25,6 +25,21 @@ public class SqliteDialect : SqlDialect
     /// <inheritdoc />
     public override bool ParenthesizeCompoundParts => false;
 
+    /// <summary><c>UPDATE "a" AS t SET "c" = t1."d" FROM "b" t1 , "c" t2 WHERE 各 ON 条件 AND 原条件</c>（SQLite 3.33 起；目标表的别名要写 AS）。</summary>
+    public override void WriteJoinedUpdate(SqlRenderer renderer, UpdateStatement update)
+    {
+        renderer.Append("UPDATE ").WriteTableName(update.Table).Append(" AS " + update.Table.Alias).Append(" SET ").WriteSets(update.Sets).Append(" FROM ");
+        WriteCommaJoinedTables(renderer, update.Joins, update.Where);
+    }
+
+    /// <summary><c>DELETE FROM "a" AS t WHERE EXISTS(SELECT 1 FROM "b" t1 WHERE 各 ON 条件 AND 原条件)</c>：SQLite 的 DELETE 没有 USING / JOIN。</summary>
+    public override void WriteJoinedDelete(SqlRenderer renderer, DeleteStatement statement)
+    {
+        renderer.Append("DELETE FROM ").WriteTableName(statement.Table).Append(" AS " + statement.Table.Alias).Append(" WHERE EXISTS(SELECT 1 FROM ");
+        WriteCommaJoinedTables(renderer, statement.Joins, statement.Where);
+        renderer.Append(")");
+    }
+
     /// <summary>SQLite 没有 ROLLUP / CUBE。</summary>
     public override void WriteGroupBy(SqlRenderer renderer, IReadOnlyList<SqlExpr> keys, GroupByMode mode)
     {
@@ -86,6 +101,15 @@ public class SqliteDialect : SqlDialect
         f[SqlFunctionNames.Length] = Call("LENGTH");
         f[SqlFunctionNames.NullSafeEquals] = Template("({0} IS {1})");
         // instr 精确匹配、区分大小写；LIKE 不区分 ASCII 大小写，键里的 % _ 还会被当通配符
+        // 日期存成文本：按格式截断后仍是 'yyyy-MM-dd HH:mm:ss'；周从周一起（与 MySQL 的 WEEKDAY 一致）
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Year)] = Template("strftime('%Y-01-01 00:00:00', {0})");
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Quarter)] = Template("datetime(strftime('%Y-%m-01', {0}), '-' || ((CAST(strftime('%m', {0}) AS INTEGER) - 1) % 3) || ' months')");
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Month)] = Template("strftime('%Y-%m-01 00:00:00', {0})");
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Week)] = Template("datetime(date({0}, '-' || ((CAST(strftime('%w', {0}) AS INTEGER) + 6) % 7) || ' days'))");
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Day)] = Template("strftime('%Y-%m-%d 00:00:00', {0})");
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Hour)] = Template("strftime('%Y-%m-%d %H:00:00', {0})");
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Minute)] = Template("strftime('%Y-%m-%d %H:%M:00', {0})");
+        f[SqlFunctionNames.DateTrunc(DateTruncUnit.Second)] = Template("strftime('%Y-%m-%d %H:%M:%S', {0})");
         f[SqlFunctionNames.InCsv] = Template("(instr(',' || {1} || ',', ',' || {0} || ',') > 0)");
         // JSON：json_extract 对标量返回 SQL 值、对对象 / 数组返回 JSON 文本，取值与取文本同一个写法
         f[SqlFunctionNames.JsonGet] = Template("json_extract({0},'$.{1}')");

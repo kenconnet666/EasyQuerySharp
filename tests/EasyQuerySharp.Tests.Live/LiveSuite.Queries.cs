@@ -14,6 +14,23 @@ public abstract partial class LiveSuite
         Assert.Null(await db.Query<User>().Where(u => u.Name == "nobody").FirstOrDefaultAsync(Ct));
     }
 
+    // 日期截断到各粒度的起点；周从周一起（2026-01-02 是周五）
+    [Fact]
+    public async Task TruncatesDatesToEachUnit()
+    {
+        var db = await SeededAsync();
+        var alice = db.Query<User>().Where(u => u.Name == "alice");
+        async Task<DateTime> Trunc(DateTruncUnit unit) => await alice.Select(u => u.CreatedAt.DateTrunc(unit)).SingleAsync(Ct);
+        Assert.Equal(new DateTime(2026, 1, 1), await Trunc(DateTruncUnit.Year));
+        Assert.Equal(new DateTime(2026, 1, 1), await Trunc(DateTruncUnit.Quarter));
+        Assert.Equal(new DateTime(2026, 1, 1), await Trunc(DateTruncUnit.Month));
+        Assert.Equal(new DateTime(2025, 12, 29), await Trunc(DateTruncUnit.Week));
+        Assert.Equal(new DateTime(2026, 1, 2), await Trunc(DateTruncUnit.Day));
+        Assert.Equal(new DateTime(2026, 1, 2, 3, 0, 0), await Trunc(DateTruncUnit.Hour));
+        Assert.Equal(new DateTime(2026, 1, 2, 3, 4, 0), await Trunc(DateTruncUnit.Minute));
+        Assert.Equal(new DateTime(2026, 1, 2, 3, 4, 5), await Trunc(DateTruncUnit.Second));
+    }
+
     [Fact]
     public async Task EscapesLikeWildcardsInTheSearchedText()
     {

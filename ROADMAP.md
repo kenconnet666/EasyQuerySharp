@@ -96,7 +96,7 @@ R → 1 → 2 → 3 → 4 → 5。
   - 移植 MsSQLQueryTest、MsSQLUpdateJoinTest、MSSQLTest1、MSSQLMathQueryTest 共 38 个用例：22 个只缺夹具；缺的功能有拼接式 LIKE（`LIKE ('%'+CAST(v AS NVARCHAR(MAX))+'%')`，8 个）、`DateFormat` 按 Java 写成 CONVERT / SUBSTRING 链（3 个）、`Math.Round(x)` / `Atan2` / `Truncate` 的写法、联表后与导航上的 `AsTableSegment`（`WITH(NOLOCK)`）、`Sql.MaxColumns` / `MinColumns`（2 个，达梦也用）；
   - CI 的 mssql 任务改成 live / upstream 两片，后者跑 Upstream 的 Mssql 命名空间。
 - [ ] 2.2 Oracle：实库验证。已做：条件当值用（投影、比较的一侧、分组合并的 any / none 列）在 SQL Server、Oracle 上写成 `(CASE WHEN 条件 THEN ? ELSE ? END)`（Java 的 booleanSQLFunction），NumberFunctionsTest subQueryORACLE 移植。
-- [ ] 2.3 UPDATE / DELETE 里用对一导航（`write.join`），在 SQL Server、Oracle、SQLite 上补齐（现在抛 NotSupportedException）；`DateTrunc` 也在这三个方言上补齐。
+- [x] 2.3 UPDATE / DELETE 里用对一导航（`write.join`）：SQL Server 原本已有；SQLite 写成 `UPDATE … AS t … FROM` / `DELETE … AS t WHERE EXISTS(…)`，Oracle 写成按 ROWID 对上的 `MERGE` / `DELETE … WHERE ROWID IN (…)`；`DateTrunc` 补上 SQLite（strftime）、SQL Server（DATETRUNC）、Oracle（TRUNC）。LiveSuite 加了两组用例，各库按同样的结果校验（SQL Server、Oracle 在 CI 上跑）。
 - [ ] 2.4 L3 `LiveSuite` 从现在的 4 组扩到 TS 的 23 组，`LiveSuiteOptions` 按方言裁剪能力；在第一档的每个库上全部通过（MySQL 8.0.18、MariaDB 各算一个库）。
 
 ## 阶段 3 第二档方言

@@ -209,4 +209,14 @@ public abstract partial class LiveSuite
         Assert.Equal(0, ex.ActualRows);
         Assert.Equal(7, (await db.Query<User>().FindAsync(1L, Ct))!.Age);
     }
-}
+
+    // UPDATE / DELETE 的条件与 SET 里用对一导航：各库按自己的写法连接（MySQL JOIN，PostgreSQL / SQLite FROM，SQL Server UPDATE … FROM，Oracle MERGE / ROWID）
+    [Fact]
+    public async Task UpdatesAndDeletesThroughToOneNavigation()
+    {
+        var db = await SeededAsync();
+        Assert.Equal(2, await db.Update<Post>().Set(p => new Post { Title = p.User!.Name }).Where(p => p.User!.Name == "bob").ExecuteAsync(Ct));
+        Assert.Equal(["bob", "bob"], await db.Query<Post>().Where(p => p.User!.Name == "bob").Select(p => p.Title).ToListAsync(Ct));
+        Assert.Equal(2, await db.Delete<Comment>().Where(c => c.Post!.Title == "orm tips").ExecuteAsync(Ct));
+        Assert.Equal(0, await db.Query<Comment>().CountAsync(Ct));
+    }}

@@ -1731,6 +1731,8 @@ override EasyQuerySharp.Dialects.OracleDialect.RecursiveCteColumnList.get -> boo
 override EasyQuerySharp.Dialects.OracleDialect.RecursiveWith.get -> string!
 override EasyQuerySharp.Dialects.OracleDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
 override EasyQuerySharp.Dialects.OracleDialect.WriteInsertReturning(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! returning) -> void
+override EasyQuerySharp.Dialects.OracleDialect.WriteJoinedDelete(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.DeleteStatement! statement) -> void
+override EasyQuerySharp.Dialects.OracleDialect.WriteJoinedUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
 override EasyQuerySharp.Dialects.OracleDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
 override EasyQuerySharp.Dialects.OracleDialect.WriteOrderByItem(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderByItem! item) -> void
 override EasyQuerySharp.Dialects.OracleDialect.WritePagedSelect(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query, System.Action! writeUnpaged) -> void
@@ -1775,6 +1777,8 @@ override EasyQuerySharp.Dialects.SqliteDialect.QualifySetColumns.get -> bool
 override EasyQuerySharp.Dialects.SqliteDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
 override EasyQuerySharp.Dialects.SqliteDialect.SupportsWriteReturning.get -> bool
 override EasyQuerySharp.Dialects.SqliteDialect.WriteGroupBy(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! keys, EasyQuerySharp.SqlAst.GroupByMode mode) -> void
+override EasyQuerySharp.Dialects.SqliteDialect.WriteJoinedDelete(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.DeleteStatement! statement) -> void
+override EasyQuerySharp.Dialects.SqliteDialect.WriteJoinedUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
 override EasyQuerySharp.Dialects.SqliteDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
 override EasyQuerySharp.Dialects.SqliteDialect.WriteLock(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.RowLock rowLock) -> void
 override EasyQuerySharp.Dialects.SqliteDialect.WriteTargetAliasSeparator.get -> string!
@@ -1870,6 +1874,7 @@ static EasyQuerySharp.Dialects.SqlDialect.Pad(string! name, string? defaultPad) 
 static EasyQuerySharp.Dialects.SqlDialect.Reordered(string! name, params int[]! order) -> EasyQuerySharp.Dialects.FunctionWriter!
 static EasyQuerySharp.Dialects.SqlDialect.Template(string! template) -> EasyQuerySharp.Dialects.FunctionWriter!
 static EasyQuerySharp.Dialects.SqlDialect.TruncateTo(string! name) -> EasyQuerySharp.Dialects.FunctionWriter!
+static EasyQuerySharp.Dialects.SqlDialect.WriteCommaJoinedTables(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.JoinClause!>! joins, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! where) -> void
 static EasyQuerySharp.Dialects.SqlServerDialect.Instance.get -> EasyQuerySharp.Dialects.SqlServerDialect!
 static EasyQuerySharp.Dialects.SqliteDialect.Instance.get -> EasyQuerySharp.Dialects.SqliteDialect!
 static EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.operator !=(EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>? left, EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>? right) -> bool

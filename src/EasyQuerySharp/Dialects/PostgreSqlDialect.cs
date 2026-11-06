@@ -31,25 +31,14 @@ public class PostgreSqlDialect : SqlDialect
     public override void WriteJoinedUpdate(SqlRenderer renderer, UpdateStatement update)
     {
         renderer.Append("UPDATE ").WriteTable(update.Table).Append(" SET ").WriteSets(update.Sets).Append(" FROM ");
-        WriteJoinedTables(renderer, update.Joins, update.Where);
+        WriteCommaJoinedTables(renderer, update.Joins, update.Where);
     }
 
     /// <summary><c>DELETE FROM "a" t USING "b" t1 WHERE 各 ON 条件 AND 原条件</c>（与 Java 逐字一致）。</summary>
     public override void WriteJoinedDelete(SqlRenderer renderer, DeleteStatement statement)
     {
         renderer.Append("DELETE FROM ").WriteTable(statement.Table).Append(" USING ");
-        WriteJoinedTables(renderer, statement.Joins, statement.Where);
-    }
-
-    // 逗号分隔的表，ON 条件按连接顺序排在原条件前面
-    private static void WriteJoinedTables(SqlRenderer renderer, List<JoinClause> joins, List<SqlExpr> where)
-    {
-        for (var i = 0; i < joins.Count; i++)
-        {
-            if (i > 0) renderer.Append(" , ");
-            renderer.WriteTable(joins[i].Table);
-        }
-        renderer.WriteWhere([.. joins.Where(j => j.On is not null).Select(j => j.On!), .. where]);
+        WriteCommaJoinedTables(renderer, statement.Joins, statement.Where);
     }
 
     /// <summary>
