@@ -149,6 +149,9 @@ public sealed class EasyDbOptions
     /// <summary>使用达梦 DM8 方言（驱动 DM.DmProvider）。</summary>
     public EasyDbOptions UseDameng(DbDataSource? dataSource = null) => Use(DamengDialect.Instance, dataSource);
 
+    /// <summary>使用 SAP HANA 方言（驱动是 HANA 客户端自带的 Sap.Data.Hana，不在 nuget.org 上）。</summary>
+    public EasyDbOptions UseHana(DbDataSource? dataSource = null) => Use(HanaDialect.Instance, dataSource);
+
     /// <summary>使用任意方言。</summary>
     public EasyDbOptions Use(SqlDialect dialect, DbDataSource? dataSource = null)
     {
