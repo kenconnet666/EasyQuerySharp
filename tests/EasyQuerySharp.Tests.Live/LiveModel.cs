@@ -250,6 +250,21 @@ public class MemberNote
     public Member? Member { get; set; }
 }
 
+/// <summary>帖子的归档表：列与 <see cref="Post"/> 相同，用例里单独建（INSERT … SELECT、换表名）。</summary>
+[Table("t_post_archive")]
+public class PostArchive
+{
+    [Column(PrimaryKey = true)]
+    public long Id { get; set; }
+
+    public long UserId { get; set; }
+
+    public string Title { get; set; } = "";
+
+    [Column(DbType = "DECIMAL(12,2)")]
+    public decimal Amount { get; set; }
+}
+
 /// <summary>自关联的树：部门的上级是另一个部门（对应 TS 的 Dept）。</summary>
 [Table("t_dept")]
 public class Dept
