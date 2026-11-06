@@ -195,11 +195,15 @@ internal sealed partial class ExpressionTranslator
         if (scope.Selector is not { } selector) throw Unsupported(call, "string.Join 需要先 Select 出字符串");
         scope.Translator.Bind(selector, [scope.Element]);
         var value = scope.Translator.Translate(StripConvert(selector.Body));
-        // 集合上的排序决定拼接顺序，写进聚合函数（子查询自己的 ORDER BY 不影响聚合）
-        SqlExpr joined = scope.Query.OrderBy.Count > 0
-            ? new OrderedStringJoinExpr(value, separator, scope.Distinct, [.. scope.Query.OrderBy])
-            : new FunctionExpr(scope.Distinct ? SqlFunctionNames.StringJoinDistinct : SqlFunctionNames.StringJoin, [value, separator]);
-        scope.Query.OrderBy.Clear();
+        // 集合上的排序决定拼接顺序，写进聚合函数（子查询自己的 ORDER BY 不影响聚合）。
+        // 取了一段（Take / Skip）时照 Java 把 ORDER BY / LIMIT 留在子查询末尾，见 ROADMAP 2.4 的 [!]
+        SqlExpr joined;
+        if (scope.Query.OrderBy.Count > 0 && scope.Query.Limit is null && scope.Query.Offset is null)
+        {
+            joined = new OrderedStringJoinExpr(value, separator, scope.Distinct, [.. scope.Query.OrderBy]);
+            scope.Query.OrderBy.Clear();
+        }
+        else joined = new FunctionExpr(scope.Distinct ? SqlFunctionNames.StringJoinDistinct : SqlFunctionNames.StringJoin, [value, separator]);
         scope.Query.Columns.Add(new SelectColumn(joined, null));
         result = new SubQueryExpr(scope.Query);
         return true;

@@ -15,9 +15,9 @@
 
 ## 现状（2026-11-06）
 
-- 对标：已移植 1859、偏离 143、不适用 136、骨架 2、待做 264。
-- 待做的分布：方言 168，平台能力 82（分库分表 48、code-first 14、表名 / schema / link 14、按对象筛选 6），其余零散 14。
-- 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
+- 对标：已移植 1933、偏离 153、不适用 140、骨架 5、待做 173。
+- 待做的分布：方言 83（达梦 51、HANA 21、ForUpdate 冒烟 5、ClickHouse 4、Kingbase 2），分库分表 48，其余 42（code-first、表名映射、零散）。
+- 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17、DuckDB（进程内）；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
 
 ## 已定的取舍
 
@@ -100,7 +100,8 @@ R → 1 → 2 → 3 → 4 → 5。
   - CI 的 mssql 任务拆成 live / upstream 两片，后者跑 Upstream 的 Mssql 命名空间。
 - [ ] 2.2 Oracle：实库验证。已做：条件当值用（投影、比较的一侧、分组合并的 any / none 列）在 SQL Server、Oracle 上写成 `(CASE WHEN 条件 THEN ? ELSE ? END)`（Java 的 booleanSQLFunction），NumberFunctionsTest subQueryORACLE 移植。
 - [x] 2.3 UPDATE / DELETE 里用对一导航（`write.join`）：SQL Server 原本已有；SQLite 写成 `UPDATE … AS t … FROM` / `DELETE … AS t WHERE EXISTS(…)`，Oracle 写成按 ROWID 对上的 `MERGE` / `DELETE … WHERE ROWID IN (…)`；`DateTrunc` 补上 SQLite（strftime）、SQL Server（DATETRUNC）、Oracle（TRUNC）。LiveSuite 加了两组用例，各库按同样的结果校验（SQL Server、Oracle 在 CI 上跑）。
-- [ ] 2.4 L3 `LiveSuite` 从现在的 4 组扩到 TS 的 23 组，`LiveSuiteOptions` 按方言裁剪能力；在第一档的每个库上全部通过（MySQL 8.0.18、MariaDB 各算一个库）。
+- [~] 2.4 L3 `LiveSuite` 从现在的 4 组扩到 TS 的 23 组，`LiveSuiteOptions` 按方言裁剪能力；在第一档的每个库上全部通过（MySQL 8.0.18、MariaDB 各算一个库）。已移植 18 组（`LiveSuite.*.cs`，视图、列规则、code-first 与分表留到阶段 4），本地 SQLite / MySQL / PG / DuckDB 通过，其余库看 CI。顺手修了套件发现的问题：取消改为原样抛出、集合上排序后的 `string.Join` 把 ORDER BY 写进聚合、PG 的 DateDiff 截断、`Math.Log(x, b)` 的参数顺序、`Sql.Over` 等嵌套类不在客户端求值、`Take` 之后的聚合先包派生表、声明了条数的对一导航在查询里按分区取行、根上的自关联导航随聚合保存。
+  - [!] 集合导航取段之后聚合（`string.Join(",", u.Cards.OrderBy(..).Take(2).Select(..))`，M8BankTest test7 / test7_2 / test8）：Java 写成 `(SELECT GROUP_CONCAT(..) FROM .. ORDER BY .. LIMIT 2)`，LIMIT 作用在聚合出的一行上，拼的是全部行（怀疑是 Java 的 bug，PG 上还会因 ORDER BY 报错）。现在照 Java 写；要不要改成先取段再聚合（这 3 个用例改记偏离）待定。
 
 ## 阶段 3 第二档方言
 
@@ -126,7 +127,7 @@ R → 1 → 2 → 3 → 4 → 5。
 - [ ] 4.1 code-first：建表（注释、索引、外键）、只增不删的同步、`RenamedFrom`、`ToSql()`、读取库结构（MigrationTest 等 15 个）。
 - [ ] 4.2 表名映射：查询级 `MapTable`（导航、隐式 join、include 跟着一起变；fork TableNameMapping 的 7 个用例）、`AsTable` 剩余的用例、`InSchema`、`WithTableLink`。
 - [ ] 4.3 `FilterBy` / `SortBy` 剩余的 6 个用例，以及 `Table(request)`。
-- [ ] 4.4 分库分表（ShardingTest 48 个，另有 H2 的 3 个骨架：H2OrderTest ×2、H2QueryTest allTypeTestSharding1），先写决策文档 0006：
+- [ ] 4.4 分库分表（ShardingTest 48 个，另有 H2 的 3 个骨架：H2OrderTest ×2、H2QueryTest allTypeTestSharding1），先写决策文档 0006：草案已写（[0006](docs/decisions/0006-sharding.md)），末尾“待定”的 5 点确认后开工：
   - 分表：按取模或按时间路由、按条件裁剪、库内 UNION ALL、写入路由；
   - 分库：路由，在内存里做归并排序和分页，跨库合并 `count` / `sum` / `min` / `max`。
 - [ ] 4.5 二级缓存 `EasyQuerySharp.Caching`，先写决策文档 0007（用例在 QueryTest25：test11a、test11a1、topicIntegerTest、xxx）：
