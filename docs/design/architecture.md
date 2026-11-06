@@ -16,12 +16,14 @@
 EasyQuerySharp.slnx
 src/
   EasyQuerySharp/                    核心：元数据、查询模型、翻译、SQL AST、各方言、执行、追踪、拦截器、列加密、code-first
+  EasyQuerySharp.DependencyInjection/  services.AddEasyQuery(..)：EasyDb 注册成单例，多个库按名字（keyed service）注入
   EasyQuerySharp.Generator/          [Projection] 生成器与分析器（netstandard2.0，随核心包分发）
 tests/
   EasyQuerySharp.TestKit/            测试共用：SqlOnly 会话、SqlCapture 捕获 SQL、Upstream 标注、TestDatabases 连接登记
   EasyQuerySharp.Tests.Upstream/     逐条移植的 Java 用例（L1 不连库的 SQL 文本用例也在这里）与 C# 独有 API 的用例（Extras/）
   EasyQuerySharp.Tests.Live/         L3 跨方言共用实库套件（每个库一个薄子类）
   EasyQuerySharp.Tests.Generator/    生成器和分析器的测试
+  EasyQuerySharp.Tests.DependencyInjection/  依赖注入扩展的测试（真实容器，进程内 SQLite）
 samples/
   EasyQuerySharp.Samples/            示例模型（TS 文档站的表与种子数据），文档卡片用它
 benchmarks/
@@ -31,10 +33,10 @@ tools/
   DocsExamples/                      执行文档卡片，渲染各方言 SQL，输出快照
   CodeGen/                           生成多表查询 Query<T1..T10>（Querying/Query.Joins.g.cs）的脚本
 docs/
-  decisions/  design/  examples/  sql-snapshots/
+  decisions/  design/  examples/  guide/  sql-snapshots/
 ```
 
-以后按需新增的包：`EasyQuerySharp.DependencyInjection`、`EasyQuerySharp.Caching`（阶段 4），以及用到驱动专属 API（批量复制、PG 数组类型等）的方言包。
+以后按需新增的包：`EasyQuerySharp.Caching`（阶段 4），以及用到驱动专属 API（批量复制、PG 数组类型等）的方言包。扩展包只引用 Microsoft.Extensions 的抽象包，核心包不引用它们。
 
 核心包内部只有一层目录，命名空间与目录一致，同一目录里用文件名区分职责：
 
@@ -136,6 +138,7 @@ db.Query<User>().Where(..).Select(..).ToListAsync()
 4. 命名约定：默认驼峰转下划线，`options.NameConversion` 可替换。
 5. 逻辑删除策略：实现 `ILogicDeleteStrategy`，`options.AddLogicDeleteStrategy("名字", 策略)` 注册。
 6. 方言：继承已有方言，覆盖差异，用 `options.Use(方言, 数据源)`。
+7. 依赖注入：`services.AddEasyQuery(..)` 注册 `EasyDb`，容器里登记的数据源、监听器、拦截器自动接上，见 [依赖注入指南](../guide/dependency-injection.md)。
 
 ## 命名
 

@@ -84,6 +84,7 @@
 | 分库分表 | `sharding` | 48 | 分表路由（取模、时间）、条件裁剪、库内 UNION ALL、写入路由；分库时在内存里归并排序和分页（计划，先写决策文档 0006） | 阶段 4 |
 | 按对象筛选排序 | `dto.object` | 101 | `.FilterBy(request)`（属性上的 `[Filter]` 说明条件类型、多属性 OR、区间、导航路径、集合 EXISTS）/ `.SortBy(sort)`（允许排序的属性）；按路径动态取列 `Sql.Column<T>(c, "user.age")`（对应 anyColumn）；`Table(request)`（计划） | 阶段 4 |
 | search 扩展 | `search` | 45 | — | 不做 |
+| 依赖注入（Spring Boot starter、Solon 插件） | 没有用例 | — | `services.AddEasyQuery(o => ..)`，多个库 `AddEasyQuery("name", ..)` 加 `[FromKeyedServices("name")]`；容器里的 `DbDataSource`、`IExecutionListener`、`IInterceptor` 自动接上，见 [依赖注入指南](guide/dependency-injection.md) | 完成 |
 
 ## 方言
 

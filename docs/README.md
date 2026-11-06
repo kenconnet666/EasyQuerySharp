@@ -20,6 +20,12 @@
 - [0005 关联键的匹配方式](decisions/0005-relation-key-match.md)：`KeyMatch.SelfCsv`（本表一列存逗号分隔的目标键）与 `Sql.InCsv` 的各方言写法、三种场景与限制。
 - [0006 分库分表](decisions/0006-sharding.md)（草案）：节点与规则、按 WHERE 裁剪、库内 UNION ALL 与跨库归并、写入路由、事务，以及 48 个 Java 用例的归属。
 
+## 指南
+
+按能力写的用法、限制与对应的 Java 写法（ROADMAP 5.3 补齐其余能力）。
+
+- [依赖注入](guide/dependency-injection.md)：`services.AddEasyQuery(..)`，多个库按名字注入，从容器取数据源、监听器、拦截器，生命周期。
+
 ## 设计
 
 - [架构](design/architecture.md)：模块、查询管线、核心抽象、用到的 C# 特性、分析器、扩展点。
