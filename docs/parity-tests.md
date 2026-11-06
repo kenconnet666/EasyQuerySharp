@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 2062、偏离 197、不适用 142、骨架 3、待做 0。
+合计：已移植 2063、偏离 197、不适用 142、骨架 2、待做 0。
 
 ## 按能力
 
@@ -51,7 +51,7 @@
 | 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 25 | 1 | 0 | 0 | 0 |
 | upsert | `write.upsert` | M5 | 13 | 12 | 1 | 0 | 0 | 0 |
 | ClickHouse 方言 | `dialect.clickhouse` | M6 | 4 | 4 | 0 | 0 | 0 | 0 |
-| 达梦方言 | `dialect.dameng` | M6 | 51 | 30 | 20 | 0 | 1 | 0 |
+| 达梦方言 | `dialect.dameng` | M6 | 51 | 31 | 20 | 0 | 0 | 0 |
 | DuckDB 方言 | `dialect.duckdb` | M6 | 16 | 10 | 6 | 0 | 0 | 0 |
 | 方言静态入口与专属函数 | `dialect.functions` | M6 | 25 | 24 | 1 | 0 | 0 | 0 |
 | H2 方言 | `dialect.h2` | M6 | 74 | 67 | 3 | 4 | 0 | 0 |
@@ -2142,13 +2142,13 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| dameng/DamengForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:53 |  |
-| dameng/DamengForUpdateTest.java#testForUpdateBlocksConcurrentTransaction | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:48 |  |
-| dameng/DamengForUpdateTest.java#testForUpdateDerivedCountAndExistsSqlBehaviorConsistent | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:66 |  |
-| dameng/DamengForUpdateTest.java#testForUpdateDuplicateCallThrows | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:39 |  |
-| dameng/DamengForUpdateTest.java#testForUpdateJoinNotSupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:31 |  |
-| dameng/DamengForUpdateTest.java#testForUpdateSqlAppendInTransaction | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:15 |  |
-| dameng/DamengForUpdateTest.java#testForUpdateWithoutTransactionThrows | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:24 |  |
+| dameng/DamengForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:79 |  |
+| dameng/DamengForUpdateTest.java#testForUpdateBlocksConcurrentTransaction | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:51 |  |
+| dameng/DamengForUpdateTest.java#testForUpdateDerivedCountAndExistsSqlBehaviorConsistent | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:92 |  |
+| dameng/DamengForUpdateTest.java#testForUpdateDuplicateCallThrows | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:41 |  |
+| dameng/DamengForUpdateTest.java#testForUpdateJoinNotSupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:33 |  |
+| dameng/DamengForUpdateTest.java#testForUpdateSqlAppendInTransaction | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:17 |  |
+| dameng/DamengForUpdateTest.java#testForUpdateWithoutTransactionThrows | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:26 |  |
 | dameng/DamengQueryTest.java#concat1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:21：Java 用原生 SQL 在实库上验证 \|\| 遇到 NULL 当空串；C# 核对字符串拼接写成 \|\|，实库验证在 3.1 冒烟里做 | `select 'a' \|\| null \|\| 'b' as "aa" from DUAL` |
 | dameng/DamengQueryTest.java#cteViewTree1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:27：Java 在达梦实库上执行并断言结果（或只执行不断言）；C# 只核对渲染出的 SQL，实库验证在 3.1 冒烟里做 |  |
 | dameng/DamengQueryTest.java#query0 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:35 | `SELECT "ID","STARS","TITLE","CREATE_TIME" FROM "MY_TOPIC" WHERE "ID" = ?` |
