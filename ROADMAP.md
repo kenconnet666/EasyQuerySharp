@@ -161,6 +161,7 @@ R → 1 → 2 → 3 → 4 → 5。
 ## 阶段 5 发布准备
 
 - [ ] 5.1 冻结公共 API：PublicApiAnalyzers 的基线转为已发布（Shipped），公开成员都有 XML 文档。
-- [ ] 5.2 基准对比：用 BenchmarkDotNet 和 EF Core、Dapper、FreeSql、SqlSugar 比较查询翻译、物化、对象树三项；根据结果决定要不要缓存翻译结果。
+- [x] 5.2 基准对比：`benchmarks/EasyQuerySharp.Benchmarks` 在同一个 SQLite 文件库（WAL）上和 EF Core 10.0.14、Dapper 2.1.89、FreeSql 3.5.311、SqlSugar 5.1.4.221 比较查询翻译、物化、对象树三项（四个包只在基准项目里引用），GlobalSetup 先核对各 ORM 的结果一致，`--sql` 打印各家实际执行的 SQL。结果、环境与公平性说明见 [基准对比](docs/benchmarks.md)。
+  - 结论：翻译结果不缓存。不缓存的翻译已是四家里最快（简单查询 6.6 µs、复杂 21 µs，EF Core 命中查询缓存是 26 / 50 µs），只占一条 10 行查询的约 8%。10 行查询与 EF Core 预编译查询相当；1000 行时逐列读取的装箱拖慢物化（ADO.NET 的 1.4–2.2 倍），记进 BACKLOG。
 - [ ] 5.3 文档：在 `docs/guide/` 下按能力写 Markdown 指南（用法、方言支持矩阵、限制、对应的 Java 方法名），代码片段和 SQL 由 DocsExamples 生成；另写 README、入门教程，以及从 Java / TS 迁移的指南。
 - [ ] 5.4 打包：NuGet 元数据、Source Link、确定性构建，生成器和分析器随核心包一起分发。是否发布到 nuget.org 在这一步决定。

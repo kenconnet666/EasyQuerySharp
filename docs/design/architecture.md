@@ -27,7 +27,7 @@ tests/
 samples/
   EasyQuerySharp.Samples/            示例模型（TS 文档站的表与种子数据），文档卡片用它
 benchmarks/
-  EasyQuerySharp.Benchmarks/         BenchmarkDotNet
+  EasyQuerySharp.Benchmarks/         BenchmarkDotNet：和 EF Core、Dapper、FreeSql、SqlSugar 对比（结果见 docs/benchmarks.md）
 tools/
   ParityTests/                       Java 用例对照：生成 docs/parity-tests.md、测试骨架
   DocsExamples/                      执行文档卡片，渲染各方言 SQL，输出快照
@@ -74,7 +74,7 @@ db.Query<User>().Where(..).Select(..).ToListAsync()
    └─ 7. 物化       读取委托：按读取树的结构缓存（ShaperCache），同形状只编译一次；值转换器在这里生效
 ```
 
-翻译结果目前不缓存：实测翻译加渲染只要十几 µs，开销的大头是编译读取委托（约 1 ms），已经由 ShaperCache 缓存。是否缓存翻译结果，等阶段 5 的基准对比后再定。
+翻译结果不缓存（阶段 5 基准对比的结论）：翻译、生成读取委托、渲染合起来，简单查询约 6 µs、复杂查询约 20 µs，比 EF Core 命中查询缓存的开销还低，只占一条 10 行查询的约 8%。开销真正大的是编译读取委托（约 1 ms），已经由 ShaperCache 按形状缓存。数据与理由见 [基准对比](../benchmarks.md)。
 
 ### 核心抽象
 
