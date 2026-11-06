@@ -28,3 +28,6 @@
 - Db2：CASE 分支等处只有参数、推不出类型时报 SQL0418N，要按值的类型包 `CAST(? AS …)`（TS 版做了）；递归 CTE 的递归成员不能有显式 JOIN（SQL0345N），树查询要改成逗号连接。实库冒烟时一起补。
 - ClickHouse：LEFT JOIN 没匹配上的列默认是类型的默认值而不是 NULL，要在连接上设 `join_use_nulls = 1`；`EXISTS` 等关联子查询要 25.x 的新分析器；`UNION` 不带 ALL / DISTINCT 时取决于 `union_default_mode`；带组内排序的字符串聚合不支持。
 - TDengine：日期加减（时长只能写字面量）、字符串聚合、`InCsv`、截到周及以上的 `DateTrunc` 不支持；子查询、窗口函数能力有限，实库冒烟时再按能力裁剪。
+- code-first 读库结构与同步只看当前 schema（MySQL 是当前库）：实体声明了别的 schema 时按表名和当前 schema 里的表比较；要跨 schema 同步时再给各方言的系统表查询加 schema 条件。
+- code-first 同步不比较列类型（只比较列在不在、可空性）：各库读出的类型写法不同（`character varying(255)` 与 `VARCHAR(255)`、`int(11)` 与 `INT`），要比较得先按方言归一（TS 版的 `sameType`）；有需求时再做。
+- code-first 不建库（Java 的 `createDatabaseIfNotExists`）：库由连接串决定，建库属于部署，要从连接串拆出服务器与库名、各方言写法不同；有需求时再做。

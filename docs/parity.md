@@ -77,7 +77,7 @@
 
 | 能力 | key | 用例数 | C# 写法 | 状态 |
 |---|---|---|---|---|
-| 建表与迁移（code-first） | `codeFirst` | 17 | `db.CodeFirst.CreateTablesAsync(..)` / `DropTablesIfExistsAsync(..)` / `CreateTableSql(type)`；只增不删的同步、`RenamedFrom`、读库结构（计划） | 阶段 4 |
+| 建表与迁移（code-first） | `codeFirst` | 17 | `db.CodeFirst.CreateTablesAsync(..)` / `DropTablesIfExistsAsync(..)` / `CreateTableSql(type)`（注释、`[TableIndex]` 索引、对一导航上 `[ForeignKey]` 的外键）；只增不删的同步 `PlanSyncAsync(..)` → `CodeFirstCommand`（`Statements` / `ToSql()` / `Differences` / `ExecuteAsync()`）、`SyncTablesAsync(..)`、离线的 `PlanSync(types, tables)`；`[RenamedFrom("旧名")]` 改表名列名；读库结构 `ReadTablesAsync()` / `TableExistsAsync(type)`（TDengine 不支持）。MySQL、PG、SQLite、DuckDB 的建表语句与 Java 逐字一致。列默认值（Java 的 `dbDefault`）未做，2 个用例留骨架 | 阶段 4（4.1） |
 | 换表名 asTable | `table.rename` | 52 | `.AsTable("t_post_2025")` / `.AsTable(name => name + "_2025")` / `AsTableSegment(..)`（整个表引用的写法，如 SQL Server 的 `WITH(NOLOCK)`；单表、联表后最近的一张表、导航上的 `Sql.AsTableSegment(u.User, ..)` 都能用）；写入同样 `AsTable` / `AsSchema`；查询级的 `MapTable<Post>(..)`（导航、隐式 join、include 跟着变，fork 的 TableNameMapping）（计划） | 阶段 4 |
 | 换 schema | `table.schema` | 25 | 写入 `.AsSchema("tenant_a")`；查询级的写法（计划） | 阶段 4 |
 | 跨库链接 | `table.link` | 13 | `.WithTableLink("link")`（计划） | 阶段 4 |

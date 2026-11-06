@@ -119,7 +119,8 @@ static void Append(StringBuilder text, string name, string title, CardRun run)
     text.Append("-- ").Append(name).Append('：').Append(title).Append('\n');
     foreach (var statements in run.Executions)
     {
-        text.Append(statements[0].Text).Append(";\n");
+        // 自带分号的语句（MySQL、PostgreSQL 的建表语句与 Java 一致，以分号结尾）不再加
+        text.Append(statements[0].Text).Append(statements[0].Text.EndsWith(';') ? "\n" : ";\n");
         foreach (var statement in statements.Where(s => s.Parameters.Count > 0))
             text.Append("-- params: [").AppendJoin(", ", statement.Parameters.Select(p => Format(p.Value))).Append("]\n");
     }

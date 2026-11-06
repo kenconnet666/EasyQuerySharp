@@ -8,12 +8,16 @@ namespace EasyQuerySharp.Docs;
 /// <summary>
 /// 卡片执行的"磁带"：录制时包住真实的 SQLite 数据源，按顺序记下每条语句的结果；回放时不连库，
 /// 按同样的顺序把记下的结果还给另一种方言发出的语句。这样每种方言都能走完整条卡片，记下它实际会发出的 SQL。
+/// 查询的结果与非查询语句的影响行数各自按顺序回放：建表的语句数各方言不同（注释、外键有的单独成句、有的写在建表语句里），
+/// 多出来的非查询语句按影响 0 行回放；查询比 SQLite 上多时报错。
 /// </summary>
 internal sealed class Tape
 {
     private readonly List<object?> _results = [];
+    private readonly List<int> _rows = [];
     private readonly Tape? _recording;
     private int _next;
+    private int _nextRows;
 
     private Tape(SqliteConnection? sqlite, Tape? recording)
     {
@@ -42,8 +46,19 @@ internal sealed class Tape
             return result;
         }
         if (_next >= _recording._results.Count)
-            throw new InvalidOperationException("这个方言发出的语句比 SQLite 上多，回放的结果不够");
+            throw new InvalidOperationException("这个方言发出的查询比 SQLite 上多，回放的结果不够");
         return _recording._results[_next++];
+    }
+
+    internal int ExecuteNonQuery(SqliteCommand command)
+    {
+        if (_recording is null)
+        {
+            var rows = command.ExecuteNonQuery();
+            _rows.Add(rows);
+            return rows;
+        }
+        return _nextRows < _recording._rows.Count ? _recording._rows[_nextRows++] : 0;
     }
 
     private sealed class TapeDataSource(Tape tape) : DbDataSource
@@ -150,7 +165,7 @@ internal sealed class TapeCommand(Tape tape, SqliteCommand inner) : DbCommand
 
     protected override DbParameter CreateDbParameter() => inner.CreateParameter();
 
-    public override int ExecuteNonQuery() => (int)tape.Execute(inner, c => c.ExecuteNonQuery())!;
+    public override int ExecuteNonQuery() => tape.ExecuteNonQuery(inner);
 
     public override object? ExecuteScalar() => tape.Execute(inner, c => c.ExecuteScalar());
 

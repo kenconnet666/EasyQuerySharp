@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1976、偏离 188、不适用 140、骨架 6、待做 94。
+合计：已移植 1992、偏离 190、不适用 140、骨架 8、待做 74。
 
 ## 按能力
 
@@ -24,7 +24,7 @@
 | JSON 函数 | `func.json` | M2 | 12 | 12 | 0 | 0 | 0 | 0 |
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
 | 字符串函数 | `func.string` | M2 | 131 | 123 | 4 | 4 | 0 | 0 |
-| 行锁 | `lock` | M2 | 28 | 23 | 1 | 1 | 0 | 3 |
+| 行锁 | `lock` | M2 | 28 | 25 | 1 | 1 | 0 | 1 |
 | 窗口函数 | `window` | M2 | 44 | 43 | 1 | 0 | 0 | 0 |
 | CTE | `query.cte` | M3 | 11 | 8 | 3 | 0 | 0 | 0 |
 | 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 75 | 6 | 2 | 0 | 0 |
@@ -50,17 +50,17 @@
 | UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
 | 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 25 | 1 | 0 | 0 | 0 |
 | upsert | `write.upsert` | M5 | 13 | 12 | 1 | 0 | 0 | 0 |
-| ClickHouse 方言 | `dialect.clickhouse` | M6 | 4 | 0 | 0 | 0 | 0 | 4 |
+| ClickHouse 方言 | `dialect.clickhouse` | M6 | 4 | 4 | 0 | 0 | 0 | 0 |
 | 达梦方言 | `dialect.dameng` | M6 | 51 | 30 | 20 | 0 | 1 | 0 |
 | DuckDB 方言 | `dialect.duckdb` | M6 | 16 | 10 | 6 | 0 | 0 | 0 |
 | 方言静态入口与专属函数 | `dialect.functions` | M6 | 25 | 24 | 1 | 0 | 0 | 0 |
-| H2 方言 | `dialect.h2` | M6 | 74 | 63 | 4 | 4 | 3 | 0 |
+| H2 方言 | `dialect.h2` | M6 | 74 | 64 | 3 | 4 | 3 | 0 |
 | SAP HANA 方言 | `dialect.hana` | M6 | 18 | 6 | 10 | 0 | 2 | 0 |
 | 人大金仓方言 | `dialect.kingbase` | M6 | 2 | 0 | 2 | 0 | 0 | 0 |
 | SQL Server 方言 | `dialect.mssql` | M6 | 38 | 37 | 1 | 0 | 0 | 0 |
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | M6 | 13 | 0 | 0 | 13 | 0 | 0 |
 | UPDATE / DELETE … RETURNING | `write.returning` | M6 | 3 | 3 | 0 | 0 | 0 | 0 |
-| 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 3 | 0 | 0 | 0 | 14 |
+| 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 12 | 3 | 0 | 2 | 0 |
 | 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 92 | 3 | 0 | 0 | 6 |
 | search 扩展 | `search` | M7 | 45 | 0 | 0 | 45 | 0 | 0 |
 | 分库分表 | `sharding` | M7 | 48 | 0 | 0 | 0 | 0 | 48 |
@@ -513,8 +513,8 @@
 | pgsql/QueryTest.java#query9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:104 | `SELECT CONCAT(t."id",t."title") FROM "t_blog" t WHERE t."deleted" = ? AND t."id" = ?` |
 | pgsql/QueryTest19.java#testMapChain | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:34：Java 的 Map 投影写成带 [Column] 的 DTO，SQL 相同；Map 的值是 Object，Java 的比较参数保持 Integer，C# 按 DTO 属性的 decimal 传参 | `SELECT t1."aaa" AS "aaa",t1."bbb" AS "bbb" FROM (SELECT t."score" AS "aaa",t."star" AS "bbb" FROM "t…` |
 | pgsql/QueryTest19.java#testMapChain2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:43：Java 的 Map 投影写成带 [Column] 的 DTO，SQL 相同；Map 的值是 Object，Java 的比较参数保持 Integer，C# 按 DTO 属性的 decimal 传参 | `SELECT t1."aaa" AS "aaa",t1."bbb" AS "bbb" FROM (SELECT (t."score" * ?) AS "aaa",t."star" AS "bbb" F…` |
-| sqlite/SQLiteTest.java#testQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:32 |  |
-| sqlite/SQLiteTest.java#testQuery1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:39 |  |
+| sqlite/SQLiteTest.java#testQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:33 |  |
+| sqlite/SQLiteTest.java#testQuery1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:75 |  |
 
 ### 分页结果（`query.page`，M1）
 
@@ -1149,9 +1149,9 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| ForUpdateDialectToSQLSmokeTest.java#clickHouseForUpdateThrowsUnsupported | 待做 |  |  |
+| ForUpdateDialectToSQLSmokeTest.java#clickHouseForUpdateThrowsUnsupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:42 |  |
 | ForUpdateDialectToSQLSmokeTest.java#damengForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:27 |  |
-| ForUpdateDialectToSQLSmokeTest.java#db2ForUpdateToSQLSmoke | 待做 |  |  |
+| ForUpdateDialectToSQLSmokeTest.java#db2ForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:50 |  |
 | ForUpdateDialectToSQLSmokeTest.java#duckDBForUpdateThrowsUnsupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDbDialectTest.cs:13 |  |
 | ForUpdateDialectToSQLSmokeTest.java#gaussDBForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:21 |  |
 | ForUpdateDialectToSQLSmokeTest.java#h2ForUpdateToSQLSmoke | 待做 |  |  |
@@ -1161,7 +1161,7 @@
 | ForUpdateDialectToSQLSmokeTest.java#mysqlForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:18 |  |
 | ForUpdateDialectToSQLSmokeTest.java#oracleForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:26 |  |
 | ForUpdateDialectToSQLSmokeTest.java#pgsqlForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:19 |  |
-| ForUpdateDialectToSQLSmokeTest.java#sqliteForUpdateToSQLSmoke | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:42：SQLite 没有 FOR UPDATE 语法（写事务锁整个库），Java 照样拼出、执行时才报语法错误；C# 渲染时就抛出 NotSupportedException |  |
+| ForUpdateDialectToSQLSmokeTest.java#sqliteForUpdateToSQLSmoke | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:58：SQLite 没有 FOR UPDATE 语法（写事务锁整个库），Java 照样拼出、执行时才报语法错误；C# 渲染时就抛出 NotSupportedException |  |
 | fork/live/LockWaitLiveTest.java#noWaitFailsAndSkipLockedSkips | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/LockWaitLiveTest.cs:14 | `DROP TABLE {…}t_fork_post` |
 | mysql8/ForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ForUpdateTest.cs:46 |  |
 | mysql8/ForUpdateTest.java#testForUpdateBlocksConcurrentTransaction | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ForUpdateTest.cs:43 |  |
@@ -2133,10 +2133,10 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| click/ClickHouseTest.java#testDelete1 | 待做 |  | `ALTER TABLE 't_topic' DELETE WHERE 'ID' = ?` |
-| click/ClickHouseTest.java#testDelete2 | 待做 |  | `ALTER TABLE 't_topic' DELETE WHERE 'ID' = ?` |
-| click/ClickHouseTest.java#testUpdate1 | 待做 |  | `ALTER TABLE 't_topic' UPDATE 'TITLE' = ? WHERE 'ID' = ?` |
-| click/ClickHouseTest.java#testUpdate2 | 待做 |  | `ALTER TABLE 't_topic' UPDATE 'STARS' = ?,'TITLE' = ?,'CREATE_TIME' = ? WHERE 'ID' = ?` |
+| click/ClickHouseTest.java#testDelete1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ClickHouseTest.cs:27 | `ALTER TABLE 't_topic' DELETE WHERE 'ID' = ?` |
+| click/ClickHouseTest.java#testDelete2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ClickHouseTest.cs:32 | `ALTER TABLE 't_topic' DELETE WHERE 'ID' = ?` |
+| click/ClickHouseTest.java#testUpdate1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ClickHouseTest.cs:17 | `ALTER TABLE 't_topic' UPDATE 'TITLE' = ? WHERE 'ID' = ?` |
+| click/ClickHouseTest.java#testUpdate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ClickHouseTest.cs:22 | `ALTER TABLE 't_topic' UPDATE 'STARS' = ?,'TITLE' = ?,'CREATE_TIME' = ? WHERE 'ID' = ?` |
 
 ### 达梦方言（`dialect.dameng`，M6）
 
@@ -2317,9 +2317,9 @@
 | h2/H2QueryTest.java#leftJoin3_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:61 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
 | h2/H2QueryTest.java#leftJoin4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:70 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
 | h2/H2QueryTest.java#leftJoin4_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:80 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
-| h2/H2QueryTest.java#testDDL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:158：建表语句由 SQLite 方言生成（单行、INTEGER / TIMESTAMP 等标准类型名）；Java 是 H2 的多行格式（INT、TIMESTAMP(3)） | `CREATE TABLE IF NOT EXISTS t_topic ( id VARCHAR(255) NOT NULL , stars INT NULL , title VARCHAR(255) …` |
-| h2/H2QueryTest.java#testDDL2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:167：建表语句由 SQLite 方言生成（单行、INTEGER / TIMESTAMP 等标准类型名）；Java 是 H2 的多行格式（INT、TIMESTAMP(3)） | `CREATE TABLE IF NOT EXISTS t_multi_primary ( id1 VARCHAR(255) NOT NULL , id2 VARCHAR(255) NOT NULL ,…` |
-| h2/H2QueryTest.java#testTableCommentDDL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:177：SQLite 不支持表注释与列注释，建表语句里没有 COMMENT；Java 断言 H2 的 COMMENT ON TABLE 语句 | `CREATE TABLE IF NOT EXISTS t_h2_table_comment ( id VARCHAR(255) NOT NULL COMMENT '主键ID', name VARCHA…` |
+| h2/H2QueryTest.java#testDDL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:158：建表语句由 SQLite 方言生成，格式与 Java 的 H2 一致，类型是 SQLite 的（integer、TEXT）；Java 是 H2 的类型（INT、TIMESTAMP(3)） | `CREATE TABLE IF NOT EXISTS t_topic ( id VARCHAR(255) NOT NULL , stars INT NULL , title VARCHAR(255) …` |
+| h2/H2QueryTest.java#testDDL2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:167 | `CREATE TABLE IF NOT EXISTS t_multi_primary ( id1 VARCHAR(255) NOT NULL , id2 VARCHAR(255) NOT NULL ,…` |
+| h2/H2QueryTest.java#testTableCommentDDL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:178：SQLite 不支持表注释与列注释，建表语句里没有 COMMENT；Java 断言 H2 的 COMMENT ON TABLE 语句 | `CREATE TABLE IF NOT EXISTS t_h2_table_comment ( id VARCHAR(255) NOT NULL COMMENT '主键ID', name VARCHA…` |
 | h2/TreeCTETest.java#tree8 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/H2/TreeCTETest.cs:9：SQLite 的复合查询分支不能加括号，递归 CTE 也不写列名清单；Java 的 H2 写成 as_tree_cte(cte_deep,id,parent_id,name) AS ( (…)  UNION ALL  (…) ) | `WITH RECURSIVE as_tree_cte(cte_deep,id,parent_id,name) AS ( (SELECT 0 AS cte_deep,t1.id,t1.parent_id…` |
 | h2/v2/H2V2Test.java#testAllType | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2V2Test.cs:29 |  |
 | h2/v2/H2V2Test.java#testAllType1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2V2Test.cs:40 |  |
@@ -2428,22 +2428,22 @@
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
 | InsertTest1.java#testInsert | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:15 | `INSERT INTO 't_test_insert' ('id','column1','column2') VALUES (?,?,?)` |
-| MigrationTest.java#createTableSQLTest1 | 待做 |  | `CREATE TABLE IF NOT EXISTS 'my_migration_blog' ( 'id' VARCHAR(255) NOT NULL , 'create_time' DATETIME…` |
-| MigrationTest.java#createTableSQLTest2 | 待做 |  | `ALTER TABLE 't_topic' RENAME TO 't_topic2';` |
-| MigrationTest.java#createTableSQLTest3 | 待做 |  | `ALTER TABLE 't_topic' CHANGE 'title' 'abc' varchar(200) NULL;` |
-| MigrationTest.java#createTableSQLTest4 | 待做 |  |  |
-| QueryTest22.java#testManyOrder | 待做 |  |  |
+| MigrationTest.java#createTableSQLTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/MigrationTest.cs:11 | `CREATE TABLE IF NOT EXISTS 'my_migration_blog' ( 'id' VARCHAR(255) NOT NULL , 'create_time' DATETIME…` |
+| MigrationTest.java#createTableSQLTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/MigrationTest.cs:37 | `ALTER TABLE 't_topic' RENAME TO 't_topic2';` |
+| MigrationTest.java#createTableSQLTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/MigrationTest.cs:45 | `ALTER TABLE 't_topic' CHANGE 'title' 'abc' varchar(200) NULL;` |
+| MigrationTest.java#createTableSQLTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/MigrationTest.cs:53 |  |
+| QueryTest22.java#testManyOrder | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest22.CodeFirst.cs:7 |  |
 | QueryTest24.java#testx18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:191 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest26.java#testGenerateKeys | 待做 |  |  |
-| QueryTest3.java#userBookTest | 待做 |  |  |
-| migration/MigrationDamengTest.java#test | 待做 |  |  |
-| migration/MigrationPgTest.java#test | 待做 |  |  |
+| QueryTest26.java#testGenerateKeys | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.CodeFirst.cs:8 |  |
+| QueryTest3.java#userBookTest | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.CodeFirst.cs:7：C# 的 SysUserEncrypt 地址列没有 Java 端加密（Java 用 JavaEncryptionStrategy，VO 上再声明一次解密），按明文写入、LIKE 与读出； |  |
+| migration/MigrationDamengTest.java#test | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/MigrationDamengTest.cs:9：达梦建表沿用 TS 版在 DM8 上实测的写法：一条语句一次执行，类型是 INT / BIT / VARCHAR2(255) / TIMESTAMP，列注释是单独的 COMMENT ON 语句； |  |
+| migration/MigrationPgTest.java#test | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgMigrationTest.cs:23 |  |
 | mysql8/M8Test1.java#testNoKeyCodeFirst | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Test1.cs:46 |  |
-| mysql8/MySQL8Test2.java#test | 待做 |  |  |
-| pgsql/MigrationTest.java#test1 | 待做 |  |  |
-| sqlite/SQLiteTest.java#testDDL | 待做 |  | `CREATE TABLE IF NOT EXISTS "t_topic" ( "Id" VARCHAR(255) NOT NULL , "Stars" integer NULL , "Title" V…` |
-| sqlite/SQLiteTest.java#testDDL2 | 待做 |  | `CREATE TABLE IF NOT EXISTS "t_multi_primary" ( "Id1" VARCHAR(255) NOT NULL , "Id2" VARCHAR(255) NOT …` |
-| testmysql8/MyTest.java#testaa | 待做 |  |  |
+| mysql8/MySQL8Test2.java#test | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.CodeFirst.cs:11 |  |
+| pgsql/MigrationTest.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgMigrationTest.cs:7 |  |
+| sqlite/SQLiteTest.java#testDDL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:47 | `CREATE TABLE IF NOT EXISTS "t_topic" ( "Id" VARCHAR(255) NOT NULL , "Stars" integer NULL , "Title" V…` |
+| sqlite/SQLiteTest.java#testDDL2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:62 | `CREATE TABLE IF NOT EXISTS "t_multi_primary" ( "Id1" VARCHAR(255) NOT NULL , "Id2" VARCHAR(255) NOT …` |
+| testmysql8/MyTest.java#testaa | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/TestMysql8MyTest.cs:79：C# 没有 createDatabaseIfNotExists（库由连接串决定，建库属于部署）：测试先用服务器连接建库 easy-query-test123，再同步三张表 |  |
 
 ### 按对象筛选排序（whereObject / orderByObject）（`dto.object`，M7）
 

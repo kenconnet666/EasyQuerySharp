@@ -45,9 +45,9 @@ docs/
 | `Querying/` | 公开的 `Query` / `QueryBase` / `GroupQuery`，以及内部的 `QueryState`、`QueryCompiler`、`ProjectionCompiler`、`AutoProjection`、`Include*` |
 | `Translation/` | 表达式树 → SQL AST：`ExpressionTranslator.*`（按主题分 partial）、`TranslationContext`、`MethodTranslators`、`KeyPredicates` |
 | `SqlAst/` `Rendering/` | SQL 语法树与渲染（别名分配、方言回调） |
-| `Dialects/` | `SqlDialect` 与各库的 `XxxDialect`（MySQL、PostgreSQL、SQLite、SQL Server、Oracle） |
+| `Dialects/` | `SqlDialect`（通用渲染、upsert、函数表、DDL 四个分部文件）与各库的 `XxxDialect`（MySQL、PostgreSQL、SQLite、SQL Server、Oracle、达梦、DuckDB、HANA、Kingbase、GaussDB、ClickHouse、Db2、TDengine） |
 | `Commands/` | 插入、更新、删除、聚合保存：`EntityCommandBase` → `WriteCommandBase`，`WriteScope` 是一条写入语句的翻译作用域，`SavePlan` 是一次聚合保存的计划 |
-| `Execution/` `Tracking/` `Interceptors/` `Filtering/` `Encryption/` `Materialization/` `Schema/` | 执行与环境事务、追踪、拦截器、按对象筛选、列加密（AES、SM4）、读取结果、code-first |
+| `Execution/` `Tracking/` `Interceptors/` `Filtering/` `Encryption/` `Materialization/` `Schema/` | 执行与环境事务、追踪、拦截器、按对象筛选、列加密（AES、SM4）、读取结果、code-first（`CodeFirst` 是入口，`SchemaPlanner` 规划建表与同步的语句，`SchemaReader` 执行方言的系统表查询读库结构；语句的写法在各方言的 DDL 分部） |
 
 模块边界的规则：
 
