@@ -41,6 +41,9 @@ public sealed record LiveSuiteOptions
     /// </summary>
     public bool JsonFunctions { get; init; } = true;
 
+    /// <summary>递归 CTE（树查询 AsTreeCte）：SAP HANA 2.0 没有 WITH RECURSIVE。</summary>
+    public bool RecursiveCte { get; init; } = true;
+
     /// <summary>分库用例要第二个库（<see cref="LiveSuite.ShardConnectionStringAsync"/>）：Oracle 的测试用户没有建第二个 schema 的权限。</summary>
     public bool ShardDataSources { get; init; } = true;
 }

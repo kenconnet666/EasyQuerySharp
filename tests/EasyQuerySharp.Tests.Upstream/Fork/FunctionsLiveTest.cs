@@ -5,15 +5,15 @@ namespace EasyQuerySharp.Tests.Upstream.Fork;
 
 /// <summary>
 /// 对应 Java fork：live 下的 DateTruncLiveTest、GroupingLiveTest、NullSafeLiveTest、WindowLiveTest。
-/// Java 跑 MySQL 8.0.18、PG 17、HANA；这里跑本地必测的 MySQL 8.4 与 PG 17（HANA 随 HANA 方言补上）。
+/// Java 跑 MySQL 8.0.18、PG 17、HANA；这里跑 MySQL 8.4、PG 17 与 HANA（没有配置的库跳过）。
 /// </summary>
-public sealed class FunctionsLiveTest(Mysql8Fixture mysql, PgFixture pg)
+public sealed class FunctionsLiveTest(Mysql8Fixture mysql, PgFixture pg, HanaFixture hana)
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     private async Task<EasyDb> Fresh<T>(string database)
     {
-        var db = database == "mysql" ? mysql.Db : pg.Db;
+        var db = database switch { "mysql" => mysql.Db, "pg" => pg.Db, _ => hana.Db };
         await db.CodeFirst.DropTablesIfExistsAsync([typeof(T)], Ct);
         await db.CodeFirst.CreateTablesAsync([typeof(T)], Ct);
         return db;
@@ -41,6 +41,7 @@ public sealed class FunctionsLiveTest(Mysql8Fixture mysql, PgFixture pg)
     [Theory, Upstream("fork/live/InsertSelectLiveTest.java#copyMatchingRowsWithArchiveTime")]
     [InlineData("mysql")]
     [InlineData("pg")]
+    [InlineData("hana")]
     public async Task CopyMatchingRowsWithArchiveTime(string database)
     {
         var db = await Fresh<ForkPost>(database);
@@ -58,6 +59,7 @@ public sealed class FunctionsLiveTest(Mysql8Fixture mysql, PgFixture pg)
     [Theory, Upstream("fork/live/DateTruncLiveTest.java#truncatesToEachUnit")]
     [InlineData("mysql")]
     [InlineData("pg")]
+    [InlineData("hana")]
     public async Task TruncatesToEachUnit(string database)
     {
         var db = await Fresh<ForkUser>(database);
@@ -82,6 +84,7 @@ public sealed class FunctionsLiveTest(Mysql8Fixture mysql, PgFixture pg)
     [Theory, Upstream("fork/live/GroupingLiveTest.java#rollupAddsGrandTotal")]
     [InlineData("mysql")]
     [InlineData("pg")]
+    [InlineData("hana")]
     public async Task RollupAddsGrandTotal(string database)
     {
         var db = await Fresh<ForkPost>(database);
@@ -96,6 +99,7 @@ public sealed class FunctionsLiveTest(Mysql8Fixture mysql, PgFixture pg)
     [Theory, Upstream("fork/live/NullSafeLiveTest.java#nullMatchesNullAndEmptyBecomesNull")]
     [InlineData("mysql")]
     [InlineData("pg")]
+    [InlineData("hana")]
     public async Task NullMatchesNullAndEmptyBecomesNull(string database)
     {
         var db = await Fresh<ForkUser>(database);
@@ -112,6 +116,7 @@ public sealed class FunctionsLiveTest(Mysql8Fixture mysql, PgFixture pg)
     [Theory, Upstream("fork/live/WindowLiveTest.java#runningTotalRowNumberAndNtile")]
     [InlineData("mysql")]
     [InlineData("pg")]
+    [InlineData("hana")]
     public async Task RunningTotalRowNumberAndNtile(string database)
     {
         var db = await Fresh<ForkPost>(database);

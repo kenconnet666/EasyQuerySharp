@@ -137,6 +137,20 @@ public sealed class DuckDbLiveSuite : LiveSuite
     }
 }
 
+/// <summary>SAP HANA Express 2.0：租户 HXE 里独立的 schema <c>EQS_LIVE</c>（分库用例另有 <c>EQS_LIVE_DS1</c>），连接串用 <c>Current Schema</c> 选它。</summary>
+public sealed class HanaLiveSuite : LiveSuite
+{
+    protected override TestDatabase Database => TestDatabases.Hana;
+    protected override SqlDialect Dialect => HanaDialect.Instance;
+    // GREATEST / LEAST 碰到 NULL 返回 NULL；方言还没有 Sql.Json 的写法（Java fork 也没有）
+    protected override LiveSuiteOptions Options { get; } = new() { RecursiveCte = false, ExtremesIgnoreNull = false, JsonFunctions = false };
+    protected override Task<string> ConnectionStringAsync() => SchemaAsync("EQS_LIVE");
+    protected internal override Task<string> ShardConnectionStringAsync() => SchemaAsync("EQS_LIVE_DS1");
+
+    private Task<string> SchemaAsync(string schema) =>
+        LiveDatabase.EnsureAsync(Database, "SELECT 1 FROM DUMMY", $"SELECT 1 FROM SCHEMAS WHERE SCHEMA_NAME = '{schema}'", $"CREATE SCHEMA {schema}", schema);
+}
+
 /// <summary>按库建一次独立的测试库（默认 <c>eqs_live</c>），返回连到它的连接串。</summary>
 internal static class LiveDatabase
 {

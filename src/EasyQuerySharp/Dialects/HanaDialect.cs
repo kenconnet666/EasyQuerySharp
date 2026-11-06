@@ -12,6 +12,7 @@ namespace EasyQuerySharp.Dialects;
 /// <item>拼接逐对写 <c>((a || b) || c)</c>；日期格式化用 <c>TO_NVARCHAR</c>，格式串里的文字单独拼接；条件当值写成三值的 CASE。</item>
 /// <item>集合导航的 EXISTS 子查询不写 <c>LIMIT 1</c>（HANA 的关联子查询不支持 LIMIT）。</item>
 /// <item>冲突处理写成 <c>MERGE … USING (SELECT … FROM DUMMY)</c>；带对一导航的更新写成按主键对上的 MERGE，删除写成 EXISTS。</item>
+/// <item>平均值先转成不定小数位的 <c>DECIMAL</c> 再求（定长 DECIMAL 的 AVG 按列的小数位截断）。</item>
 /// <item>插入后用 <c>CURRENT_IDENTITY_VALUE()</c> 在同一连接上取自增键（INSERT 没有 RETURNING）。</item>
 /// <item>建表用 <c>CREATE COLUMN TABLE</c>；没有 IF [NOT] EXISTS，建表、删表包在匿名块里忽略"已存在 / 不存在"。</item>
 /// <item>跳过被锁的行写 <c>FOR UPDATE IGNORE LOCKED</c>；没有递归 CTE。</item>
@@ -211,6 +212,9 @@ public class HanaDialect : SqlDialect
             r.Append(",ROUND_DOWN)");
         };
         f[SqlFunctionNames.Log10] = Template("LOG(10,{0})");
+        // DECIMAL(p,s) 上的 AVG 结果仍是 s 位小数（10.50…3.00 的平均得 503.68）：先转成浮动小数位的 DECIMAL
+        f[SqlFunctionNames.Avg] = Template("AVG(CAST({0} AS DECIMAL))");
+        f[SqlFunctionNames.AvgDistinct] = Template("AVG(DISTINCT CAST({0} AS DECIMAL))");
         f[SqlFunctionNames.Random] = Template("RAND()");
         f[SqlFunctionNames.UtcNow] = Template("CURRENT_UTCTIMESTAMP");
         f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("STRING_AGG(TO_NVARCHAR(").Write(a[0]).Append("), ").Write(a[1]).Append(")");
