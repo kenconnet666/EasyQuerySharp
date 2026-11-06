@@ -18,24 +18,24 @@ public static class RawSqlExamples
     {
         var minAge = 30;
         long[] companies = [1, 2];
-        return db.SqlQueryAsync<NameAge>($"SELECT name, age FROM t_user WHERE age >= {minAge} AND company_id IN ({companies}) ORDER BY id", CancellationToken.None);
+        return db.SqlQueryAsync<NameAge>($"SELECT name, age FROM t_user WHERE age >= {minAge} AND company_id IN ({companies}) ORDER BY id");
     }
 
     [Example("raw", "读单列与标识符：Sql.Identifier 按方言加引号")]
     public static Task<List<long>> ScalarAndIdentifier(EasyDb db) =>
-        db.SqlQueryAsync<long>($"SELECT COUNT(*) FROM {Sql.Identifier("t_post")} WHERE {Sql.Identifier("views")} >= {1000}", CancellationToken.None);
+        db.SqlQueryAsync<long>($"SELECT COUNT(*) FROM {Sql.Identifier("t_post")} WHERE {Sql.Identifier("views")} >= {1000}");
 
     [Example("raw", "执行写入：ExecuteSqlAsync 返回影响的行数")]
     public static Task<long> ExecuteSql(EasyDb db) =>
-        db.ExecuteSqlAsync($"UPDATE t_product SET stock = stock - {1} WHERE id = {5}", CancellationToken.None);
+        db.ExecuteSqlAsync($"UPDATE t_product SET stock = stock - {1} WHERE id = {5}");
 
-    [Example("raw", "? 占位的位置参数")]
+    [Example("raw", "普通字符串与 ? 位置参数：…Raw 方法")]
     public static Task<List<string>> Positional(EasyDb db) =>
-        db.SqlQueryAsync<string>("SELECT name FROM t_tag WHERE id > ? ORDER BY id", [4L]);
+        db.SqlQueryRawAsync<string>("SELECT name FROM t_tag WHERE id > ? ORDER BY id", [4L]);
 
     [Example("raw", "原生 SQL 当作查询来源：FromSql 之后继续 Where / Select")]
     public static Task<List<string>> FromSql(EasyDb db) =>
-        db.FromSql<User>("SELECT * FROM t_user WHERE age >= ?", 30).Where(u => u.CompanyId == 1).OrderBy(u => u.Id).Select(u => u.Name).ToListAsync();
+        db.FromSql<User>($"SELECT * FROM t_user WHERE age >= {30}").Where(u => u.CompanyId == 1).OrderBy(u => u.Id).Select(u => u.Name).ToListAsync();
 
     [Example("raw", "原生排序与选列：OrderByRaw、SelectRaw")]
     public static Task<List<Post>> RawOrderAndSelect(EasyDb db) =>

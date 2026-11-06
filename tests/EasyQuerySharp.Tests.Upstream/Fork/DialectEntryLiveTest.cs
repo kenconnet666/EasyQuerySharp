@@ -28,7 +28,7 @@ public sealed class DialectEntryLiveTest(Mysql8Fixture mysql, PgFixture pg)
                      + "('u3','mybatis plus',20,NULL,'{\"tags\":[\"vip\"],\"skills\":[]}',NOW())",
                      "INSERT INTO t_fork_post VALUES ('p1','u1','[\"x\",\"y\"]',1),('p2','u2','[\"z\"]',2)",
                  })
-            await db.ExecuteSqlAsync(sql, cancellationToken: Ct);
+            await db.ExecuteSqlRawAsync(sql, cancellationToken: Ct);
         return db;
     }
 
@@ -46,7 +46,7 @@ public sealed class DialectEntryLiveTest(Mysql8Fixture mysql, PgFixture pg)
                      + "('u3','mybatis',20,NULL,'{\"tags\":[\"vip\"]}',now())",
                      "INSERT INTO t_fork_post VALUES ('p1','u1','{\"lang\":\"java\"}',1),('p2','u2','{\"lang\":\"go\"}',2)",
                  })
-            await db.ExecuteSqlAsync(sql, cancellationToken: Ct);
+            await db.ExecuteSqlRawAsync(sql, cancellationToken: Ct);
         return db;
     }
 
@@ -86,9 +86,9 @@ public sealed class DialectEntryLiveTest(Mysql8Fixture mysql, PgFixture pg)
     public async Task MySqlPathPredicatesAndUpdates()
     {
         var db = mysql.Db;
-        await db.ExecuteSqlAsync("DROP TABLE IF EXISTS t_fork_user", cancellationToken: Ct);
-        await db.ExecuteSqlAsync("CREATE TABLE t_fork_user (id VARCHAR(32) PRIMARY KEY, name VARCHAR(100), age INT, company_id VARCHAR(32), attrs JSON, created_at DATETIME)", cancellationToken: Ct);
-        await db.ExecuteSqlAsync("INSERT INTO t_fork_user (id, attrs) VALUES ('u1', '{\"tags\":[\"a\"],\"level\":1,\"old\":true}'), ('u2', '{\"tags\":[]}')", cancellationToken: Ct);
+        await db.ExecuteSqlRawAsync("DROP TABLE IF EXISTS t_fork_user", cancellationToken: Ct);
+        await db.ExecuteSqlRawAsync("CREATE TABLE t_fork_user (id VARCHAR(32) PRIMARY KEY, name VARCHAR(100), age INT, company_id VARCHAR(32), attrs JSON, created_at DATETIME)", cancellationToken: Ct);
+        await db.ExecuteSqlRawAsync("INSERT INTO t_fork_user (id, attrs) VALUES ('u1', '{\"tags\":[\"a\"],\"level\":1,\"old\":true}'), ('u2', '{\"tags\":[]}')", cancellationToken: Ct);
 
         Assert.Equal(1, await db.Query<ForkUser>().Where(u => Sql.MySql.Json(u.Attrs).ContainsPath("$.level", "$.nope")).CountAsync(Ct));
         Assert.Equal(0, await db.Query<ForkUser>().Where(u => Sql.MySql.Json(u.Attrs).ContainsAllPaths("$.level", "$.nope")).CountAsync(Ct));
@@ -128,9 +128,9 @@ public sealed class DialectEntryLiveTest(Mysql8Fixture mysql, PgFixture pg)
     public async Task PgJsonbEditRoundTrip()
     {
         var db = pg.Db;
-        await db.ExecuteSqlAsync("DROP TABLE IF EXISTS t_fork_user", cancellationToken: Ct);
-        await db.ExecuteSqlAsync("CREATE TABLE t_fork_user (id VARCHAR(32) PRIMARY KEY, name VARCHAR(100), age INT, company_id VARCHAR(32), attrs JSONB, created_at TIMESTAMP)", cancellationToken: Ct);
-        await db.ExecuteSqlAsync("INSERT INTO t_fork_user (id, attrs) VALUES ('u1', '{\"level\":1,\"old\":true,\"tags\":[\"a\"]}')", cancellationToken: Ct);
+        await db.ExecuteSqlRawAsync("DROP TABLE IF EXISTS t_fork_user", cancellationToken: Ct);
+        await db.ExecuteSqlRawAsync("CREATE TABLE t_fork_user (id VARCHAR(32) PRIMARY KEY, name VARCHAR(100), age INT, company_id VARCHAR(32), attrs JSONB, created_at TIMESTAMP)", cancellationToken: Ct);
+        await db.ExecuteSqlRawAsync("INSERT INTO t_fork_user (id, attrs) VALUES ('u1', '{\"level\":1,\"old\":true,\"tags\":[\"a\"]}')", cancellationToken: Ct);
 
         Assert.Equal(1, await db.Update<ForkUser>()
             .Set(u => u.Attrs, u => Sql.Pg.Jsonb(u.Attrs).Edit(e => e.Set("level", "3").Set("tags.1", "\"b\"").Remove("old").Merge("{\"vip\":true}")))
@@ -143,9 +143,9 @@ public sealed class DialectEntryLiveTest(Mysql8Fixture mysql, PgFixture pg)
     public async Task PgArrayPredicatesAndFullText()
     {
         var db = pg.Db;
-        await db.ExecuteSqlAsync("DROP TABLE IF EXISTS t_fork_post", cancellationToken: Ct);
-        await db.ExecuteSqlAsync("CREATE TABLE t_fork_post (id VARCHAR(32) PRIMARY KEY, user_id TEXT[], title TEXT, amount DECIMAL(12,2))", cancellationToken: Ct);
-        await db.ExecuteSqlAsync("INSERT INTO t_fork_post VALUES ('p1', '{a,b}', 'easy query makes orm simple', 1), ('p2', '{b}', 'plain jdbc is verbose', 2), ('p3', '{}', 'easy query and jdbc together', 3)",
+        await db.ExecuteSqlRawAsync("DROP TABLE IF EXISTS t_fork_post", cancellationToken: Ct);
+        await db.ExecuteSqlRawAsync("CREATE TABLE t_fork_post (id VARCHAR(32) PRIMARY KEY, user_id TEXT[], title TEXT, amount DECIMAL(12,2))", cancellationToken: Ct);
+        await db.ExecuteSqlRawAsync("INSERT INTO t_fork_post VALUES ('p1', '{a,b}', 'easy query makes orm simple', 1), ('p2', '{b}', 'plain jdbc is verbose', 2), ('p3', '{}', 'easy query and jdbc together', 3)",
             cancellationToken: Ct);
 
         Assert.Equal(2, await db.Query<ForkPost>().Where(p => Sql.Pg.Array(p.UserId).Has("b")).CountAsync(Ct));

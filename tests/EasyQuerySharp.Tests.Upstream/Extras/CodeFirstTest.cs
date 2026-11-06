@@ -236,7 +236,7 @@ public sealed class CodeFirstTest(DuckDbFixture duck) : IAsyncLifetime
     public async Task SqliteCreateReadAndSync()
     {
         var db = _sqlite;
-        await db.ExecuteSqlAsync("DROP TABLE IF EXISTS cf_article", cancellationToken: Ct);
+        await db.ExecuteSqlRawAsync("DROP TABLE IF EXISTS cf_article", cancellationToken: Ct);
         await db.CodeFirst.DropTablesIfExistsAsync([typeof(CfPost), typeof(CfAuthor)], Ct);
         Assert.False(await db.CodeFirst.TableExistsAsync(typeof(CfPost), Ct));
 

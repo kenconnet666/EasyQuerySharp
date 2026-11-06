@@ -11,7 +11,7 @@ public static class TableExamples
     [Example("tables", "换表：条件与投影里的集合导航跟着读归档表")]
     public static async Task<List<ArchivedPosts>> MapTable(EasyDb db)
     {
-        await db.ExecuteSqlAsync("CREATE TABLE t_post_2025 AS SELECT * FROM t_post WHERE id <= 2");
+        await db.ExecuteSqlRawAsync("CREATE TABLE t_post_2025 AS SELECT * FROM t_post WHERE id <= 2");
         try
         {
             return await db.Query<User>().MapTable<Post>("t_post_2025")
@@ -22,7 +22,7 @@ public static class TableExamples
         }
         finally
         {
-            await db.ExecuteSqlAsync("DROP TABLE t_post_2025");
+            await db.ExecuteSqlRawAsync("DROP TABLE t_post_2025");
         }
     }
 

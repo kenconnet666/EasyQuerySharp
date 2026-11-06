@@ -5,23 +5,23 @@ public sealed partial class QueryTest
 {
     [Fact, Upstream("QueryTest.java#query32")]
     public async Task Query32() =>
-        Assert.Single(await Db.SqlQueryAsync<BlogEntity>("SELECT * FROM `t_blog` t where t.id=?", ["1"], Ct));
+        Assert.Single(await Db.SqlQueryRawAsync<BlogEntity>("SELECT * FROM `t_blog` t where t.id=?", ["1"], Ct));
 
     [Fact, Upstream("QueryTest.java#query33")]
     public async Task Query33() =>
-        Assert.True((await Db.SqlQueryAsync<BlogEntity>("SELECT * FROM `t_blog` t", cancellationToken: Ct)).Count >= 100);
+        Assert.True((await Db.SqlQueryRawAsync<BlogEntity>("SELECT * FROM `t_blog` t", cancellationToken: Ct)).Count >= 100);
 
     [Fact, Upstream("QueryTest.java#query34")]
     public async Task Query34() =>
-        Assert.Empty(await Db.SqlQueryAsync<BlogEntity>("SELECT * FROM `t_blog` t where t.id=?", ["1xx"], Ct));
+        Assert.Empty(await Db.SqlQueryRawAsync<BlogEntity>("SELECT * FROM `t_blog` t where t.id=?", ["1xx"], Ct));
 
     [Fact, Upstream("QueryTest.java#query35")]
     public async Task Query35() =>
-        Assert.True((await Db.SqlQueryAsync<Dictionary<string, object?>>("SELECT * FROM `t_blog` t", cancellationToken: Ct)).Count >= 100);
+        Assert.True((await Db.SqlQueryRawAsync<Dictionary<string, object?>>("SELECT * FROM `t_blog` t", cancellationToken: Ct)).Count >= 100);
 
     [Fact, Upstream("QueryTest.java#query36")]
     public async Task Query36() =>
-        Assert.Single(await Db.SqlQueryAsync<Dictionary<string, object?>>("SELECT * FROM `t_blog` t  where t.id=?", ["1"], Ct));
+        Assert.Single(await Db.SqlQueryRawAsync<Dictionary<string, object?>>("SELECT * FROM `t_blog` t  where t.id=?", ["1"], Ct));
 
     [Theory, Upstream("QueryTest.java#query7_1"), Upstream("QueryTest.java#query7_2")]
     [InlineData("SELECT `id`,`create_time`,`update_time`,`create_by`,`update_by`,`deleted`,`title`,`content`,`url`,`star`,`publish_time`,`score`,`status`,`order`,`is_top`,`top` FROM `t_blog` WHERE `deleted` = ? AND `star` <= ? ORDER BY `create_time` ASC")]
@@ -29,7 +29,7 @@ public sealed partial class QueryTest
     [InlineData("SELECT `id`,`create_time` AS createTime,`update_time` AS updateTime,`create_by` AS createBy,`update_by`,`deleted`,`title`,`content`,`url`,`star`,`publish_time` AS publishTime,`score`,`status`,`order`,`is_top`  AS isTop,`top` FROM `t_blog` WHERE `deleted` = ? AND `star` <= ? ORDER BY `create_time` ASC")]
     public async Task Query7_1(string sql)
     {
-        var blogs = await Db.SqlQueryAsync<BlogEntity>(sql, [false, 100], Ct);
+        var blogs = await Db.SqlQueryRawAsync<BlogEntity>(sql, [false, 100], Ct);
         var begin = new DateTime(2020, 1, 1, 1, 1, 1);
         Assert.Equal(100, blogs.Count);
         for (var i = 0; i < blogs.Count; i++)
@@ -75,7 +75,7 @@ public sealed partial class QueryTest
         var sql = query.ToSql();
         Assert.Equal("SELECT t1.`id` AS `blog_id`,t.`id` FROM `t_topic` t LEFT JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` WHERE t.`id` = ?", sql);
         var ex = await Assert.ThrowsAsync<EasyQueryException>(() =>
-            Db.SqlQueryAsync<Dictionary<string, object?>>("SELECT t1.`id`,t.`id` FROM `t_topic` t LEFT JOIN `t_blog` t1 ON t.`id` = t1.`id` WHERE t.`id` = ?", ["2"], Ct));
+            Db.SqlQueryRawAsync<Dictionary<string, object?>>("SELECT t1.`id`,t.`id` FROM `t_topic` t LEFT JOIN `t_blog` t1 ON t.`id` = t1.`id` WHERE t.`id` = ?", ["2"], Ct));
         Assert.Contains("id", ex.Message, StringComparison.Ordinal);
     }
 

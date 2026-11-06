@@ -6,17 +6,17 @@
 
 | 方法 | 结果 |
 |---|---|
-| `db.SqlQueryAsync<T>($"…{值}…", ct)` | `List<T>`：`T` 是标量时读第一列，是类时按列名映射到属性（属性名按命名约定换算成列名，忽略大小写；对不上的列忽略） |
-| `db.ExecuteSqlAsync($"…{值}…", ct)` | 受影响的行数 |
-| `db.SqlQueryAsync<T>("… ? …", [值…])` / `ExecuteSqlAsync("…", [值…])` | `?` 位置参数（Java 的写法） |
+| `db.SqlQueryAsync<T>($"…{值}…")` | `List<T>`：`T` 是标量时读第一列，是类时按列名映射到属性（属性名按命名约定换算成列名，忽略大小写；对不上的列忽略） |
+| `db.ExecuteSqlAsync($"…{值}…")` | 受影响的行数 |
+| `db.SqlQueryRawAsync<T>("… ? …", [值…])` / `ExecuteSqlRawAsync("…", [值…])` | 普通字符串，`?` 位置参数（Java 的写法） |
 
-插值字符串里的 `{值}` 全部参数化，集合展开成 `?,?,?`（空集合报错），`Sql.Identifier("名字")` 按方言加引号：
+方法成对出现（与 EF Core 的 `FromSql` / `FromSqlRaw` 一样）：不带 `Raw` 的只收插值字符串（`FormattableString`），`{值}` 全部参数化，集合展开成 `?,?,?`（空集合报错），`Sql.Identifier("名字")` 按方言加引号；带 `Raw` 的收普通字符串，文本原样执行。插值字符串传给不带 `Raw` 的方法时一定参数化，存进 `string` 变量之后就只能传给 `…Raw`，名字上就看得出是在拼文本：
 
 <!-- card: raw/SqlQuery sql=mysql,pgsql -->
 ```csharp
 var minAge = 30;
 long[] companies = [1, 2];
-return db.SqlQueryAsync<NameAge>($"SELECT name, age FROM t_user WHERE age >= {minAge} AND company_id IN ({companies}) ORDER BY id", CancellationToken.None);
+return db.SqlQueryAsync<NameAge>($"SELECT name, age FROM t_user WHERE age >= {minAge} AND company_id IN ({companies}) ORDER BY id");
 ```
 
 ```sql
@@ -34,7 +34,7 @@ SELECT name, age FROM t_user WHERE age >= ? AND company_id IN (?,?) ORDER BY id;
 
 <!-- card: raw/ScalarAndIdentifier sql=mysql,mssql -->
 ```csharp
-db.SqlQueryAsync<long>($"SELECT COUNT(*) FROM {Sql.Identifier("t_post")} WHERE {Sql.Identifier("views")} >= {1000}", CancellationToken.None);
+db.SqlQueryAsync<long>($"SELECT COUNT(*) FROM {Sql.Identifier("t_post")} WHERE {Sql.Identifier("views")} >= {1000}");
 ```
 
 ```sql
@@ -52,7 +52,7 @@ SELECT COUNT(*) FROM [t_post] WHERE [views] >= ?;
 
 <!-- card: raw/ExecuteSql sql=mysql -->
 ```csharp
-db.ExecuteSqlAsync($"UPDATE t_product SET stock = stock - {1} WHERE id = {5}", CancellationToken.None);
+db.ExecuteSqlAsync($"UPDATE t_product SET stock = stock - {1} WHERE id = {5}");
 ```
 
 ```sql
@@ -64,7 +64,7 @@ UPDATE t_product SET stock = stock - ? WHERE id = ?;
 
 <!-- card: raw/Positional sql=mysql,oracle -->
 ```csharp
-db.SqlQueryAsync<string>("SELECT name FROM t_tag WHERE id > ? ORDER BY id", [4L]);
+db.SqlQueryRawAsync<string>("SELECT name FROM t_tag WHERE id > ? ORDER BY id", [4L]);
 ```
 
 ```sql
@@ -80,17 +80,15 @@ SELECT name FROM t_tag WHERE id > ? ORDER BY id;
 ```
 <!-- /card -->
 
-> **注意**：插值字符串要传给 `FormattableString` 的重载才会参数化。`SqlQueryAsync` / `ExecuteSqlAsync` 同时有 `string` 参数的重载，**只传一个插值字符串时 C# 选的是 `string` 重载**，值会直接拼进 SQL（有注入风险）。像上面的卡片一样带上 `CancellationToken`（或写成 `(FormattableString)$"…"`），编译器才会选 `FormattableString` 的重载。
-
-`?` 占位时，引号、反引号里的 `?` 不算占位符。
+`?` 占位时，引号、反引号里的 `?` 不算占位符；插值写法里的 `?` 原样保留（如 PostgreSQL 的 jsonb 运算符）。
 
 ## 原生 SQL 作为查询来源
 
-`db.FromSql<T>("…", 参数…)` 把一段 SQL 当作 `T` 的表，之后照常 Where / OrderBy / Select / 分页（外面包一层派生表）：
+`db.FromSql<T>($"…{值}…")`（或 `db.FromSqlRaw<T>("… ? …", 参数…)`）把一段 SQL 当作 `T` 的表，之后照常 Where / OrderBy / Select / 分页（外面包一层派生表），参数与外层的参数一起编号：
 
 <!-- card: raw/FromSql sql=mysql -->
 ```csharp
-db.FromSql<User>("SELECT * FROM t_user WHERE age >= ?", 30).Where(u => u.CompanyId == 1).OrderBy(u => u.Id).Select(u => u.Name).ToListAsync();
+db.FromSql<User>($"SELECT * FROM t_user WHERE age >= {30}").Where(u => u.CompanyId == 1).OrderBy(u => u.Id).Select(u => u.Name).ToListAsync();
 ```
 
 ```sql
@@ -166,18 +164,18 @@ Task.FromResult(db.Query<User>().Where(u => u.Age >= 30).Select(u => u.Name).ToS
 ## 限制
 
 - 原生 SQL 不经过方言翻译：分页、引号、函数名要按目标库写；`Sql.Identifier` 只处理标识符的引号。
-- 原生 SQL 不应用拦截器和逻辑删除：`FromSql<Doc>("SELECT * FROM t_doc")` 不会加"未删除"条件，也不会加查询过滤的条件。
+- 原生 SQL 不应用拦截器和逻辑删除：`FromSql<Doc>($"SELECT * FROM t_doc")` 不会加"未删除"条件，也不会加查询过滤的条件。
 - `SqlQueryAsync<T>` 映射到类时只按列名对应，不带出导航。
-- `OrderByRaw` / `SelectRaw` / `Sql.Raw` 的模板原样拼进 SQL，不要把用户输入拼进模板，值用参数传。
+- `…Raw` 方法的 SQL、`OrderByRaw` / `SelectRaw` / `Sql.Raw` 的模板原样拼进 SQL，不要把用户输入拼进去，值用参数传。
 
 ## 对应 Java
 
 | Java | C# |
 |---|---|
-| `easyQuery.sqlQuery(sql, Class, params)` | `db.SqlQueryAsync<T>(sql, params)` 或插值字符串 |
+| `easyQuery.sqlQuery(sql, Class, params)` | `db.SqlQueryRawAsync<T>(sql, params)` 或插值字符串 `db.SqlQueryAsync<T>($"…")` |
 | `easyQuery.sqlQueryMap(sql)` | `db.SqlQueryAsync<DynamicRow>(..)` 或 `db.Table(..)` |
-| `easyQuery.sqlExecute(sql, params)` | `db.ExecuteSqlAsync(..)` |
-| `queryable("sql", Class)` | `db.FromSql<T>(sql, params)` |
+| `easyQuery.sqlExecute(sql, params)` | `db.ExecuteSqlRawAsync(sql, params)` / `db.ExecuteSqlAsync($"…")` |
+| `queryable("sql", Class)` | `db.FromSqlRaw<T>(sql, params)` / `db.FromSql<T>($"…")` |
 | `sqlNativeSegment("…", c -> c.expression(..))` / `expression().sql(..)` | `Sql.Raw<T>("…", ..)` |
 | `select(String)` | `SelectRaw("…")` |
 | `orderBy(x -> x.expression().sql("{0} ASC", ..))` | `OrderByRaw(x => Sql.Raw<object>("{0} ASC", ..))` |

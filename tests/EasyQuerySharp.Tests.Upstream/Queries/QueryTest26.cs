@@ -196,7 +196,7 @@ public sealed class QueryTest26(MySqlFixture fixture) : MySqlTest(fixture)
     public async Task TestGenerateKeys()
     {
         await Db.CodeFirst.DropTablesIfExistsAsync([typeof(MySQLGenerateKey)], Ct);
-        await Db.ExecuteSqlAsync("CREATE TABLE `my_sql_generate_key` (`id` INT NOT NULL AUTO_INCREMENT, `name` VARCHAR(255) NULL DEFAULT '', `now` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), PRIMARY KEY (`id`))", cancellationToken: Ct);
+        await Db.ExecuteSqlRawAsync("CREATE TABLE `my_sql_generate_key` (`id` INT NOT NULL AUTO_INCREMENT, `name` VARCHAR(255) NULL DEFAULT '', `now` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), PRIMARY KEY (`id`))", cancellationToken: Ct);
 
         var key = new MySQLGenerateKey { Name = "test" };
         await Db.Insert(key).FillGeneratedKeys().ExecuteAsync(Ct);
@@ -204,7 +204,7 @@ public sealed class QueryTest26(MySqlFixture fixture) : MySqlTest(fixture)
 
         var read = await Db.Query<MySQLGenerateKey>().WhereById(1).SingleOrDefaultAsync(Ct);
         Assert.Equal(1, read?.Id);
-        var dbNow = (DateTime)(await Db.SqlQueryAsync<Dictionary<string, object?>>("SELECT NOW(3) AS `n`", cancellationToken: Ct))[0]["n"]!;
+        var dbNow = (DateTime)(await Db.SqlQueryRawAsync<Dictionary<string, object?>>("SELECT NOW(3) AS `n`", cancellationToken: Ct))[0]["n"]!;
         Assert.InRange((dbNow - read!.Now!.Value).Duration(), TimeSpan.Zero, TimeSpan.FromMinutes(5));
     }
 

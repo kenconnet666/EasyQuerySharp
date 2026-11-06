@@ -18,14 +18,14 @@
 
 <!-- card: tables/as-table/AsTable sql=mysql -->
 ```csharp
-await db.ExecuteSqlAsync("CREATE TABLE t_tag_2025 AS SELECT * FROM t_tag");
+await db.ExecuteSqlRawAsync("CREATE TABLE t_tag_2025 AS SELECT * FROM t_tag");
 try
 {
     return await db.Query<Tag>().AsTable("t_tag_2025").Where(t => t.Id <= 3).OrderBy(t => t.Id).Select(t => t.Name).ToListAsync();
 }
 finally
 {
-    await db.ExecuteSqlAsync("DROP TABLE t_tag_2025");
+    await db.ExecuteSqlRawAsync("DROP TABLE t_tag_2025");
 }
 ```
 
@@ -40,7 +40,7 @@ DROP TABLE t_tag_2025;
 
 <!-- card: tables/as-table/AsTableByName sql=mysql -->
 ```csharp
-await db.ExecuteSqlAsync("CREATE TABLE t_user_archive AS SELECT * FROM t_user");
+await db.ExecuteSqlRawAsync("CREATE TABLE t_user_archive AS SELECT * FROM t_user");
 try
 {
     var archived = await db.Query<User>().AsTable(name => name + "_archive").Where(u => u.Age >= 35).Select(u => u.Name).ToListAsync();
@@ -49,7 +49,7 @@ try
 }
 finally
 {
-    await db.ExecuteSqlAsync("DROP TABLE t_user_archive");
+    await db.ExecuteSqlRawAsync("DROP TABLE t_user_archive");
 }
 ```
 
@@ -70,7 +70,7 @@ DROP TABLE t_user_archive;
 
 <!-- card: tables/MapTable sql=mysql -->
 ```csharp
-await db.ExecuteSqlAsync("CREATE TABLE t_post_2025 AS SELECT * FROM t_post WHERE id <= 2");
+await db.ExecuteSqlRawAsync("CREATE TABLE t_post_2025 AS SELECT * FROM t_post WHERE id <= 2");
 try
 {
     return await db.Query<User>().MapTable<Post>("t_post_2025")
@@ -81,7 +81,7 @@ try
 }
 finally
 {
-    await db.ExecuteSqlAsync("DROP TABLE t_post_2025");
+    await db.ExecuteSqlRawAsync("DROP TABLE t_post_2025");
 }
 ```
 
@@ -146,7 +146,7 @@ SELECT t.`title`,t1.`name` AS `author` FROM `t_post` t LEFT OUTER JOIN `t_user` 
 
 <!-- card: tables/as-table/WriteToOtherTable sql=mysql,pgsql -->
 ```csharp
-await db.ExecuteSqlAsync("CREATE TABLE t_tag_archive AS SELECT * FROM t_tag WHERE 1 = 0");
+await db.ExecuteSqlRawAsync("CREATE TABLE t_tag_archive AS SELECT * FROM t_tag WHERE 1 = 0");
 try
 {
     await db.Insert(new Tag { Name = "归档" }).AsTable("t_tag_archive").ExecuteAsync();
@@ -154,7 +154,7 @@ try
 }
 finally
 {
-    await db.ExecuteSqlAsync("DROP TABLE t_tag_archive");
+    await db.ExecuteSqlRawAsync("DROP TABLE t_tag_archive");
 }
 ```
 

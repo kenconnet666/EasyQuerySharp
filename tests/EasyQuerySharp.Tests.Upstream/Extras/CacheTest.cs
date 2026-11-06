@@ -26,7 +26,7 @@ public sealed class CacheTest : IAsyncLifetime
     public async ValueTask InitializeAsync()
     {
         var db = new EasyDb(o => o.UseSqlite(SqliteFactory.Instance.CreateDataSource(_cs)));
-        await db.ExecuteSqlAsync("PRAGMA journal_mode=WAL", cancellationToken: Ct);
+        await db.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL", cancellationToken: Ct);
         await db.CodeFirst.CreateTablesAsync([typeof(CtTopic), typeof(CtPost), typeof(CtCode)], Ct);
         await db.Insert(Enumerable.Range(1, 5).Select(i => new CtTopic { Id = i.ToString(), Stars = i, Title = "t" + i })).ExecuteAsync(Ct);
         await db.Insert(new CtPost { Id = "p1", TopicId = "1", Body = "a", Deleted = false }, new CtPost { Id = "p2", TopicId = "1", Body = "b", Deleted = false },
@@ -255,7 +255,7 @@ public sealed class CacheTest : IAsyncLifetime
     {
         var app = NewApp();
         await app.Client.Kv<CtTopic>().FindManyAsync(new[] { "1", "2" }, Ct);
-        await app.Db.ExecuteSqlAsync("UPDATE ct_topic SET title = 'raw'", cancellationToken: Ct);
+        await app.Db.ExecuteSqlRawAsync("UPDATE ct_topic SET title = 'raw'", cancellationToken: Ct);
         Assert.Equal("t1", (await app.Client.Kv<CtTopic>().FindAsync("1", Ct))!.Title);
         await app.Client.InvalidateAsync<CtTopic>("1", Ct);
         Assert.Equal("raw", (await OneSqlAsync(() => app.Client.Kv<CtTopic>().FindAsync("1", Ct)))!.Title);
@@ -271,7 +271,7 @@ public sealed class CacheTest : IAsyncLifetime
         var app = NewApp(configure: o => o.LateEvictDelay = TimeSpan.FromMilliseconds(200));
         await app.Db.Update<CtTopic>().Set(t => t.Title, "new").WhereById("1").ExecuteAsync(Ct);
         Assert.Equal("new", (await app.Client.Kv<CtTopic>().FindAsync("1", Ct))!.Title);
-        await app.Db.ExecuteSqlAsync("UPDATE ct_topic SET title = 'late' WHERE id = '1'", cancellationToken: Ct);
+        await app.Db.ExecuteSqlRawAsync("UPDATE ct_topic SET title = 'late' WHERE id = '1'", cancellationToken: Ct);
         Assert.Equal("new", (await app.Client.Kv<CtTopic>().FindAsync("1", Ct))!.Title);
         await Task.Delay(500, Ct);
         Assert.Equal("late", (await app.Client.Kv<CtTopic>().FindAsync("1", Ct))!.Title);

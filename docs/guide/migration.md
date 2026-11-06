@@ -187,7 +187,7 @@ SELECT t.`name`,t.`age`,t1.`name` AS `company` FROM `t_user` t LEFT JOIN `t_comp
 | `mapTables` / `inSchema` / `withTableLink` / `tableHint` | `MapTable<T>` / `InSchema` / `WithTableLink` / `AsTableSegment` |
 | `db.with(..)` / `withRecursive` / `descendantsOf` / `ancestorsOf` | `AsCte(..)` / `AsTreeCte(..)`（`Up = true` 取上级） |
 | `fillMany` / `fillOne` | `FillMany` / `FillOne` |
-| `` sql`…${v}…` `` | `Sql.Raw<T>(..)`；整条 SQL 用 `db.SqlQueryAsync<T>($"…{v}…", ct)` |
+| `` sql`…${v}…` `` | `Sql.Raw<T>(..)`；整条 SQL 用 `db.SqlQueryAsync<T>($"…{v}…")` |
 | `db.insert(X).values(..)` / `.returnId()` | `db.Insert(..)` / `.FillGeneratedKeys()` |
 | `.onConflict(..).merge()` / `.ignore()` | `OnConflictUpdate(..)` / `OnConflictIgnore(..)` |
 | `db.update(X).set(..).where(..)` / `.entity(row)` | `db.Update<X>().Set(..).Where(..)` / `db.Update(row)` |

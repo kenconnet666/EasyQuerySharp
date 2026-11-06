@@ -10,7 +10,7 @@ SELECT COUNT(*) FROM `t_post` WHERE `views` >= ?;
 UPDATE t_product SET stock = stock - ? WHERE id = ?;
 -- params: [1, 5]
 
--- Positional：? 占位的位置参数
+-- Positional：普通字符串与 ? 位置参数：…Raw 方法
 SELECT name FROM t_tag WHERE id > ? ORDER BY id;
 -- params: [4]
 

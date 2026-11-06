@@ -412,18 +412,11 @@ public sealed class SqlRenderer
         if (!b.IsComparison) Append(")");
     }
 
-    // 原生 SQL 里的 ? 依次换成参数（与 RawSql.FromPositional 同样的约定）
+    // 原生 SQL 的片段与参数交替写出（参数在整条语句里统一编号）
     private SqlRenderer WriteRawSql(RawTableSource raw)
     {
-        var parts = raw.Sql.Split('?');
-        if (parts.Length - 1 != raw.Parameters.Count)
-            throw new InvalidOperationException($"原生 SQL 有 {parts.Length - 1} 个 ? 占位，传了 {raw.Parameters.Count} 个参数：{raw.Sql}");
-        Append(parts[0]);
-        for (var i = 1; i < parts.Length; i++)
-        {
-            var value = raw.Parameters[i - 1];
-            Write(new ParameterExpr(value, value?.GetType() ?? typeof(object))).Append(parts[i]);
-        }
+        Append(raw.Segments[0]);
+        for (var i = 0; i < raw.ParameterExprs.Count; i++) Write(raw.ParameterExprs[i]).Append(raw.Segments[i + 1]);
         return this;
     }
 

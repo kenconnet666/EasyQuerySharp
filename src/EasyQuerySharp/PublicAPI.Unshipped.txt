@@ -330,8 +330,9 @@ EasyQuerySharp.EasyDb.Delete<T>(params System.Collections.Generic.IEnumerable<T!
 EasyQuerySharp.EasyDb.EasyDb(EasyQuerySharp.EasyDbOptions! options) -> void
 EasyQuerySharp.EasyDb.EasyDb(System.Action<EasyQuerySharp.EasyDbOptions!>! configure) -> void
 EasyQuerySharp.EasyDb.ExecuteSqlAsync(System.FormattableString! sql, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<long>!
-EasyQuerySharp.EasyDb.ExecuteSqlAsync(string! sql, System.Collections.Generic.IReadOnlyList<object?>? parameters = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<long>!
-EasyQuerySharp.EasyDb.FromSql<T>(string! sql, params System.Collections.Generic.IReadOnlyList<object?>! parameters) -> EasyQuerySharp.Querying.Query<T>!
+EasyQuerySharp.EasyDb.ExecuteSqlRawAsync(string! sql, System.Collections.Generic.IReadOnlyList<object?>? parameters = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<long>!
+EasyQuerySharp.EasyDb.FromSql<T>(System.FormattableString! sql) -> EasyQuerySharp.Querying.Query<T>!
+EasyQuerySharp.EasyDb.FromSqlRaw<T>(string! sql, params System.Collections.Generic.IReadOnlyList<object?>! parameters) -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.EasyDb.GetShardRule(System.Type! entityType) -> EasyQuerySharp.Sharding.IShardRule?
 EasyQuerySharp.EasyDb.GetShardRule<T>() -> EasyQuerySharp.Sharding.IShardRule?
 EasyQuerySharp.EasyDb.GetTrackedChanges(object! entity) -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -348,7 +349,7 @@ EasyQuerySharp.EasyDb.Query<T>() -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.EasyDb.RemoveTracking(object! entity) -> bool
 EasyQuerySharp.EasyDb.Save<T>(params System.Collections.Generic.IEnumerable<T!>! roots) -> EasyQuerySharp.Commands.SaveCommand<T!>!
 EasyQuerySharp.EasyDb.SqlQueryAsync<T>(System.FormattableString! sql, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.List<T>!>!
-EasyQuerySharp.EasyDb.SqlQueryAsync<T>(string! sql, System.Collections.Generic.IReadOnlyList<object?>? parameters = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.List<T>!>!
+EasyQuerySharp.EasyDb.SqlQueryRawAsync<T>(string! sql, System.Collections.Generic.IReadOnlyList<object?>? parameters = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.List<T>!>!
 EasyQuerySharp.EasyDb.Table(string! tableName) -> EasyQuerySharp.Querying.Query<EasyQuerySharp.DynamicRow!>!
 EasyQuerySharp.EasyDb.TransactionAsync(System.Func<System.Threading.Tasks.Task!>! work, System.Data.IsolationLevel isolation = System.Data.IsolationLevel.Unspecified, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 EasyQuerySharp.EasyDb.Update<T>() -> EasyQuerySharp.Commands.UpdateCommand<T!>!
@@ -1777,7 +1778,6 @@ EasyQuerySharp.SqlAst.ParameterExpr.ParameterExpr(object? value, System.Type! cl
 EasyQuerySharp.SqlAst.ParameterExpr.Value.get -> object?
 EasyQuerySharp.SqlAst.RawTableSource
 EasyQuerySharp.SqlAst.RawTableSource.Parameters.get -> System.Collections.Generic.IReadOnlyList<object?>!
-EasyQuerySharp.SqlAst.RawTableSource.RawTableSource(string! sql, System.Collections.Generic.IReadOnlyList<object?>? parameters = null) -> void
 EasyQuerySharp.SqlAst.RawTableSource.Sql.get -> string!
 EasyQuerySharp.SqlAst.RowLock
 EasyQuerySharp.SqlAst.RowLock.ForUpdate = 1 -> EasyQuerySharp.SqlAst.RowLock
