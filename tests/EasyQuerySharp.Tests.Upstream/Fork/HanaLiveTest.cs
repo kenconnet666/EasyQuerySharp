@@ -125,7 +125,7 @@ public sealed class HanaDialectLiveTest
 /// <summary>对应 Java fork：live/HanaKeysAndTypesLiveTest.java（自增键回填、批量回填、LocalDateTime 往返）。</summary>
 public sealed class HanaKeysAndTypesLiveTest
 {
-    private const string LiveDeferred = "Java 在 HANA 实库上插入并读回生成的键；C# 只核对插入语句、取键的查询与建表语句，实库验证留到 HANA 冒烟（ROADMAP 3.2）";
+    private const string KeysDeferred = "Java 在 HANA 实库上插入并读回生成的键；C# 只核对插入语句、取键的查询与建表语句，实库验证留到 HANA 冒烟（ROADMAP 3.2）";
 
     private static EasyDb Hana => SqlOnly.Db("hana");
 
@@ -140,7 +140,7 @@ public sealed class HanaKeysAndTypesLiveTest
     }
 
     // INSERT 不写自增列，执行后在同一连接上取 CURRENT_IDENTITY_VALUE()；建表写 IDENTITY 列
-    [Fact, Upstream("fork/live/HanaKeysAndTypesLiveTest.java#generatedKeyIsFilledBack", Deviation = LiveDeferred)]
+    [Fact, Upstream("fork/live/HanaKeysAndTypesLiveTest.java#generatedKeyIsFilledBack", Deviation = KeysDeferred)]
     public void GeneratedKeyIsFilledBack()
     {
         SqlOnly.AssertStatement(Hana.Insert(new IdentityRow { Name = "a" }).FillGeneratedKeys().ToStatement(), "INSERT INTO \"t_hana_identity\" (\"name\") VALUES (?)", "a(String)");
@@ -151,7 +151,7 @@ public sealed class HanaKeysAndTypesLiveTest
     }
 
     // 批量插入每行一条 INSERT（HANA 的 VALUES 只能一行），每条之后各取一次键
-    [Fact, Upstream("fork/live/HanaKeysAndTypesLiveTest.java#generatedKeysForBatch", Deviation = LiveDeferred)]
+    [Fact, Upstream("fork/live/HanaKeysAndTypesLiveTest.java#generatedKeysForBatch", Deviation = KeysDeferred)]
     public void GeneratedKeysForBatch()
     {
         var rows = new[] { new IdentityRow { Name = "a" }, new IdentityRow { Name = "b" } };
