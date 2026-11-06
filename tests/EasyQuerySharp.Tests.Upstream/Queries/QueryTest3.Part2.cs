@@ -80,14 +80,14 @@ public sealed partial class QueryTest3
         Assert.Empty(await q2.ToListAsync(Ct));
     }
 
-    // Java 的 toStreamResult：C# 的 ToAsyncEnumerable（fetch size 由驱动决定）
+    // Java 的 toStreamResult：C# 的 AsAsyncEnumerable（fetch size 由驱动决定）
     [Theory, Upstream("QueryTest3.java#query9"), Upstream("QueryTest3.java#query9_x"), Upstream("QueryTest3.java#query9_1")]
     [InlineData(0)]
     public async Task Query9(int _)
     {
         var begin = new DateTime(2020, 1, 1, 1, 1, 1);
         var i = 0;
-        await foreach (var blog in Db.Query<BlogEntity>().Where(o => o.Star <= 100).OrderBy(o => o.CreateTime).ToAsyncEnumerable(Ct))
+        await foreach (var blog in Db.Query<BlogEntity>().Where(o => o.Star <= 100).OrderBy(o => o.CreateTime).AsAsyncEnumerable(Ct))
         {
             var index = i.ToString();
             Assert.Equal(index, blog.Id);
@@ -186,23 +186,23 @@ public sealed partial class QueryTest3
     [Fact, Upstream("QueryTest3.java#nativePage1")]
     public async Task NativePage1()
     {
-        Assert.Equal(20, (await Db.QuerySql<Dictionary<string, object?>>("select * from t_topic").ToPageAsync(1, 20, Ct)).Rows.Count);
-        Assert.Equal(20, (await Db.QuerySql<Dictionary<string, object?>>("select * from t_topic").ToPageAsync(2, 20, Ct)).Rows.Count);
+        Assert.Equal(20, (await Db.FromSql<Dictionary<string, object?>>("select * from t_topic").ToPageAsync(1, 20, Ct)).Rows.Count);
+        Assert.Equal(20, (await Db.FromSql<Dictionary<string, object?>>("select * from t_topic").ToPageAsync(2, 20, Ct)).Rows.Count);
     }
 
     [Fact, Upstream("QueryTest3.java#nativePage2")]
     public async Task NativePage2()
     {
-        var query = Db.QuerySql<Dictionary<string, object?>>("select * from t_topicxx");
+        var query = Db.FromSql<Dictionary<string, object?>>("select * from t_topicxx");
         Assert.Equal("SELECT COUNT(*) FROM (select * from t_topicxx) t", (await Assert.ThrowsAsync<EasyQueryException>(() => query.CountAsync(Ct))).Sql);
-        Assert.Equal("SELECT * FROM (select * from t_topicxx) t LIMIT 10 OFFSET 1", (await Assert.ThrowsAsync<EasyQueryException>(() => query.Limit(1, 10).ToListAsync(Ct))).Sql);
-        Assert.Equal("SELECT * FROM (select * from t_topicxx) t LIMIT 10 OFFSET 2", (await Assert.ThrowsAsync<EasyQueryException>(() => query.Limit(2, 10).ToListAsync(Ct))).Sql);
+        Assert.Equal("SELECT * FROM (select * from t_topicxx) t LIMIT 10 OFFSET 1", (await Assert.ThrowsAsync<EasyQueryException>(() => query.Skip(1).Take(10).ToListAsync(Ct))).Sql);
+        Assert.Equal("SELECT * FROM (select * from t_topicxx) t LIMIT 10 OFFSET 2", (await Assert.ThrowsAsync<EasyQueryException>(() => query.Skip(2).Take(10).ToListAsync(Ct))).Sql);
     }
 
     [Fact, Upstream("QueryTest3.java#nativePage3")]
     public async Task NativePage3()
     {
-        var page = await Db.QuerySql<Dictionary<string, object?>>("select * from t_topic where id = ?", "1").ToPageAsync(1, 20, Ct);
+        var page = await Db.FromSql<Dictionary<string, object?>>("select * from t_topic where id = ?", "1").ToPageAsync(1, 20, Ct);
         Assert.Single(page.Rows);
         Assert.Equal(1, page.Total);
     }
@@ -211,7 +211,7 @@ public sealed partial class QueryTest3
     [Fact, Upstream("QueryTest3.java#nativePage4", Deviation = "过滤值按 C# 种子数据的 content 调整（Java 依赖被其它用例改过的数据）")]
     public async Task NativePage4()
     {
-        var page = await Db.QuerySql<BlogEntity>("select * from t_blog where id = ?", "1").Where(o => o.Content!.Contains("content")).ToPageAsync(1, 20, Ct);
+        var page = await Db.FromSql<BlogEntity>("select * from t_blog where id = ?", "1").Where(o => o.Content!.Contains("content")).ToPageAsync(1, 20, Ct);
         Assert.Single(page.Rows);
         Assert.Equal(1, page.Total);
     }
@@ -222,7 +222,7 @@ public sealed partial class QueryTest3
     [InlineData(true)]
     public async Task NativePage5(bool literal)
     {
-        var source = Db.QuerySql<BlogEntity>("select * from t_blog where id = ?", "1").Where(o => o.Content!.Contains("content"));
+        var source = Db.FromSql<BlogEntity>("select * from t_blog where id = ?", "1").Where(o => o.Content!.Contains("content"));
         var page = literal
             ? await source.Select(t => new BlogEntity { Id = t.Id, Content = Sql.Raw<string>("CONCAT('MySQL','5.7-',{0})", t.Id) }).ToPageAsync(1, 20, Ct)
             : await source.Select(t => new BlogEntity { Id = t.Id, Content = Sql.Raw<string>("CONCAT({0},{1},{2})", "MySQL", "5.7-", t.Id) }).ToPageAsync(1, 20, Ct);

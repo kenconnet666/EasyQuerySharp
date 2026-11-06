@@ -12,7 +12,7 @@ public sealed class InterceptorRegistry
     /// 注册一个拦截器；同一类型重复注册时抛出异常（与 Java 的 applyInterceptor 一致）。
     /// 不同类型可以同名：一个逻辑上的拦截器拆成查询过滤和写入两个类时，按名关闭会同时关掉两者。
     /// </summary>
-    public InterceptorRegistry Add(IInterceptor interceptor)
+    internal InterceptorRegistry Add(IInterceptor interceptor)
     {
         ArgumentNullException.ThrowIfNull(interceptor);
         if (_interceptors.Any(i => i.GetType() == interceptor.GetType())) throw new InvalidOperationException($"拦截器 {interceptor.GetType().Name} 重复注册");

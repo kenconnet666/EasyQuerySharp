@@ -237,26 +237,26 @@ public sealed class QueryTest9(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("2023/01/01(String),1(Integer),2024-01-01T01:01(LocalDateTime),%abc%(String),2023/01/01(String),yyyy/MM/dd(String),xxx(String),2023/01/01(String),yyyy/MM/dd(String),xxx(String),2023/01/02(String),yyyy/MM/dd2(String),xxx1(String)");
     }
 
-    // Java 的 MapProxy：C# 投影成匿名类型后 ToDictionariesAsync
+    // Java 的 MapProxy：C# 投影成匿名类型后 ToRowsAsync
     [Fact, Upstream("QueryTest9.java#dslTest7", Deviation = "Java 空的 MapProxy 渲染 SELECT *，C# 不投影时按实体的列读成字典；map.put(\"id\", id) 在 C# 匿名类型里成员名与列名相同，不写 AS")]
     public async Task DslTest7()
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<Topic>().Where(o => o.CreateTime!.Value.ToString("yyyy/MM/dd") == "2023/01/01")
-            .Select(o => new { o.Stars, o.CreateTime, abc = o.Id, o.Id }).ToDictionariesAsync(Ct);
+            .Select(o => new { o.Stars, o.CreateTime, abc = o.Id, o.Id }).ToRowsAsync(Ct);
         listen.AssertSql("SELECT t.`stars`,t.`create_time`,t.`id` AS `abc`,t.`id` FROM `t_topic` t WHERE DATE_FORMAT(t.`create_time`,'%Y/%m/%d') = ?");
         listen.AssertParams("2023/01/01(String)");
-        await Db.Query<Topic>().Where(o => o.CreateTime!.Value.ToString("yyyy/MM/dd") == "2023/01/01").ToDictionariesAsync(Ct);
+        await Db.Query<Topic>().Where(o => o.CreateTime!.Value.ToString("yyyy/MM/dd") == "2023/01/01").ToRowsAsync(Ct);
         listen.AssertSql("SELECT `id`,`stars`,`title`,`create_time` FROM `t_topic` WHERE DATE_FORMAT(`create_time`,'%Y/%m/%d') = ?");
         listen.AssertParams("2023/01/01(String)");
 
         var idQuery = Db.Query<BlogEntity>().Where(o => o.Id == "123").Select(o => o.Id);
         await Db.Query<Topic>().Where(o => Sql.In(o.Id, idQuery))
-            .Select(o => new { o.Stars, o.CreateTime, abc = o.Id, o.Id }).ToDictionariesAsync(Ct);
+            .Select(o => new { o.Stars, o.CreateTime, abc = o.Id, o.Id }).ToRowsAsync(Ct);
         listen.AssertSql("SELECT t.`stars`,t.`create_time`,t.`id` AS `abc`,t.`id` FROM `t_topic` t WHERE t.`id` IN (SELECT t1.`id` FROM `t_blog` t1 WHERE t1.`deleted` = ? AND t1.`id` = ?)");
         listen.AssertParams("false(Boolean),123(String)");
         await Db.Query<Topic>().LeftJoin<BlogEntity>((a, b) => a.Id == b.Id).Where((o, _) => Sql.In(o.Id, idQuery))
-            .Select((a, _) => new { a.Stars, a.CreateTime, abc = a.Id, id = a.Id, efg = a.CreateTime!.Value.ToString("yyyy-MM-dd HH:mm:ss") }).ToDictionariesAsync(Ct);
+            .Select((a, _) => new { a.Stars, a.CreateTime, abc = a.Id, id = a.Id, efg = a.CreateTime!.Value.ToString("yyyy-MM-dd HH:mm:ss") }).ToRowsAsync(Ct);
         listen.AssertSql("SELECT t.`stars`,t.`create_time`,t.`id` AS `abc`,t.`id`,DATE_FORMAT(t.`create_time`,'%Y-%m-%d %H:%i:%s') AS `efg` FROM `t_topic` t LEFT JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` WHERE t.`id` IN (SELECT t2.`id` FROM `t_blog` t2 WHERE t2.`deleted` = ? AND t2.`id` = ?)");
         listen.AssertParams("false(Boolean),false(Boolean),123(String)");
     }

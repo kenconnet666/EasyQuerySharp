@@ -49,7 +49,7 @@ public sealed class M8IncludeLimitTest(Mysql8Fixture fixture) : Mysql8Test(fixtu
 
     private static async Task AssertPage2Async(EasyDb db)
     {
-        var page2 = await db.Query<M8IncludeLimitTopic>().OrderBy(m => m.Id).Limit(2, 1).Include(m => m.Children, s => s.OrderBy(x => x.Order).Take(2)).ToListAsync(Ct);
+        var page2 = await db.Query<M8IncludeLimitTopic>().OrderBy(m => m.Id).Skip(2).Take(1).Include(m => m.Children, s => s.OrderBy(x => x.Order).Take(2)).ToListAsync(Ct);
         var topic = Assert.Single(page2);
         Assert.Equal("t3", topic.Id);
         Assert.Equal(["c6"], topic.Children!.Select(c => c.Id));

@@ -65,4 +65,16 @@ public sealed class PublicApiTest(MySqlFixture fixture) : MySqlTest(fixture)
         Assert.NotEmpty(rows);
         Assert.Contains("ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING", listen.Last.Statement.Text);
     }
+
+    [Fact]
+    public void OptionsAreFrozenOnceAnEasyDbUsesThem()
+    {
+        var options = new EasyDbOptions().UseSqlServer();
+        Assert.Same(EasyQuerySharp.Dialects.SqlServerDialect.Instance, options.Dialect);
+        Assert.Same(EasyQuerySharp.Dialects.OracleDialect.Instance, new EasyDbOptions().UseOracle().Dialect);
+        _ = new EasyDb(options);
+        Assert.Throws<InvalidOperationException>(() => options.MaxInClauseSize = 1000);
+        Assert.Throws<InvalidOperationException>(() => options.UseOracle());
+        Assert.Throws<InvalidOperationException>(() => options.AddListener(SqlCapture.Instance));
+    }
 }

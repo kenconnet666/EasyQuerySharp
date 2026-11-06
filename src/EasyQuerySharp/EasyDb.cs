@@ -26,6 +26,7 @@ public sealed class EasyDb
     public EasyDb(EasyDbOptions options)
     {
         if (options.Dialect is null) throw new ArgumentException("必须指定方言，如 options.UseMySql(...)", nameof(options));
+        options.Freeze();
         Options = options;
         Metadata = new MetadataRegistry(options.NameConversion) { LogicDeleteRules = options.LogicDeleteRules };
         Executor = new SqlExecutor(this);
@@ -97,7 +98,7 @@ public sealed class EasyDb
     /// 列按 <typeparamref name="T"/> 的列名访问，之后可以照常 Where / Select / 分页；<c>?</c> 依次对应 <paramref name="parameters"/>。
     /// <typeparamref name="T"/> 也可以是标量（取第一列）或 <c>Dictionary&lt;string, object?&gt;</c>（整行）。
     /// </summary>
-    public Query<T> QuerySql<T>(string sql, params IReadOnlyList<object?> parameters) =>
+    public Query<T> FromSql<T>(string sql, params IReadOnlyList<object?> parameters) =>
         new(new QueryState(this, [new RawSqlSource(sql, typeof(T), parameters)]));
 
     /// <summary>执行原生写入 SQL，<c>?</c> 依次对应参数（对应 Java 的 sqlExecute），返回受影响的行数。</summary>

@@ -19,7 +19,7 @@ public sealed partial class QueryTest
             .GroupBy((t, t1) => t1.Id ?? "")
             .Select(g => new BlogEntity { Id = g.Key, Score = g.Sum(x => x.Item2.Score) });
         Assert.Equal("SELECT COUNT(1) FROM (" + GroupedBlogScore + ") t2", query.SelectRaw("COUNT(1)").ToSql());
-        Assert.Equal(GroupedBlogScore + " LIMIT 2 OFFSET 2", query.Limit(2, 2).ToSql());
+        Assert.Equal(GroupedBlogScore + " LIMIT 2 OFFSET 2", query.Skip(2).Take(2).ToSql());
         Assert.Equal("SELECT COUNT(t2.`id`) FROM (" + GroupedBlogScore + ") t2", query.Select(o => Sql.Count(o.Id)).ToSql());
     }
 
@@ -50,7 +50,7 @@ public sealed partial class QueryTest
             .Select(BlogWithoutId);
         var body = "SELECT " + Prefixed("t1", BlogColumnsWithoutId) + " FROM `t_topic` t INNER JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` WHERE t1.`title` IS NOT NULL AND t.`id` = ?";
         Assert.Equal("SELECT COUNT(1) FROM (" + body + ") t2", query.SelectRaw("COUNT(1)").ToSql());
-        Assert.Equal(body + " LIMIT 2 OFFSET 2", query.Limit(2, 2).ToSql());
+        Assert.Equal(body + " LIMIT 2 OFFSET 2", query.Skip(2).Take(2).ToSql());
     }
 
     [Fact, Upstream("QueryTest.java#query26")]
@@ -75,7 +75,7 @@ public sealed partial class QueryTest
         await query.CountAsync(Ct);
         listen.AssertSql("SELECT COUNT(*) FROM `t_topic` t INNER JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` WHERE t1.`title` IS NOT NULL");
         Assert.Equal("SELECT t1.`publish_time`,t1.`id`,t1.`score` FROM `t_topic` t INNER JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` WHERE t1.`title` IS NOT NULL ORDER BY t1.`publish_time` DESC LIMIT 20",
-            query.Limit(0, 20).ToSql());
+            query.Skip(0).Take(20).ToSql());
     }
 
     [Fact, Upstream("QueryTest.java#query78")]

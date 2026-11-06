@@ -16,7 +16,7 @@ public sealed class QueryTest5(MySqlFixture fixture) : MySqlTest(fixture)
             .LeftJoin<Topic>((t, _, _, _, _, _, _, _, _, t9) => t.Id == t9.Id);
         if (lastTable is not null) q = q.AsTable(lastTable);
         return q.Where(o => o.Id == "1").WhereById("1").WhereById("1").FilterBy(Request()).Where(AllComparisons)
-            .Limit(1, 2).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime)
+            .Skip(1).Take(2).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime)
             .GroupBy((t, _, _, _, _, _, _, _, _, _) => t.Id).Having(g => g.Count(e => e.Item1.Id) >= 1L);
     }
 
@@ -58,7 +58,7 @@ public sealed class QueryTest5(MySqlFixture fixture) : MySqlTest(fixture)
             .LeftJoin<Topic>((t, _, _, _, _, t5) => t.Id == t5.Id).LeftJoin<Topic>((t, _, _, _, _, _, t6) => t.Id == t6.Id)
             .LeftJoin<Topic>((t, _, _, _, _, _, _, t7) => t.Id == t7.Id).LeftJoin<Topic>((t, _, _, _, _, _, _, _, t8) => t.Id == t8.Id)
             .Where(o => o.Id == "1").WhereById("1").WhereById("1").FilterBy(Request()).Where(AllComparisons)
-            .Limit(1, 2).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime)
+            .Skip(1).Take(2).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime)
             .GroupBy((t, _, _, _, _, _, _, _, _) => t.Id).Having(g => g.Count(e => e.Item1.Id) >= 1L)
             .Select(g => new Topic { Id = g.Column(e => e.Item1.Id), Stars = (int)g.Count(e => e.Item1.Id) }).ToSql());
 
@@ -70,7 +70,7 @@ public sealed class QueryTest5(MySqlFixture fixture) : MySqlTest(fixture)
             .LeftJoin<Topic>((t, _, _, _, _, t5) => t.Id == t5.Id).LeftJoin<Topic>((t, _, _, _, _, _, t6) => t.Id == t6.Id)
             .LeftJoin<Topic>((t, _, _, _, _, _, _, t7) => t.Id == t7.Id)
             .Where(o => o.Id == "1").WhereById("1").WhereById("1").FilterBy(Request()).Where(AllComparisons)
-            .Limit(1, 2).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime)
+            .Skip(1).Take(2).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime)
             .GroupBy((t, _, _, _, _, _, _, _) => t.Id).Having(g => g.Count(e => e.Item1.Id) >= 1L)
             .Select(g => new Topic { Id = g.Column(e => e.Item1.Id), Stars = (int)g.Count(e => e.Item1.Id) }).ToSql());
 
@@ -81,7 +81,7 @@ public sealed class QueryTest5(MySqlFixture fixture) : MySqlTest(fixture)
             .LeftJoin<Topic>((t, _, _, t3) => t.Id == t3.Id).LeftJoin<Topic>((t, _, _, _, t4) => t.Id == t4.Id)
             .LeftJoin<Topic>((t, _, _, _, _, t5) => t.Id == t5.Id).LeftJoin<Topic>((t, _, _, _, _, _, t6) => t.Id == t6.Id)
             .Where(o => o.Id == "1").WhereById("1").WhereById("1").FilterBy(Request()).Where(AllComparisons)
-            .Limit(1, 2).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime)
+            .Skip(1).Take(2).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime)
             .GroupBy((t, _, _, _, _, _, _) => t.Id).Having(g => g.Count(e => e.Item1.Id) >= 1L)
             .Select(g => new Topic { Id = g.Column(e => e.Item1.Id), Stars = (int)g.Count(e => e.Item1.Id) }).ToSql());
 
@@ -92,7 +92,7 @@ public sealed class QueryTest5(MySqlFixture fixture) : MySqlTest(fixture)
             .LeftJoin<Topic>((t, _, _, t3) => t.Id == t3.Id).LeftJoin<Topic>((t, _, _, _, t4) => t.Id == t4.Id)
             .LeftJoin<Topic>((t, _, _, _, _, t5) => t.Id == t5.Id)
             .Where(o => o.Id == "1").WhereById("1").WhereById("1").FilterBy(Request()).Where(AllComparisons)
-            .Limit(1, 2).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime)
+            .Skip(1).Take(2).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime)
             .GroupBy((t, _, _, _, _, _) => t.Id).Having(g => g.Count(e => e.Item1.Id) >= 1L)
             .Select(g => new Topic { Id = g.Column(e => e.Item1.Id), Stars = (int)g.Count(e => e.Item1.Id) }).ToSql());
 
@@ -102,7 +102,7 @@ public sealed class QueryTest5(MySqlFixture fixture) : MySqlTest(fixture)
             .LeftJoin<Topic>((t, t1) => t.Id == t1.Id).LeftJoin<Topic>((t, _, t2) => t.Id == t2.Id)
             .LeftJoin<Topic>((t, _, _, t3) => t.Id == t3.Id).LeftJoin<Topic>((t, _, _, _, t4) => t.Id == t4.Id)
             .Where(o => o.Id == "1").WhereById("1").WhereById("1").FilterBy(Request()).Where(AllComparisons)
-            .Limit(1, 2).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime)
+            .Skip(1).Take(2).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime)
             .GroupBy((t, _, _, _, _) => t.Id).Having(g => g.Count(e => e.Item1.Id) >= 1L)
             .Select(g => new Topic { Id = g.Column(e => e.Item1.Id), Stars = (int)g.Count(e => e.Item1.Id) }).ToSql());
 
@@ -112,15 +112,15 @@ public sealed class QueryTest5(MySqlFixture fixture) : MySqlTest(fixture)
             .LeftJoin<Topic>((t, t1) => t.Id == t1.Id).LeftJoin<Topic>((t, _, t2) => t.Id == t2.Id)
             .LeftJoin<Topic>((t, _, _, t3) => t.Id == t3.Id)
             .Where(o => o.Id == "1").WhereById("1").WhereById("1").FilterBy(Request()).Where(AllComparisons)
-            .Limit(1, 2).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime)
+            .Skip(1).Take(2).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime).OrderBy(o => o.CreateTime).OrderByDescending(o => o.CreateTime)
             .GroupBy((t, _, _, _) => t.Id).Having(g => g.Count(e => e.Item1.Id) >= 1L)
             .Select(g => new Topic { Id = g.Column(e => e.Item1.Id), Stars = (int)g.Count(e => e.Item1.Id) }).ToSql());
 
     [Fact, Upstream("QueryTest5.java#test1")]
     public async Task Test1()
     {
-        Assert.Equal(1, await Db.QuerySql<int>("select 1").FirstOrDefaultAsync(Ct));
-        Assert.Equal("SELECT * FROM (select 1) t", Db.QuerySql<int>("select 1").ToSql());
+        Assert.Equal(1, await Db.FromSql<int>("select 1").FirstOrDefaultAsync(Ct));
+        Assert.Equal("SELECT * FROM (select 1) t", Db.FromSql<int>("select 1").ToSql());
     }
 
     // Java 的 FETCHER.allFields().alias() 选出了 alias 列；C# 的 Topic.Alias 标了 ColumnIgnore，不是列

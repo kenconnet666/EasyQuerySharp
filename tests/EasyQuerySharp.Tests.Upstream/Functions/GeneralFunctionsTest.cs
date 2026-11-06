@@ -203,7 +203,7 @@ public sealed class GeneralFunctionsTest
     [Fact, Upstream("GeneralFunctionsTest.java#limitOrderTest1")]
     public void LimitOrderTest1() =>
         SqlOnly.AssertStatement(SqlOnly.Db("oracle").Query<DocBankCard>().Where(c => c.Type == "123").GroupBy(c => c.Id)
-                .Select(g => new Draft<string?, long>(g.Key, g.Count())).Limit(2, 3).OrderBy(d => d.Value2).ToStatement(),
+                .Select(g => new Draft<string?, long>(g.Key, g.Count())).Skip(2).Take(3).OrderBy(d => d.Value2).ToStatement(),
             "SELECT t1.\"value1\" AS \"value1\",t1.\"value2\" AS \"value2\" FROM (SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS \"__rownum__\" FROM (SELECT t.\"id\" AS \"value1\",COUNT(*) AS \"value2\" FROM \"doc_bank_card\" t WHERE t.\"type\" = ? GROUP BY t.\"id\") rt WHERE ROWNUM < 6) rt1 WHERE rt1.\"__rownum__\" > 2) t1 ORDER BY t1.\"value2\" ASC",
             "123(String)");
 
@@ -211,7 +211,7 @@ public sealed class GeneralFunctionsTest
     [Fact, Upstream("GeneralFunctionsTest.java#limitOrderTest2")]
     public void LimitOrderTest2() =>
         SqlOnly.AssertStatement(SqlOnly.Db("oracle").Query<DocBankCard>().Where(c => c.Type == "123").GroupBy(c => c.Id)
-                .Select(g => new Draft<string?, long>(g.Key, g.Count())).OrderBy(d => d.Value2).Limit(2, 3).ToStatement(),
+                .Select(g => new Draft<string?, long>(g.Key, g.Count())).OrderBy(d => d.Value2).Skip(2).Take(3).ToStatement(),
             "SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS \"__rownum__\" FROM (SELECT t1.\"value1\" AS \"value1\",t1.\"value2\" AS \"value2\" FROM (SELECT t.\"id\" AS \"value1\",COUNT(*) AS \"value2\" FROM \"doc_bank_card\" t WHERE t.\"type\" = ? GROUP BY t.\"id\") t1 ORDER BY t1.\"value2\" ASC) rt WHERE ROWNUM < 6) rt1 WHERE rt1.\"__rownum__\" > 2",
             "123(String)");
 

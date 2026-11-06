@@ -18,7 +18,7 @@ public sealed partial class QueryTest18
         }
         using (var listen = SqlCapture.Listen())
         {
-            await q.LimitSelect(2, 10, s => new Draft<string?, string?, long>(s.Id, s.Phone, s.Blogs!.Count())).ToListAsync(Ct);
+            await q.Skip(2).Take(10).AsSubQuery().Select(s => new Draft<string?, string?, long>(s.Id, s.Phone, s.Blogs!.Count())).ToListAsync(Ct);
             listen.AssertSql("SELECT t1.`id` AS `value1`,t1.`phone` AS `value2`,(SELECT COUNT(*) FROM `t_blog` t2 WHERE t2.`deleted` = ? AND t2.`title` = t1.`id`) AS `value3` FROM (" + SysUserPagedInner + "t.`phone` LIKE ? LIMIT 10 OFFSET 2) t1");
             listen.AssertParams("false(Boolean),3wApxVPL9GhKXR9/YKKGBg==%(String)");
         }
@@ -43,7 +43,7 @@ public sealed partial class QueryTest18
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<SysUser>().Where(s => s.Phone != "123").OrderByDescending(s => s.CreateTime)
-            .LimitSelect(20, 10, s => new Draft<string?, string?, long>(s.Id, s.Phone, s.Blogs!.Count())).ToListAsync(Ct);
+            .Skip(20).Take(10).AsSubQuery().Select(s => new Draft<string?, string?, long>(s.Id, s.Phone, s.Blogs!.Count())).ToListAsync(Ct);
         listen.AssertSql("SELECT t1.`id` AS `value1`,t1.`phone` AS `value2`,(SELECT COUNT(*) FROM `t_blog` t2 WHERE t2.`deleted` = ? AND t2.`title` = t1.`id`) AS `value3` FROM (" + SysUserPagedInner + "t.`phone` <> ? ORDER BY t.`create_time` DESC LIMIT 10 OFFSET 20) t1");
         listen.AssertParams("false(Boolean),L/vVSy7H9DYkzz3srmSVCQ==(String)");
     }

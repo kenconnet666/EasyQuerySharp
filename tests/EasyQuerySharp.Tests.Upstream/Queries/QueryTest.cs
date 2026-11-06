@@ -216,7 +216,7 @@ public sealed partial class QueryTest(MySqlFixture fixture) : MySqlTest(fixture)
     [Fact, Upstream("QueryTest.java#query111")]
     public void Query111()
     {
-        var sql = Db.Query<Topic>().LeftJoin<BlogEntity>((t, t1) => t.Id == t1.Id).Where(o => o.Id == "3").Limit(1, 2).ToSql();
+        var sql = Db.Query<Topic>().LeftJoin<BlogEntity>((t, t1) => t.Id == t1.Id).Where(o => o.Id == "3").Skip(1).Take(2).ToSql();
         Assert.Equal("SELECT t.`id`,t.`stars`,t.`title`,t.`create_time` FROM `t_topic` t LEFT JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` WHERE t.`id` = ? LIMIT 2 OFFSET 1", sql);
     }
 
@@ -286,7 +286,7 @@ public sealed partial class QueryTest(MySqlFixture fixture) : MySqlTest(fixture)
     [Fact, Upstream("QueryTest.java#query30")]
     public async Task Query30()
     {
-        var query = Db.QuerySql<BlogEntity>("SELECT * FROM `t_blog` t").Where(o => o.Id == "123");
+        var query = Db.FromSql<BlogEntity>("SELECT * FROM `t_blog` t").Where(o => o.Id == "123");
         Assert.Equal("SELECT * FROM (SELECT * FROM `t_blog` t) t WHERE t.`id` = ?", query.ToSql());
         Assert.Null(await query.FirstOrDefaultAsync(Ct));
     }
@@ -294,7 +294,7 @@ public sealed partial class QueryTest(MySqlFixture fixture) : MySqlTest(fixture)
     [Fact, Upstream("QueryTest.java#query31")]
     public async Task Query31()
     {
-        var query = Db.QuerySql<BlogEntity>("SELECT * FROM `t_blog` t")
+        var query = Db.FromSql<BlogEntity>("SELECT * FROM `t_blog` t")
             .DisableInterceptors()
             .Where(o => o.Id == "123")
             .Select(o => new BlogEntity { Id = o.Id, Content = o.Content });
@@ -613,7 +613,7 @@ public sealed partial class QueryTest(MySqlFixture fixture) : MySqlTest(fixture)
             .Select(g => new BlogEntity { Id = g.Key, Score = g.Sum(e => e.Item2.Score) });
         const string inner = "SELECT t1.`id` AS `id`,SUM(t1.`score`) AS `score` FROM `t_topic` t INNER JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` WHERE t1.`title` IS NOT NULL GROUP BY t1.`id`";
         Assert.Equal($"SELECT COUNT(1) FROM ({inner}) t2", sql.SelectRaw("COUNT(1)").ToSql());
-        Assert.Equal(inner + " LIMIT 2 OFFSET 2", sql.Limit(2, 2).ToSql());
+        Assert.Equal(inner + " LIMIT 2 OFFSET 2", sql.Skip(2).Take(2).ToSql());
         Assert.Equal($"SELECT COUNT(t2.`id`) FROM ({inner}) t2", sql.Select(o => Sql.Count(o.Id)).ToSql());
     }
 
@@ -787,10 +787,10 @@ public sealed partial class QueryTest(MySqlFixture fixture) : MySqlTest(fixture)
         var query = Db.Query<Topic>().Where(o => o.Id != null).OrderByDescending(o => o.CreateTime);
         Assert.Equal(10, (await query.ToPageAsync(3, 10, Ct)).Rows.Count);
         var page8 = await query.ToPageAsync(8, 10, Ct);
-        var limit70 = await query.Limit(70, 10).ToListAsync(Ct);
+        var limit70 = await query.Skip(70).Take(10).ToListAsync(Ct);
         Assert.Equal(page8.Rows.Select(r => r.Id), limit70.Select(r => r.Id));
         var page6 = await query.ToPageAsync(6, 11, Ct);
-        var limit55 = await query.Limit(55, 11).ToListAsync(Ct);
+        var limit55 = await query.Skip(55).Take(11).ToListAsync(Ct);
         Assert.Equal(page6.Rows.Select(r => r.Id), limit55.Select(r => r.Id));
     }
 

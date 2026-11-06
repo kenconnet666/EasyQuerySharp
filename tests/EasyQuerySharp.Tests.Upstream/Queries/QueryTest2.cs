@@ -31,7 +31,7 @@ public sealed class QueryTest2(MySqlFixture fixture) : MySqlTest(fixture)
     public void Query124() =>
         Assert.Equal("SELECT t.`id`,t.`stars`,t.`title`,t.`create_time` " + TopicLeftBlogLeftBlog + " WHERE t.`id` = ? LIMIT 2 OFFSET 1",
             Db.Query<Topic>().LeftJoin<BlogEntity>((t, t1) => t.Id == t1.Id).LeftJoin<BlogEntity>((t, t1, t2) => t.Id == t2.Id)
-                .Where((t, t1, t2) => t.Id == "3").Limit(1, 2).ToSql());
+                .Where((t, t1, t2) => t.Id == "3").Skip(1).Take(2).ToSql());
 
     private Query<BlogEntity> Query125Base() => Db.Query<Topic>()
         .LeftJoin<BlogEntity>((t, t1) => t.Id == t1.Id)
@@ -42,12 +42,12 @@ public sealed class QueryTest2(MySqlFixture fixture) : MySqlTest(fixture)
     [Fact, Upstream("QueryTest2.java#query125")]
     public void Query125() =>
         Assert.Equal("SELECT t.`id`,t1.`title`,t2.`star` FROM `t_topic` t LEFT JOIN `t_blog` t1 ON t1.`deleted` = ? AND t.`id` = t1.`id` INNER JOIN `t_blog` t2 ON t2.`deleted` = ? AND t.`id` = t2.`id` WHERE t.`id` = ? LIMIT 2 OFFSET 1",
-            Query125Base().Limit(1, 2).ToSql());
+            Query125Base().Skip(1).Take(2).ToSql());
 
     [Fact, Upstream("QueryTest2.java#query126")]
     public async Task Query126()
     {
-        Assert.Empty(await Query125Base().Limit(1, 2).ToListAsync(Ct));
+        Assert.Empty(await Query125Base().Skip(1).Take(2).ToListAsync(Ct));
         Assert.Single(await Query125Base().Take(1).ToListAsync(Ct));
     }
 

@@ -130,7 +130,7 @@ public sealed class EntityQueryJoinChainTest(MySqlFixture fixture) : MySqlTest(f
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<Topic>().LeftJoin<Topic>((t1, t2) => t1.Id == t2.Id).LeftJoin<Topic>((t1, _, t3) => t1.Id == t3.Id).LeftJoin<Topic>((t1, _, _, t4) => t1.Id == t4.Id).LeftJoin<Topic>((t1, _, _, _, t5) => t1.Id == t5.Id).LeftJoin<Topic>((t1, _, _, _, _, t6) => t1.Id == t6.Id).LeftJoin<Topic>((t1, _, _, _, _, _, t7) => t1.Id == t7.Id).LeftJoin<Topic>((t1, _, _, _, _, _, _, t8) => t1.Id == t8.Id).LeftJoin<Topic>((t1, _, _, _, _, _, _, _, t9) => t1.Id == t9.Id).LeftJoin<Topic>((t1, _, _, _, _, _, _, _, _, t10) => t1.Id == t10.Id)
-            .WhereById("123").WhereByIds(new[] { "123" }).Where((t1, _, _, _, _, _, _, _, _, _) => t1.Stars == 1).OrderBy((t1, _, _, _, _, _, _, _, _, _) => t1.Id).Limit(2, 3)
+            .WhereById("123").WhereByIds(new[] { "123" }).Where((t1, _, _, _, _, _, _, _, _, _) => t1.Stars == 1).OrderBy((t1, _, _, _, _, _, _, _, _, _) => t1.Id).Skip(2).Take(3)
             .Select((t1, _, _, _, _, _, _, _, _, _) => new Draft<string?, int?, DateTime?>(t1.Id, t1.Stars, t1.CreateTime)).Distinct().ToListAsync(Ct);
         listen.AssertSql("SELECT DISTINCT t.`id` AS `value1`,t.`stars` AS `value2`,t.`create_time` AS `value3` FROM `t_topic` t LEFT JOIN `t_topic` t1 ON t.`id` = t1.`id` LEFT JOIN `t_topic` t2 ON t.`id` = t2.`id` LEFT JOIN `t_topic` t3 ON t.`id` = t3.`id` LEFT JOIN `t_topic` t4 ON t.`id` = t4.`id` LEFT JOIN `t_topic` t5 ON t.`id` = t5.`id` LEFT JOIN `t_topic` t6 ON t.`id` = t6.`id` LEFT JOIN `t_topic` t7 ON t.`id` = t7.`id` LEFT JOIN `t_topic` t8 ON t.`id` = t8.`id` LEFT JOIN `t_topic` t9 ON t.`id` = t9.`id` WHERE t.`id` = ? AND t.`id` IN (?) AND t.`stars` = ? ORDER BY t.`id` ASC LIMIT 3 OFFSET 2");
         listen.AssertParams("123(String),123(String),1(Integer)");
@@ -141,7 +141,7 @@ public sealed class EntityQueryJoinChainTest(MySqlFixture fixture) : MySqlTest(f
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<Topic>().LeftJoin<Topic>((t1, t2) => t1.Id == t2.Id).LeftJoin<Topic>((t1, _, t3) => t1.Id == t3.Id).LeftJoin<Topic>((t1, _, _, t4) => t1.Id == t4.Id).LeftJoin<Topic>((t1, _, _, _, t5) => t1.Id == t5.Id).LeftJoin<Topic>((t1, _, _, _, _, t6) => t1.Id == t6.Id).LeftJoin<Topic>((t1, _, _, _, _, _, t7) => t1.Id == t7.Id).LeftJoin<Topic>((t1, _, _, _, _, _, _, t8) => t1.Id == t8.Id).LeftJoin<Topic>((t1, _, _, _, _, _, _, _, t9) => t1.Id == t9.Id)
-            .WhereById("123").WhereByIds(new[] { "123" }).Where((t1, _, _, _, _, _, _, _, _) => t1.Stars == 1).OrderBy((t1, _, _, _, _, _, _, _, _) => t1.Id).Limit(2, 3)
+            .WhereById("123").WhereByIds(new[] { "123" }).Where((t1, _, _, _, _, _, _, _, _) => t1.Stars == 1).OrderBy((t1, _, _, _, _, _, _, _, _) => t1.Id).Skip(2).Take(3)
             .Select((t1, _, _, _, _, _, _, _, _) => new Draft<string?, int?, DateTime?>(t1.Id, t1.Stars, t1.CreateTime)).Distinct().ToListAsync(Ct);
         listen.AssertSql("SELECT DISTINCT t.`id` AS `value1`,t.`stars` AS `value2`,t.`create_time` AS `value3` FROM `t_topic` t LEFT JOIN `t_topic` t1 ON t.`id` = t1.`id` LEFT JOIN `t_topic` t2 ON t.`id` = t2.`id` LEFT JOIN `t_topic` t3 ON t.`id` = t3.`id` LEFT JOIN `t_topic` t4 ON t.`id` = t4.`id` LEFT JOIN `t_topic` t5 ON t.`id` = t5.`id` LEFT JOIN `t_topic` t6 ON t.`id` = t6.`id` LEFT JOIN `t_topic` t7 ON t.`id` = t7.`id` LEFT JOIN `t_topic` t8 ON t.`id` = t8.`id` WHERE t.`id` = ? AND t.`id` IN (?) AND t.`stars` = ? ORDER BY t.`id` ASC LIMIT 3 OFFSET 2");
         listen.AssertParams("123(String),123(String),1(Integer)");
@@ -152,7 +152,7 @@ public sealed class EntityQueryJoinChainTest(MySqlFixture fixture) : MySqlTest(f
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<Topic>().LeftJoin<Topic>((t1, t2) => t1.Id == t2.Id).LeftJoin<Topic>((t1, _, t3) => t1.Id == t3.Id).LeftJoin<Topic>((t1, _, _, t4) => t1.Id == t4.Id).LeftJoin<Topic>((t1, _, _, _, t5) => t1.Id == t5.Id).LeftJoin<Topic>((t1, _, _, _, _, t6) => t1.Id == t6.Id).LeftJoin<Topic>((t1, _, _, _, _, _, t7) => t1.Id == t7.Id).LeftJoin<Topic>((t1, _, _, _, _, _, _, t8) => t1.Id == t8.Id)
-            .WhereById("123").WhereByIds(new[] { "123" }).Where((t1, _, _, _, _, _, _, _) => t1.Stars == 1).OrderBy((t1, _, _, _, _, _, _, _) => t1.Id).Limit(2, 3)
+            .WhereById("123").WhereByIds(new[] { "123" }).Where((t1, _, _, _, _, _, _, _) => t1.Stars == 1).OrderBy((t1, _, _, _, _, _, _, _) => t1.Id).Skip(2).Take(3)
             .Select((t1, _, _, _, _, _, _, _) => new Draft<string?, int?, DateTime?>(t1.Id, t1.Stars, t1.CreateTime)).Distinct().ToListAsync(Ct);
         listen.AssertSql("SELECT DISTINCT t.`id` AS `value1`,t.`stars` AS `value2`,t.`create_time` AS `value3` FROM `t_topic` t LEFT JOIN `t_topic` t1 ON t.`id` = t1.`id` LEFT JOIN `t_topic` t2 ON t.`id` = t2.`id` LEFT JOIN `t_topic` t3 ON t.`id` = t3.`id` LEFT JOIN `t_topic` t4 ON t.`id` = t4.`id` LEFT JOIN `t_topic` t5 ON t.`id` = t5.`id` LEFT JOIN `t_topic` t6 ON t.`id` = t6.`id` LEFT JOIN `t_topic` t7 ON t.`id` = t7.`id` WHERE t.`id` = ? AND t.`id` IN (?) AND t.`stars` = ? ORDER BY t.`id` ASC LIMIT 3 OFFSET 2");
         listen.AssertParams("123(String),123(String),1(Integer)");
@@ -163,7 +163,7 @@ public sealed class EntityQueryJoinChainTest(MySqlFixture fixture) : MySqlTest(f
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<Topic>().LeftJoin<Topic>((t1, t2) => t1.Id == t2.Id).LeftJoin<Topic>((t1, _, t3) => t1.Id == t3.Id).LeftJoin<Topic>((t1, _, _, t4) => t1.Id == t4.Id).LeftJoin<Topic>((t1, _, _, _, t5) => t1.Id == t5.Id).LeftJoin<Topic>((t1, _, _, _, _, t6) => t1.Id == t6.Id).LeftJoin<Topic>((t1, _, _, _, _, _, t7) => t1.Id == t7.Id)
-            .WhereById("123").WhereByIds(new[] { "123" }).Where((t1, _, _, _, _, _, _) => t1.Stars == 1).OrderBy((t1, _, _, _, _, _, _) => t1.Id).Limit(2, 3)
+            .WhereById("123").WhereByIds(new[] { "123" }).Where((t1, _, _, _, _, _, _) => t1.Stars == 1).OrderBy((t1, _, _, _, _, _, _) => t1.Id).Skip(2).Take(3)
             .Select((t1, _, _, _, _, _, _) => new Draft<string?, int?, DateTime?>(t1.Id, t1.Stars, t1.CreateTime)).Distinct().ToListAsync(Ct);
         listen.AssertSql("SELECT DISTINCT t.`id` AS `value1`,t.`stars` AS `value2`,t.`create_time` AS `value3` FROM `t_topic` t LEFT JOIN `t_topic` t1 ON t.`id` = t1.`id` LEFT JOIN `t_topic` t2 ON t.`id` = t2.`id` LEFT JOIN `t_topic` t3 ON t.`id` = t3.`id` LEFT JOIN `t_topic` t4 ON t.`id` = t4.`id` LEFT JOIN `t_topic` t5 ON t.`id` = t5.`id` LEFT JOIN `t_topic` t6 ON t.`id` = t6.`id` WHERE t.`id` = ? AND t.`id` IN (?) AND t.`stars` = ? ORDER BY t.`id` ASC LIMIT 3 OFFSET 2");
         listen.AssertParams("123(String),123(String),1(Integer)");
@@ -174,7 +174,7 @@ public sealed class EntityQueryJoinChainTest(MySqlFixture fixture) : MySqlTest(f
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<Topic>().LeftJoin<Topic>((t1, t2) => t1.Id == t2.Id).LeftJoin<Topic>((t1, _, t3) => t1.Id == t3.Id).LeftJoin<Topic>((t1, _, _, t4) => t1.Id == t4.Id).LeftJoin<Topic>((t1, _, _, _, t5) => t1.Id == t5.Id).LeftJoin<Topic>((t1, _, _, _, _, t6) => t1.Id == t6.Id)
-            .WhereById("123").WhereByIds(new[] { "123" }).Where((t1, _, _, _, _, _) => t1.Stars == 1).OrderBy((t1, _, _, _, _, _) => t1.Id).Limit(2, 3)
+            .WhereById("123").WhereByIds(new[] { "123" }).Where((t1, _, _, _, _, _) => t1.Stars == 1).OrderBy((t1, _, _, _, _, _) => t1.Id).Skip(2).Take(3)
             .Select((t1, _, _, _, _, _) => new Draft<string?, int?, DateTime?>(t1.Id, t1.Stars, t1.CreateTime)).Distinct().ToListAsync(Ct);
         listen.AssertSql("SELECT DISTINCT t.`id` AS `value1`,t.`stars` AS `value2`,t.`create_time` AS `value3` FROM `t_topic` t LEFT JOIN `t_topic` t1 ON t.`id` = t1.`id` LEFT JOIN `t_topic` t2 ON t.`id` = t2.`id` LEFT JOIN `t_topic` t3 ON t.`id` = t3.`id` LEFT JOIN `t_topic` t4 ON t.`id` = t4.`id` LEFT JOIN `t_topic` t5 ON t.`id` = t5.`id` WHERE t.`id` = ? AND t.`id` IN (?) AND t.`stars` = ? ORDER BY t.`id` ASC LIMIT 3 OFFSET 2");
         listen.AssertParams("123(String),123(String),1(Integer)");
@@ -185,7 +185,7 @@ public sealed class EntityQueryJoinChainTest(MySqlFixture fixture) : MySqlTest(f
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<Topic>().LeftJoin<Topic>((t1, t2) => t1.Id == t2.Id).LeftJoin<Topic>((t1, _, t3) => t1.Id == t3.Id).LeftJoin<Topic>((t1, _, _, t4) => t1.Id == t4.Id).LeftJoin<Topic>((t1, _, _, _, t5) => t1.Id == t5.Id)
-            .WhereById("123").WhereByIds(new[] { "123" }).Where((t1, _, _, _, _) => t1.Stars == 1).OrderBy((t1, _, _, _, _) => t1.Id).Limit(2, 3)
+            .WhereById("123").WhereByIds(new[] { "123" }).Where((t1, _, _, _, _) => t1.Stars == 1).OrderBy((t1, _, _, _, _) => t1.Id).Skip(2).Take(3)
             .Select((t1, _, _, _, _) => new Draft<string?, int?, DateTime?>(t1.Id, t1.Stars, t1.CreateTime)).Distinct().ToListAsync(Ct);
         listen.AssertSql("SELECT DISTINCT t.`id` AS `value1`,t.`stars` AS `value2`,t.`create_time` AS `value3` FROM `t_topic` t LEFT JOIN `t_topic` t1 ON t.`id` = t1.`id` LEFT JOIN `t_topic` t2 ON t.`id` = t2.`id` LEFT JOIN `t_topic` t3 ON t.`id` = t3.`id` LEFT JOIN `t_topic` t4 ON t.`id` = t4.`id` WHERE t.`id` = ? AND t.`id` IN (?) AND t.`stars` = ? ORDER BY t.`id` ASC LIMIT 3 OFFSET 2");
         listen.AssertParams("123(String),123(String),1(Integer)");
@@ -196,7 +196,7 @@ public sealed class EntityQueryJoinChainTest(MySqlFixture fixture) : MySqlTest(f
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<Topic>().LeftJoin<Topic>((t1, t2) => t1.Id == t2.Id).LeftJoin<Topic>((t1, _, t3) => t1.Id == t3.Id).LeftJoin<Topic>((t1, _, _, t4) => t1.Id == t4.Id)
-            .WhereById("123").WhereByIds(new[] { "123" }).Where((t1, _, _, _) => t1.Stars == 1).OrderBy((t1, _, _, _) => t1.Id).Limit(2, 3)
+            .WhereById("123").WhereByIds(new[] { "123" }).Where((t1, _, _, _) => t1.Stars == 1).OrderBy((t1, _, _, _) => t1.Id).Skip(2).Take(3)
             .Select((t1, _, _, _) => new Draft<string?, int?, DateTime?>(t1.Id, t1.Stars, t1.CreateTime)).Distinct().ToListAsync(Ct);
         listen.AssertSql("SELECT DISTINCT t.`id` AS `value1`,t.`stars` AS `value2`,t.`create_time` AS `value3` FROM `t_topic` t LEFT JOIN `t_topic` t1 ON t.`id` = t1.`id` LEFT JOIN `t_topic` t2 ON t.`id` = t2.`id` LEFT JOIN `t_topic` t3 ON t.`id` = t3.`id` WHERE t.`id` = ? AND t.`id` IN (?) AND t.`stars` = ? ORDER BY t.`id` ASC LIMIT 3 OFFSET 2");
         listen.AssertParams("123(String),123(String),1(Integer)");
@@ -207,7 +207,7 @@ public sealed class EntityQueryJoinChainTest(MySqlFixture fixture) : MySqlTest(f
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<Topic>().LeftJoin<Topic>((t1, t2) => t1.Id == t2.Id).LeftJoin<Topic>((t1, _, t3) => t1.Id == t3.Id)
-            .WhereById("123").WhereByIds(new[] { "123" }).Where((t1, _, _) => t1.Stars == 1).OrderBy((t1, _, _) => t1.Id).Limit(2, 3)
+            .WhereById("123").WhereByIds(new[] { "123" }).Where((t1, _, _) => t1.Stars == 1).OrderBy((t1, _, _) => t1.Id).Skip(2).Take(3)
             .Select((t1, _, _) => new Draft<string?, int?, DateTime?>(t1.Id, t1.Stars, t1.CreateTime)).Distinct().ToListAsync(Ct);
         listen.AssertSql("SELECT DISTINCT t.`id` AS `value1`,t.`stars` AS `value2`,t.`create_time` AS `value3` FROM `t_topic` t LEFT JOIN `t_topic` t1 ON t.`id` = t1.`id` LEFT JOIN `t_topic` t2 ON t.`id` = t2.`id` WHERE t.`id` = ? AND t.`id` IN (?) AND t.`stars` = ? ORDER BY t.`id` ASC LIMIT 3 OFFSET 2");
         listen.AssertParams("123(String),123(String),1(Integer)");

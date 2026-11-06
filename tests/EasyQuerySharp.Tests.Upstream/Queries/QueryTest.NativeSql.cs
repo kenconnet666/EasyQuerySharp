@@ -55,12 +55,12 @@ public sealed partial class QueryTest
 
     [Fact, Upstream("QueryTest.java#query22")]
     public async Task Query22() =>
-        Assert.Equal(100, (await Db.Query<BlogEntity>().Where(o => o.Star <= 100).ToDictionariesAsync(Ct)).Count);
+        Assert.Equal(100, (await Db.Query<BlogEntity>().Where(o => o.Star <= 100).ToRowsAsync(Ct)).Count);
 
     [Fact, Upstream("QueryTest.java#query23")]
     public async Task Query23()
     {
-        var map = await Db.Query<BlogEntity>().FirstDictionaryOrDefaultAsync(Ct);
+        var map = await Db.Query<BlogEntity>().FirstRowOrDefaultAsync(Ct);
         Assert.NotNull(map);
         // 键忽略大小写
         Assert.True(map.ContainsKey("create_Time"));

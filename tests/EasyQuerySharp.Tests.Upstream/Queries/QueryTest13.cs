@@ -29,7 +29,7 @@ public sealed class QueryTest13(MySqlFixture fixture) : MySqlTest(fixture)
     public async Task OrderTest2()
     {
         using var listen = SqlCapture.Listen();
-        var rows = await Db.Query<BlogEntity>().Where(b => b.Star > 1).Select(b => new BlogIdTime { BlogId = b.Id, DateTime = b.CreateTime }).ToDictionariesAsync(Ct);
+        var rows = await Db.Query<BlogEntity>().Where(b => b.Star > 1).Select(b => new BlogIdTime { BlogId = b.Id, DateTime = b.CreateTime }).ToRowsAsync(Ct);
         Assert.All(rows, r => Assert.True(r["dateTime"] is null or DateTime));
         listen.AssertSql("SELECT t.`id` AS `blogId`,t.`create_time` AS `dateTime` FROM `t_blog` t WHERE t.`deleted` = ? AND t.`star` > ?");
         listen.AssertParams("false(Boolean),1(Integer)");
