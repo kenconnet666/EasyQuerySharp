@@ -65,5 +65,7 @@ public sealed class TableMappingTest
         Assert.Equal("INSERT INTO /*link*/ `t_user_book` (`id`,`name`) VALUES (?,?)", Db.Insert(new UserBook { Id = "1", Name = "a" }).WithTableLink("/*link*/ ").ToSql());
         Assert.Equal("UPDATE /*link*/ `t_user_book` SET `name` = ? WHERE `id` = ?", Db.Update<UserBook>().Set(b => b.Name, "a").Where(b => b.Id == "1").WithTableLink(_ => "/*link*/ ").ToSql());
         Assert.Equal("DELETE FROM /*link*/ `t_user_book` WHERE `id` = ?", Db.Delete<UserBook>().Where(b => b.Id == "1").WithTableLink("/*link*/ ").ToSql());
+        // 走导航的更新改写成带连接的写法，目标表没有单独的位置放连接符：明确报不支持
+        Assert.Throws<NotSupportedException>(() => Db.Update<SysUser>().Set(u => u.Name, "a").Where(u => u.Company!.Name == "x").WithTableLink("/*link*/ ").ToSql());
     }
 }

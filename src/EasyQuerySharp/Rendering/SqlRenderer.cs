@@ -100,6 +100,7 @@ public sealed class SqlRenderer
         if (update.Joins.Count > 0 || (dialect.AliasedWriteUsesFrom && update.Table.Alias is not null))
         {
             RejectJoinedReturning(update.Returning);
+            RejectJoinedLink(update.Table);
             dialect.WriteJoinedUpdate(r, update);
         }
         else r.Append("UPDATE ").WriteWriteTarget(update.Table).Append(" SET ").WriteSets(update.Sets).WriteWhere(update.Where).WriteReturning(update.Returning);
@@ -114,6 +115,7 @@ public sealed class SqlRenderer
         if (delete.Joins.Count > 0 || (dialect.AliasedWriteUsesFrom && delete.Table.Alias is not null))
         {
             RejectJoinedReturning(delete.Returning);
+            RejectJoinedLink(delete.Table);
             dialect.WriteJoinedDelete(r, delete);
         }
         else r.Append("DELETE FROM ").WriteWriteTarget(delete.Table).WriteWhere(delete.Where).WriteReturning(delete.Returning);
@@ -124,6 +126,12 @@ public sealed class SqlRenderer
     private static void RejectJoinedReturning(IReadOnlyList<ColumnExpr>? returning)
     {
         if (returning is not null) throw new NotSupportedException("Returning 不能用在走导航（需要连接）或带别名的更新 / 删除上");
+    }
+
+    // 带连接的写法里目标表由各方言按连接的格式写（UPDATE a t INNER JOIN …、MERGE …），没有单独的位置放表前面的写法
+    private static void RejectJoinedLink(EntityTableSource table)
+    {
+        if (table.Link is not null) throw new NotSupportedException("WithTableLink 不能用在走导航（需要连接）或带别名的更新 / 删除上");
     }
 
     // UPDATE / DELETE 末尾的 RETURNING：列清单为空时是整行
