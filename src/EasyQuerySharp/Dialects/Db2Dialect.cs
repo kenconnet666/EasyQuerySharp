@@ -44,6 +44,18 @@ public class Db2Dialect : SqlDialect
     public override string ParameterPlaceholder(int index, SqlParameterValue parameter) =>
         ParameterType(parameter) is { } type ? $"CAST(@p{index} AS {type})" : "@p" + index;
 
+    /// <summary>
+    /// IBM 的驱动不认 Guid、DateOnly、TimeOnly（赋值时报 Specified cast is not valid）：Guid 按 CHAR(36) 列传文本，
+    /// DateOnly 传当天零点的 DateTime，TimeOnly 传 TimeSpan。
+    /// </summary>
+    public override object? ParameterValue(SqlParameterValue parameter) => parameter.Value switch
+    {
+        Guid g => g.ToString(),
+        DateOnly d => d.ToDateTime(TimeOnly.MinValue),
+        TimeOnly t => t.ToTimeSpan(),
+        var value => value,
+    };
+
     private static string? ParameterType(SqlParameterValue parameter)
     {
         var type = Nullable.GetUnderlyingType(parameter.ClrType) ?? parameter.ClrType;

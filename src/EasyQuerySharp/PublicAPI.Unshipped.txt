@@ -1,4 +1,5 @@
 #nullable enable
+override EasyQuerySharp.Dialects.DamengDialect.ParameterValue(EasyQuerySharp.SqlParameterValue! parameter) -> object?
+override EasyQuerySharp.Dialects.Db2Dialect.ParameterValue(EasyQuerySharp.SqlParameterValue! parameter) -> object?
 override EasyQuerySharp.Dialects.OracleDialect.ParameterValue(EasyQuerySharp.SqlParameterValue! parameter) -> object?
 virtual EasyQuerySharp.Dialects.SqlDialect.ParameterValue(EasyQuerySharp.SqlParameterValue! parameter) -> object?
-override EasyQuerySharp.Dialects.DamengDialect.ParameterValue(EasyQuerySharp.SqlParameterValue! parameter) -> object?
