@@ -229,7 +229,7 @@ public class Member
 
     public string Name { get; set; } = "";
 
-    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(TenantId), nameof(Id)], TargetProperties = [nameof(MemberNote.TenantId), nameof(MemberNote.MemberId)])]
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(TenantId), nameof(Id)], TargetProperties = [nameof(MemberNote.TenantId), nameof(MemberNote.MemberId)], Cascade = Cascade.Delete)]
     public List<MemberNote>? Notes { get; set; }
 }
 
@@ -276,6 +276,6 @@ public class Dept
 
     public string Name { get; set; } = "";
 
-    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(ParentId)])]
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(Id)], TargetProperties = [nameof(ParentId)], Cascade = Cascade.Delete)]
     public List<Dept>? Children { get; set; }
 }
