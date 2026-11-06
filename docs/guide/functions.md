@@ -434,6 +434,8 @@ SELECT t.`title` FROM `t_post` t WHERE REPLACE(t.`title`, ' ', '') LIKE ?;
 
 ## 限制
 
+- 日期 `ToString(格式)` 只转换 `yyyy` / `MM` / `dd` / `HH` / `mm` / `ss` 六个格式符；`yy`、`M`、`d`、`tt` 等单字母格式符原样当文字输出。
+- 日期相差在 DuckDB 上数的是跨过的边界（03:59 到 04:01 算 1 小时，与 Java 一致），与 .NET 的整段时长不同。
 - `Convert.ToXxx` 只映射参数是 `object` 或 `string` 的重载：`Convert.ToString(p.Views)`（`int` 重载）报不支持，改写成 `p.Views.ToString()`。
 - 正则（`Regex`）、`string.Format` 的格式说明符（`{0:N2}`）不翻译。
 - 自定义函数的模板原样拼进 SQL，不同方言写法不同时要自己按方言选。
