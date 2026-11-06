@@ -70,9 +70,14 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
             IReadOnlyList<object> original = [];
             if (tracked && !db.Tracker.TryGetLoaded(entity, name, out original))
             {
-                // 已追踪的对象上没加载过的导航：值来源不明，不能当成差异（Java 的"导航没有被追踪"）；SavePath 时不检查
-                if (paths is null && HasValue(value)) throw new InvalidOperationException($"导航 {meta.Type.Name}.{name} 没有被追踪：在追踪查询里 Include 它再保存，或用 SavePath 只保存列出的导航");
-                continue;
+                // 已追踪的对象上没加载过的导航：值来源不明，不能当成差异（Java 的"导航没有被追踪"）；
+                // SavePath 明确列出的导航当作原来没有子对象处理
+                if (paths is null)
+                {
+                    if (HasValue(value)) throw new InvalidOperationException($"导航 {meta.Type.Name}.{name} 没有被追踪：在追踪查询里 Include 它再保存，或用 SavePath 只保存列出的导航");
+                    continue;
+                }
+                original = [];
             }
             if (nav.DirectPath.Count > 0)
             {

@@ -27,7 +27,10 @@ internal static partial class IncludeRunner
             var links = await ResolveLinksAsync(db, plan, ct).ConfigureAwait(false);
             if (links.Count == 0)
             {
+                // 一个子对象也没有：追踪查询照样记下"加载过、为空"
+                if (context.Track && db.Tracker.CanTrack(plan.ChildType) && plan.Via.Count == 0) RecordLoaded(db, plan, links, []);
                 plan.Pending.Clear();
+                plan.Owners.Clear();
                 continue;
             }
 

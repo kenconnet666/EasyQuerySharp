@@ -270,4 +270,129 @@ public sealed class M8SaveTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
             listen.AssertParams(3, $"{added.Id}(String),{rootId}(String),newOneToMany2(String)");
         });
     }
+
+    // 新建的同主键对象替换已追踪的：按值合并、没有变化不更新；拿掉的删除，新加的插入
+    [Fact, Upstream("mysql8/M8SaveTest.java#testOne2Many2_1")]
+    public async Task TestOne2Many2_1()
+    {
+        var rootId = await Before();
+        await Invoke(async listen =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).Include(m => m.M8SaveRootManyList).SingleAsync(Ct);
+            var list = root.M8SaveRootManyList!;
+            var remove = list[1];
+            var added = new M8SaveRootMany { Name = "newOneToMany2" };
+            root.M8SaveRootManyList = [new M8SaveRootMany { Id = list[0].Id, Name = list[0].Name, RootId = list[0].RootId }, added];
+            await Save(root);
+            Assert.Equal(4, listen.Events.Count);
+            listen.AssertSql(2, "DELETE FROM `m8_save_root_many` WHERE `id` = ?");
+            listen.AssertParams(2, $"{remove.Id}(String)");
+            listen.AssertSql(3, "INSERT INTO `m8_save_root_many` (`id`,`root_id`,`name`) VALUES (?,?,?)");
+            listen.AssertParams(3, $"{added.Id}(String),{rootId}(String),newOneToMany2(String)");
+        });
+    }
+
+    // 两层：拿掉没有子对象的那一个，新加一个带一对一子对象的
+    [Fact, Upstream("mysql8/M8SaveTest.java#testOne2Many3")]
+    public async Task TestOne2Many3()
+    {
+        var rootId = await Before();
+        await Invoke(async listen =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).Include(m => m.M8SaveRootManyList, rq => rq.Include(s => s.M8SaveRootManyOne)).SingleAsync(Ct);
+            var list = root.M8SaveRootManyList!;
+            var remove = list.First(o => o.M8SaveRootManyOne is null);
+            list.RemoveAll(o => o.M8SaveRootManyOne is null);
+            var added = new M8SaveRootMany { Name = "newOneToMany2", M8SaveRootManyOne = new M8SaveRootManyOne { Name = "m8SaveRootManyOne2" } };
+            list.Add(added);
+            await Save(root);
+            Assert.Equal(6, listen.Events.Count);
+            listen.AssertSql(2, "SELECT t.`id`,t.`root_many_id`,t.`name` FROM `m8_save_root_many_one` t WHERE t.`root_many_id` IN (?,?)");
+            listen.AssertSql(3, "DELETE FROM `m8_save_root_many` WHERE `id` = ?");
+            listen.AssertParams(3, $"{remove.Id}(String)");
+            listen.AssertSql(4, "INSERT INTO `m8_save_root_many` (`id`,`root_id`,`name`) VALUES (?,?,?)");
+            listen.AssertParams(4, $"{added.Id}(String),{rootId}(String),newOneToMany2(String)");
+            listen.AssertSql(5, "INSERT INTO `m8_save_root_many_one` (`id`,`root_many_id`,`name`) VALUES (?,?,?)");
+            listen.AssertParams(5, $"{added.M8SaveRootManyOne.Id}(String),{added.Id}(String),m8SaveRootManyOne2(String)");
+        });
+    }
+
+    // 新加的子对象连同它的一对一一起插入
+    [Fact, Upstream("mysql8/M8SaveTest.java#testOne2Many4")]
+    public async Task TestOne2Many4()
+    {
+        var rootId = await Before();
+        await Invoke(async listen =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).Include(m => m.M8SaveRootManyList).SingleAsync(Ct);
+            var added = new M8SaveRootMany { Name = "newOneToMany2", M8SaveRootManyOne = new M8SaveRootManyOne { Name = "m8SaveRootManyOne2" } };
+            root.M8SaveRootManyList!.Add(added);
+            await Save(root);
+            Assert.Equal(4, listen.Events.Count);
+            listen.AssertSql(2, "INSERT INTO `m8_save_root_many` (`id`,`root_id`,`name`) VALUES (?,?,?)");
+            listen.AssertParams(2, $"{added.Id}(String),{rootId}(String),newOneToMany2(String)");
+            listen.AssertSql(3, "INSERT INTO `m8_save_root_many_one` (`id`,`root_many_id`,`name`) VALUES (?,?,?)");
+            listen.AssertParams(3, $"{added.M8SaveRootManyOne.Id}(String),{added.Id}(String),m8SaveRootManyOne2(String)");
+        });
+    }
+
+    // 已追踪的子对象上没加载过的导航被赋了值：报错
+    [Fact, Upstream("mysql8/M8SaveTest.java#testOne2Many5", Deviation = "异常信息用中文，说明导航没有被追踪、该怎样改")]
+    public async Task TestOne2Many5()
+    {
+        var rootId = await Before();
+        await Invoke(async _ =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).Include(m => m.M8SaveRootManyList).SingleAsync(Ct);
+            root.M8SaveRootManyList![1].M8SaveRootManyOne = new M8SaveRootManyOne { Name = "m8SaveRootManyOne2" };
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Save(root));
+            Assert.Contains("M8SaveRootMany.M8SaveRootManyOne 没有被追踪", ex.Message);
+        });
+    }
+
+    // SavePath 列出的导航没加载过也照常保存（当作原来没有子对象）
+    [Fact, Upstream("mysql8/M8SaveTest.java#testOne2Many6")]
+    public async Task TestOne2Many6()
+    {
+        var rootId = await Before();
+        await Invoke(async _ =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).Include(m => m.M8SaveRootManyList).SingleAsync(Ct);
+            root.M8SaveRootManyList![1].M8SaveRootManyOne = new M8SaveRootManyOne { Name = "m8SaveRootManyOne2" };
+            await Save(s => s.SavePath(o => o.M8SaveRootManyList!.Select(m => m.M8SaveRootManyOne)), root);
+        });
+    }
+
+    // 多对多：清空时删中间表行（目标不动），再加回来时插中间表行
+    [Fact, Upstream("mysql8/M8SaveTest.java#testMany2Many1")]
+    public async Task TestMany2Many1()
+    {
+        var rootId = await Before();
+        var targets = new List<M8SaveRoot2Many>();
+        await Invoke(async listen =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).Include(m => m.M8SaveRoot2ManyList).SingleAsync(Ct);
+            targets.AddRange(root.M8SaveRoot2ManyList!);
+            root.M8SaveRoot2ManyList!.Clear();
+            await Save(root);
+            Assert.Equal(5, listen.Events.Count);
+            listen.AssertSql(1, "SELECT `root_id`,`many_id` FROM `m8_save_root_middle_many` WHERE `root_id` IN (?)");
+            listen.AssertSql(2, "SELECT t.`id`,t.`name` FROM `m8_save_root_2many` t WHERE t.`id` IN (?,?)");
+            listen.AssertSql(3, "DELETE FROM `m8_save_root_middle_many` WHERE `root_id` = ? AND `many_id` = ?");
+            listen.AssertParams(3, $"{rootId}(String),{targets[0].Id}(String)");
+            listen.AssertSql(4, "DELETE FROM `m8_save_root_middle_many` WHERE `root_id` = ? AND `many_id` = ?");
+            listen.AssertParams(4, $"{rootId}(String),{targets[1].Id}(String)");
+        });
+        await Invoke(async listen =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).Include(m => m.M8SaveRoot2ManyList).SingleAsync(Ct);
+            root.M8SaveRoot2ManyList!.AddRange(targets);
+            await Save(root);
+            Assert.Equal(4, listen.Events.Count);
+            listen.AssertSql(2, "INSERT INTO `m8_save_root_middle_many` (`id`,`root_id`,`many_id`) VALUES (?,?,?)");
+            Assert.EndsWith($"(String),{rootId}(String),{targets[0].Id}(String)", JavaParams.Format(listen.Events[2].Statement));
+            listen.AssertSql(3, "INSERT INTO `m8_save_root_middle_many` (`id`,`root_id`,`many_id`) VALUES (?,?,?)");
+            Assert.EndsWith($"(String),{rootId}(String),{targets[1].Id}(String)", JavaParams.Format(listen.Events[3].Statement));
+        });
+    }
 }

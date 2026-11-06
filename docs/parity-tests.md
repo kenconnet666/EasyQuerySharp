@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1705、偏离 211、不适用 78、骨架 6、待做 404。
+合计：已移植 1710、偏离 212、不适用 78、骨架 6、待做 398。
 
 ## 按能力
 
@@ -43,7 +43,7 @@
 | 列加密 | `column.encryption` | M5 | 8 | 8 | 0 | 0 | 0 | 0 |
 | 拦截器 | `interceptor` | M5 | 3 | 3 | 0 | 0 | 0 | 0 |
 | 逻辑删除 | `logicDelete` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
-| 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 5 | 2 | 0 | 0 | 32 |
+| 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 10 | 3 | 0 | 0 | 26 |
 | 追踪与差异更新 | `tracking` | M5 | 62 | 44 | 17 | 0 | 0 | 1 |
 | 乐观锁版本 | `version` | M5 | 13 | 13 | 0 | 0 | 0 | 0 |
 | UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
@@ -1960,7 +1960,7 @@
 | mysql8/M8SaveTest.java#test2One3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:151 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
 | mysql8/M8SaveTest.java#test2One4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:193 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
 | mysql8/M8SaveTest.java#testDeleteAll | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:216：Java 的 include2 按路径写多段带出；C# 写成嵌套的 Include | `DELETE FROM 'm8_save_root_many_one' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testMany2Many1 | 待做 |  | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
+| mysql8/M8SaveTest.java#testMany2Many1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:367 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
 | mysql8/M8SaveTest.java#testMany2Many2 | 待做 |  | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
 | mysql8/M8SaveTest.java#testMany2Many3 | 待做 |  |  |
 | mysql8/M8SaveTest.java#testMany2Many4 | 待做 |  | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
@@ -1972,11 +1972,11 @@
 | mysql8/M8SaveTest.java#testMany2ManyMiddle3 | 待做 |  |  |
 | mysql8/M8SaveTest.java#testOne2Many1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:239 |  |
 | mysql8/M8SaveTest.java#testOne2Many2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:252 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testOne2Many2_1 | 待做 |  | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testOne2Many3 | 待做 |  | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testOne2Many4 | 待做 |  | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
-| mysql8/M8SaveTest.java#testOne2Many5 | 待做 |  |  |
-| mysql8/M8SaveTest.java#testOne2Many6 | 待做 |  |  |
+| mysql8/M8SaveTest.java#testOne2Many2_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:275 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
+| mysql8/M8SaveTest.java#testOne2Many3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:296 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
+| mysql8/M8SaveTest.java#testOne2Many4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:321 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
+| mysql8/M8SaveTest.java#testOne2Many5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:340：异常信息用中文，说明导航没有被追踪、该怎样改 |  |
+| mysql8/M8SaveTest.java#testOne2Many6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:354 |  |
 | mysql8/M8SaveTest.java#testPathAggregateRoot | 待做 |  |  |
 
 ### 追踪与差异更新（`tracking`，M5）
