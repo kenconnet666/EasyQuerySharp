@@ -205,6 +205,9 @@ public sealed class EasyDb
     /// <summary>开启环境事务（见 <see cref="EasyTransaction"/>）。当前异步流程已经在这个库的事务里时抛出 <see cref="InvalidOperationException"/>（不支持嵌套）。</summary>
     public EasyTransaction BeginTransaction(IsolationLevel isolation = IsolationLevel.Unspecified) => new(this, isolation);
 
+    /// <summary>当前异步流程是否在这个库的事务里（事务里的语句读得到自己未提交的写入，如二级缓存据此绕过缓存）。</summary>
+    public bool InTransaction => AmbientTransaction.Current is not null;
+
     /// <summary>在事务里执行 <paramref name="work"/>：正常结束提交，抛出异常回滚。</summary>
     public async Task TransactionAsync(Func<Task> work, IsolationLevel isolation = IsolationLevel.Unspecified, CancellationToken cancellationToken = default)
     {

@@ -9,6 +9,9 @@ public abstract partial class SqlDialect
     /// <summary>冲突处理改写成整条 MERGE（SQL Server、Oracle）；为 false 时在 INSERT 后面写 <see cref="WriteInsertConflict"/>。</summary>
     public virtual bool InsertConflictUsesMerge => false;
 
+    /// <summary>冲突时更新只在写出的约束列上发生（ON CONFLICT (列)、MERGE … ON）；写入监听据此判断 upsert 更新到的行是不是语句里的主键。</summary>
+    internal virtual bool UpsertMatchesOnlyConflictColumns => true;
+
     /// <summary>MERGE 的来源查询在列之后的部分（Oracle 要 <c>FROM DUAL</c>）。</summary>
     protected virtual string MergeSourceSuffix => " ";
 

@@ -16,6 +16,7 @@ public sealed class EasyDbOptions
     internal sealed record LogicDeleteRule(Func<Type, bool> AppliesTo, string Property, Metadata.LogicDeleteAttribute LogicDelete);
 
     private readonly List<IExecutionListener> _listeners = [];
+    private readonly List<IWriteListener> _writeListeners = [];
     private readonly Dictionary<string, ILogicDeleteStrategy> _logicDeleteStrategies = new(StringComparer.Ordinal);
     private readonly List<LogicDeleteRule> _logicDeleteRules = [];
     private bool _frozen;
@@ -122,6 +123,9 @@ public sealed class EasyDbOptions
     /// <summary>执行监听器（用 <see cref="AddListener"/> 添加）。</summary>
     public IReadOnlyList<IExecutionListener> Listeners => _listeners;
 
+    /// <summary>写入监听器（用 <see cref="AddWriteListener"/> 添加）。</summary>
+    public IReadOnlyList<IWriteListener> WriteListeners => _writeListeners;
+
     /// <summary>拦截器（用 <see cref="AddInterceptor"/> 添加）。</summary>
     public InterceptorRegistry Interceptors { get; } = new();
 
@@ -183,6 +187,18 @@ public sealed class EasyDbOptions
     {
         ArgumentNullException.ThrowIfNull(listener);
         _listeners.Add(Mutable(listener));
+        return this;
+    }
+
+    /// <summary>
+    /// 添加写入监听器（见 <see cref="IWriteListener"/>）：经本库成功写入后按表通知，事务里推迟到提交之后。
+    /// 同一个实例只加一次，重复添加时抛出异常。
+    /// </summary>
+    public EasyDbOptions AddWriteListener(IWriteListener listener)
+    {
+        ArgumentNullException.ThrowIfNull(listener);
+        if (_writeListeners.Contains(listener)) throw new InvalidOperationException($"写入监听器 {listener.GetType().Name} 重复添加");
+        _writeListeners.Add(Mutable(listener));
         return this;
     }
 

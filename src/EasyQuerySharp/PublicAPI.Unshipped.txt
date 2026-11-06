@@ -336,6 +336,7 @@ EasyQuerySharp.EasyDb.GetTrackedChanges(object! entity) -> System.Collections.Ge
 EasyQuerySharp.EasyDb.Insert<T>(params System.Collections.Generic.IEnumerable<T!>! entities) -> EasyQuerySharp.Commands.InsertCommand<T!>!
 EasyQuerySharp.EasyDb.InsertMap(string! tableName, params System.Collections.Generic.IEnumerable<System.Collections.Generic.IReadOnlyDictionary<string!, object?>!>! rows) -> EasyQuerySharp.Commands.MapInsertCommand!
 EasyQuerySharp.EasyDb.Interceptors.get -> EasyQuerySharp.Interceptors.InterceptorRegistry!
+EasyQuerySharp.EasyDb.InTransaction.get -> bool
 EasyQuerySharp.EasyDb.IsTracking.get -> bool
 EasyQuerySharp.EasyDb.LoadIncludeAsync<T, TChild>(System.Collections.Generic.IEnumerable<T!>! entities, System.Linq.Expressions.Expression<System.Func<T!, System.Collections.Generic.IEnumerable<TChild!>?>!>! navigation, System.Func<EasyQuerySharp.Querying.Query<TChild!>!, EasyQuerySharp.Querying.Query<TChild!>!>! configure, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 EasyQuerySharp.EasyDb.LoadIncludeAsync<T, TProperty>(System.Collections.Generic.IEnumerable<T!>! entities, System.Linq.Expressions.Expression<System.Func<T!, TProperty>!>! navigation, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
@@ -355,6 +356,7 @@ EasyQuerySharp.EasyDbOptions
 EasyQuerySharp.EasyDbOptions.AddInterceptor(EasyQuerySharp.Interceptors.IInterceptor! interceptor) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.AddListener(EasyQuerySharp.Execution.IExecutionListener! listener) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.AddLogicDeleteStrategy(string! name, EasyQuerySharp.Metadata.ILogicDeleteStrategy! strategy) -> EasyQuerySharp.EasyDbOptions!
+EasyQuerySharp.EasyDbOptions.AddWriteListener(EasyQuerySharp.Execution.IWriteListener! listener) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.AllowDeleteStatement.get -> bool
 EasyQuerySharp.EasyDbOptions.AllowDeleteStatement.set -> void
 EasyQuerySharp.EasyDbOptions.ApplyLogicDelete(System.Func<System.Type!, bool>! appliesTo, string! property, EasyQuerySharp.Metadata.LogicDeleteAttribute! logicDelete) -> EasyQuerySharp.EasyDbOptions!
@@ -396,6 +398,7 @@ EasyQuerySharp.EasyDbOptions.UsePostgreSql(System.Data.Common.DbDataSource? data
 EasyQuerySharp.EasyDbOptions.UseSqlServer(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseSqlite(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseTDengine(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
+EasyQuerySharp.EasyDbOptions.WriteListeners.get -> System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Execution.IWriteListener!>!
 EasyQuerySharp.EasyQueryException
 EasyQuerySharp.EasyQueryException.EasyQueryException(string! message, EasyQuerySharp.SqlStatement? statement = null, System.Exception? inner = null) -> void
 EasyQuerySharp.EasyQueryException.Sql.get -> string?
@@ -426,6 +429,8 @@ EasyQuerySharp.Execution.EasyTransaction.RollbackAsync(System.Threading.Cancella
 EasyQuerySharp.Execution.IExecutionListener
 EasyQuerySharp.Execution.IExecutionListener.OnExecuted(EasyQuerySharp.Execution.SqlExecutionEvent! e) -> void
 EasyQuerySharp.Execution.IExecutionListener.OnExecuting(EasyQuerySharp.Execution.SqlExecutionEvent! e) -> void
+EasyQuerySharp.Execution.IWriteListener
+EasyQuerySharp.Execution.IWriteListener.OnWrittenAsync(EasyQuerySharp.Execution.WriteEvent! e, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 EasyQuerySharp.Execution.SqlExecutionEvent
 EasyQuerySharp.Execution.SqlExecutionEvent.Db.get -> EasyQuerySharp.EasyDb!
 EasyQuerySharp.Execution.SqlExecutionEvent.Elapsed.get -> System.TimeSpan
@@ -433,6 +438,17 @@ EasyQuerySharp.Execution.SqlExecutionEvent.Exception.get -> System.Exception?
 EasyQuerySharp.Execution.SqlExecutionEvent.Rows.get -> long?
 EasyQuerySharp.Execution.SqlExecutionEvent.Statement.get -> EasyQuerySharp.SqlStatement!
 EasyQuerySharp.Execution.SqlExecutionEvent.Statements.get -> System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlStatement!>!
+EasyQuerySharp.Execution.WriteEvent
+EasyQuerySharp.Execution.WriteEvent.Db.get -> EasyQuerySharp.EasyDb!
+EasyQuerySharp.Execution.WriteEvent.EntityType.get -> System.Type?
+EasyQuerySharp.Execution.WriteEvent.Keys.get -> System.Collections.Generic.IReadOnlyList<object!>?
+EasyQuerySharp.Execution.WriteEvent.Kind.get -> EasyQuerySharp.Execution.WriteKind
+EasyQuerySharp.Execution.WriteEvent.Schema.get -> string?
+EasyQuerySharp.Execution.WriteEvent.Table.get -> string!
+EasyQuerySharp.Execution.WriteKind
+EasyQuerySharp.Execution.WriteKind.Delete = 4 -> EasyQuerySharp.Execution.WriteKind
+EasyQuerySharp.Execution.WriteKind.Insert = 1 -> EasyQuerySharp.Execution.WriteKind
+EasyQuerySharp.Execution.WriteKind.Update = 2 -> EasyQuerySharp.Execution.WriteKind
 EasyQuerySharp.Filtering.FilterAttribute
 EasyQuerySharp.Filtering.FilterAttribute.AllowEmptyStrings.get -> bool
 EasyQuerySharp.Filtering.FilterAttribute.AllowEmptyStrings.init -> void
@@ -2103,6 +2119,7 @@ override EasyQuerySharp.Encryption.Sm4HexEncryptionStrategy.DecryptSegment(strin
 override EasyQuerySharp.Encryption.Sm4HexEncryptionStrategy.EncryptSegment(string! segment) -> string!
 override EasyQuerySharp.Encryption.Sm4HexEncryptionStrategy.SegmentCipherLength.get -> int
 override EasyQuerySharp.Encryption.Sm4HexEncryptionStrategy.SupportEmoji.get -> bool
+override EasyQuerySharp.Execution.WriteEvent.ToString() -> string!
 override EasyQuerySharp.Filtering.TableRequest.Equals(object? obj) -> bool
 override EasyQuerySharp.Filtering.TableRequest.GetHashCode() -> int
 override EasyQuerySharp.Filtering.TableRequest.ToString() -> string!

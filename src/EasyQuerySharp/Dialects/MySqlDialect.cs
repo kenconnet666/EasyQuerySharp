@@ -83,6 +83,9 @@ public class MySqlDialect : SqlDialect
         renderer.Append(") ESCAPE '\\\\'");
     }
 
+    /// <summary>ON DUPLICATE KEY 在任何唯一键上冲突都会更新，更新到的可能是主键以外的行。</summary>
+    internal override bool UpsertMatchesOnlyConflictColumns => false;
+
     /// <summary><c>ON DUPLICATE KEY UPDATE `c` = VALUES(`c`), …</c>（与 Java 的 MySQL 方言逐字一致）；没有要更新的列时不写。</summary>
     public override void WriteInsertConflict(Rendering.SqlRenderer renderer, InsertStatement insert)
     {

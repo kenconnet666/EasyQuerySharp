@@ -18,6 +18,9 @@ public sealed record SqlStatement(string CommandText, string Text, IReadOnlyList
     /// <summary>语句带行锁（FOR UPDATE），只能在事务里执行。</summary>
     public bool RequiresTransaction { get; init; }
 
+    /// <summary>写入语句的标记（表、种类、取主键）：执行成功后据此通知写入监听器；查询与原生 SQL 为 null。</summary>
+    internal Execution.WriteMark? Write { get; init; }
+
     /// <inheritdoc />
     public override string ToString() => Text;
 }

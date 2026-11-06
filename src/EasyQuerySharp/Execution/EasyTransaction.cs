@@ -27,7 +27,11 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
         _db = db;
         _isolation = isolation;
         db.AmbientTransaction.Enter(this);
+        Writes = WriteLog.Create(db);
     }
+
+    /// <summary>事务里成功执行的写入：提交成功后通知写入监听器，回滚时丢弃；没有写入监听器时为 null。</summary>
+    internal WriteLog? Writes { get; }
 
     /// <summary>当前异步流程里属于 <paramref name="db"/> 的事务；没有时为 null。</summary>
     internal static EasyTransaction? Current(EasyDb db) => db.AmbientTransaction.Current;
@@ -46,12 +50,16 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
         return (_connection, _transaction!);
     }
 
-    /// <summary>提交。没有执行过任何语句时什么也不做。</summary>
+    /// <summary>
+    /// 提交。没有执行过任何语句时什么也不做。提交成功、事务结束之后通知写入监听器（见 <see cref="IWriteListener"/>）：
+    /// 监听器失败时抛出 <see cref="EasyQueryException"/>，这时事务已经提交。
+    /// </summary>
     public async Task CommitAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_completed, this);
         if (_transaction is not null) await _transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
         await EndAsync().ConfigureAwait(false);
+        if (Writes is not null) await Writes.NotifyAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>回滚。</summary>
