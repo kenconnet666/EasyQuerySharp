@@ -65,9 +65,13 @@ public class DamengDialect : OracleDialect
     /// <summary>与 Java 的 DamengDateTimeDuration2SQLFunction 一致：终点转成带时区的时间戳再减起点，得到 DAY TO SECOND 间隔。</summary>
     protected override string DateDiffInterval => "(CAST({1} AS TIMESTAMP WITH TIME ZONE)-{0})";
 
-    /// <summary>达梦的类型转换（对应 Java 的 DamengCastSQLFunction）：只有转成布尔与 Oracle 不同。</summary>
-    public override string CastTemplate(Type targetType) =>
-        targetType == typeof(bool) ? "CAST({0} AS BIT)" : base.CastTemplate(targetType);
+    /// <summary>达梦的类型转换（对应 Java 的 DamengCastSQLFunction）：转成布尔写 BIT，长整数写 BIGINT（达梦有，Oracle 没有），其余同 Oracle。</summary>
+    public override string CastTemplate(Type targetType) => targetType switch
+    {
+        _ when targetType == typeof(bool) => "CAST({0} AS BIT)",
+        _ when targetType == typeof(long) || targetType == typeof(uint) || targetType == typeof(ulong) => "CAST({0} AS BIGINT)",
+        _ => base.CastTemplate(targetType),
+    };
 
     /// <inheritdoc />
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
