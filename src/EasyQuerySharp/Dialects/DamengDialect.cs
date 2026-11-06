@@ -51,6 +51,12 @@ public class DamengDialect : OracleDialect
         "(SELECT BITAND(sc.info2, 1) FROM syscolumns sc JOIN sysobjects so ON so.id = sc.id AND so.subtype$ = 'UTAB' AND so.schid = CURRENT_SCHID() "
         + "WHERE so.name = c.table_name AND sc.name = c.column_name)";
 
+    /// <summary>
+    /// DM.DmProvider 不认 TimeOnly；按 TimeSpan 传能写入 TIME 列，但 <c>"clock" = :p0</c> 这样的比较报语法错误，所以传 <c>HH:mm:ss</c> 文本，
+    /// 由库隐式转成 TIME。Guid、DateOnly 沿用 Oracle 的转换。
+    /// </summary>
+    public override object? ParameterValue(SqlParameterValue parameter) => parameter.Value is TimeOnly t ? t.ToString("HH:mm:ss.FFFFFFF", System.Globalization.CultureInfo.InvariantCulture) : base.ParameterValue(parameter);
+
     /// <summary>达梦的 user_tab_cols 没有 data_default_vc：索引列照 user_ind_columns 读。</summary>
     private protected override string IntrospectedIndexColumn => "ic.column_name";
 

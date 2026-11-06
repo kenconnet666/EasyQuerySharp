@@ -69,7 +69,7 @@ internal sealed partial class ExpressionTranslator
                     template = step.Method.Name switch
                     {
                         nameof(MySqlJsonEdit.Set) => "JSON_SET(" + template + "," + Next(args, step.Arguments[0]) + "," + Next(args, step.Arguments[1]) + ")",
-                        nameof(MySqlJsonEdit.SetJson) => "JSON_SET(" + template + "," + Next(args, step.Arguments[0]) + ",CAST(" + Next(args, step.Arguments[1]) + " AS JSON))",
+                        nameof(MySqlJsonEdit.SetJson) => "JSON_SET(" + template + "," + Next(args, step.Arguments[0]) + ",JSON_EXTRACT(" + Next(args, step.Arguments[1]) + ",'$'))",
                         nameof(MySqlJsonEdit.ArrayAppend) => "JSON_ARRAY_APPEND(" + template + "," + Next(args, step.Arguments[0]) + "," + Next(args, step.Arguments[1]) + ")",
                         nameof(MySqlJsonEdit.Remove) => "JSON_REMOVE(" + template + "," + string.Join(",", NonEmpty(step, NextAll(args, step.Arguments[0]))) + ")",
                         _ => throw Unsupported(step),
