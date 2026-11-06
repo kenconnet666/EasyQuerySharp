@@ -64,16 +64,7 @@ R → 1 → 2 → 3 → 4 → 5。
 
 - [x] R.1 冻结对标基准：`tools/ParityTests` 的对照表和 `--check` 只读快照，快照记下来源（现有基准取自 fork，commit 未记录）；`--scaffold` / `--show` 从本机 Java 仓库取方法体，缺 fork 部分也能用；`--rescan` 才改写快照。
 - [x] R.2 正确性问题：环境事务改成每个库一个可变 holder，结束时清空（原来在 async 方法里赋值不回流，已结束的事务一直挂在调用方流程上）；已在事务里再开事务抛异常（对齐 Java）；追踪作用域的共享状态加锁，可以并行查询。
-- [ ] R.3 修正 API（1.0 之前一次改完）：
-  - `ToAsyncEnumerable()` 改名 `AsAsyncEnumerable()`；
-  - `db.QuerySql<T>(..)`（返回可组合的查询）改名 `db.FromSql<T>(..)`；
-  - `Select<TDto>()` 和 `SelectAutoInclude<TDto>()` 合并成 `Select<TDto>()`：DTO 里与导航同名的成员自动带出，`[MapFrom<T>]` 只用作编译期校验；
-  - `ToDictionariesAsync()` / `FirstDictionaryOrDefaultAsync()` 改名 `ToRowsAsync()` / `FirstRowOrDefaultAsync()`；
-  - 删掉 `Limit(offset, rows)`；`LimitSelect` 能用 `Skip` / `Take` 加 `AsSubQuery()` 表达的话也删掉；
-  - 补上 `UseSqlServer` / `UseOracle`，和 `UseMySql` 等入口一致；
-  - 构造 `EasyDb` 时冻结 `EasyDbOptions`，之后再修改就抛异常；
-  - 新增分析器 EQ0007：只能在查询里用的方法（`Sql` 上的扩展方法等）在表达式树之外调用时，编译报错；
-  - 引入 `Microsoft.CodeAnalysis.PublicApiAnalyzers`（只在开发期用），建立公共 API 基线。
+- [x] R.3 修正 API：`AsAsyncEnumerable`、`FromSql`、`ToRowsAsync` / `FirstRowOrDefaultAsync` 改名；删掉 `Limit` 与 `LimitSelect`；`SelectAutoInclude` 并入 `Select<TDto>()`；补 `UseSqlServer` / `UseOracle`；`EasyDbOptions` 交给 `EasyDb` 后冻结；分析器 EQ0007；公共 API 基线（`src/EasyQuerySharp/PublicAPI.*.txt`）。
 - [x] R.4 落地删减：search 的 45 个、SQL Server 2008 的 13 个用例在 `tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs` 标为不适用；文档站、AOT、原 M9 已记进 BACKLOG。
 - [x] R.5 文档对齐现状：`architecture.md` 按实际的模块、管线、抽象、分析器重写；0001–0003 按实现修订并改为已定（0002 的级联保存改指 0004）；`parity.md` 的 C# 写法按实际 API 刷新，状态列改成对应的阶段；旧 ROADMAP 里标 `[~]` 的项逐个核对，剩余内容已在阶段 1–4 或 BACKLOG 里。
 - [x] R.6 复核偏离：224 条里 80 条只是 C# 写法不同、SQL 与 Java 逐字一致（flatElement 写成 Any、include2 写成嵌套 Include、字符串比较写成 `string.Compare`、Map 投影写成带 `[Column]` 的 DTO 等），改为已移植，理由留作注释；剩下 144 条是参数类型、别名编号、异常文本、C# 语义或 Java 自身的 bug 带来的真实差异。藏着功能缺口的几条记在 1.5、1.7、1.8。
