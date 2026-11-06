@@ -292,7 +292,9 @@ public sealed class QueryTest25(MySqlFixture fixture) : MySqlTest(fixture)
         var cache = NewCache();
         var page = await cache.All<Topic>().Where(o => o.Title.LikeContains("123")).ToPageAsync(1, 2, Ct);
         var page1 = await cache.All<Topic>().ToPageAsync(1, 2, Ct);
-        Assert.Empty(page.Rows);
+        // 别的用例会临时写入标题含 123 的主题，只核对分页与条件，不假定没有
+        Assert.True(page.Rows.Count <= 2);
+        Assert.All(page.Rows, t => Assert.Contains("123", t.Title, StringComparison.Ordinal));
         Assert.Equal(2, page1.Rows.Count);
         var list = await Db.Query<Topic>().Select(t => new Draft<bool>(Sql.Exists(Db.Query<BlogEntity>().Where(b => b.Title == t.Title)))).ToListAsync(Ct);
         Assert.NotEmpty(list);
