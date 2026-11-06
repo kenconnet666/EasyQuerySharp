@@ -11,7 +11,7 @@ namespace EasyQuerySharp.Translation;
 internal sealed partial class TranslationContext(
     MetadataRegistry metadata, Func<EntityTableSource, bool, IEnumerable<SqlExpr>> tableFilters, SelectQuery query, TranslationContext? parent = null)
 {
-    private readonly Dictionary<(TableSource, string), SourceBinding> _joins = [];
+    private readonly Dictionary<(TableSource, string, NavigationTableOptions), SourceBinding> _joins = [];
 
     /// <summary>元数据。</summary>
     public MetadataRegistry Metadata => metadata;
@@ -83,7 +83,7 @@ internal sealed partial class TranslationContext(
     {
         // 所属表在外层查询里（子查询引用外层的导航）：JOIN 加到外层（与 Java 一致）
         if (parent is not null && !Owns(owner.Table)) return parent.JoinFor(owner, navigation, options);
-        var key = (owner.Table, navigation.Property.Name + options.Key);
+        var key = (owner.Table, navigation.Property.Name, options);
         if (_joins.TryGetValue(key, out var existing)) return existing;
 
         // 目标是由查询定义的实体（ICteView）：JOIN 它的 CTE，过滤条件已在视图查询里
@@ -127,16 +127,14 @@ internal sealed partial class TranslationContext(
 }
 
 /// <summary>
-/// 导航上的表配置（<see cref="Sql.DisableLogicDelete{T}(T)"/>、<see cref="Sql.AsTable{T}(T, string)"/>、<see cref="Sql.AsAlias{T}(T, string)"/>，
-/// 对应 Java 的 nav().configure(..)）；默认值表示没有配置。
+/// 导航上的表配置（<see cref="Sql.DisableLogicDelete{T}(T)"/>、<see cref="Sql.AsTable{T}(T, string)"/>、<see cref="Sql.AsAlias{T}(T, string)"/>、
+/// <see cref="Sql.AsTableSegment{T}(T, Func{string, string?, string})"/>，对应 Java 的 nav().configure(..)）；默认值表示没有配置。
+/// 记录结构的相等性整体比较各项（表写法按委托相等），同一导航带不同配置时在缓存里各占一项。
 /// </summary>
-internal readonly record struct NavigationTableOptions(bool NoLogicDelete, string? TableName, string? Alias)
+internal readonly record struct NavigationTableOptions(bool NoLogicDelete, string? TableName, string? Alias, Func<string, string?, string>? Segment = null)
 {
-    /// <summary>区分同一导航不同配置的缓存键后缀；没有配置时为空串。</summary>
-    public string Key => this == default ? "" : $"|{NoLogicDelete}|{TableName}|{Alias}";
-
-    /// <summary>导航目标实体的表来源，带上配置的表名与别名。</summary>
-    public EntityTableSource TableFor(EntityMetadata target) => new(target) { TableNameOverride = TableName, ExplicitAlias = Alias };
+    /// <summary>导航目标实体的表来源，带上配置的表名、别名与表写法。</summary>
+    public EntityTableSource TableFor(EntityMetadata target) => new(target) { TableNameOverride = TableName, ExplicitAlias = Alias, Segment = Segment };
 }
 
 /// <summary>查询上声明的导航级固定条件：所属实体类型 + 导航属性名 → 以导航目标为参数的条件。</summary>

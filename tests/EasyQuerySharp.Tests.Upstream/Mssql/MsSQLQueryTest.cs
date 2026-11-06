@@ -241,6 +241,17 @@ public sealed partial class MsSQLQueryTest(MsSqlFixture fixture) : MsSqlTest(fix
         listen.AssertSql("SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t WITH(INDEX(myIndex)) LEFT JOIN [t_bank_card] t1 ON t.[Id] = t1.[Uid]");
     }
 
+    // Java 在 where 里 bank_card.configure(..) / bank_card.user().configure(..)：C# 的根表用 AsTableSegment，隐式 JOIN 的导航表用 Sql.AsTableSegment 标记
+    [Fact, Upstream("mssql/MsSQLQueryTest.java#testWithNolock1")]
+    public async Task TestWithNolock1()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysBankCard>().AsTableSegment(WithNoLock)
+            .Where(card => Sql.AsTableSegment(card.User, WithNoLock)!.Name!.Contains("123")).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.[Id],t.[Uid],t.[Code],t.[Type],t.[BankId],t.[OpenTime] FROM [t_bank_card] t WITH(NOLOCK) LEFT JOIN [t_sys_user] t1 WITH(NOLOCK) ON t1.[Id] = t.[Uid] WHERE t1.[Name] LIKE ?");
+        listen.AssertParams("%123%(String)");
+    }
+
     // 联表前后各自指定表提示：AsTableSegment 作用于最近的一张表
     [Fact, Upstream("mssql/MsSQLQueryTest.java#testWithNolock2")]
     public async Task TestWithNolock2()

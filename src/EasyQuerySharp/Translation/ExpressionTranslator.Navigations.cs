@@ -17,13 +17,13 @@ internal sealed partial class ExpressionTranslator
         owner.OwnerEntity is { } entity ? Context?.Metadata.FindNavigation(entity, member) : null;
 
     /// <summary>
-    /// 剥掉导航外面的配置标记（<see cref="Sql.DisableLogicDelete{T}(T)"/>、<see cref="Sql.AsTable{T}(T, string)"/>、<see cref="Sql.AsAlias{T}(T, string)"/>
-    /// 及集合上的同名扩展），返回导航本身的表达式；没有标记时原样返回、<paramref name="options"/> 为默认值。
+    /// 剥掉导航外面的配置标记（<see cref="Sql.DisableLogicDelete{T}(T)"/>、<see cref="Sql.AsTable{T}(T, string)"/>、<see cref="Sql.AsAlias{T}(T, string)"/>、
+    /// <see cref="Sql.AsTableSegment{T}(T, Func{string, string?, string})"/> 及集合上的同名扩展），返回导航本身的表达式；没有标记时原样返回、<paramref name="options"/> 为默认值。
     /// </summary>
     private static Expression StripNavigationOptions(Expression e, out NavigationTableOptions options)
     {
         options = default;
-        while (StripConvert(e) is MethodCallExpression { Method.Name: nameof(Sql.DisableLogicDelete) or nameof(Sql.AsTable) or nameof(Sql.AsAlias) } call
+        while (StripConvert(e) is MethodCallExpression { Method.Name: nameof(Sql.DisableLogicDelete) or nameof(Sql.AsTable) or nameof(Sql.AsAlias) or nameof(Sql.AsTableSegment) } call
                && call.Method.DeclaringType == typeof(Sql))
         {
             // 外层的标记先剥到，内层的同类标记不覆盖它
@@ -31,7 +31,8 @@ internal sealed partial class ExpressionTranslator
             {
                 nameof(Sql.DisableLogicDelete) => options with { NoLogicDelete = true },
                 nameof(Sql.AsTable) => options with { TableName = options.TableName ?? ClientEvaluator.Evaluate(call.Arguments[1]) as string },
-                _ => options with { Alias = options.Alias ?? ClientEvaluator.Evaluate(call.Arguments[1]) as string },
+                nameof(Sql.AsAlias) => options with { Alias = options.Alias ?? ClientEvaluator.Evaluate(call.Arguments[1]) as string },
+                _ => options with { Segment = options.Segment ?? ClientEvaluator.Evaluate(call.Arguments[1]) as Func<string, string?, string> },
             };
             e = call.Arguments[0];
         }
@@ -45,7 +46,7 @@ internal sealed partial class ExpressionTranslator
         if (m.Expression is null || BindingOf(m.Expression) is not { OwnerEntity: { } entity } owner) return null;
         if (Context?.Metadata.FindNavigation(entity, m.Member.Name) is not { IsCollection: false } nav) return null;
         if (nav.DirectPath.Count == 0) return Context!.JoinFor(owner, nav, options);
-        if (options != default) throw Unsupported(m, $"直达导航 {nav} 不支持 Sql.DisableLogicDelete / Sql.AsTable");
+        if (options != default) throw Unsupported(m, $"直达导航 {nav} 不支持 Sql.DisableLogicDelete / Sql.AsTable / Sql.AsAlias / Sql.AsTableSegment");
         // 直达导航：沿路径逐级 JOIN（与手写 x.A.B 共用同一组 JOIN）
         var current = Context!.JoinFor(owner, Context.Metadata.FindNavigation(entity, nav.DirectPath[0]) is { IsCollection: false } first
             ? first : throw Unsupported(m, $"直达路径 {nav} 上的 {nav.DirectPath[0]} 必须是对一导航"));

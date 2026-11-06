@@ -7,7 +7,7 @@ namespace EasyQuerySharp.Translation;
 // 集合导航的分组合并：按导航建分组派生表（整个集合 / 先取一段行），整条查询翻译完后生成列并下推键条件
 internal sealed partial class TranslationContext
 {
-    private readonly Dictionary<(TableSource, string), GroupJoinPlan> _groupJoins = [];
+    private readonly Dictionary<(TableSource, string, NavigationTableOptions), GroupJoinPlan> _groupJoins = [];
 
     /// <summary>
     /// 这个集合导航是否合并成分组 LEFT JOIN：第一个表来源上用 GroupJoin 声明的、导航上标了 GroupJoin 的、或开了 GroupJoinAll（GroupJoinIf(false) 可关闭）。
@@ -22,15 +22,16 @@ internal sealed partial class TranslationContext
         var spec = GroupJoinSpecs.LastOrDefault(s => s.Member == navigation.Property.Name && s.OwnerType.IsAssignableFrom(navigation.Self.Type));
         if (spec is { Enabled: false } || (spec is null && !navigation.GroupJoin && !GroupJoinAll)) return null;
         // 同一导航上不同的取行方式各是一张派生表
-        var key = (owner.Table, navigation.Property.Name + "|" + window?.Key + options.Key);
+        var key = (owner.Table, navigation.Property.Name + "|" + window?.Key, options);
         if (_groupJoins.TryGetValue(key, out var existing)) return existing;
         var configured = spec?.Configure is { } configure && Db is not null
             ? configure(new Querying.QueryState(Db, [new Querying.EntitySource(navigation.Target.Type)]))
             : null;
-        // 导航上的表配置与 GroupJoin(…, q => q.AsTable(..) / AsAlias(..) / DisableLogicDelete()) 配的合在一起
+        // 导航上的表配置与 GroupJoin(…, q => q.AsTable(..) / AsAlias(..) / AsTableSegment(..) / DisableLogicDelete()) 配的合在一起
         var source = configured?.Sources[0];
         options = new NavigationTableOptions(options.NoLogicDelete || configured?.DisableLogicDelete == true,
-            options.TableName ?? (source as Querying.EntitySource)?.TableName, options.Alias ?? source?.Alias);
+            options.TableName ?? (source as Querying.EntitySource)?.TableName, options.Alias ?? source?.Alias,
+            options.Segment ?? (source as Querying.EntitySource)?.TableSegment);
         var plan = window is null ? WholePlan(navigation, configured, options) : WindowedPlan(navigation, configured, window, options);
         plan.Required = navigation.Required;
         plan.MergeFilters = MergeGroupFilters;

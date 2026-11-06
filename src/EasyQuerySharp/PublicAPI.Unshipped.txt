@@ -1940,6 +1940,8 @@ static EasyQuerySharp.Sql.AsAlias<T>(T navigation, string! alias) -> T
 static EasyQuerySharp.Sql.AsAlias<T>(this System.Collections.Generic.IEnumerable<T>! navigation, string! alias) -> System.Collections.Generic.IEnumerable<T>!
 static EasyQuerySharp.Sql.AsTable<T>(T navigation, string! tableName) -> T
 static EasyQuerySharp.Sql.AsTable<T>(this System.Collections.Generic.IEnumerable<T>! navigation, string! tableName) -> System.Collections.Generic.IEnumerable<T>!
+static EasyQuerySharp.Sql.AsTableSegment<T>(T navigation, System.Func<string!, string?, string!>! segment) -> T
+static EasyQuerySharp.Sql.AsTableSegment<T>(this System.Collections.Generic.IEnumerable<T>! navigation, System.Func<string!, string?, string!>! segment) -> System.Collections.Generic.IEnumerable<T>!
 static EasyQuerySharp.Sql.Avg<T>(T value) -> T
 static EasyQuerySharp.Sql.Avg<T>(T value, bool filter) -> T
 static EasyQuerySharp.Sql.AvgDistinct<T>(T value) -> T
