@@ -22,6 +22,9 @@ public class SqliteDialect : SqlDialect
     /// <summary>SQLite 的 SET 列不能带表别名。</summary>
     public override bool QualifySetColumns => false;
 
+    /// <summary>OFFSET 前必须有 LIMIT：只跳过行数时写 <c>LIMIT -1 OFFSET m</c>（负数表示不限）。</summary>
+    public override string OffsetOnlyLimit => "-1";
+
     /// <summary>
     /// SQLite 的 UNION 分支不能加括号，也不能自带 ORDER BY / LIMIT（只能写在整个 UNION 后面）：带了的分支包一层 <c>SELECT * FROM (q)</c>，
     /// 其余直接写 <c>q</c>。

@@ -21,6 +21,9 @@ public class MySqlDialect : SqlDialect
     /// <inheritdoc />
     public override string? LastInsertIdQuery => "SELECT LAST_INSERT_ID()";
 
+    /// <summary>OFFSET 前必须有 LIMIT：只跳过行数时写 MySQL 文档给出的最大值 <c>LIMIT 18446744073709551615 OFFSET m</c>。</summary>
+    public override string OffsetOnlyLimit => "18446744073709551615";
+
     /// <inheritdoc />
     public override void WriteOrderedStringJoin(SqlRenderer renderer, OrderedStringJoinExpr join)
     {

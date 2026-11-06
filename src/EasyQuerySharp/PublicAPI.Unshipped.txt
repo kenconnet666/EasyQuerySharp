@@ -2053,7 +2053,9 @@ override EasyQuerySharp.Dialects.HanaDialect.WriteLike(EasyQuerySharp.Rendering.
 override EasyQuerySharp.Dialects.HanaDialect.WriteLock(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.RowLock rowLock) -> void
 override EasyQuerySharp.Dialects.HanaDialect.WriteModulo(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SqlExpr! left, EasyQuerySharp.SqlAst.SqlExpr! right) -> void
 override EasyQuerySharp.Dialects.HanaDialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
-override EasyQuerySharp.Dialects.HanaDialect.WritePaging(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
+override EasyQuerySharp.Dialects.HanaDialect.OffsetOnlyLimit.get -> string!
+override EasyQuerySharp.Dialects.MySqlDialect.OffsetOnlyLimit.get -> string!
+override EasyQuerySharp.Dialects.SqliteDialect.OffsetOnlyLimit.get -> string!
 override EasyQuerySharp.Dialects.KingbaseDialect.Name.get -> string!
 override EasyQuerySharp.Dialects.KingbaseDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
 override EasyQuerySharp.Dialects.KingbaseDialect.TreeDeepStart.get -> string!
@@ -2540,6 +2542,7 @@ virtual EasyQuerySharp.Dialects.SqlDialect.WriteOrderByItem(EasyQuerySharp.Rende
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WritePagedSelect(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query, System.Action! writeUnpaged) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WritePaging(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
+virtual EasyQuerySharp.Dialects.SqlDialect.OffsetOnlyLimit.get -> string?
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteSelectHead(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteTargetAliasSeparator.get -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void

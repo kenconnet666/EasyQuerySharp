@@ -44,12 +44,18 @@ public abstract partial class SqlDialect
     {
     }
 
-    /// <summary>写分页子句（追加在 ORDER BY 之后）。默认 <c>LIMIT n OFFSET m</c>。</summary>
+    /// <summary>写分页子句（追加在 ORDER BY 之后）。默认 <c>LIMIT n OFFSET m</c>；只跳过行数时 LIMIT 写 <see cref="OffsetOnlyLimit"/>（为 null 时不写）。</summary>
     public virtual void WritePaging(SqlRenderer renderer, SelectQuery query)
     {
         if (query.Limit is { } limit) renderer.Append(" LIMIT ").Append(limit.ToString(CultureInfo.InvariantCulture));
+        else if (query.Offset is > 0 && OffsetOnlyLimit is { } all) renderer.Append(" LIMIT ").Append(all);
         if (query.Offset is > 0) renderer.Append(" OFFSET ").Append(query.Offset.Value.ToString(CultureInfo.InvariantCulture));
     }
+
+    /// <summary>
+    /// OFFSET 前必须有 LIMIT 的方言（MySQL、SQLite、HANA）在只跳过行数（<c>Skip(n)</c> 不带 <c>Take</c>）时写的"不限条数"；默认 null，只写 OFFSET。
+    /// </summary>
+    public virtual string? OffsetOnlyLimit => null;
 
     /// <summary>
     /// 写一条带分页的查询：<paramref name="writeUnpaged"/> 输出不含分页的完整 SELECT。
