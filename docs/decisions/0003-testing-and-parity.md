@@ -92,7 +92,9 @@ L2 的组织方式：
    - `docs/parity-tests.md`（生成文件，不要手改）：总数，按能力的已移植 / 偏离 / 不适用 / 待做统计，逐条明细（Java 用例 → C# 测试 → 状态 → SQL 摘要）。
    - `--scaffold <Java 文件>`：为还没有对应 C# 文件的 Java 文件生成测试骨架。骨架里有方法名、`[Upstream(Pending = true)]`、Skip、期望 SQL 和参数断言、Java 原方法体的注释。已经存在的文件不覆盖。
    - `--check`：在 CI 里检查三件事：对照表是不是最新；`[Upstream]` 引用的 Java 用例是否存在（防止写错）；有没有一个 Java 用例被两个 C# 测试重复声明。
-4. Java 仓库的位置通过 `--java <路径>` 指定，默认 `..\..\IdeaProjects\easy-query`。生成结果提交进仓库，CI 不重新扫描 Java。
+4. 对标基准冻结在快照 `tools/ParityTests/java-tests.json`（取自哪个 Java 版本，加每个用例的 Id、能力、SQL 摘要）。对照表和 `--check` 只看快照，本机和 CI 都不会因为 Java 仓库换了版本而改变统计。
+   - `--scaffold` / `--show` 要用方法体，从本机 Java 仓库取，只取基准里有的用例。仓库位置用 `--java <路径>` 指定，默认 `..\..\IdeaProjects\easy-query`。
+   - `--rescan` 按 Java 仓库重新生成快照，并列出新增和移除的用例。只在决定移动基准时使用，要求仓库里同时有 `sql-test` 和 `sql-fork-test`。
 
 **完成标准**：对照表里"待做"为 0；"不适用"每一条都有理由；"偏离"每一条都有理由，并且已经评审过。
 
