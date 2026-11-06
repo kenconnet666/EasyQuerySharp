@@ -3,14 +3,14 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1698、偏离 209、不适用 78、骨架 6、待做 413。
+合计：已移植 1699、偏离 209、不适用 78、骨架 6、待做 412。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 351 | 43 | 35 | 0 | 6 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 352 | 43 | 35 | 0 | 5 |
 | 分页结果 | `query.page` | M1 | 22 | 18 | 3 | 0 | 0 | 1 |
 | 原生 SQL | `sql.native` | M1 | 50 | 40 | 9 | 1 | 0 | 0 |
 | 删除 | `write.delete` | M1 | 25 | 13 | 1 | 10 | 0 | 1 |
@@ -501,7 +501,7 @@
 | mysql8/MySQL8Test5.java#interceptorTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:215 | `SELECT 'id','name','age','create_time' FROM 'm8_user'` |
 | mysql8/MySQL8Test5.java#interceptorTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:223 | `SELECT 'id','name','age','create_time' FROM 'm8_user'` |
 | mysql8/MySQL8Test5.java#interceptorTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:231 | `SELECT 'id','name','age','create_time' FROM 'm8_user'` |
-| pgsql/NamedEnumTest.java#test1 | 待做 |  | `SELECT "id","name","type" FROM "t_named_enum" WHERE "type" = ?` |
+| pgsql/NamedEnumTest.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/NamedEnumTest.cs:28 | `SELECT "id","name","type" FROM "t_named_enum" WHERE "type" = ?` |
 | pgsql/QueryTest.java#query1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:9 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
 | pgsql/QueryTest.java#query2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:17 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
 | pgsql/QueryTest.java#query3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest.cs:26 | `SELECT 1 FROM "t_blog" WHERE "deleted" = ? AND "id" = ? LIMIT 1` |

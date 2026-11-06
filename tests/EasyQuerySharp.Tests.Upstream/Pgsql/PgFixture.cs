@@ -14,7 +14,7 @@ public sealed class PgFixture : IAsyncLifetime
     /// <summary>Java 用例使用的库名。</summary>
     public const string Database = "easy-query-test";
 
-    private static readonly Type[] Tables = [typeof(BlogEntity), typeof(DocBank), typeof(DocBankCard), typeof(DocUser), typeof(MyCategory), typeof(SysUser)];
+    private static readonly Type[] Tables = [typeof(BlogEntity), typeof(DocBank), typeof(DocBankCard), typeof(DocUser), typeof(MyCategory), typeof(SysUser), typeof(NamedEnumEntity)];
 
     private EasyDb? _db;
     private string? _skipReason;
@@ -107,6 +107,11 @@ public sealed class PgFixture : IAsyncLifetime
         }).ExecuteAsync();
         // 与 Java 一致只有 id 的用户，对应标题为 title0 的博客（BlogEntity.Users 按 title 关联）
         await db.Insert(new SysUser { Id = "title0" }).ExecuteAsync();
+        await db.Insert(new[]
+        {
+            new NamedEnumEntity { Id = "1", Name = "用户", Type = NamedEnum.USER },
+            new NamedEnumEntity { Id = "2", Name = "图书", Type = NamedEnum.BOOK },
+        }).ExecuteAsync();
     }
 }
 

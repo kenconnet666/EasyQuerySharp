@@ -184,7 +184,7 @@ M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需�
 - [x] 5.1 拦截器：`QueryFilter<T>`、`EntityInterceptor<T>`（含按条件更新追加 SET）；默认关闭、按名启用 / 关闭。内置多租户、自动填充不做成库功能，用这两个基类几行即可写出（见 InterceptorTest）。
 - [x] 5.2 逻辑删除：布尔、删除时间与自定义策略（`ILogicDeleteStrategy`）；可以按导航单独关闭（`u.Posts.DisableLogicDelete().Any(..)`、对一导航 `Sql.DisableLogicDelete(p.Author)`），导航也可换表（`AsTable`）；`.Hard()`。
 - [x] 5.3 乐观锁 `[Version]`：`WithVersion` / `IgnoreVersion`，按实体写入成功后写回新版本；冲突检测用 `ExecuteAsync(expectedRows)` 抛 `ConcurrencyException`。
-- [~] 5.4 值转换器、枚举存储方式、值对象 `[ValueObject]`、JSON 列（`JsonValueConverter<T>` 已完成）。
+- [~] 5.4 值转换器、枚举存储方式、值对象 `[ValueObject]`、JSON 列（`JsonValueConverter<T>`、枚举按名字存 `EnumNameConverter<T>` / 枚举上的 `[StoreAsName]` 已完成；值对象待做）。
 - [x] 5.5 列加密：与 Java 的 AES / SM4 密文兼容，支持分段 LIKE（`[Encryption]`、`AesBase64EncryptionStrategy`、自带实现的 `Sm4` 与 `Sm4HexEncryptionStrategy`，共用 `SegmentedEncryptionStrategy` 的分段规则；国标测试向量校验）。库端加解密用列的 SQL 读写转换 `[Column(SqlConversion = typeof(…))]`（`ColumnSqlConversion`：查询套读取模板、写入与比较的值套写入模板）已完成。
 - [x] 5.6 upsert：`OnConflictIgnore()` / `OnConflictUpdate()`：MySQL（INSERT IGNORE / ON DUPLICATE KEY UPDATE）、PG 与 SQLite（ON CONFLICT），SQL Server 与 Oracle 改写成单行 MERGE；约束列只取写入了的列。
 - [ ] 5.7 写入策略：按列策略只写非空列；批量写入用 `DbBatch`。

@@ -188,7 +188,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
     private static IValueConverter? CreateConverter(Type entityType, PropertyInfo property, Type? converterType)
     {
         var encryption = property.GetCustomAttribute<Encryption.EncryptionAttribute>();
-        if (encryption is null) return converterType is null ? null : CreateConverter(converterType, property);
+        if (encryption is null) return converterType is null ? DefaultConverter(property) : CreateConverter(converterType, property);
         if (converterType is not null)
             throw new InvalidOperationException($"{entityType.Name}.{property.Name} 不能同时声明转换器和加密");
         if (property.PropertyType != typeof(string))
@@ -200,6 +200,15 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
     }
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, Encryption.IEncryptionStrategy> EncryptionStrategies = new();
+
+    // 没有声明转换器时的默认转换：枚举类型标了 [StoreAsName] 时按名字存
+    private static IValueConverter? DefaultConverter(PropertyInfo property)
+    {
+        var type = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+        return type.IsEnum && type.IsDefined(typeof(StoreAsNameAttribute), inherit: false)
+            ? CreateConverter(typeof(EnumNameConverter<>).MakeGenericType(type), property)
+            : null;
+    }
 
     private static IValueConverter CreateConverter(Type converterType, PropertyInfo property)
     {
