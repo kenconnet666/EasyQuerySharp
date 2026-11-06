@@ -38,6 +38,36 @@ public abstract partial class QueryBase<TSelf, TElement> : IQueryStateAccessor
     public TSelf DisableLogicDelete() => With(State with { DisableLogicDelete = true });
 
     /// <summary>
+    /// 这条查询里实体 <typeparamref name="TEntity"/> 一律读表 <paramref name="tableName"/>（对应 Java fork 的 TableNameMapping，如热表 / 归档表、按年分表）：
+    /// 主表、联表、导航的隐式 JOIN、集合导航的子查询与分组合并、带出与 DTO 自动带出的查询、嵌在里面的子查询都跟着换，查询本身不用改。
+    /// 映射的表要与实体同结构；显式写的 <c>AsTable</c> / <c>Sql.AsTable</c> 优先，子查询自己的映射优先于外层的。
+    /// </summary>
+    /// <example><code>db.Query&lt;User&gt;().MapTable&lt;Post&gt;("t_post_2025").Where(u =&gt; u.Posts.Any(p =&gt; p.Title == "x"))</code></example>
+    public TSelf MapTable<TEntity>(string tableName)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(tableName);
+        return With(State with { Tables = State.Tables with { Names = State.Tables.Names.SetItem(typeof(TEntity), tableName) } });
+    }
+
+    /// <summary>同 <see cref="MapTable{TEntity}(string)"/>，表名由实体自己的表名算出：<c>.MapTable&lt;Post&gt;(name =&gt; name + "_archive")</c>。</summary>
+    public TSelf MapTable<TEntity>(Func<string, string> rename)
+    {
+        ArgumentNullException.ThrowIfNull(rename);
+        return MapTable<TEntity>(rename(Db.Metadata.Get<TEntity>().TableName));
+    }
+
+    /// <summary>
+    /// 这条查询里的全部实体表都放到 schema <paramref name="schema"/> 下（MySQL 是库；对应 Java 的 asSchema，作用于整条查询），
+    /// 范围与 <see cref="MapTable{TEntity}(string)"/> 相同，替换实体自己声明的 schema。多租户分库、归档库都不用改查询。
+    /// </summary>
+    /// <example><code>db.Query&lt;Order&gt;().InSchema("archive_2025").Include(o =&gt; o.Items)</code></example>
+    public TSelf InSchema(string schema)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(schema);
+        return With(State with { Tables = State.Tables with { Schema = schema } });
+    }
+
+    /// <summary>
     /// 按条件对象追加条件（对应 Java 的 whereObject）：<paramref name="request"/> 上标了 <see cref="Filtering.FilterAttribute"/> 的属性
     /// 有值时变成条件；为 null 时不变。投影之后调用时作用于投影结果（先包成派生表）。
     /// </summary>

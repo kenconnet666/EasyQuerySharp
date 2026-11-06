@@ -219,7 +219,7 @@ public sealed class SqlRenderer
             Write(c.Expr);
             if (c.Alias is not null) Append(" AS ").Append(Dialect.QuoteIdentifier(c.Alias));
         }
-        Append(" FROM ").WriteTable(q.From);
+        WriteConnector("FROM", q.From).WriteTable(q.From);
         foreach (var j in q.Joins) WriteJoin(j);
         WriteWhere(q.Where);
         if (q.GroupBy.Count > 0) Dialect.WriteGroupBy(Append(" GROUP BY "), q.GroupBy, q.GroupByMode);
@@ -239,18 +239,22 @@ public sealed class SqlRenderer
     /// <summary>输出一个 JOIN 子句：<c> INNER JOIN 表 别名 ON 条件</c>。</summary>
     public SqlRenderer WriteJoin(JoinClause join)
     {
-        Append(join.Kind switch
+        WriteConnector(join.Kind switch
         {
-            JoinKind.Inner => " INNER JOIN ",
-            JoinKind.Left => " LEFT JOIN ",
-            JoinKind.Right => " RIGHT JOIN ",
-            JoinKind.Full => " FULL JOIN ",
-            JoinKind.Comma => " , ",
-            _ => " CROSS JOIN ",
-        }).WriteTable(join.Table);
+            JoinKind.Inner => "INNER JOIN",
+            JoinKind.Left => "LEFT JOIN",
+            JoinKind.Right => "RIGHT JOIN",
+            JoinKind.Full => "FULL JOIN",
+            JoinKind.Comma => ",",
+            _ => "CROSS JOIN",
+        }, join.Table).WriteTable(join.Table);
         if (join.On is not null) Append(" ON ").WritePredicate(join.On);
         return this;
     }
+
+    // 表前面的连接符，两边各留一个空格；实体表配了 WithTableLink 时换成它给出的写法（与 Java 的 asTableLink 一致）
+    private SqlRenderer WriteConnector(string keyword, TableSource table) =>
+        Append(" ").Append(table is EntityTableSource { Link: { } link } ? link(keyword) : keyword).Append(" ");
 
     private SqlStatement Build() => new(_command.ToString(), _text.ToString(), _parameters);
 
@@ -278,7 +282,7 @@ public sealed class SqlRenderer
         {
             case EntityTableSource { Segment: { } segment } e:
                 return Append(segment(QualifiedName(e), e.Alias));
-            case EntityTableSource e: WriteTableName(e); break;
+            case EntityTableSource e: Append(QualifiedName(e)); break;
             case DerivedTableSource d: Append("(").WriteSelect(d.Query).Append(")"); break;
             case CteTableSource c: Append(Dialect.QuoteIdentifier(c.Name)); break;
             case RawTableSource raw: Append("(").WriteRawSql(raw).Append(")"); break;
@@ -301,8 +305,10 @@ public sealed class SqlRenderer
         return Append(" )");
     }
 
-    /// <summary>写实体表的完整表名（schema、换表名之后），不带别名。</summary>
-    public SqlRenderer WriteTableName(EntityTableSource e) => Append(QualifiedName(e));
+    /// <summary>
+    /// 写入语句的目标表：完整表名（schema、换表名之后），不带别名。配了 WithTableLink 时它给出的写法（参数是空串）直接写在表名前面（与 Java 一致）。
+    /// </summary>
+    public SqlRenderer WriteTableName(EntityTableSource e) => Append(e.Link?.Invoke("") ?? "").Append(QualifiedName(e));
 
     private string QualifiedName(EntityTableSource e) => Dialect.QualifiedName(e.Schema, e.TableName);
 

@@ -35,7 +35,7 @@ internal sealed partial class ExpressionTranslator
                   + "|" + (predicate is null ? "" : GroupJoinKey(predicate)) + "|" + nav.Property.Name + "#" + index;
         return Context.ElementJoinFor(owner, key, nav.Required, context =>
         {
-            var element = new EntityTableSource(nav.Target);
+            var element = context.TableFor(nav.Target);
             var inner = new SelectQuery(element);
             // 多对多：经中间表连目标表，按中间表里对应所属表的列分区，这些列以 __列名__ 选出供外层 ON 用（与 Java 一致）
             var link = nav.Mapping is { } mapping ? context.JoinMapping(inner, element, nav, mapping) : null;

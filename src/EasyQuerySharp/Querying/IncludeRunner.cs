@@ -24,7 +24,7 @@ internal static partial class IncludeRunner
             if (plan.Pending.Count == 0) continue;
             var nav = plan.Navigation;
 
-            var links = await ResolveLinksAsync(db, plan, ct).ConfigureAwait(false);
+            var links = await ResolveLinksAsync(db, plan, context.Tables, ct).ConfigureAwait(false);
             if (links.Count == 0)
             {
                 // 一个子对象也没有：追踪查询照样记下"加载过、为空"
@@ -37,7 +37,7 @@ internal static partial class IncludeRunner
             // 先按配置加条件、排序、条数，再投影（投影之后再加条件会包成派生表）
             var baseState = new QueryState(db, [new EntitySource(nav.Target.Type)])
             {
-                Wheres = [.. plan.ChildFilters], Interceptors = context.Interceptors, ConfigureArgument = context.ConfigureArgument,
+                Wheres = [.. plan.ChildFilters], Interceptors = context.Interceptors, ConfigureArgument = context.ConfigureArgument, Tables = context.Tables,
             };
             // 平铺带出（Java 的 @NavigateFlat）单表不写别名；其余带出的子查询在 Java 里总带别名 t
             var flat = plan.FlatColumns;
@@ -174,13 +174,16 @@ internal static partial class IncludeRunner
     }
 }
 
-/// <summary>带出查询从主查询沿用的设置：拦截器选择、分组大小、配置参数，以及子实体是否一并追踪。</summary>
+/// <summary>带出查询从主查询沿用的设置：拦截器选择、分组大小、配置参数、换表（MapTable / InSchema），以及子实体是否一并追踪。</summary>
 internal sealed record IncludeContext(InterceptorSelection Interceptors, int? GroupSize, object? ConfigureArgument, bool Track = false)
 {
     /// <summary>不带主查询时（LoadIncludeAsync）：默认拦截器、全局分组大小、没有参数。</summary>
     public static IncludeContext Default { get; } = new(InterceptorSelection.Default, null, null);
 
+    /// <summary>主查询的换表：带出查询与它经过的中间表照样换。</summary>
+    public TableMapping Tables { get; init; } = TableMapping.None;
+
     /// <summary>取主查询上的设置。</summary>
     public static IncludeContext Of(QueryState state) =>
-        new(state.Interceptors, state.IncludeGroupSize, state.ConfigureArgument, !state.NoTracking && state.Db.Tracker.Active);
+        new(state.Interceptors, state.IncludeGroupSize, state.ConfigureArgument, !state.NoTracking && state.Db.Tracker.Active) { Tables = state.Tables };
 }

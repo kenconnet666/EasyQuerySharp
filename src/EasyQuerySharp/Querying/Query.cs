@@ -206,14 +206,23 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     public Query<T> AsTableSegment(Func<string, string?, string> segment) => new(QueryStates.WithTableSegment(State, segment));
 
     /// <summary>
+    /// 改写最近一个实体表前面的连接符（对应 Java 的 asTableLink）：参数是原来的连接符（<c>FROM</c>、<c>LEFT JOIN</c>…），
+    /// 返回值原样写进 SQL，如 <c>.LeftJoin&lt;Blog&gt;(…).WithTableLink(join =&gt; join + " LATERAL")</c> 写成 <c>LEFT JOIN LATERAL `t_blog` t1</c>。
+    /// </summary>
+    public Query<T> WithTableLink(Func<string, string> link) => new(QueryStates.WithTableLink(State, link));
+
+    /// <summary>最近一个实体表前面的连接符整个换成 <paramref name="link"/>，如 <c>.WithTableLink("LEFT OUTER JOIN")</c>。</summary>
+    public Query<T> WithTableLink(string link) => new(QueryStates.WithTableLink(State, link));
+
+    /// <summary>
     /// 把这条查询作为公共表表达式（对应 Java 的 toCteAs）：之后的查询从 <c>`名字`</c> 读，定义写在整条语句前面的
     /// <c>WITH `名字` AS (…)</c> 里。可以继续 Where / Select，也可以作为别的查询的 JOIN 来源；名字默认是 <c>with_类型名</c>（泛型去掉反引号，如 <c>with_Draft2</c>，与 Java 一致）。
     /// </summary>
     public Query<T> AsCte(string? name = null) =>
         new(new QueryState(Db, [new CteSource(name ?? "with_" + typeof(T).Name.Replace("`", "", StringComparison.Ordinal), State)])
         {
-            // 外层沿用这条查询的值过滤与拦截器选择（Java 的外层从它的上下文扩展而来）
-            ValueFilter = State.ValueFilter, Interceptors = State.Interceptors,
+            // 外层沿用这条查询的值过滤、拦截器选择与换表（Java 的外层从它的上下文扩展而来）
+            ValueFilter = State.ValueFilter, Interceptors = State.Interceptors, Tables = State.Tables,
         });
 
     /// <summary>LEFT JOIN 实体 <typeparamref name="T2"/>。</summary>
@@ -314,6 +323,20 @@ internal static class QueryStates
     {
         ArgumentNullException.ThrowIfNull(segment);
         return WithLast(state, s => s is EntitySource e ? e with { TableSegment = segment } : s);
+    }
+
+    /// <summary>改写最近一个实体表前面的连接符（WithTableLink）。</summary>
+    public static QueryState WithTableLink(QueryState state, Func<string, string> link)
+    {
+        ArgumentNullException.ThrowIfNull(link);
+        return WithLast(state, s => s is EntitySource e ? e with { TableLink = link } : s);
+    }
+
+    /// <summary>最近一个实体表前面的连接符整个换成 <paramref name="link"/>（WithTableLink）。</summary>
+    public static QueryState WithTableLink(QueryState state, string link)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(link);
+        return WithTableLink(state, _ => link);
     }
 
     /// <summary>追加一个连接的表来源。</summary>

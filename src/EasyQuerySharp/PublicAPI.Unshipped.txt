@@ -20,6 +20,8 @@ EasyQuerySharp.Commands.EntityCommandBase<TSelf, T>.DisableInterceptor(string! n
 EasyQuerySharp.Commands.EntityCommandBase<TSelf, T>.DisableInterceptors() -> TSelf!
 EasyQuerySharp.Commands.EntityCommandBase<TSelf, T>.EnableInterceptor(string! name) -> TSelf!
 EasyQuerySharp.Commands.EntityCommandBase<TSelf, T>.EnableInterceptors() -> TSelf!
+EasyQuerySharp.Commands.EntityCommandBase<TSelf, T>.WithTableLink(System.Func<string!, string!>! link) -> TSelf!
+EasyQuerySharp.Commands.EntityCommandBase<TSelf, T>.WithTableLink(string! link) -> TSelf!
 EasyQuerySharp.Commands.InsertCommand<T>
 EasyQuerySharp.Commands.InsertCommand<T>.ColumnSql<TValue>(System.Linq.Expressions.Expression<System.Func<T!, TValue>!>! column, string! template) -> EasyQuerySharp.Commands.InsertCommand<T!>!
 EasyQuerySharp.Commands.InsertCommand<T>.Columns(EasyQuerySharp.Commands.ColumnStrategy strategy) -> EasyQuerySharp.Commands.InsertCommand<T!>!
@@ -886,6 +888,8 @@ EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.WhereById
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.WhereByIds(System.Collections.IEnumerable! ids) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.WithTableLink(System.Func<string!, string!>! link) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.WithTableLink(string! link) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>!
@@ -920,6 +924,8 @@ EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>.WhereById(obje
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>.WhereByIds(System.Collections.IEnumerable! ids) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>.WithTableLink(System.Func<string!, string!>! link) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>.WithTableLink(string! link) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>!
@@ -954,6 +960,8 @@ EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>.WhereById(object! 
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>.WhereByIds(System.Collections.IEnumerable! ids) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, T7, T8, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>.WithTableLink(System.Func<string!, string!>! link) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>.WithTableLink(string! link) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>!
@@ -988,6 +996,8 @@ EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>.WhereById(object! id) 
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>.WhereByIds(System.Collections.IEnumerable! ids) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, T7, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>.WithTableLink(System.Func<string!, string!>! link) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>.WithTableLink(string! link) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>!
@@ -1022,6 +1032,8 @@ EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>.WhereById(object! id) -> E
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>.WhereByIds(System.Collections.IEnumerable! ids) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>.WithTableLink(System.Func<string!, string!>! link) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>.WithTableLink(string! link) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>!
@@ -1056,6 +1068,8 @@ EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>.WhereById(object! id) -> EasyQ
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>.WhereByIds(System.Collections.IEnumerable! ids) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>.WithTableLink(System.Func<string!, string!>! link) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>.WithTableLink(string! link) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4>
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4>!
@@ -1090,6 +1104,8 @@ EasyQuerySharp.Querying.Query<T1, T2, T3, T4>.WhereById(object! id) -> EasyQuery
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4>.WhereByIds(System.Collections.IEnumerable! ids) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4>.WithTableLink(System.Func<string!, string!>! link) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4>.WithTableLink(string! link) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4>!
 EasyQuerySharp.Querying.Query<T1, T2, T3>
 EasyQuerySharp.Querying.Query<T1, T2, T3>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2, T3>!
 EasyQuerySharp.Querying.Query<T1, T2, T3>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2, T3>!
@@ -1124,6 +1140,8 @@ EasyQuerySharp.Querying.Query<T1, T2, T3>.WhereById(object! id) -> EasyQueryShar
 EasyQuerySharp.Querying.Query<T1, T2, T3>.WhereByIds(System.Collections.IEnumerable! ids) -> EasyQuerySharp.Querying.Query<T1, T2, T3>!
 EasyQuerySharp.Querying.Query<T1, T2, T3>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, T2, T3, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2, T3>!
 EasyQuerySharp.Querying.Query<T1, T2, T3>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2, T3>!
+EasyQuerySharp.Querying.Query<T1, T2, T3>.WithTableLink(System.Func<string!, string!>! link) -> EasyQuerySharp.Querying.Query<T1, T2, T3>!
+EasyQuerySharp.Querying.Query<T1, T2, T3>.WithTableLink(string! link) -> EasyQuerySharp.Querying.Query<T1, T2, T3>!
 EasyQuerySharp.Querying.Query<T1, T2>
 EasyQuerySharp.Querying.Query<T1, T2>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2>!
 EasyQuerySharp.Querying.Query<T1, T2>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2>!
@@ -1158,6 +1176,8 @@ EasyQuerySharp.Querying.Query<T1, T2>.WhereById(object! id) -> EasyQuerySharp.Qu
 EasyQuerySharp.Querying.Query<T1, T2>.WhereByIds(System.Collections.IEnumerable! ids) -> EasyQuerySharp.Querying.Query<T1, T2>!
 EasyQuerySharp.Querying.Query<T1, T2>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, T2, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2>!
 EasyQuerySharp.Querying.Query<T1, T2>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T1, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T1, T2>!
+EasyQuerySharp.Querying.Query<T1, T2>.WithTableLink(System.Func<string!, string!>! link) -> EasyQuerySharp.Querying.Query<T1, T2>!
+EasyQuerySharp.Querying.Query<T1, T2>.WithTableLink(string! link) -> EasyQuerySharp.Querying.Query<T1, T2>!
 EasyQuerySharp.Querying.Query<T>
 EasyQuerySharp.Querying.Query<T>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.Querying.Query<T>.AsCte(string? name = null) -> EasyQuerySharp.Querying.Query<T>!
@@ -1217,6 +1237,8 @@ EasyQuerySharp.Querying.Query<T>.Where(System.Linq.Expressions.Expression<System
 EasyQuerySharp.Querying.Query<T>.WhereById(object! id) -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.Querying.Query<T>.WhereByIds(System.Collections.IEnumerable! ids) -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.Querying.Query<T>.WhereIf(bool condition, System.Linq.Expressions.Expression<System.Func<T, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T>!
+EasyQuerySharp.Querying.Query<T>.WithTableLink(System.Func<string!, string!>! link) -> EasyQuerySharp.Querying.Query<T>!
+EasyQuerySharp.Querying.Query<T>.WithTableLink(string! link) -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.AnyAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.AsAsyncEnumerable(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<TElement>!
@@ -1247,7 +1269,10 @@ EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ForUpdateSkipLocked() -> TSel
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.GroupJoinAll() -> TSelf!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.GroupJoinNoMerge() -> TSelf!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.IgnoreNavigationDefaults() -> TSelf!
+EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.InSchema(string! schema) -> TSelf!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.IncludeGroupSize(int size) -> TSelf!
+EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.MapTable<TEntity>(System.Func<string!, string!>! rename) -> TSelf!
+EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.MapTable<TEntity>(string! tableName) -> TSelf!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.MaxResultSize(int rows) -> TSelf!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.OffsetChunkAsync(int size, System.Func<System.Collections.Generic.IReadOnlyList<TElement>!, long>! handle, long maxFetchSize = 100000, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.OrderByRaw(string! sql) -> TSelf!
@@ -1386,6 +1411,8 @@ EasyQuerySharp.SqlAst.EntityTableSource
 EasyQuerySharp.SqlAst.EntityTableSource.Column(EasyQuerySharp.Metadata.ColumnMetadata! column) -> EasyQuerySharp.SqlAst.ColumnExpr!
 EasyQuerySharp.SqlAst.EntityTableSource.Entity.get -> EasyQuerySharp.Metadata.EntityMetadata!
 EasyQuerySharp.SqlAst.EntityTableSource.EntityTableSource(EasyQuerySharp.Metadata.EntityMetadata! entity) -> void
+EasyQuerySharp.SqlAst.EntityTableSource.Link.get -> System.Func<string!, string!>?
+EasyQuerySharp.SqlAst.EntityTableSource.Link.init -> void
 EasyQuerySharp.SqlAst.EntityTableSource.Schema.get -> string?
 EasyQuerySharp.SqlAst.EntityTableSource.SchemaOverride.get -> string?
 EasyQuerySharp.SqlAst.EntityTableSource.SchemaOverride.init -> void

@@ -214,9 +214,9 @@ internal sealed partial class ExpressionTranslator
     /// </summary>
     private CollectionSubQuery NewCollectionSubQuery(SourceBinding owner, NavigationMetadata nav, NavigationTableOptions options = default)
     {
-        var table = options.TableFor(nav.Target);
+        var table = Context!.TableFor(nav.Target, options);
         var sub = new SelectQuery(table);
-        var context = Context!.ForSubQuery(sub);
+        var context = Context.ForSubQuery(sub);
         var translator = new ExpressionTranslator(new Dictionary<ParameterExpression, SourceBinding>(_scope)) { Context = context };
         var element = new EntityBinding(table);
 
@@ -225,7 +225,7 @@ internal sealed partial class ExpressionTranslator
         var relation = new List<SqlExpr>();
         if (nav.Mapping is { } mapping)
         {
-            var mappingTable = new EntityTableSource(mapping);
+            var mappingTable = context.TableFor(mapping);
             var link = new SelectQuery(mappingTable);
             link.Where.AddRange(context.TableFilters(mappingTable));
             for (var i = 0; i < nav.TargetMappingColumns.Count; i++)
