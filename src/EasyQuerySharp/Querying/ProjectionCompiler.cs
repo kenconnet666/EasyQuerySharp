@@ -51,6 +51,9 @@ internal sealed partial class ProjectionCompiler(ExpressionTranslator translator
     // 平铺带出按（所属来源, 导航）共用一条带出查询
     private readonly Dictionary<(SourceBinding Owner, NavigationMetadata Navigation), IncludePlan> _flatPlans = [];
 
+    // 经过集合的平铺路径按（所属来源, 路径, 是否只有实体与列）共用一组带出查询
+    private readonly Dictionary<(SourceBinding Owner, string Path, bool Simple), IncludePlan> _pathPlans = [];
+
     /// <summary>投影里的导航带出（主查询执行后由 <see cref="IncludeRunner"/> 依次执行）。</summary>
     public IReadOnlyList<IncludePlan> Includes => _includes.Select(i => i.Plan).ToList();
 

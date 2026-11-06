@@ -25,6 +25,9 @@ internal sealed partial class ProjectionCompiler
             toOne.Add((flatPlan, member, index));
             return Expression.Default(value.Type);
         }
+        // 经过集合的路径：同一条路径上的几个属性共用一组带出查询，各自从每个子对象取自己那一项
+        if (member is not null && TryFlatPath(value) is var (pathPlan, pathIndex, element))
+            return Expression.Call(FlatListMethod.MakeGenericMethod(element), Expression.Constant(pathPlan), _reader, Expression.Constant(pathIndex));
         if (member is not null && TryInclude(value) is { } plan)
         {
             if (plan.IsCollection)
@@ -56,12 +59,73 @@ internal sealed partial class ProjectionCompiler
         return (plan, plan.FlatPaths.Count - 1);
     }
 
+    // AutoIncludeMarkers.Through(第一个导航, 后续导航名, 配置, 投影) 经过集合、取的是目标实体本身或标量（Java 的 @NavigateFlat 列表）：
+    // 按（所属来源, 路径）找共用的平铺计划，登记这一项；投影成 DTO、带配置的照常各自带出
+    private (IncludePlan Plan, int Index, Type Element)? TryFlatPath(Expression value)
+    {
+        if (ExpressionTranslator.StripConvert(value) is not MethodCallExpression { Method.Name: nameof(AutoIncludeMarkers.Through) } marker
+            || marker.Method.DeclaringType != typeof(AutoIncludeMarkers) || ((ConstantExpression)marker.Arguments[2]).Value is not null)
+            return null;
+        if (MetadataRegistry.ElementType(marker.Type) is var element && element == marker.Type) return null;
+        if (marker.Arguments[0] is not MemberExpression { Expression: { } owner } first || translator.BindingOf(owner) is not { OwnerEntity: not null } navOwner
+            || translator.FindNavigation(navOwner, first.Member.Name) is not { } navigation)
+            return null;
+        var names = (string[])((ConstantExpression)marker.Arguments[1]).Value!;
+        var via = new List<NavigationMetadata>();
+        foreach (var name in names)
+        {
+            via.Add(navigation);
+            navigation = translator.Context!.Metadata.FindNavigation(navigation.Target, name) ?? throw new NotSupportedException($"{navigation.Target.Type.Name}.{name} 不是导航属性");
+        }
+        if (!navigation.IsCollection && !via.Any(v => v.IsCollection)) return null;
+
+        LambdaExpression path;
+        if ((LambdaExpression?)((ConstantExpression)marker.Arguments[3]).Value is { } selector)
+        {
+            if (!ScalarTypes.IsScalar(selector.ReturnType)) return null;
+            path = selector;
+        }
+        else
+        {
+            var e = Expression.Parameter(navigation.Target.Type, "e");
+            path = Expression.Lambda(e, e);
+        }
+        // 只有实体本身与它的列的一组可以改成取实体；带 JOIN 的路径（e.Class.Name）单独一组
+        var simple = path.Body == path.Parameters[0] || path.Body is MemberExpression { Expression: ParameterExpression };
+        var key = (navOwner, first.Member.Name + "." + string.Join('.', names), simple);
+        if (!_pathPlans.TryGetValue(key, out var plan))
+        {
+            plan = new IncludePlan(navigation, typeof(object?[]), null, [], isCollection: true) { FlatPaths = [], AllowEntityRows = simple, Via = via };
+            _pathPlans[key] = plan;
+            _includes.Add((plan, navOwner));
+        }
+        plan.FlatPaths!.Add(path);
+        return (plan, plan.FlatPaths.Count - 1, element);
+    }
+
+    private static readonly MethodInfo FlatListMethod = typeof(ProjectionCompiler).GetMethod(nameof(FlatList))!;
+
+    /// <summary>经过集合的平铺属性的值：登记父键，子对象读回后取第 <paramref name="index"/> 项放进列表。</summary>
+    public static List<T> FlatList<T>(IncludePlan plan, DbDataReader reader, int index)
+    {
+        var list = new List<T>();
+        plan.Register(reader, child => list.Add((T)ValueReader.ConvertTo(plan.FlatItem(child, index), typeof(T))!));
+        return list;
+    }
+
     /// <summary>
     /// 平铺带出的值数组里第 <paramref name="index"/> 项，转成父属性的类型；没有带出到（父键为空、子数据不存在）时为默认值。
-    /// 父属性上声明了值转换器（<c>[Column(Converter = …)]</c>，Java 平铺属性上的 conversion）时读出后再转换。
+    /// 父属性上声明了值转换器（<c>[Column(Converter = …)]</c>，Java 平铺属性上的 conversion）时读出后再转换；父属性是列表时放进只有这一项的列表。
     /// </summary>
-    public static object? FlatValue(object? row, int index, Type type, IValueConverter? converter) =>
-        row is object?[] values ? ValueReader.ConvertTo(converter is null ? values[index] : converter.FromProvider(values[index]), type) : null;
+    public static object? FlatValue(object? row, int index, Type type, IValueConverter? converter)
+    {
+        if (row is not object?[] values) return null;
+        var value = converter is null ? values[index] : converter.FromProvider(values[index]);
+        if (ScalarTypes.IsScalar(type) || type.IsInstanceOfType(value) || MetadataRegistry.ElementType(type) is var item && item == type) return ValueReader.ConvertTo(value, type);
+        var list = (System.Collections.IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(item))!;
+        if (value is not null) list.Add(ValueReader.ConvertTo(value, item));
+        return list;
+    }
 
     // DTO 属性上声明的值转换器（同一类型共用一个实例）
     private static IValueConverter? DtoConverter(PropertyInfo property) =>
@@ -71,6 +135,12 @@ internal sealed partial class ProjectionCompiler
 
     private IncludePlan? TryInclude(Expression value)
     {
+        var unaliased = false;
+        if (ExpressionTranslator.StripConvert(value) is MethodCallExpression { Method.Name: nameof(AutoIncludeMarkers.Loaded) } loaded && loaded.Method.DeclaringType == typeof(AutoIncludeMarkers))
+        {
+            value = loaded.Arguments[0];
+            unaliased = true;
+        }
         // 自动映射（Select<TDto>()）产出的带出标记：导航、带出查询的配置、子对象的投影都在参数里
         if (ExpressionTranslator.StripConvert(value) is MethodCallExpression marker && marker.Method.DeclaringType == typeof(AutoIncludeMarkers))
         {
@@ -144,7 +214,7 @@ internal sealed partial class ProjectionCompiler
         if (!nav.IsCollection && (selector is not null || filters.Count > 0 || orders.Count > 0 || inner != value)) return null;
         if (nav.DirectPath.Count > 0)
         {
-            var direct = IncludePlan.ForNavigation(translator.Context!.Metadata, nav, Merged(owner, nav.Property.Name, null));
+            var direct = IncludePlan.ForNavigation(translator.Context!.Metadata, nav, Merged(owner, nav.Property.Name, null), unaliased);
             _includes.Add((direct, owner));
             return direct;
         }
@@ -152,6 +222,7 @@ internal sealed partial class ProjectionCompiler
         var plan = new IncludePlan(nav, selector?.ReturnType ?? nav.Target.Type, selector, filters, nav.IsCollection)
         {
             Configure = Merged(owner, nav.Property.Name, orders.Count == 0 ? null : state => state with { OrderBys = state.OrderBys.AddRange(orders) }),
+            Unaliased = unaliased,
         };
         _includes.Add((plan, owner));
         return plan;

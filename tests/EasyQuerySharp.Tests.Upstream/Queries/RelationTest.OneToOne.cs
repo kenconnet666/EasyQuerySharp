@@ -687,7 +687,7 @@ public sealed partial class RelationTest
 
     // 第 16 段（768-841）：平铺学生 id、经主题 JOIN 的星数、老师们带的班级（名字与整个实体）。
     // 偏离：Java 里平铺元素是 SchoolClass 实体时连它的导航一起带出（27 条查询），C# 只带实体本身（6 条）。
-    // 疑似缺口：同一条路径上的多个平铺属性（班级名字、班级实体）Java 合并成一组带出查询，C# 的每个属性各自走一遍；集合路径上的标量 Java 单表不写别名
+    // 同一条路径上的几个平铺属性（班级名字、班级实体）合并成一组带出查询，取实体；集合路径上的标量单表不写别名
     [Fact]
     public Task TestOneToOne_FlatPathsWithTopicJoinAndEntityList() => WithSchoolDataAsync(async listen =>
     {
@@ -721,7 +721,7 @@ public sealed partial class RelationTest
     });
 
     // 第 18 段（923-992）与第 26 段（1265-1334）：平铺学生 id、老师们带的班级的 id 和名字。第 18 段的学生 id 路径在 Java 里是 MappingPath 常量，C# 里同样是 MapPath。
-    // 疑似缺口：同一条路径上的两个平铺属性（班级 id、班级名字）Java 合并成一组带出查询（6 条），C# 的每个属性各自走一遍
+    // 同一条路径上的两个平铺属性（班级 id、班级名字）合并成一组带出查询（6 条），只取这两列
     [Fact]
     public Task TestOneToOne_FlatPathsThroughTeachers() => WithSchoolDataAsync(async listen =>
     {
@@ -734,7 +734,7 @@ public sealed partial class RelationTest
     });
 
     // 第 19 段（993-1021）与第 20 段（1022-1050）：学生上的地址是 JOIN 列、班级名是带出。
-    // 疑似缺口：对一路径放进 List<string> 属性（班级名字），C# 的平铺带出把值转成列表属性的类型
+    // 对一路径放进 List<string> 属性（班级名字）时，列表里只有这一个值
     [Fact]
     public Task TestOneToOne_FlatNavigateJoinInNestedDto() => WithSchoolDataAsync(async listen =>
     {
@@ -757,7 +757,7 @@ public sealed partial class RelationTest
     });
 
     // 第 22 段（1058-1087）：学生上平铺班级名放进列表，Java 断言不报错、有学生的班级里至少一个学生有班级名。
-    // 疑似缺口：对一路径放进 List<string> 属性
+    // 对一路径放进 List<string> 属性
     [Fact]
     public Task TestOneToOne_FlatToOneIntoList() => WithSchoolDataAsync(async _ =>
     {
@@ -794,7 +794,7 @@ public sealed partial class RelationTest
         }
     });
 
-    // 第 25 段（1186-1264）：平铺学生 id、班级 id、班级名字、班级实体。偏离与疑似缺口同第 16 段（Java 27 条，C# 实体只带本身）
+    // 第 25 段（1186-1264）：平铺学生 id、班级 id、班级名字、班级实体。偏离同第 16 段（Java 27 条，C# 实体只带本身）
     [Fact]
     public Task TestOneToOne_FlatPathsWithEntityListAndNames() => WithSchoolDataAsync(async listen =>
     {
@@ -974,8 +974,8 @@ public sealed partial class RelationTest
         Assert.Equal(3, classes.Count);
     });
 
-    // 第 51 段（2317-2334）：Include 学生之后只选班级的 name。疑似缺口：Java 里 Include 仍然带出学生（最后一条是学生的查询），
-    // C# 的 Include 之后手写投影里没写这个导航时，Include 被忽略（只有主查询）
+    // 第 51 段（2317-2334）：Include 学生之后只选班级的 name。投影回同一实体时 Include 照样带出（最后一条是学生的查询），
+    // 带出查询按 loadInclude 的格式，单表不写别名
     [Fact]
     public Task TestOneToOne_IncludeThenSelectName() => WithSchoolDataAsync(async listen =>
     {
@@ -999,7 +999,7 @@ public sealed partial class RelationTest
     });
 
     // 第 54 段（2363-2376）：Include 学生取前两条，每组只带 1 个班级（Java 的第三个参数）。最后一组只有 class3：Java 写成 IN (?) LIMIT 2。
-    // 疑似缺口：C# 的 UNION ALL 取段在只有一个父键时可能写成单个派生表，不是 IN (?) LIMIT 2
+    // UNION ALL 取段只有一个父键时整条查询直接取段
     [Fact]
     public Task TestOneToOne_IncludeLimitWithGroupSizeOne() => WithSchoolDataAsync(async listen =>
     {

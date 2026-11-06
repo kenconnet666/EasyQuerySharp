@@ -15,17 +15,45 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     /// <summary>导航。</summary>
     public NavigationMetadata Navigation { get; } = navigation;
 
-    /// <summary>子对象类型（实体或 DTO）。</summary>
-    public Type ChildType { get; } = childType;
+    /// <summary>子对象类型（实体或 DTO；平铺带出是值数组，取实体的平铺带出是目标实体）。</summary>
+    public Type ChildType => FlatPaths is null ? childType : EntityRows ? Navigation.Target.Type : typeof(object?[]);
 
     /// <summary>子对象投影（参数是目标实体）；为 null 时取整个实体。平铺带出时由各平铺路径拼成 <c>e =&gt; new object?[] { 路径1, 路径2, … }</c>。</summary>
-    public LambdaExpression? ChildSelector => FlatPaths is null ? childSelector : FlatSelector();
+    public LambdaExpression? ChildSelector => FlatPaths is null ? childSelector : EntityRows ? null : FlatSelector();
 
     /// <summary>
-    /// 平铺带出（<c>[MapPath]</c> 的对一路径，Java 的 ）：同一导航上的各个平铺路径（参数是目标实体），共用一条带出查询；不是平铺时为 null。
-    /// 子对象是按路径顺序的值数组，各父属性从里面取自己的那一项。
+    /// 平铺带出（Java 的 @NavigateFlat：<c>[MapPath]</c> 的对一路径，以及经过集合的同一条路径上的几个属性）：同一路径上的各个值（参数是目标实体），
+    /// 共用一组带出查询；不是平铺时为 null。子对象是按路径顺序的值数组，各父属性从里面取自己的那一项（<see cref="FlatItem"/>）。
     /// </summary>
     public List<LambdaExpression>? FlatPaths { get; init; }
+
+    /// <summary>
+    /// 平铺路径只有目标实体本身与它的列（<c>[MapPath("Teachers.Classes")]</c> 与 <c>[MapPath("Teachers.Classes.Name")]</c>）：有一项是整个实体时，
+    /// 子查询取实体，各项在内存里从实体上取（与 Java 一致，只查一遍实体）。
+    /// </summary>
+    public bool AllowEntityRows { get; init; }
+
+    private bool EntityRows => AllowEntityRows && FlatPaths!.Any(p => p.Body == p.Parameters[0]);
+
+    /// <summary>子查询只取平铺的值（不是实体或 DTO）：与 Java 的 @NavigateFlat 一样，单表不写别名。</summary>
+    public bool FlatColumns => FlatPaths is not null && !EntityRows;
+
+    private Func<object?, object?>[]? _itemGetters;
+
+    /// <summary>平铺带出的一行里第 <paramref name="index"/> 项。</summary>
+    public object? FlatItem(object? child, int index)
+    {
+        if (child is object?[] values) return values[index];
+        _itemGetters ??= FlatPaths!.Select(Getter).ToArray();
+        return child is null ? null : _itemGetters[index](child);
+
+        static Func<object?, object?> Getter(LambdaExpression path)
+        {
+            var row = Expression.Parameter(typeof(object), "row");
+            var body = new Translation.ExpressionTranslator.ParameterReplacer(path.Parameters[0], Expression.Convert(row, path.Parameters[0].Type)).Visit(path.Body);
+            return Expression.Lambda<Func<object?, object?>>(Expression.Convert(body, typeof(object)), row).Compile();
+        }
+    }
 
     private LambdaExpression FlatSelector()
     {
@@ -40,7 +68,9 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     /// </summary>
     public IReadOnlyList<NavigationMetadata> Via { get; init; } = [];
 
-    /// <summary>已在内存里的实体上带出（LoadIncludeAsync）：单表的子查询不写别名（与 Java 的 loadInclude 一致）。</summary>
+    /// <summary>
+    /// 已在内存里的实体上带出（LoadIncludeAsync），或 Include 之后投影回同一实体时补上的带出：单表的子查询不写别名（与 Java 的 loadInclude 一致）。
+    /// </summary>
     public bool Unaliased { get; init; }
 
     /// <summary>经过的导航来自直达导航（<see cref="NavigationMetadata.DirectPath"/>）：中间表按 Java 直达导航的格式查（见 IncludeRunner）。</summary>
@@ -120,7 +150,8 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
         if (ConditionOrdinal is { } ordinal && !Applies(reader.IsDBNull(ordinal) ? null : reader.GetValue(ordinal))) return null;
         var key = CompositeKey.Read(reader, ParentKeyOrdinals);
         if (owner is not null && key is not null) AddOwner(key.Value, owner);
-        if (IsCollection)
+        // 集合没给写回函数时是子对象本身的列表；给了时（平铺的列表）由写回函数逐个收下
+        if (IsCollection && assign is null)
         {
             var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(ChildType))!;
             if (key is not null) Add(key.Value, child => list.Add(child));

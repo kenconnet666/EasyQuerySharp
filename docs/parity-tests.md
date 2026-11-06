@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1859、偏离 142、不适用 136、骨架 2、待做 265。
+合计：已移植 1859、偏离 143、不适用 136、骨架 2、待做 264。
 
 ## 按能力
 
@@ -45,7 +45,7 @@
 | 拦截器 | `interceptor` | M5 | 3 | 3 | 0 | 0 | 0 | 0 |
 | 逻辑删除 | `logicDelete` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
 | 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 30 | 9 | 0 | 0 | 0 |
-| 追踪与差异更新 | `tracking` | M5 | 62 | 58 | 3 | 0 | 0 | 1 |
+| 追踪与差异更新 | `tracking` | M5 | 62 | 58 | 4 | 0 | 0 | 0 |
 | 乐观锁版本 | `version` | M5 | 13 | 13 | 0 | 0 | 0 | 0 |
 | UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
 | 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 25 | 1 | 0 | 0 | 0 |
@@ -2015,7 +2015,7 @@
 | QueryTest7.java#joinTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:55 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
 | QueryTest7.java#joinTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:66 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
 | QueryTest7.java#joinTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:77 | `SELECT t.'id',COUNT(t.'id') AS 'stars' FROM 't_topic' t INNER JOIN 't_topic' t1 ON t.'id' = t1.'id' …` |
-| RelationTest.java#testOneToOne | 待做 |  | `SELECT 'id','name' FROM 'school_class'` |
+| RelationTest.java#testOneToOne | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/RelationTest.OneToOne.cs:531：约 80 段拆成本文件的多个测试，Upstream 只标在这里。写法不同：include2 写成嵌套的 Include；flatElement 链的 toList 写成 SelectMany（INNER JOIN、保留重复，不比较 SQL，加 Distinct 与 Java 的去重对齐）。 | `SELECT 'id','name' FROM 'school_class'` |
 | TrackTest.java#track1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/TrackTest.cs:21 |  |
 | TrackTest.java#track2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/TrackTest.cs:36 |  |
 | TrackTest.java#track3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/TrackTest.cs:51 |  |

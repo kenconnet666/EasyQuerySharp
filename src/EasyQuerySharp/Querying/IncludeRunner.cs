@@ -40,7 +40,7 @@ internal static partial class IncludeRunner
                 Wheres = [.. plan.ChildFilters], Interceptors = context.Interceptors, ConfigureArgument = context.ConfigureArgument,
             };
             // 平铺带出（Java 的 @NavigateFlat）单表不写别名；其余带出的子查询在 Java 里总带别名 t
-            var flat = plan.FlatPaths is not null;
+            var flat = plan.FlatColumns;
             var configured = plan.Configure?.Invoke(baseState) ?? baseState;
             // LoadIncludeAsync 的单表子查询不写别名（Java 的 loadInclude）；按父对象取段时包成派生表，照常写
             var state = configured with { ForceAlias = !flat && !(plan.Unaliased && configured.Limit is null && configured.Offset is null) };
@@ -119,21 +119,23 @@ internal static partial class IncludeRunner
             return (outer, outer.Sql);
         }
 
-        if (state.Limit is null && state.Offset is null)
+        // UNION ALL 模式下只有一个父键时整条查询直接取段：WHERE 键 IN (?) LIMIT n（与 Java 一致）
+        var unionAll = db.Options.IncludeLimitMode == IncludeLimitMode.UnionAll;
+        if (state.Limit is null && state.Offset is null || unionAll && targets.Length == 1)
         {
             var compiled = CompileFor(state, targets);
             return (compiled, compiled.Sql);
         }
         // 取段要按父对象分区，逗号列表的键里一行子数据属于多个父对象
         if (nav.KeyMatch != KeyMatch.Equal) throw new NotSupportedException($"{nav} 的键是逗号列表，带出时不能按父对象取一段（Take / Skip / Limit）");
-        if (db.Options.IncludeLimitMode == IncludeLimitMode.UnionAll)
+        if (unionAll)
         {
             // 每个父对象一段：取整个实体、按这个父对象的键过滤（单列写 =）、排序、取段，投影写在外层，外层不写 AS（与 Java 一致）
             var parts = targets.Select(t => QueryCompiler.Compile<object?>(state with
             {
                 Selector = null, Wheres = state.Wheres.Add(WithExtraFilter(KeyFilter(nav, [t], single: true), nav.ExtraFilter)),
             }).Sql).ToList();
-            return Outer(parts.Count == 1 ? new DerivedTableSource(parts[0]) : new UnionTableSource(parts, all: true) { IndependentAliases = true }, aliased: false);
+            return Outer(new UnionTableSource(parts, all: true) { IndependentAliases = true }, aliased: false);
         }
         // 内层取整个实体按父对象编号、取段，子对象的投影写在最外层（与 Java 一致）；外层从匿名的派生表取列，Java 都写 AS，平铺带出不写
         var whole = CompileFor(state with { Limit = null, Offset = null, Selector = null }, targets);

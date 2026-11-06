@@ -169,10 +169,12 @@ internal static class AutoProjection
                 // 逐段查中间表，带出最后一个导航的目标（实体、嵌套 DTO 或那个标量），结果拉平成一个列表
                 if (NavigationChain(registry, nav.Target, segments[(i + 1)..], out var scalar) is [_, ..] chain)
                     return ThroughValue(registry, Expression.Property(current, member), chain, scalar, property, visiting);
+                // 元素上取值：不经过别的导航的路径（Through 的 path 为空）
                 var element = Expression.Parameter(nav.Target.Type, "e");
                 var selector = Expression.Lambda(PathValue(registry, nav.Target, element, property, rest, join: true, visiting), element);
-                return Expression.Call(typeof(AutoIncludeMarkers).GetMethod(nameof(AutoIncludeMarkers.Many))!.MakeGenericMethod(nav.Target.Type, selector.ReturnType),
-                    Expression.Property(current, member), Expression.Constant(null, typeof(Func<QueryState, QueryState>)), Expression.Constant(selector, typeof(LambdaExpression)));
+                return Expression.Call(typeof(AutoIncludeMarkers).GetMethod(nameof(AutoIncludeMarkers.Through))!.MakeGenericMethod(member.PropertyType, property.PropertyType),
+                    Expression.Property(current, member), Expression.Constant(Array.Empty<string>()), Expression.Constant(null, typeof(Func<QueryState, QueryState>)),
+                    Expression.Constant(selector, typeof(LambdaExpression)));
             }
             // 对一导航之后全是导航（如 Direct2.Direct3）：同样逐段查中间表，带出最后一个导航的目标
             if (nav is { IsCollection: false } && !join && NavigationChain(registry, nav.Target, segments[(i + 1)..], out var toOneScalar) is [_, ..] toOneChain && toOneScalar is null)
@@ -183,7 +185,12 @@ internal static class AutoProjection
                 var target = Expression.Parameter(nav.Target.Type, "e");
                 var rest = segments.Length == i + 1 ? (Expression)target : PathValue(registry, nav.Target, target, property, string.Join('.', segments.Skip(i + 1)), join: true, visiting);
                 var flat = Expression.Lambda(rest, target);
-                return Expression.Call(typeof(AutoIncludeMarkers).GetMethod(nameof(AutoIncludeMarkers.Flat))!.MakeGenericMethod(nav.Target.Type, flat.ReturnType),
+                // 列表属性（Java 对一路径上的 @NavigateFlat List）：值放进只有一项的列表，由 FlatValue 包装
+                var valueType = !ScalarTypes.IsScalar(property.PropertyType) && MetadataRegistry.ElementType(property.PropertyType) is var item && item != property.PropertyType
+                                && item.IsAssignableFrom(flat.ReturnType)
+                    ? property.PropertyType
+                    : flat.ReturnType;
+                return Expression.Call(typeof(AutoIncludeMarkers).GetMethod(nameof(AutoIncludeMarkers.Flat))!.MakeGenericMethod(nav.Target.Type, valueType),
                     Expression.Property(current, member), Expression.Constant(flat, typeof(LambdaExpression)));
             }
             current = Expression.Property(current, member);
@@ -267,5 +274,9 @@ internal static class AutoIncludeMarkers
     /// 逐段查中间表换键；经过集合时是列表。<paramref name="selector"/> 的参数是最后一个导航的目标实体，为 null 时取整个实体。
     /// </summary>
     public static TValue Through<TNavigation, TValue>(TNavigation navigation, string[] path, Func<QueryState, QueryState>? configure, LambdaExpression? selector) =>
+        throw new InvalidOperationException("只能出现在查询的投影里");
+
+    /// <summary>Include 之后投影回同一实体时补上的导航（<paramref name="navigation"/> 是根实体的导航）：带出查询的单表不写别名（Java 此时按 loadInclude 的格式）。</summary>
+    public static TNavigation Loaded<TNavigation>(TNavigation navigation) =>
         throw new InvalidOperationException("只能出现在查询的投影里");
 }

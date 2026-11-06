@@ -222,6 +222,20 @@ internal static class QueryCompiler
         return (frame.Query, projection);
     }
 
+    // Include 之后投影回同一实体（Java 的 include 再 select(s -> s.FETCHER.name())）：投影里没写的带出导航照样带出，带出查询按 loadInclude 的格式
+    private static LambdaExpression WithIncludedNavigations(LambdaExpression selector, IReadOnlyList<IncludeSpec> includes)
+    {
+        if (includes.Count == 0 || selector.Body is not MemberInitExpression init || selector.Parameters is not [var root, ..] || init.Type != root.Type) return selector;
+        var bound = init.Bindings.Select(b => b.Member.Name).ToHashSet(StringComparer.Ordinal);
+        List<MemberBinding> added = [.. includes.Where(i => !bound.Contains(i.Member)).Select(i =>
+        {
+            var property = root.Type.GetProperty(i.Member)!;
+            return Expression.Bind(property, Expression.Call(typeof(AutoIncludeMarkers).GetMethod(nameof(AutoIncludeMarkers.Loaded))!.MakeGenericMethod(property.PropertyType),
+                Expression.Property(root, property)));
+        })];
+        return added.Count == 0 ? selector : Expression.Lambda(init.Update(init.NewExpression, [.. init.Bindings, .. added]), selector.Parameters);
+    }
+
     private static (QueryFrame Frame, ProjectionCompiler Projection) Project(
         QueryState state, IReadOnlyDictionary<ParameterExpression, SourceBinding>? outer = null, IReadOnlyList<ColumnMetadata>? relationKeys = null,
         TranslationContext? outerContext = null)
@@ -231,7 +245,7 @@ internal static class QueryCompiler
         var projection = new ProjectionCompiler(frame.Translator, state.Db.Options.NameConversion, alwaysAlias: state.GroupKey is not null || state.SmartPredicate, neverAlias: state.ImplicitSelector, aliasScalar: state.AliasScalar, uniqueNames: state.UniqueColumnNames);
         LambdaExpression selector;
         // 可复用投影（Project、[Projection] 方法）先内联成普通的投影表达式
-        if (state.Selector is not null) selector = ProjectionInliner.Expand(state.Selector);
+        if (state.Selector is not null) selector = WithIncludedNavigations(ProjectionInliner.Expand(state.Selector), state.Includes);
         else
         {
             var root = Expression.Parameter(state.ElementType, "root");

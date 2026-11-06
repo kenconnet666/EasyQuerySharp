@@ -32,13 +32,16 @@ public static class LocalEnvironment
         return result;
     }
 
-    // 从测试程序所在目录逐级向上找，测试在 bin/ 下运行
+    // 从测试程序所在目录逐级向上找，测试在 bin/ 下运行。到仓库根（有 .git 的目录）为止：
+    // 嵌在主仓库里的 git 工作树（.claude/worktrees/…）不会用到主仓库的库，免得两边的夹具同时删建同一个库
     private static string? FindDbEnv()
     {
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
         {
             var candidate = Path.Combine(dir.FullName, ".local", "db.env");
             if (File.Exists(candidate)) return candidate;
+            var git = Path.Combine(dir.FullName, ".git");
+            if (Directory.Exists(git) || File.Exists(git)) break;
         }
         return null;
     }

@@ -15,8 +15,8 @@
 
 ## 现状（2026-11-06）
 
-- 对标：已移植 1859、偏离 142、不适用 136、骨架 2、待做 265。
-- 待做的分布：方言 168，平台能力 82（分库分表 48、code-first 14、表名 / schema / link 14、按对象筛选 6），其余零散 15。
+- 对标：已移植 1859、偏离 143、不适用 136、骨架 2、待做 264。
+- 待做的分布：方言 168，平台能力 82（分库分表 48、code-first 14、表名 / schema / link 14、按对象筛选 6），其余零散 14。
 - 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
 
 ## 已定的取舍
@@ -82,13 +82,13 @@ R → 1 → 2 → 3 → 4 → 5。
 - [x] 1.6 `Returning()`：按条件的更新 / 删除加 `.Returning()`（整行，`RETURNING *`）或 `.Returning(选择器)`（只取选择器用到的列，读回后在内存里投影），得到 `ReturningCommand`（`ToSql` / `ExecuteAsync`）；逻辑删除返回被标记的行。PostgreSQL、SQLite 支持，其余方言、走导航连接、按实体写入都拒绝。fork ReturningSqlTest ×2、ReturningLiveTest 移植。
 - [x] 1.7 窗口取值函数（Lag / Lead / FirstValue / LastValue / NthValue）不带窗口或窗口没写排序时，沿用所在查询的 ORDER BY（翻译时的快照，与 Java 的 `offset()` 一致），查询没有排序时报错；这类查询深分页时不反转排序。nextTest3 改回已移植，nextTest2 由不适用改为偏离（只差异常文本）。
 - [x] 1.8 零散用例：fork ProxySmokeTest（补 ForkCompany 与 ForkUser.Company）；whereSubQuery3、pgsql tree7_2 原本记的"功能缺口"复核后与 Java 一致，改回已移植；骨架 MySQLInsertIgnore2UpdateKey / 2（`new MySqlDialect { IgnoreConflictAsKeyUpdate = true }`，对应 Java 的 mysqlInsertIgnoreToUpdateKey）、NumberFunctionsTest subQueryMySQL；testDoubleConcat 用的是 Kingbase 方言，挪到 3.4。顺手修了 `Select<TDto>()` 遇到直达导航时拿本表键查目标表的错误（静默取错数据）。testOneToOne、testRelation 篇幅远超预计，拆到 1.9。
-- [~] 1.9 带出与 DTO 自动带出补齐（RelationTest testOneToOne：一个方法约 80 段；QueryTestRelationTest testRelation：24 段）。按段移植（`QueryTestRelationTest.Relation.cs`），全部段移植后再标 Upstream；不能逐字对齐的段写偏离。
+- [x] 1.9 带出与 DTO 自动带出补齐（RelationTest testOneToOne：一个方法约 80 段；QueryTestRelationTest testRelation：24 段）。按段移植（`QueryTestRelationTest.Relation.cs`），全部段移植后再标 Upstream；不能逐字对齐的段写偏离。
   - [x] G1 `Include(导航, 配置)` 之后再投影（`Select<TDto>()` 或手写投影）：配置并入投影里根实体同名导航的带出；
   - [x] G2 先分页再投影 `ToPageAsync(page, size, q => q.Select<TDto>())`（Java 的 `toPageSelectResult`）：这一页包成派生表，Include 留在外层；
   - [x] G4 DTO 属性上的 `[Navigate(OrderBy / Limit / Offset)]` 覆盖实体导航的排序与条数，`NavigateAttribute` 补 `Offset`（实体导航上同样生效）；
   - [x] G5 `IncludeLimitMode.UnionAll` 与 Java 逐字一致（每段取整个实体、单键写 `= ?`、投影写在外层不写 AS），根夹具按 Java 的 BaseTest 改用 UnionAll；
   - [x] QueryTestRelationTest testRelation：24 段全部移植（`QueryTestRelationTest.Relation.cs`），记为偏离（第 9 段 Java 多写 AS 与重复列；第 18、19 段在 MySQL 8.4 严格模式下只核对 SQL）。Java 的 `selectAutoInclude(DTO, extra)` 用 DTO 上的 `[MapExpression]` 表达；`ignoreNavigateConfigure` 对应新增的 `Query.IgnoreNavigationDefaults()`，DTO 上 `[Navigate]` 的排序与条数是默认值，带出配置自己写了就以配置为准；
-  - [ ] RelationTest testOneToOne（约 80 段）。
+  - [x] RelationTest testOneToOne：约 75 段写成 56 个测试（`RelationTest.OneToOne.cs`），记为偏离（include2 写成嵌套 Include、flatElement 链写成 SelectMany、平铺元素是实体时 Java 连它的导航一起带出）。补齐：同一条集合路径上的几个 `[MapPath]` 合并成一组带出查询（只取标量时只查这些列、单表不写别名，有实体时取实体）；对一路径放进列表属性；`Include` 之后投影回同一实体时照样带出（loadInclude 格式）；UnionAll 模式只有一个父键时直接 `IN (?) LIMIT n`。4 段 Skip（Java 的三项结构校验、联表后 `Select<TDto>()`）记进 BACKLOG。
 ## 阶段 2 第一档方言
 
 - [x] 2.1 SQL Server：Upstream 加 Mssql 夹具（库 `mssql_eq`，UpperCamelCase 命名，银行种子抽成 `BankSeed` 与 Mysql8 夹具共用），MsSQLQueryTest、MsSQLUpdateJoinTest、MSSQLTest1、MSSQLMathQueryTest 共 38 个用例全部在实库上跑通（37 个已移植；testPropertyMath 记偏离：参数是 Double、Java 把 floor 写成截断用的 CASE）。补齐的功能：
