@@ -102,7 +102,11 @@ public sealed class SqlRenderer
             RejectJoinedReturning(update.Returning);
             dialect.WriteJoinedUpdate(r, update);
         }
-        else r.Append("UPDATE ").WriteWriteTarget(update.Table).Append(" SET ").WriteSets(update.Sets).WriteWhere(update.Where).WriteReturning(update.Returning);
+        else
+        {
+            dialect.WriteUpdate(r, update);
+            r.WriteReturning(update.Returning);
+        }
         return r.Build();
     }
 
@@ -116,7 +120,11 @@ public sealed class SqlRenderer
             RejectJoinedReturning(delete.Returning);
             dialect.WriteJoinedDelete(r, delete);
         }
-        else r.Append("DELETE FROM ").WriteWriteTarget(delete.Table).WriteWhere(delete.Where).WriteReturning(delete.Returning);
+        else
+        {
+            dialect.WriteDelete(r, delete);
+            r.WriteReturning(delete.Returning);
+        }
         return r.Build();
     }
 

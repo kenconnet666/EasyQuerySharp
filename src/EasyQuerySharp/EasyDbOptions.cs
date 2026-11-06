@@ -161,6 +161,15 @@ public sealed class EasyDbOptions
     /// <summary>使用华为 GaussDB / openGauss 方言。</summary>
     public EasyDbOptions UseGaussDb(DbDataSource? dataSource = null) => Use(GaussDbDialect.Instance, dataSource);
 
+    /// <summary>使用 ClickHouse 方言（更新、删除写成 ALTER TABLE 的 mutation；没有自增列、upsert、行锁）。</summary>
+    public EasyDbOptions UseClickHouse(DbDataSource? dataSource = null) => Use(ClickHouseDialect.Instance, dataSource);
+
+    /// <summary>使用 IBM Db2 LUW 方言（驱动如 Net.IBM.Data.Db2）。</summary>
+    public EasyDbOptions UseDb2(DbDataSource? dataSource = null) => Use(Db2Dialect.Instance, dataSource);
+
+    /// <summary>使用 TDengine 方言（时序库：时间戳主键，没有 UPDATE、upsert、行锁）。</summary>
+    public EasyDbOptions UseTDengine(DbDataSource? dataSource = null) => Use(TDengineDialect.Instance, dataSource);
+
     /// <summary>使用任意方言。</summary>
     public EasyDbOptions Use(SqlDialect dialect, DbDataSource? dataSource = null)
     {

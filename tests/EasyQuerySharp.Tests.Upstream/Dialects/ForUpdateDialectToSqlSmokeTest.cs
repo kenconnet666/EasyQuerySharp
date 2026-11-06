@@ -3,7 +3,7 @@ namespace EasyQuerySharp.Tests.Upstream.Dialects;
 /// <summary>
 /// 对应 Java：ForUpdateDialectToSQLSmokeTest.java。同一条分页查询加 FOR UPDATE 在各方言下只渲染、不连库：
 /// 锁子句写在整条语句（含 Oracle 的 ROWNUM 外层）的末尾；不支持行锁的方言抛出 <see cref="NotSupportedException"/>。
-/// 还没有对应方言的用例（DB2、ClickHouse）随方言一起移植；DuckDB 的在 DuckDb/DuckDbDialectTest。
+/// DuckDB 的用例在 DuckDb/DuckDbDialectTest。
 /// </summary>
 public sealed class ForUpdateDialectToSqlSmokeTest
 {
@@ -37,6 +37,22 @@ public sealed class ForUpdateDialectToSqlSmokeTest
     {
         var ex = Assert.Throws<NotSupportedException>(() => LockedPageSql("mssql"));
         Assert.Contains("SQL Server 不支持 FOR UPDATE", ex.Message);
+    }
+
+    [Fact, Upstream("ForUpdateDialectToSQLSmokeTest.java#clickHouseForUpdateThrowsUnsupported")]
+    public void ClickHouseForUpdateThrowsUnsupported()
+    {
+        var ex = Assert.Throws<NotSupportedException>(() => LockedPageSql("clickhouse"));
+        Assert.Contains("ClickHouse 不支持 FOR UPDATE", ex.Message);
+    }
+
+    // Db2 写 FOR UPDATE WITH RS（锁到事务结束），Java 的断言只检查到 FOR UPDATE 为止
+    [Fact, Upstream("ForUpdateDialectToSQLSmokeTest.java#db2ForUpdateToSQLSmoke")]
+    public void Db2ForUpdateToSqlSmoke()
+    {
+        var sql = LockedPageSql("db2");
+        Assert.Contains("OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY FOR UPDATE", sql.ToUpperInvariant());
+        Assert.Equal(1, sql.Split("FOR UPDATE").Length - 1);
     }
 
     [Fact, Upstream("ForUpdateDialectToSQLSmokeTest.java#sqliteForUpdateToSQLSmoke",

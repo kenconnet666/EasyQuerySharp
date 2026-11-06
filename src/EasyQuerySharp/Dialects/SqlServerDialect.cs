@@ -132,19 +132,8 @@ public class SqlServerDialect : SqlDialect
             renderer.Append(")");
             return;
         }
-        if (!predicate.HasWildcardValue || predicate.Value is not ParameterExpr { Value: string text })
-        {
-            base.WriteLike(renderer, predicate);
-            return;
-        }
-        var escaped = EscapeLike(text).Replace("[", "\\[");
-        var pattern = predicate.Mode switch
-        {
-            LikeMode.StartsWith => escaped + "%",
-            LikeMode.EndsWith => "%" + escaped,
-            _ => "%" + escaped + "%",
-        };
-        renderer.Write(predicate.Operand).Append(predicate.Negated ? " NOT LIKE " : " LIKE ").Write(new ParameterExpr(pattern, typeof(string))).Append(" ESCAPE '\\'");
+        if (predicate.HasWildcardValue) WriteEscapedLike(renderer, predicate, " ESCAPE '\\'", text => EscapeLike(text).Replace("[", "\\["));
+        else base.WriteLike(renderer, predicate);
     }
 
     /// <summary>DateTime 参数按 datetime2 传（驱动默认按 datetime，只精确到约 3 毫秒）。</summary>

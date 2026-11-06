@@ -89,6 +89,17 @@ public abstract partial class SqlDialect
     public virtual string WriteTargetAliasSeparator => " ";
 
     /// <summary>
+    /// 写不走连接的 UPDATE（RETURNING 之前的部分）。默认 <c>UPDATE 表 [别名] SET … WHERE …</c>；
+    /// ClickHouse 写成 <c>ALTER TABLE 表 UPDATE … WHERE …</c>，没有 UPDATE 的库（TDengine）覆盖成抛出 <see cref="NotSupportedException"/>。
+    /// </summary>
+    public virtual void WriteUpdate(SqlRenderer renderer, UpdateStatement update) =>
+        renderer.Append("UPDATE ").WriteWriteTarget(update.Table).Append(" SET ").WriteSets(update.Sets).WriteWhere(update.Where);
+
+    /// <summary>写不走连接的 DELETE（RETURNING 之前的部分）。默认 <c>DELETE FROM 表 [别名] WHERE …</c>；ClickHouse 写成 <c>ALTER TABLE 表 DELETE WHERE …</c>。</summary>
+    public virtual void WriteDelete(SqlRenderer renderer, DeleteStatement statement) =>
+        renderer.Append("DELETE FROM ").WriteWriteTarget(statement.Table).WriteWhere(statement.Where);
+
+    /// <summary>
     /// 写带连接的 UPDATE（SET 或条件里用到对一导航）。标准 SQL 没有统一写法，默认不支持；
     /// MySQL 写成 <c>UPDATE t INNER JOIN … SET …</c>，PostgreSQL 写成 <c>UPDATE t SET … FROM … WHERE</c>。
     /// </summary>
@@ -160,6 +171,22 @@ public abstract partial class SqlDialect
 
     /// <summary>LIKE 值里的转义：反斜杠、%、_ 前加反斜杠（与 Java 各方言的 LikeFunctionTemplateGenerator 一致）。</summary>
     protected static string EscapeLike(string value) => value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
+
+    /// <summary>
+    /// 值里含 % 或 _ 时按字面匹配：值转义后拼好 % 作为参数，写 <c>x LIKE ?</c> 再接 <paramref name="escapeClause"/>
+    /// （<c> ESCAPE '\'</c>；反斜杠本来就是转义符的库传空串）。<paramref name="escape"/> 默认是 <see cref="EscapeLike"/>，还有别的通配符的库（SQL Server 的 <c>[</c>）自己传。
+    /// </summary>
+    protected static void WriteEscapedLike(SqlRenderer renderer, LikeExpr predicate, string escapeClause, Func<string, string>? escape = null)
+    {
+        var escaped = (escape ?? EscapeLike)((string)((ParameterExpr)predicate.Value!).Value!);
+        var pattern = predicate.Mode switch
+        {
+            LikeMode.StartsWith => escaped + "%",
+            LikeMode.EndsWith => "%" + escaped,
+            _ => "%" + escaped + "%",
+        };
+        renderer.Write(predicate.Operand).Append(predicate.Negated ? " NOT LIKE " : " LIKE ").Write(new ParameterExpr(pattern, typeof(string))).Append(escapeClause);
+    }
 
     /// <summary>
     /// 指定了 NULL 位置时是否写原生的 <c>NULLS FIRST / LAST</c>（Java 的 OracleOrderByNullsModeSQLFunction）；
