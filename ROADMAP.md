@@ -15,7 +15,7 @@
 
 ## 现状（2026-11-06）
 
-- 对标：已移植 1821、偏离 139、不适用 136、骨架 3、待做 305。
+- 对标：已移植 1822、偏离 139、不适用 136、骨架 2、待做 305。
 - 待做的分布：方言 206，平台能力 82（分库分表 48、code-first 14、表名 / schema / link 14、按对象筛选 6），其余零散 17。
 - 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
 
@@ -94,7 +94,7 @@ R → 1 → 2 → 3 → 4 → 5。
   - Upstream 夹具改用 UpperCamelCase 命名；
   - 移植 MsSQLQueryTest、MsSQLUpdateJoinTest、MSSQLTest1、MSSQLMathQueryTest 共 38 个用例；
   - CI 的 mssql 任务加跑 Upstream 的 Mssql 命名空间。
-- [ ] 2.2 Oracle：实库验证；NumberFunctionsTest subQueryORACLE（用例已写好，缺条件作为值投影时的 `CASE WHEN … THEN ? ELSE ? END`）。
+- [ ] 2.2 Oracle：实库验证。已做：条件当值用（投影、比较的一侧、分组合并的 any / none 列）在 SQL Server、Oracle 上写成 `(CASE WHEN 条件 THEN ? ELSE ? END)`（Java 的 booleanSQLFunction），NumberFunctionsTest subQueryORACLE 移植。
 - [ ] 2.3 UPDATE / DELETE 里用对一导航（`write.join`），在 SQL Server、Oracle、SQLite 上补齐（现在抛 NotSupportedException）；`DateTrunc` 也在这三个方言上补齐。
 - [ ] 2.4 L3 `LiveSuite` 从现在的 4 组扩到 TS 的 23 组，`LiveSuiteOptions` 按方言裁剪能力；在第一档的每个库上全部通过（MySQL 8.0.18、MariaDB 各算一个库）。
 

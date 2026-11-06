@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1821、偏离 139、不适用 136、骨架 3、待做 305。
+合计：已移植 1822、偏离 139、不适用 136、骨架 2、待做 305。
 
 ## 按能力
 
@@ -36,7 +36,7 @@
 | 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 33 | 1 | 0 | 1 | 1 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 51 | 1 | 3 | 0 | 1 |
-| 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 63 | 1 | 2 | 1 | 0 |
+| 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 64 | 1 | 2 | 0 | 0 |
 | include 带出导航 | `nav.include` | M4 | 37 | 36 | 1 | 0 | 0 | 0 |
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 138 | 3 | 1 | 0 | 0 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 24 | 1 | 0 | 0 | 0 |
@@ -1600,7 +1600,7 @@
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
 | NumberFunctionsTest.java#subQueryMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:76 | `SELECT IFNULL(t2.'__any7__',?) AS 'value1' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__grou…` |
-| NumberFunctionsTest.java#subQueryORACLE | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:93 | `SELECT NVL(t2."__any7__",?) AS "value1" FROM "t_sys_user" t LEFT JOIN (SELECT t1."uid" AS "__group_k…` |
+| NumberFunctionsTest.java#subQueryORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/NumberFunctionsTest.cs:92 | `SELECT NVL(t2."__any7__",?) AS "value1" FROM "t_sys_user" t LEFT JOIN (SELECT t1."uid" AS "__group_k…` |
 | QueryTest19.java#test1_3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:123 | `SELECT t.'id',t.'company_id',t.'name',t.'age',t.'create_time' FROM 't_user' t LEFT JOIN (SELECT t2.'…` |
 | QueryTest22.java#testDoubleField | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest22.Part2.cs:182 | `SELECT IFNULL(t2.'__count3__',0) AS 'value1',IFNULL(t2.'__count4__',0) AS 'value2' FROM 'my_com_user…` |
 | QueryTest22.java#testManyGroup | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest22.cs:19 | `SELECT t.'id',t.'name',t.'phone',t.'age' FROM 'doc_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_ke…` |

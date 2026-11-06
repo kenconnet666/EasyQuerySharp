@@ -1650,6 +1650,7 @@ abstract EasyQuerySharp.Metadata.ValueConverter<TModel, TProvider>.ToProvider(TM
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Abs = "ABS" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Avg = "AVG" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.AvgDistinct = "AvgDistinct" -> string!
+const EasyQuerySharp.SqlAst.SqlFunctionNames.BooleanValue = "BooleanValue" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Ceiling = "Ceiling" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.CompareTo = "CompareTo" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Concat = "Concat" -> string!
@@ -1851,6 +1852,7 @@ static EasyQuerySharp.Dialects.MySqlDialect.Instance.get -> EasyQuerySharp.Diale
 static EasyQuerySharp.Dialects.OracleDialect.Instance.get -> EasyQuerySharp.Dialects.OracleDialect!
 static EasyQuerySharp.Dialects.PostgreSqlDialect.Instance.get -> EasyQuerySharp.Dialects.PostgreSqlDialect!
 static EasyQuerySharp.Dialects.SqlDialect.Call(string! name) -> EasyQuerySharp.Dialects.FunctionWriter!
+static EasyQuerySharp.Dialects.SqlDialect.CaseBoolean.get -> EasyQuerySharp.Dialects.FunctionWriter!
 static EasyQuerySharp.Dialects.SqlDialect.DateFormat(string! pattern, params (string! CSharp, string! Sql)[]! tokens) -> EasyQuerySharp.Dialects.FunctionWriter!
 static EasyQuerySharp.Dialects.SqlDialect.DateFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f, System.Func<EasyQuerySharp.SqlAst.DateUnit, string!>! add, System.Func<EasyQuerySharp.SqlAst.DatePart, string!>! part, System.Func<EasyQuerySharp.SqlAst.DateUnit, string!>! diff) -> void
 static EasyQuerySharp.Dialects.SqlDialect.Distinct(string! name) -> EasyQuerySharp.Dialects.FunctionWriter!

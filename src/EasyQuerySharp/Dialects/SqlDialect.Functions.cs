@@ -48,6 +48,7 @@ public abstract partial class SqlDialect
         f[SqlFunctionNames.EqualsWith] = (r, a) => r.Append("(CASE ").Write(a[0]).Append(" WHEN ").Write(a[1]).Append(" THEN 1 ELSE 0 END)");
         f[SqlFunctionNames.NullIf] = Template("NULLIF({0}, {1})");
         f[SqlFunctionNames.NullSafeEquals] = Template("(({0} = {1}) OR ({0} IS NULL AND {1} IS NULL))");
+        f[SqlFunctionNames.BooleanValue] = (r, a) => r.Write(a[0]);
         f[SqlFunctionNames.InCsv] = Template("(({0})::text = ANY(string_to_array({1},',')))");
         foreach (var unit in Enum.GetValues<DateTruncUnit>())
             f[SqlFunctionNames.DateTrunc(unit)] = (_, _) => throw new NotSupportedException($"{Name} 方言不支持 DateTrunc({unit})");
@@ -153,6 +154,10 @@ public abstract partial class SqlDialect
         }
         r.Append(template[start..]);
     };
+
+    /// <summary>没有布尔类型的库（SQL Server、Oracle）把条件当值时写成 <c>(CASE WHEN 条件 THEN ? ELSE ? END)</c>（与 Java 的 MsSQLBooleanSQLFunction 一致）。</summary>
+    protected static FunctionWriter CaseBoolean { get; } = (r, a) => r.Append("(CASE WHEN ").Write(a[0])
+        .Append(" THEN ").Write(new ParameterExpr(true, typeof(bool))).Append(" ELSE ").Write(new ParameterExpr(false, typeof(bool))).Append(" END)");
 
     /// <summary><c>NAME(a,b)</c>。</summary>
     protected static FunctionWriter Call(string name) => (r, a) => r.Append(name).Append("(").WriteList(a, ",").Append(")");

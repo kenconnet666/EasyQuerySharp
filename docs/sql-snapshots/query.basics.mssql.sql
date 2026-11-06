@@ -23,8 +23,8 @@ SELECT TOP 1  1  FROM [t_post] WHERE [status] = ?;
 -- params: ['draft']
 
 -- SelectExpressions：选表达式
-SELECT TOP 3 UPPER(t.[title]) AS [title],(t.[views] + ?) AS [next_views],(t.[views] >= ?) AS [is_hot] FROM [t_post] t WHERE t.[status] = ?;
--- params: [1, 2000, 'published']
+SELECT TOP 3 UPPER(t.[title]) AS [title],(t.[views] + ?) AS [next_views],(CASE WHEN (t.[views] >= ?) THEN ? ELSE ? END) AS [is_hot] FROM [t_post] t WHERE t.[status] = ?;
+-- params: [1, 2000, true, false, 'published']
 
 -- SelectNavigation：经导航取关联表的列
 SELECT TOP 2 t.[title],t.[views],t1.[name] AS [author],t2.[name] AS [company] FROM [t_post] t LEFT JOIN [t_user] t1 ON t1.[id] = t.[author_id] LEFT JOIN [t_company] t2 ON t2.[id] = t1.[company_id] ORDER BY t.[id] ASC;

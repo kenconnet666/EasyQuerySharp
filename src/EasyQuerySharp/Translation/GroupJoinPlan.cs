@@ -165,8 +165,8 @@ internal sealed class GroupJoinPlan
             GroupAggregate.Max => new FunctionExpr(SqlFunctionNames.Max, [argument]),
             GroupAggregate.Min => new FunctionExpr(SqlFunctionNames.Min, [argument]),
             GroupAggregate.Avg => new FunctionExpr(e.Request.Distinct ? SqlFunctionNames.AvgDistinct : SqlFunctionNames.Avg, [argument]),
-            GroupAggregate.Any => new FragmentExpr("(COUNT({0}) > 0)", [argument]),
-            GroupAggregate.None => new FragmentExpr("(COUNT({0}) <= 0)", [argument]),
+            GroupAggregate.Any => ExpressionTranslator.BooleanValue(new FragmentExpr("(COUNT({0}) > 0)", [argument], isPredicate: true)),
+            GroupAggregate.None => ExpressionTranslator.BooleanValue(new FragmentExpr("(COUNT({0}) <= 0)", [argument], isPredicate: true)),
             GroupAggregate.Joining when e.Request.Orders.Count > 0 => new OrderedStringJoinExpr(argument, e.Request.Separator!, e.Request.Distinct, e.Request.Orders),
             _ => new FunctionExpr(e.Request.Distinct ? SqlFunctionNames.StringJoinDistinct : SqlFunctionNames.StringJoin, [argument, e.Request.Separator!]),
         };

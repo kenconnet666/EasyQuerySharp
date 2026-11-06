@@ -89,8 +89,7 @@ public sealed class NumberFunctionsTest
             "false(Boolean),1(Integer),1(Integer),1(String),1(Integer),1(Long),false(Boolean),true(Boolean),false(Boolean),true(Boolean),false(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean),true(Boolean)");
 
     // 同 subQueryMySQL：Oracle 没有布尔列，any / none 写成 CASE WHEN … THEN true ELSE false END
-    [Fact(Skip = "阶段 2（Oracle）：条件作为值投影时要写成 CASE WHEN … THEN ? ELSE ? END")]
-    [Upstream("NumberFunctionsTest.java#subQueryORACLE", Pending = true)]
+    [Fact, Upstream("NumberFunctionsTest.java#subQueryORACLE")]
     public void SubQueryORACLE() =>
         SqlOnly.AssertStatement(SqlOnly.Db("oracle").Query<Mysql8.SysUser>().GroupJoin(o => o.BankCards)
                 .Where(u => u.BankCards!.Select(s => s.Id).LongCount() > 1L

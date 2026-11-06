@@ -313,7 +313,13 @@ internal sealed partial class ExpressionTranslator
     }
 
     /// <summary>条件作为值使用（比较的一侧、投影的一列）时整体加括号：<c>(a &lt; ? AND b = ?)</c>（与 Java 的 valueOf 一致）。</summary>
-    internal static SqlExpr AsValue(SqlExpr sql) => IsPredicate(sql) ? new FragmentExpr("({0})", [sql]) : sql;
+    internal static SqlExpr AsValue(SqlExpr sql) => IsPredicate(sql) ? BooleanValue(new FragmentExpr("({0})", [sql], isPredicate: true)) : sql;
+
+    /// <summary>
+    /// 已加好括号的条件当作布尔值（Java 的 booleanSQLFunction）：多数库原样写出；没有布尔类型的 SQL Server、Oracle
+    /// 写成 <c>(CASE WHEN 条件 THEN ? ELSE ? END)</c>。
+    /// </summary>
+    internal static SqlExpr BooleanValue(SqlExpr parenthesizedPredicate) => new FunctionExpr(SqlFunctionNames.BooleanValue, [parenthesizedPredicate]);
 
     /// <summary>翻译一对操作数：一侧是带转换器的列时，另一侧的参数值先经过转换器。</summary>
     internal (SqlExpr Left, SqlExpr Right) TranslatePair(Expression leftExpr, Expression rightExpr)
