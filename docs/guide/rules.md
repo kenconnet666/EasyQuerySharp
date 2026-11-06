@@ -178,7 +178,7 @@ UPDATE `t_doc` SET `title` = ?,`updated_at` = ? WHERE `deleted` = ? AND `id` = ?
 | 基类 | 作用 | 对应 Java |
 |---|---|---|
 | `QueryFilter<T>` | 查询、按条件更新、删除自动追加条件（多租户、数据权限） | `PredicateFilterInterceptor` |
-| `EntityInterceptor<T>` | `BeforeInsert` / `BeforeUpdate` 写入前改实体；`BeforeConditionUpdate` 给按条件更新追加 SET；`BeforeEntityUpdateColumns` 给按实体更新追加列 | `EntityInterceptor`、`UpdateSetInterceptor` |
+| `EntityInterceptor<T>` | `BeforeInsert` / `BeforeUpdate` 写入前改实体；`BeforeConditionUpdate` 给按条件更新追加 SET；`BeforeEntityUpdateColumns` 在按实体更新用 `SetColumns` 限定了列时补上必须写的列 | `EntityInterceptor`、`UpdateSetInterceptor`、`UpdateEntityColumnInterceptor` |
 
 `T` 可以是实体本身、基类或接口（如 `QueryFilter<ITenantEntity>` 作用于所有租户实体）。用 `options.AddInterceptor(..)` 注册；用依赖注入时容器里登记的 `IInterceptor` 自动加入。示例库的拦截器：
 

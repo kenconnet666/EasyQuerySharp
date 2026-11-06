@@ -101,7 +101,7 @@ var db = new EasyDb(o =>
 ```
 <!-- /snippet -->
 
-导航上声明的 `[Navigate(OrderBy = "…", Limit = n, Offset = m)]` 是带出时的默认排序和条数；`IgnoreNavigationDefaults()` 让这条查询不用它们。
+导航上声明的 `[Navigate(OrderBy = "…", Limit = n, Offset = m)]` 是带出时的默认排序和条数；带出查询的配置里写 `q.IgnoreNavigationDefaults()` 时不用它们（自己写了排序、条数时本来就以自己的为准）。
 
 ### 分批与后补
 
