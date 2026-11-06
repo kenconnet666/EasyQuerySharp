@@ -141,7 +141,9 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
             var existing = Match(child, original, originalByKey);
             if (existing is not null)
             {
-                matched.Add(existing);
+                // 两个新对象配上了同一个原对象（业务键相同）：分不清该保留哪个
+                if (!matched.Add(existing))
+                    throw new InvalidOperationException($"{nav} 里有多个对象的 [SaveKey] 相同，配到了同一个原有对象");
                 if (nav.Cascade != Cascade.Delete) continue;
                 // 新建的同主键对象：把值合并到已追踪的实例上，按快照差异更新
                 if (!ReferenceEquals(existing, child)) Merge(child, existing);

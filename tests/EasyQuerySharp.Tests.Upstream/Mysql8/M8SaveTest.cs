@@ -395,4 +395,172 @@ public sealed class M8SaveTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
             Assert.EndsWith($"(String),{rootId}(String),{targets[1].Id}(String)", JavaParams.Format(listen.Events[3].Statement));
         });
     }
+
+    private static void AssertMappingDeletes(SqlCapture.Scope listen, int from, string rootId, List<M8SaveRoot2Many> targets)
+    {
+        for (var i = 0; i < 2; i++)
+        {
+            listen.AssertSql(from + i, "DELETE FROM `m8_save_root_middle_many` WHERE `root_id` = ? AND `many_id` = ?");
+            listen.AssertParams(from + i, $"{rootId}(String),{targets[i].Id}(String)");
+        }
+    }
+
+    // 同 testMany2Many1，用 SavePath 只保存多对多
+    [Fact, Upstream("mysql8/M8SaveTest.java#testMany2Many2")]
+    public async Task TestMany2Many2()
+    {
+        var rootId = await Before();
+        var targets = new List<M8SaveRoot2Many>();
+        await Invoke(async listen =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).Include(m => m.M8SaveRoot2ManyList).SingleAsync(Ct);
+            targets.AddRange(root.M8SaveRoot2ManyList!);
+            root.M8SaveRoot2ManyList!.Clear();
+            await Save(s => s.SavePath(o => o.M8SaveRoot2ManyList), root);
+            Assert.Equal(5, listen.Events.Count);
+            AssertMappingDeletes(listen, 3, rootId, targets);
+        });
+        await Invoke(async listen =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).Include(m => m.M8SaveRoot2ManyList).SingleAsync(Ct);
+            root.M8SaveRoot2ManyList!.AddRange(targets);
+            await Save(s => s.SavePath(o => o.M8SaveRoot2ManyList), root);
+            Assert.Equal(4, listen.Events.Count);
+            listen.AssertSql(2, "INSERT INTO `m8_save_root_middle_many` (`id`,`root_id`,`many_id`) VALUES (?,?,?)");
+            listen.AssertSql(3, "INSERT INTO `m8_save_root_middle_many` (`id`,`root_id`,`many_id`) VALUES (?,?,?)");
+        });
+    }
+
+    // 没 Include 的多对多被赋了值：报错
+    [Fact, Upstream("mysql8/M8SaveTest.java#testMany2Many3", Deviation = "异常信息用中文，说明导航没有被追踪、该怎样改")]
+    public async Task TestMany2Many3() => await UntrackedMany2Many();
+
+    [Fact, Upstream("mysql8/M8SaveTest.java#testMany2Many5", Deviation = "异常信息用中文，说明导航没有被追踪、该怎样改")]
+    public async Task TestMany2Many5() => await UntrackedMany2Many();
+
+    private async Task UntrackedMany2Many()
+    {
+        var rootId = await Before();
+        await Invoke(async _ =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).SingleAsync(Ct);
+            root.M8SaveRoot2ManyList = [new M8SaveRoot2Many { Name = "many2manynottrack" }];
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Save(root));
+            Assert.Contains("M8SaveRoot.M8SaveRoot2ManyList 没有被追踪", ex.Message);
+        });
+    }
+
+    // 多对多置为 null：同清空，删中间表行
+    [Fact, Upstream("mysql8/M8SaveTest.java#testMany2Many4")]
+    public async Task TestMany2Many4()
+    {
+        var rootId = await Before();
+        await Invoke(async listen =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).Include(m => m.M8SaveRoot2ManyList).SingleAsync(Ct);
+            var targets = root.M8SaveRoot2ManyList!.ToList();
+            root.M8SaveRoot2ManyList = null;
+            await Save(root);
+            Assert.Equal(5, listen.Events.Count);
+            AssertMappingDeletes(listen, 3, rootId, targets);
+        });
+    }
+
+    // LoadIncludeAsync 加载的多对多（查询不写别名）
+    [Fact, Upstream("mysql8/M8SaveTest.java#testMany2Many6")]
+    public async Task TestMany2Many6()
+    {
+        var rootId = await Before();
+        await Invoke(async listen =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).SingleAsync(Ct);
+            await Db.LoadIncludeAsync([root], m => m.M8SaveRoot2ManyList, Ct);
+            var targets = root.M8SaveRoot2ManyList!.ToList();
+            root.M8SaveRoot2ManyList = null;
+            await Save(root);
+            Assert.Equal(5, listen.Events.Count);
+            listen.AssertSql(1, "SELECT `root_id`,`many_id` FROM `m8_save_root_middle_many` WHERE `root_id` IN (?)");
+            listen.AssertSql(2, "SELECT `id`,`name` FROM `m8_save_root_2many` WHERE `id` IN (?,?)");
+            AssertMappingDeletes(listen, 3, rootId, targets);
+        });
+    }
+
+    // SavePath 只列多对多：置空的一对一不处理
+    [Fact, Upstream("mysql8/M8SaveTest.java#testMany2Many7")]
+    public async Task TestMany2Many7()
+    {
+        var rootId = await Before();
+        await Invoke(async listen =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).Include(m => m.M8SaveRoot2ManyList).Include(m => m.M8SaveRootOne).SingleAsync(Ct);
+            root.M8SaveRootOne = null;
+            var targets = root.M8SaveRoot2ManyList!.ToList();
+            root.M8SaveRoot2ManyList = null;
+            await Save(s => s.SavePath(o => o.M8SaveRoot2ManyList), root);
+            Assert.Equal(6, listen.Events.Count);
+            listen.AssertSql(3, "SELECT t.`id`,t.`root_id`,t.`name` FROM `m8_save_root_one` t WHERE t.`root_id` IN (?)");
+            AssertMappingDeletes(listen, 4, rootId, targets);
+        });
+    }
+
+    // 中间表当一对多保存：新对象没有主键，原来的删除、新的插入
+    [Fact, Upstream("mysql8/M8SaveTest.java#testMany2ManyMiddle1")]
+    public async Task TestMany2ManyMiddle1()
+    {
+        var rootId = await Before();
+        await Invoke(async listen =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).Include(m => m.M8SaveRootMiddleManyList).SingleAsync(Ct);
+            root.M8SaveRootMiddleManyList = [.. root.M8SaveRootMiddleManyList!.Select(i => new M8SaveRootMiddleMany { RootId = i.RootId, ManyId = i.ManyId })];
+            await Save(root);
+            Assert.Equal(6, listen.Events.Count);
+            listen.AssertSql(2, "DELETE FROM `m8_save_root_middle_many` WHERE `id` = ?");
+            listen.AssertSql(3, "DELETE FROM `m8_save_root_middle_many` WHERE `id` = ?");
+            listen.AssertSql(4, "INSERT INTO `m8_save_root_middle_many` (`id`,`root_id`,`many_id`) VALUES (?,?,?)");
+            listen.AssertSql(5, "INSERT INTO `m8_save_root_middle_many` (`id`,`root_id`,`many_id`) VALUES (?,?,?)");
+        });
+    }
+
+    // 按 [SaveKey] 配上原来的对象：值没变，不发写入语句
+    [Fact, Upstream("mysql8/M8SaveTest.java#testMany2ManyMiddle2")]
+    public async Task TestMany2ManyMiddle2()
+    {
+        var rootId = await Before();
+        await Invoke(async listen =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).Include(m => m.M8SaveRootMiddleManyList2).SingleAsync(Ct);
+            root.M8SaveRootMiddleManyList2 = [.. root.M8SaveRootMiddleManyList2!.Select(i => new M8SaveRootMiddleMany2 { RootId = i.RootId, ManyId = i.ManyId })];
+            await Save(root);
+            Assert.Equal(2, listen.Events.Count);
+        });
+    }
+
+    // 两个新对象的 [SaveKey] 相同：报错
+    [Fact, Upstream("mysql8/M8SaveTest.java#testMany2ManyMiddle3", Deviation = "异常信息用中文，说明是哪条导航上业务键相同")]
+    public async Task TestMany2ManyMiddle3()
+    {
+        var rootId = await Before();
+        await Invoke(async _ =>
+        {
+            var root = await Db.Query<M8SaveRoot>().WhereById(rootId).Include(m => m.M8SaveRootMiddleManyList2).SingleAsync(Ct);
+            var list = root.M8SaveRootMiddleManyList2!;
+            List<M8SaveRootMiddleMany2> replaced = [.. list.Select(i => new M8SaveRootMiddleMany2 { RootId = i.RootId, ManyId = i.ManyId })];
+            replaced.Add(new M8SaveRootMiddleMany2 { RootId = list[0].RootId, ManyId = list[0].ManyId });
+            root.M8SaveRootMiddleManyList2 = replaced;
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Save(root));
+            Assert.Contains("[SaveKey] 相同", ex.Message);
+        });
+    }
+
+    // SavePath 只能列聚合内的导航，多对一（别的聚合根）报错
+    [Fact, Upstream("mysql8/M8SaveTest.java#testPathAggregateRoot", Deviation = "异常信息用中文，说明列出的导航是别的聚合根")]
+    public async Task TestPathAggregateRoot()
+    {
+        await Before();
+        await Invoke(async _ =>
+        {
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Save(s => s.SavePath(o => o.User), new SysBankCard()));
+            Assert.Contains("SysBankCard.User 是别的聚合根", ex.Message);
+        });
+    }
 }
