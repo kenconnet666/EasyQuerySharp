@@ -36,6 +36,22 @@ public sealed class ForUpdateDialectToSqlSmokeTest
         Assert.Contains("SQL Server 不支持 FOR UPDATE", ex.Message);
     }
 
+    [Fact, Upstream("ForUpdateDialectToSQLSmokeTest.java#clickHouseForUpdateThrowsUnsupported")]
+    public void ClickHouseForUpdateThrowsUnsupported()
+    {
+        var ex = Assert.Throws<NotSupportedException>(() => LockedPageSql("clickhouse"));
+        Assert.Contains("ClickHouse 不支持 FOR UPDATE", ex.Message);
+    }
+
+    // Db2 写 FOR UPDATE WITH RS（锁到事务结束），Java 的断言只检查到 FOR UPDATE 为止
+    [Fact, Upstream("ForUpdateDialectToSQLSmokeTest.java#db2ForUpdateToSQLSmoke")]
+    public void Db2ForUpdateToSqlSmoke()
+    {
+        var sql = LockedPageSql("db2");
+        Assert.Contains("OFFSET 1 ROWS FETCH NEXT 2 ROWS ONLY FOR UPDATE", sql.ToUpperInvariant());
+        Assert.Equal(1, sql.Split("FOR UPDATE").Length - 1);
+    }
+
     [Fact, Upstream("ForUpdateDialectToSQLSmokeTest.java#sqliteForUpdateToSQLSmoke",
         Deviation = "SQLite 没有 FOR UPDATE 语法（写事务锁整个库），Java 照样拼出、执行时才报语法错误；C# 渲染时就抛出 NotSupportedException")]
     public void SqliteForUpdateThrowsUnsupported()
