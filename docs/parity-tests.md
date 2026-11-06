@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1859、偏离 143、不适用 136、骨架 2、待做 264。
+合计：已移植 1862、偏离 145、不适用 136、骨架 0、待做 261。
 
 ## 按能力
 
@@ -23,8 +23,8 @@
 | 字符串聚合（joining） | `func.joining` | M2 | 29 | 27 | 2 | 0 | 0 | 0 |
 | JSON 函数 | `func.json` | M2 | 12 | 12 | 0 | 0 | 0 | 0 |
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
-| 字符串函数 | `func.string` | M2 | 131 | 122 | 4 | 4 | 1 | 0 |
-| 行锁 | `lock` | M2 | 28 | 20 | 1 | 1 | 0 | 6 |
+| 字符串函数 | `func.string` | M2 | 131 | 123 | 4 | 4 | 0 | 0 |
+| 行锁 | `lock` | M2 | 28 | 21 | 1 | 1 | 0 | 5 |
 | 窗口函数 | `window` | M2 | 44 | 43 | 1 | 0 | 0 | 0 |
 | CTE | `query.cte` | M3 | 11 | 8 | 3 | 0 | 0 | 0 |
 | 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 75 | 6 | 2 | 0 | 0 |
@@ -33,7 +33,7 @@
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 2 | 0 | 0 | 0 | 0 |
 | 流式读取 | `query.stream` | M3 | 9 | 6 | 2 | 1 | 0 | 0 |
 | union / union all | `query.union` | M3 | 18 | 14 | 4 | 0 | 0 | 0 |
-| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 33 | 2 | 0 | 1 | 0 |
+| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 34 | 2 | 0 | 0 | 0 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 51 | 1 | 3 | 0 | 1 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 64 | 1 | 2 | 0 | 0 |
@@ -56,7 +56,7 @@
 | 方言静态入口与专属函数 | `dialect.functions` | M6 | 25 | 22 | 0 | 0 | 0 | 3 |
 | H2 方言 | `dialect.h2` | M6 | 74 | 0 | 0 | 0 | 0 | 74 |
 | SAP HANA 方言 | `dialect.hana` | M6 | 18 | 0 | 0 | 0 | 0 | 18 |
-| 人大金仓方言 | `dialect.kingbase` | M6 | 2 | 0 | 0 | 0 | 0 | 2 |
+| 人大金仓方言 | `dialect.kingbase` | M6 | 2 | 0 | 2 | 0 | 0 | 0 |
 | SQL Server 方言 | `dialect.mssql` | M6 | 38 | 37 | 1 | 0 | 0 | 0 |
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | M6 | 13 | 0 | 0 | 13 | 0 | 0 |
 | UPDATE / DELETE … RETURNING | `write.returning` | M6 | 3 | 3 | 0 | 0 | 0 | 0 |
@@ -1013,7 +1013,7 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| GeneralFunctionsTest.java#testDoubleConcat | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:176 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
+| GeneralFunctionsTest.java#testDoubleConcat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:177 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
 | GenericTest2.java#StringCharSegmentSm4Test2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:33：SM4 不在 .NET 的 BCL 里，核心不引入第三方加密库；需要时由使用方实现 IEncryptionStrategy |  |
 | GenericTest2.java#easySm4EncryptionIdCardTest | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:34：SM4 不在 .NET 的 BCL 里，核心不引入第三方加密库；需要时由使用方实现 IEncryptionStrategy |  |
 | GenericTest2.java#easySm4EncryptionTest | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/GenericTest2.cs:30：SM4 不在 .NET 的 BCL 里，核心不引入第三方加密库；需要时由使用方实现 IEncryptionStrategy |  |
@@ -1153,9 +1153,9 @@
 | ForUpdateDialectToSQLSmokeTest.java#damengForUpdateToSQLSmoke | 待做 |  |  |
 | ForUpdateDialectToSQLSmokeTest.java#db2ForUpdateToSQLSmoke | 待做 |  |  |
 | ForUpdateDialectToSQLSmokeTest.java#duckDBForUpdateThrowsUnsupported | 待做 |  |  |
-| ForUpdateDialectToSQLSmokeTest.java#gaussDBForUpdateToSQLSmoke | 待做 |  |  |
+| ForUpdateDialectToSQLSmokeTest.java#gaussDBForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:21 |  |
 | ForUpdateDialectToSQLSmokeTest.java#h2ForUpdateToSQLSmoke | 待做 |  |  |
-| ForUpdateDialectToSQLSmokeTest.java#kingbaseESForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:21 |  |
+| ForUpdateDialectToSQLSmokeTest.java#kingbaseESForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:20 |  |
 | ForUpdateDialectToSQLSmokeTest.java#msSQLForUpdateThrowsUnsupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:32 |  |
 | ForUpdateDialectToSQLSmokeTest.java#msSQLRowNumberForUpdateThrowsUnsupported | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:49：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
 | ForUpdateDialectToSQLSmokeTest.java#mysqlForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:18 |  |
@@ -1465,7 +1465,7 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| GeneralFunctionsTest.java#unionSQLite | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:237 | `SELECT t3."id",t3."stars",t3."title",t3."create_time" FROM ( SELECT t."id",t."stars",t."title",t."cr…` |
+| GeneralFunctionsTest.java#unionSQLite | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:191 | `SELECT t3."id",t3."stars",t3."title",t3."create_time" FROM ( SELECT t."id",t."stars",t."title",t."cr…` |
 | QueryTest.java#query52 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.Union.cs:18 | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
 | QueryTest.java#query52_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.Union.cs:18 | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
 | QueryTest.java#query52_1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest.Union.cs:23 | `SELECT t3.'id',t3.'stars',t3.'title',t3.'create_time' FROM ( (SELECT t.'id',t.'stars',t.'title',t.'c…` |
@@ -1490,7 +1490,7 @@
 | --- | --- | --- | --- |
 | DirectRelationTest.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:81 | `SELECT t.'c1',t.'c2',t.'c3',t.'c4' FROM 'direct1' t` |
 | DirectRelationTest.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DirectRelationTest.cs:102 | `SELECT t.'c1',t.'c2',t.'c3',t.'c4' FROM 'direct1' t` |
-| GeneralFunctionsTest.java#testKingbaseCte | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:207 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0+0 AS "deep",t1."id",t1."parent_id",t1."content",t1."user…` |
+| GeneralFunctionsTest.java#testKingbaseCte | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/GeneralFunctionsTest.cs:186 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0+0 AS "deep",t1."id",t1."parent_id",t1."content",t1."user…` |
 | QueryTest14.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest14.cs:182 | `SELECT t.'id',t.'name',t.'password' FROM 't_test_user' t` |
 | QueryTest16.java#test111 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:132 | `SELECT t.'id' AS '__relation__id' FROM 'sys_user' t WHERE t.'deleted' = ?` |
 | QueryTest19.java#testDoc100 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:80 | `SELECT t.'id',t.'name' FROM 't_user' t` |
@@ -2351,8 +2351,8 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| kingbase/MyKingbaseESTest.java#testaa | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','delete_by','delete_time',…` |
-| kingbase/MyKingbaseESTest.java#testaa1 | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','delete_by','delete_time',…` |
+| kingbase/MyKingbaseESTest.java#testaa | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Kingbase/MyKingbaseESTest.cs:38：Java 连开发者本机 MySQL 上的现成数据（3 个专题、1074 个视频），这里改在 SQLite 内存库里造同样规模的数据（视频的 order_by 与键的顺序相反）：SQL 只差引号，第三条的参数是造的键 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','delete_by','delete_time',…` |
+| kingbase/MyKingbaseESTest.java#testaa1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Kingbase/MyKingbaseESTest.cs:49：Java 连开发者本机 MySQL 上的现成数据（3 个专题、1074 个视频），这里改在 SQLite 内存库里造同样规模的数据（视频的 order_by 与键的顺序相反）：SQL 只差引号，第三条的参数是造的键 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','delete_by','delete_time',…` |
 
 ### SQL Server 方言（`dialect.mssql`，M6）
 

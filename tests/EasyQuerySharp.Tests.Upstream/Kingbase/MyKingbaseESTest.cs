@@ -9,8 +9,7 @@ namespace EasyQuerySharp.Tests.Upstream.Kingbase;
 /// </summary>
 public sealed class MyKingbaseESTest : IAsyncLifetime
 {
-    private const string Deviation = "Java 连开发者本机 MySQL 上的现成数据（3 个专题、1074 个视频），这里没有那份数据，"
-                                     + "改在 SQLite 内存库里造同样规模的数据（视频的 order_by 与键的顺序相反）：SQL 只差引号，第三条的参数是造的键";
+    private const string Deviation = "Java 连开发者本机 MySQL 上的现成数据（3 个专题、1074 个视频），这里改在 SQLite 内存库里造同样规模的数据（视频的 order_by 与键的顺序相反）：SQL 只差引号，第三条的参数是造的键";
     private const string Database = "Data Source=eqs-kingbase-test;Mode=Memory;Cache=Shared";
     private const int VideoCount = 1074;
     private static readonly string[] SubjectIds = ["1094971186229739525", "1097211886191181829", "1102206513981882373"];

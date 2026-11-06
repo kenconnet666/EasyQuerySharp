@@ -112,7 +112,10 @@ R → 1 → 2 → 3 → 4 → 5。
   - fork 的 HanaSqlTest、HanaTextSqlTest、三个 live 用例，以及 InsertSelect / JsonValueConverter 的 HANA 用例；
   - HANA Express 压低内存后进 CI，跑不起来就退回本地验证。
 - [ ] 3.3 DuckDB（进程内运行，CI 直接跑）：DuckDBQueryTest、AllTypeTest、DuckDBMathQueryTest，以及 duckdb 版的 M8Save4Test。
-- [ ] 3.4 PG 家族：Kingbase（MyKingbaseESTest，骨架 testKingbaseCte、GeneralFunctionsTest testDoubleConcat）、openGauss。
+- [~] 3.4 PG 家族：Kingbase（MyKingbaseESTest，骨架 testKingbaseCte、GeneralFunctionsTest testDoubleConcat）、openGauss。
+  - 已做：`KingbaseDialect` / `GaussDbDialect`（对应 Java 的 sql-kingbase-es、sql-gauss-db）继承 PG 方言，只覆盖 Java 与 PG 不同的写法：两者都把 PG 写成 `LIKE CONCAT(…)` 的包含 / 开头 / 结尾改成 STRPOS（值不转义）、条件当值写 CASE；Kingbase 另有 CONCAT 两两嵌套、日期加减 `CONCAT(n, ' day')::INTERVAL`、日期相差 `timestampdiff`、树查询起点层级 `0+0`（`SqlDialect.TreeDeepStart`）。`UseKingbase` / `UseGaussDb`，SqlOnly 登记 kingbase / gauss。testDoubleConcat、testKingbaseCte、ForUpdate 冒烟的 Kingbase / GaussDB 两行移植；其余差异在 `Extras/PgFamilyDialectTest` 按 Java 模板核对。
+  - MyKingbaseESTest 名字是 Kingbase，实际连开发者本机 MySQL 的现成数据，测的是多对多带出：导航带排序时一条查完、IN 按分组大小拆成 OR、子数据按查询结果的顺序。C# 原来按中间表顺序挂子数据、还按分组分批，顺序是错的，已修（对齐 Java）；两个用例在 SQLite 内存库里造同规模数据移植，记偏离。
+  - 待做：实库冒烟与 `TestDatabases` 登记。openGauss 有 profile（`--profile opengauss`），要先选定 .NET 驱动并确认能连上（openGauss 默认的 sha256 认证普通 Npgsql 是否支持待验证）；Kingbase 没有可用的容器镜像。Java 的两个模块里多表 DELETE 没覆盖 PG 的 `DELETE … USING`（退回 MySQL 式的 `DELETE t FROM … JOIN`），C# 沿用 PG 的写法，没有 Java 用例覆盖。
 - [ ] 3.5 ClickHouse（ClickHouseTest）、TDengine、Db2：Java 用例很少或没有，主要靠裁剪后的 L3 套件验证。
 - [ ] 3.6 H2 的 74 个用例：与方言无关的改到 SQLite 上移植，标为偏离；只测 H2 方言本身的标为不适用。
 - [ ] 3.7 跨方言的零散用例：ForUpdateDialectToSQLSmokeTest 剩下的方言、NullSafeSqlTest nullSafeEqualsPerDialect。

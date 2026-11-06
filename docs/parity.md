@@ -96,7 +96,7 @@
 | Oracle | 归在上面各项 | — | Oracle.ManagedDataAccess.Core；`options.UseOracle(..)` | 第一档，阶段 2 |
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | 13 | — | 不做 |
 | 达梦 | `dialect.dameng` | 51 | DM.DmProvider；方言继承 Oracle | 第二档，阶段 3 |
-| 人大金仓 / openGauss | `dialect.kingbase` | 2 | Npgsql；与 PG 共用方言 | 第二档，阶段 3 |
+| 人大金仓 / GaussDB（openGauss） | `dialect.kingbase` | 2 | 驱动由调用方传入；`options.UseKingbase(..)` / `options.UseGaussDb(..)`，`KingbaseDialect` / `GaussDbDialect` 继承 PG 方言，只覆盖 Java 两个模块与 PG 不同的写法（STRPOS 式 LIKE、条件当值写 CASE；Kingbase 另有两两嵌套的 CONCAT、日期加减与相差、树查询起点 `0+0`）。MyKingbaseESTest 实为 MySQL 上的多对多带出排序用例，改在 SQLite 上移植（偏离）；没有实库，只比对 SQL | 第二档，阶段 3（3.4 完成 SQL 文本，实库冒烟待做） |
 | DuckDB | `dialect.duckdb` | 16 | DuckDB.NET | 第二档，阶段 3 |
 | ClickHouse | `dialect.clickhouse` | 4 | ClickHouse.Client | 第二档，阶段 3 |
 | SAP HANA | `dialect.hana` | 18 | SAP HANA ADO.NET 驱动 | 第二档，阶段 3 |
