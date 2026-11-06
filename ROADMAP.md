@@ -114,7 +114,7 @@ R → 1 → 2 → 3 → 4 → 5。
 - [ ] 3.3 DuckDB（进程内运行，CI 直接跑）：DuckDBQueryTest、AllTypeTest、DuckDBMathQueryTest，以及 duckdb 版的 M8Save4Test。
 - [ ] 3.4 PG 家族：Kingbase（MyKingbaseESTest，骨架 testKingbaseCte、GeneralFunctionsTest testDoubleConcat）、openGauss。
 - [ ] 3.5 ClickHouse（ClickHouseTest）、TDengine、Db2：Java 用例很少或没有，主要靠裁剪后的 L3 套件验证。
-- [ ] 3.6 H2 的 74 个用例：与方言无关的改到 SQLite 上移植，标为偏离；只测 H2 方言本身的标为不适用。
+- [x] 3.6 H2 的 74 个用例：H2 没有 .NET 驱动，改在 SQLite 共享内存库上跑（`Upstream/H2/`，`H2Fixture` 对应 H2BaseTest）。Java 的 H2 用例把关键字服务换成不加引号的 DefaultSQLKeyword，C# 同样用标识符不加引号的 SQLite 方言，63 个 SQL 与 Java 逐字一致、记为已移植（H2DocTest 用到的 doc 表 Java 的 H2 库里没有，这里建好并核对结果）。偏离 4 个：testDDL / testDDL2 / testTableCommentDDL 的建表语句按 SQLite 方言（没有注释），tree8 的递归 CTE 按 SQLite 写法（分支不加括号、不写列名清单）。不适用 4 个：H2ForUpdateTest 里断言 FOR UPDATE 文本与行锁等待的用例（SQLite 没有行锁，MySQL、PG 上已有同样的用例）。分表的 3 个（H2OrderTest ×2、H2QueryTest allTypeTestSharding1）留骨架，随 4.4 做。顺手补齐：`sbyte` 列有了默认列类型（原来建表报不支持）；TestKit 的参数文本支持 sbyte（Byte）、TimeSpan（Time），DateOnly / TimeOnly 按 Java 的 LocalDate / LocalTime 格式输出。
 - [ ] 3.7 跨方言的零散用例：ForUpdateDialectToSQLSmokeTest 剩下的方言、NullSafeSqlTest nullSafeEqualsPerDialect。
 
 ## 阶段 4 平台能力
@@ -122,7 +122,7 @@ R → 1 → 2 → 3 → 4 → 5。
 - [ ] 4.1 code-first：建表（注释、索引、外键）、只增不删的同步、`RenamedFrom`、`ToSql()`、读取库结构（MigrationTest 等 15 个）。
 - [ ] 4.2 表名映射：查询级 `MapTable`（导航、隐式 join、include 跟着一起变；fork TableNameMapping 的 7 个用例）、`AsTable` 剩余的用例、`InSchema`、`WithTableLink`。
 - [ ] 4.3 `FilterBy` / `SortBy` 剩余的 6 个用例，以及 `Table(request)`。
-- [ ] 4.4 分库分表（ShardingTest 48 个），先写决策文档 0006：
+- [ ] 4.4 分库分表（ShardingTest 48 个，另有 H2 的 3 个骨架：H2OrderTest ×2、H2QueryTest allTypeTestSharding1），先写决策文档 0006：
   - 分表：按取模或按时间路由、按条件裁剪、库内 UNION ALL、写入路由；
   - 分库：路由，在内存里做归并排序和分页，跨库合并 `count` / `sum` / `min` / `max`。
 - [ ] 4.5 二级缓存 `EasyQuerySharp.Caching`，先写决策文档 0007（用例在 QueryTest25：test11a、test11a1、topicIntegerTest、xxx）：

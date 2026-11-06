@@ -74,7 +74,7 @@ C# 的渲染规则对齐 Java：
 
 L2 的组织方式：
 
-- 类名照搬 Java，目录只有一层、按主题分：`Queries/`、`Write/`、`Functions/`、`Features/`、`Dialects/`、`Fork/`、`Mysql8/`、`Pgsql/`，C# 独有 API 的用例放 `Extras/`（不计入对标）。例如 `sql-test/.../QueryTest.java` 对应 `Queries/QueryTest.cs`，`mysql8/M8BankTest.java` 对应 `Mysql8/M8BankTest.cs`。实体在 `Entities/`、DTO 在 `Dto/`，夹具与测试用的策略、拦截器在 `Support/`。
+- 类名照搬 Java，目录只有一层、按主题分：`Queries/`、`Write/`、`Functions/`、`Features/`、`Dialects/`、`Fork/`、`Mysql8/`、`Pgsql/`、`Mssql/`、`H2/`（H2 没有 .NET 驱动，改在 SQLite 上跑），C# 独有 API 的用例放 `Extras/`（不计入对标）。例如 `sql-test/.../QueryTest.java` 对应 `Queries/QueryTest.cs`，`mysql8/M8BankTest.java` 对应 `Mysql8/M8BankTest.cs`。实体在 `Entities/`、DTO 在 `Dto/`，夹具与测试用的策略、拦截器在 `Support/`。
 - 1.0 范围之外的 Java 用例在 `OutOfScope.cs` 里用程序集级的 `[Upstream(NotApplicable = …)]` 列出。
 - 实体模型照搬 Java：约 277 个 `@Table` 类，按 Java 的包放进对应命名空间。同名的 `SysUser` 有 6 份，分属不同命名空间，不合并。
 - Java 测试基类对应 C# 的测试基类（xUnit fixture）。`BaseTest` 对应 `MySqlFixture`：负责建表（code-first 完成之前先执行 Java 的 SQL 脚本）和种子数据（`initData` 的 100 条 `BlogEntity` 等）。`PgSQLBaseTest`、`MsSQLBaseTest` 等依次对应。
