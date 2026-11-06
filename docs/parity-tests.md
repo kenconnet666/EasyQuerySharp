@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1933、偏离 153、不适用 140、骨架 5、待做 173。
+合计：已移植 1964、偏离 174、不适用 140、骨架 6、待做 120。
 
 ## 按能力
 
@@ -14,7 +14,7 @@
 | 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 361 | 37 | 35 | 0 | 2 |
 | 分页结果 | `query.page` | M1 | 22 | 18 | 3 | 0 | 0 | 1 |
 | 原生 SQL | `sql.native` | M1 | 50 | 41 | 8 | 1 | 0 | 0 |
-| 删除 | `write.delete` | M1 | 25 | 13 | 1 | 10 | 0 | 1 |
+| 删除 | `write.delete` | M1 | 25 | 13 | 2 | 10 | 0 | 0 |
 | 插入 | `write.insert` | M1 | 50 | 48 | 1 | 0 | 0 | 1 |
 | 更新 | `write.update` | M1 | 59 | 46 | 5 | 8 | 0 | 0 |
 | CASE WHEN | `expr.case` | M2 | 27 | 20 | 7 | 0 | 0 | 0 |
@@ -24,7 +24,7 @@
 | JSON 函数 | `func.json` | M2 | 12 | 12 | 0 | 0 | 0 | 0 |
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
 | 字符串函数 | `func.string` | M2 | 131 | 122 | 4 | 4 | 1 | 0 |
-| 行锁 | `lock` | M2 | 28 | 21 | 1 | 1 | 0 | 5 |
+| 行锁 | `lock` | M2 | 28 | 22 | 1 | 1 | 0 | 4 |
 | 窗口函数 | `window` | M2 | 44 | 43 | 1 | 0 | 0 | 0 |
 | CTE | `query.cte` | M3 | 11 | 8 | 3 | 0 | 0 | 0 |
 | 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 75 | 6 | 2 | 0 | 0 |
@@ -51,7 +51,7 @@
 | 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 25 | 1 | 0 | 0 | 0 |
 | upsert | `write.upsert` | M5 | 13 | 12 | 1 | 0 | 0 | 0 |
 | ClickHouse 方言 | `dialect.clickhouse` | M6 | 4 | 0 | 0 | 0 | 0 | 4 |
-| 达梦方言 | `dialect.dameng` | M6 | 51 | 0 | 0 | 0 | 0 | 51 |
+| 达梦方言 | `dialect.dameng` | M6 | 51 | 30 | 20 | 0 | 1 | 0 |
 | DuckDB 方言 | `dialect.duckdb` | M6 | 16 | 10 | 6 | 0 | 0 | 0 |
 | 方言静态入口与专属函数 | `dialect.functions` | M6 | 25 | 22 | 0 | 0 | 0 | 3 |
 | H2 方言 | `dialect.h2` | M6 | 74 | 63 | 4 | 4 | 3 | 0 |
@@ -375,11 +375,11 @@
 | QueryTest25.java#topicIntegerTest | 待做 |  |  |
 | QueryTest25.java#tupleTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:78 | `SELECT t.'id' AS 'value1',t.'create_time' AS 'value2' FROM 't_blog' t WHERE t.'deleted' = ?` |
 | QueryTest26.java#switchCase | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:137：参数类型：Java 的 Map 键是整数 1、2，C# 与字符串列比较时写成字符串 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest26.java#test11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:260 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
-| QueryTest26.java#test22 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:268 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
+| QueryTest26.java#test11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:267 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
+| QueryTest26.java#test22 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:275 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
 | QueryTest26.java#testFindInSet | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:102 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
 | QueryTest26.java#testMaxInCaluse | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:195：Java 的 contains 在 Oracle 上写成 LIKE ('%'\|\|TO_CHAR(?)\|\|'%')，C# 的 string.Contains 写成 LIKE ?（值里带好 %） | `SELECT "id","stars","title","create_time" FROM "t_topic" WHERE ("id" IN (?,?,?,?,?,?,?,?,?,?) OR "id…` |
-| QueryTest26.java#testQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:285 | `SELECT 'id','name',AES_DECRYPT(from_base64('phone'),?) AS 'phone' FROM 'sys_user2' WHERE AES_DECRYPT…` |
+| QueryTest26.java#testQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:292 | `SELECT 'id','name',AES_DECRYPT(from_base64('phone'),?) AS 'phone' FROM 'sys_user2' WHERE AES_DECRYPT…` |
 | QueryTest26.java#testSetConstant | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:122 |  |
 | QueryTest26.java#testaa1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:113 | `SELECT t.'id' AS 'title',t.'title' AS 'id' FROM 't_topic' t WHERE t.'id' IS NOT NULL` |
 | QueryTest27.java#selectAllMap | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest27.cs:204：C# 的 Sql.Columns 以列名作键，不写 AS；没有按属性名作键的模式 | `SELECT t.'id' AS 'id',t.'create_time' AS 'createTime',t.'update_time' AS 'updateTime',t.'create_by' …` |
@@ -617,7 +617,7 @@
 | GenericWithDatabaseTest.java#queryLargeColumnTest14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:87 |  |
 | GenericWithDatabaseTest.java#queryLargeColumnTest15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:91 | `DELETE FROM 'query_large_column_test' WHERE 'id' = ?` |
 | QueryTest12.java#testDoc23 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.Part2.cs:144 | `DELETE FROM 'relation_user' t WHERE EXISTS(SELECT 1 FROM 'relation_teacher' t1 WHERE EXISTS(SELECT 1…` |
-| QueryTest26.java#testAAA | 待做 |  |  |
+| QueryTest26.java#testAAA | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:216：Java 的达梦删除不支持连接（抛 UnsupportedOperationException，用例吞掉异常）；C# 沿用 Oracle 按 ROWID 删除的写法，实库验证在 3.1 冒烟里做 |  |
 | TestDeleteFlatAndPredicate.java#testExpressionKey | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/FlatAndPredicateTest.cs:20：测的是 Java 表达式树的内部结构（getFlatAndPredicates 提取主键值），C# 不暴露 SQL 表达式树 |  |
 | TestDeleteFlatAndPredicate.java#testExpressionKey2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/FlatAndPredicateTest.cs:21：测的是 Java 表达式树的内部结构（getFlatAndPredicates 提取主键值），C# 不暴露 SQL 表达式树 |  |
 | TestDeleteFlatAndPredicate.java#testExpressionKey3 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/FlatAndPredicateTest.cs:22：测的是 Java 表达式树的内部结构（getFlatAndPredicates 提取主键值），C# 不暴露 SQL 表达式树 |  |
@@ -699,9 +699,9 @@
 | QueryTest18.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:132 |  |
 | QueryTest21.java#TestReverse | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest21.cs:78 | `SELECT COUNT(*) FROM 't_topic' WHERE 'id' IS NOT NULL` |
 | QueryTest24.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:249 |  |
-| QueryTest26.java#testQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:295 | `UPDATE 'sys_user_encrypt' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
-| QueryTest26.java#testQuery3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:305 | `UPDATE 'sys_user2' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
-| QueryTest26.java#updateConcat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:240 |  |
+| QueryTest26.java#testQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:302 | `UPDATE 'sys_user_encrypt' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
+| QueryTest26.java#testQuery3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:312 | `UPDATE 'sys_user2' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
+| QueryTest26.java#updateConcat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:247 |  |
 | QueryTest28.java#testIncrementNullZero | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest28.cs:72 | `UPDATE 't_topic' SET 'stars' = (IFNULL('stars',?) + ?) WHERE 'id' = ?` |
 | TestUpdateFlatAndPredicate.java#testExpressionKey | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/FlatAndPredicateTest.cs:12：测的是 Java 表达式树的内部结构（getFlatAndPredicates 提取主键值），C# 不暴露 SQL 表达式树 |  |
 | TestUpdateFlatAndPredicate.java#testExpressionKey2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/FlatAndPredicateTest.cs:13：测的是 Java 表达式树的内部结构（getFlatAndPredicates 提取主键值），C# 不暴露 SQL 表达式树 |  |
@@ -1150,18 +1150,18 @@
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
 | ForUpdateDialectToSQLSmokeTest.java#clickHouseForUpdateThrowsUnsupported | 待做 |  |  |
-| ForUpdateDialectToSQLSmokeTest.java#damengForUpdateToSQLSmoke | 待做 |  |  |
+| ForUpdateDialectToSQLSmokeTest.java#damengForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:27 |  |
 | ForUpdateDialectToSQLSmokeTest.java#db2ForUpdateToSQLSmoke | 待做 |  |  |
 | ForUpdateDialectToSQLSmokeTest.java#duckDBForUpdateThrowsUnsupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDbDialectTest.cs:13 |  |
 | ForUpdateDialectToSQLSmokeTest.java#gaussDBForUpdateToSQLSmoke | 待做 |  |  |
 | ForUpdateDialectToSQLSmokeTest.java#h2ForUpdateToSQLSmoke | 待做 |  |  |
 | ForUpdateDialectToSQLSmokeTest.java#kingbaseESForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:21 |  |
-| ForUpdateDialectToSQLSmokeTest.java#msSQLForUpdateThrowsUnsupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:32 |  |
+| ForUpdateDialectToSQLSmokeTest.java#msSQLForUpdateThrowsUnsupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:35 |  |
 | ForUpdateDialectToSQLSmokeTest.java#msSQLRowNumberForUpdateThrowsUnsupported | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:49：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
 | ForUpdateDialectToSQLSmokeTest.java#mysqlForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:18 |  |
-| ForUpdateDialectToSQLSmokeTest.java#oracleForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:24 |  |
+| ForUpdateDialectToSQLSmokeTest.java#oracleForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:26 |  |
 | ForUpdateDialectToSQLSmokeTest.java#pgsqlForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:19 |  |
-| ForUpdateDialectToSQLSmokeTest.java#sqliteForUpdateToSQLSmoke | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:39：SQLite 没有 FOR UPDATE 语法（写事务锁整个库），Java 照样拼出、执行时才报语法错误；C# 渲染时就抛出 NotSupportedException |  |
+| ForUpdateDialectToSQLSmokeTest.java#sqliteForUpdateToSQLSmoke | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:42：SQLite 没有 FOR UPDATE 语法（写事务锁整个库），Java 照样拼出、执行时才报语法错误；C# 渲染时就抛出 NotSupportedException |  |
 | fork/live/LockWaitLiveTest.java#noWaitFailsAndSkipLockedSkips | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/LockWaitLiveTest.cs:14 | `DROP TABLE {…}t_fork_post` |
 | mysql8/ForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ForUpdateTest.cs:46 |  |
 | mysql8/ForUpdateTest.java#testForUpdateBlocksConcurrentTransaction | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ForUpdateTest.cs:43 |  |
@@ -1306,8 +1306,8 @@
 | QueryTest25.java#tupleTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:53 | `SELECT t1.'value1' AS 'value1' FROM (SELECT t.'id' AS 'value1' FROM 't_topic' t GROUP BY t.'id') t1 …` |
 | QueryTest25.java#tupleTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:61 | `SELECT t.'id' AS 'value1',COUNT(*) AS 'value2' FROM 't_topic' t GROUP BY t.'id'` |
 | QueryTest25.java#tupleTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:69 | `SELECT t.'id' AS 'value1',COUNT(*) AS 'value2',SUM(t.'stars') AS 'value3' FROM 't_topic' t GROUP BY …` |
-| QueryTest26.java#test | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:215：测的是 Java 的 Linq / Stream 在内存里分组，与查询无关 |  |
-| QueryTest26.java#test23 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:277 | `SELECT t1.'uid' AS 'uid',t1.'count' AS 'count' FROM (SELECT t.'uid' AS 'uid',COUNT(*) AS 'count' FRO…` |
+| QueryTest26.java#test | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:222：测的是 Java 的 Linq / Stream 在内存里分组，与查询无关 |  |
+| QueryTest26.java#test23 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:284 | `SELECT t1.'uid' AS 'uid',t1.'count' AS 'count' FROM (SELECT t.'uid' AS 'uid',COUNT(*) AS 'count' FRO…` |
 | QueryTest28.java#testQueryAggregate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest28.cs:100 | `SELECT COUNT(*) AS 'value1',AVG(t.'stars') AS 'value2' FROM 't_topic' t WHERE t.'title' LIKE CONCAT(…` |
 | QueryTest3.java#query122 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:114 | `SELECT t.'id' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'deleted' = ? AND t.'id' = t1.'id' LEFT J…` |
 | QueryTest3.java#query123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:124 | `SELECT DISTINCT t.'id' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'deleted' = ? AND t.'id' = t1.'i…` |
@@ -1379,9 +1379,9 @@
 | QueryTest24.java#aaa | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:50 |  |
 | QueryTest25.java#testDraft | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:122 | `SELECT t1.'id',t1.'star',t.'title' AS 'content' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'delete…` |
 | QueryTest25.java#testDraft2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:122 | `SELECT t1.'id',t1.'star',t.'title' AS 'content' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'delete…` |
-| QueryTest26.java#testRelationOn | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:249 | `SELECT t.'aid',t.'aname' FROM 'on_relation_a' t LEFT JOIN 'on_relation_b' t2 ON t2.'aid' = t.'aid' L…` |
-| QueryTest26.java#testViewWhere | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:219 |  |
-| QueryTest26.java#testViewWhere2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:229 |  |
+| QueryTest26.java#testRelationOn | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:256 | `SELECT t.'aid',t.'aname' FROM 'on_relation_a' t LEFT JOIN 'on_relation_b' t2 ON t2.'aid' = t.'aid' L…` |
+| QueryTest26.java#testViewWhere | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:226 |  |
+| QueryTest26.java#testViewWhere2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:236 |  |
 | QueryTest26.java#testaa | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.Part2.cs:20 | `SELECT t.'id',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'content',t.'url',…` |
 | QueryTest27.java#testDerivedTable2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest27.cs:254 | `SELECT t2.'score' AS 'score',t2.'status1' AS 'status1',t2.'order' AS 'order',t2.'is_top' AS 'is_top'…` |
 | QueryTest27.java#testDerivedTable3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest27.cs:264 | `SELECT t2.'score' AS 'score',t2.'status1' AS 'status1',t2.'order' AS 'order',t2.'is_top' AS 'is_top'…` |
@@ -1554,7 +1554,7 @@
 | QueryTest25.java#test11a | 待做 |  | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest25.java#testToListFlat1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:29：Java 的 toList(flatElement…) 先只查关联键、再逐层带出并在内存里去重；C# 的 SelectMany 按 LINQ 语义写成一条 INNER JOIN（保留重复，去重加 Distinct） |  |
 | QueryTest25.java#xxx22 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:159：用 Hikari 连本机 3306、替换多个内部服务另建客户端，属于 Java 的启动配置 |  |
-| QueryTest26.java#includeFlat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:315 |  |
+| QueryTest26.java#includeFlat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:322 |  |
 | QueryTestRelationTest.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTestRelationTest.cs:13 | `SELECT t.'id',t.'com_id',t.'user_id',t.'gw' FROM 'my_com_user' t LEFT JOIN 'my_company_info' t1 ON t…` |
 | SubJoinTest.java#testSubJoinCaseWhen1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:54 | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
 | mysql8/CTETest.java#cteTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:67 | `WITH 'm8_user_temp' AS (SELECT t.'id',t.'name' FROM 'm8_user' t WHERE t.'age' IS NULL) SELECT t2.'id…` |
@@ -2142,57 +2142,57 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| dameng/DamengForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery | 待做 |  |  |
-| dameng/DamengForUpdateTest.java#testForUpdateBlocksConcurrentTransaction | 待做 |  |  |
-| dameng/DamengForUpdateTest.java#testForUpdateDerivedCountAndExistsSqlBehaviorConsistent | 待做 |  |  |
-| dameng/DamengForUpdateTest.java#testForUpdateDuplicateCallThrows | 待做 |  |  |
-| dameng/DamengForUpdateTest.java#testForUpdateJoinNotSupported | 待做 |  |  |
-| dameng/DamengForUpdateTest.java#testForUpdateSqlAppendInTransaction | 待做 |  |  |
-| dameng/DamengForUpdateTest.java#testForUpdateWithoutTransactionThrows | 待做 |  |  |
-| dameng/DamengQueryTest.java#concat1 | 待做 |  | `select 'a' \|\| null \|\| 'b' as "aa" from DUAL` |
-| dameng/DamengQueryTest.java#cteViewTree1 | 待做 |  |  |
-| dameng/DamengQueryTest.java#query0 | 待做 |  | `SELECT "ID","STARS","TITLE","CREATE_TIME" FROM "MY_TOPIC" WHERE "ID" = ?` |
-| dameng/DamengQueryTest.java#query0_1 | 待做 |  | `SELECT "ID","STARS","TITLE","CREATE_TIME" FROM "MY_TOPIC" WHERE "ID" = ? AND ROWNUM < 2` |
-| dameng/DamengQueryTest.java#query1 | 待做 |  | `SELECT rt.* FROM(SELECT "ID","STARS","TITLE","CREATE_TIME", ROWNUM AS "__rownum__" FROM "MY_TOPIC" W…` |
-| dameng/DamengQueryTest.java#query16 | 待做 |  | `SELECT COUNT(*) FROM (SELECT COUNT(*) AS "STARS" FROM "MY_TOPIC" t LEFT JOIN "MY_TOPIC" t1 ON t."ID"…` |
-| dameng/DamengQueryTest.java#query17 | 待做 |  |  |
-| dameng/DamengQueryTest.java#query2 | 待做 |  | `SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS "__rownum__" FROM (SELECT "ID","STARS","TITLE","CREATE_TIM…` |
-| dameng/DamengQueryTest.java#query3 | 待做 |  | `SELECT rt.* FROM (SELECT "ID","STARS","TITLE","CREATE_TIME" FROM "MY_TOPIC" WHERE "ID" = ? ORDER BY …` |
-| dameng/DamengQueryTest.java#query4 | 待做 |  |  |
-| dameng/DamengQueryTest.java#query5 | 待做 |  |  |
-| dameng/DamengQueryTest.java#query6 | 待做 |  |  |
-| dameng/DamengQueryTest.java#query7 | 待做 |  |  |
-| dameng/DamengQueryTest.java#queryFormat1 | 待做 |  | `SELECT t."CREATE_TIME" AS "VALUE1",TO_CHAR(t."CREATE_TIME",'YYYY-MM-"01"') AS "VALUE2" FROM "MY_TOPI…` |
-| dameng/DamengQueryTest.java#queryFormat2 | 待做 |  | `SELECT t."CREATE_TIME" AS "VALUE1",TO_CHAR(t."CREATE_TIME",'YYYY"年"MM-"01"') AS "VALUE2" FROM "MY_TO…` |
-| dameng/DamengQueryTest.java#queryFormat3 | 待做 |  | `SELECT t."CREATE_TIME" AS "VALUE1",TO_CHAR(t."CREATE_TIME",'YYYY"年"MM-"01" HH24"时"MI"分"SS"秒"') AS "V…` |
-| dameng/DamengQueryTest.java#queryFormat4 | 待做 |  | `SELECT t."CREATE_TIME" AS "VALUE1",TO_CHAR(t."CREATE_TIME",'YYYY"年"MM-"01" HH24:MI"分"SS"秒"') AS "VAL…` |
-| dameng/DamengQueryTest.java#subQueryTest1 | 待做 |  | `SELECT t."ID",t."STARS",t."TITLE",t."CREATE_TIME" FROM "MY_TOPIC" t LEFT JOIN (SELECT t1."TITLE" AS …` |
-| dameng/DamengQueryTest.java#test1 | 待做 |  |  |
-| dameng/DamengQueryTest.java#test111 | 待做 |  |  |
-| dameng/DamengQueryTest.java#testAll | 待做 |  | `SELECT t."ID",t."NAME",t."PHONE",t."AGE",t."CREATE_TIME" FROM "t_sys_user" t WHERE NOT (EXISTS(SELEC…` |
-| dameng/DamengQueryTest.java#testAll1 | 待做 |  | `SELECT t."ID",t."NAME",t."PHONE",t."AGE",t."CREATE_TIME" FROM "t_sys_user" t WHERE NOT (EXISTS(SELEC…` |
-| dameng/DamengQueryTest.java#testAll2 | 待做 |  | `SELECT t."ID",t."NAME",t."PHONE",t."AGE",t."CREATE_TIME" FROM "t_sys_user" t WHERE NOT (EXISTS(SELEC…` |
-| dameng/DamengQueryTest.java#testAllGroupJoin | 待做 |  | `SELECT t."ID",t."NAME",t."PHONE",t."AGE",t."CREATE_TIME" FROM "t_sys_user" t LEFT JOIN (SELECT t1."U…` |
-| dameng/DamengQueryTest.java#testAllGroupJoin2 | 待做 |  | `SELECT t."ID",t."NAME",t."PHONE",t."AGE",t."CREATE_TIME" FROM "t_sys_user" t LEFT JOIN (SELECT t1."U…` |
-| dameng/DamengQueryTest.java#testBooleanValue | 待做 |  | `SELECT (CASE WHEN (EXISTS(SELECT 1 FROM "t_bank_card" t2 WHERE t2."UID" = t."ID" AND ROWNUM < 2)) TH…` |
-| dameng/DamengQueryTest.java#testBooleanValue2 | 待做 |  | `SELECT (CASE WHEN (EXISTS(SELECT 1 FROM "t_bank_card" t2 WHERE t2."UID" = t."ID" AND ROWNUM < 2)) TH…` |
-| dameng/DamengQueryTest.java#testDraft9 | 待做 |  |  |
-| dameng/DamengQueryTest.java#testEasyQuery | 待做 |  |  |
-| dameng/DamengQueryTest.java#testJoin1 | 待做 |  |  |
-| dameng/DamengQueryTest.java#testJoining | 待做 |  | `SELECT t."ID",t."NAME",t."PHONE",t."AGE",t."CREATE_TIME" FROM "t_sys_user" t LEFT JOIN (SELECT t1."U…` |
-| dameng/DamengQueryTest.java#testJoining1 | 待做 |  | `SELECT t."ID",t."NAME",t."PHONE",t."AGE",t."CREATE_TIME" FROM "t_sys_user" t LEFT JOIN (SELECT t1."U…` |
-| dameng/DamengQueryTest.java#testMaxColumns1 | 待做 |  | `SELECT "ID","STARS","TITLE","CREATE_TIME" FROM "MY_TOPIC" WHERE (SELECT MAX(__mmc.__col__) FROM (SEL…` |
-| dameng/DamengQueryTest.java#testMaxColumns2 | 待做 |  | `SELECT "ID","STARS","TITLE","CREATE_TIME" FROM "MY_TOPIC" WHERE (SELECT MAX(__mmc.__col__) FROM (SEL…` |
-| dameng/DamengQueryTest.java#testMaxColumns3 | 待做 |  | `SELECT "ID","STARS","TITLE","CREATE_TIME" FROM "MY_TOPIC" WHERE (SELECT MIN(__mmc.__col__) FROM (SEL…` |
-| dameng/DamengQueryTest.java#testQuery | 待做 |  | `SELECT t."ID",t."NAME",t."ISDELETE" AS "IS_DELETE",t."ROWNUMBER" AS "ROW_NUMBER" FROM "MY_CUSTOM" t` |
-| dameng/DamengQueryTest.java#testQueryAlias | 待做 |  | `SELECT t."ID",t."NAME",t."ROWNUMBER" AS "ROW_NUMBER",t."ISDELETE" AS "IS_DELETE" FROM "MY_CUSTOM" t` |
-| dameng/DamengQueryTest.java#testQueryAlias2 | 待做 |  | `SELECT t."ID",t."NAME",t."ROWNUMBER",t."ISDELETE" FROM "MY_CUSTOM" t` |
-| dameng/DamengQueryTest.java#testQueryAlias3 | 待做 |  | `SELECT t."ID",t."NAME",t."ROWNUMBER",t."ISDELETE" FROM "MY_CUSTOM" t` |
-| dameng/DamengQueryTest.java#testaa | 待做 |  |  |
-| dameng/MathQueryTest.java#testPropertyMath1 | 待做 |  | `SELECT t."TEST_VALUE" AS "TEST_VALUE",ABS(t."TEST_VALUE") AS "TEST_ABS",SIGN(t."TEST_VALUE") AS "TES…` |
-| dameng/UpdateJoinTest.java#testTopicInsertOrUpdate | 待做 |  |  |
-| dameng/UpdateJoinTest.java#testUpdateJoin1 | 待做 |  | `UPDATE "doc_bank_card" t INNER JOIN "doc_user" t1 ON t1."ID" = t."UID" SET t."TYPE" = t1."NAME" WHER…` |
-| dameng/UpdateJoinTest.java#testUpdateJoin2 | 待做 |  | `UPDATE "doc_bank_card" t INNER JOIN "doc_bank" t1 ON t1."ID" = t."BANK_ID" INNER JOIN "doc_user" t2 …` |
+| dameng/DamengForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:53 |  |
+| dameng/DamengForUpdateTest.java#testForUpdateBlocksConcurrentTransaction | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:48 |  |
+| dameng/DamengForUpdateTest.java#testForUpdateDerivedCountAndExistsSqlBehaviorConsistent | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:66 |  |
+| dameng/DamengForUpdateTest.java#testForUpdateDuplicateCallThrows | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:39 |  |
+| dameng/DamengForUpdateTest.java#testForUpdateJoinNotSupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:31 |  |
+| dameng/DamengForUpdateTest.java#testForUpdateSqlAppendInTransaction | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:15 |  |
+| dameng/DamengForUpdateTest.java#testForUpdateWithoutTransactionThrows | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:24 |  |
+| dameng/DamengQueryTest.java#concat1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:21：Java 用原生 SQL 在实库上验证 \|\| 遇到 NULL 当空串；C# 核对字符串拼接写成 \|\|，实库验证在 3.1 冒烟里做 | `select 'a' \|\| null \|\| 'b' as "aa" from DUAL` |
+| dameng/DamengQueryTest.java#cteViewTree1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:27：Java 在达梦实库上执行并断言结果（或只执行不断言）；C# 只核对渲染出的 SQL，实库验证在 3.1 冒烟里做 |  |
+| dameng/DamengQueryTest.java#query0 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:35 | `SELECT "ID","STARS","TITLE","CREATE_TIME" FROM "MY_TOPIC" WHERE "ID" = ?` |
+| dameng/DamengQueryTest.java#query0_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:38 | `SELECT "ID","STARS","TITLE","CREATE_TIME" FROM "MY_TOPIC" WHERE "ID" = ? AND ROWNUM < 2` |
+| dameng/DamengQueryTest.java#query1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:41 | `SELECT rt.* FROM(SELECT "ID","STARS","TITLE","CREATE_TIME", ROWNUM AS "__rownum__" FROM "MY_TOPIC" W…` |
+| dameng/DamengQueryTest.java#query16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:94 | `SELECT COUNT(*) FROM (SELECT COUNT(*) AS "STARS" FROM "MY_TOPIC" t LEFT JOIN "MY_TOPIC" t1 ON t."ID"…` |
+| dameng/DamengQueryTest.java#query17 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:106：Java 在达梦实库上执行并断言结果（或只执行不断言）；C# 只核对渲染出的 SQL，实库验证在 3.1 冒烟里做 |  |
+| dameng/DamengQueryTest.java#query2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:46 | `SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS "__rownum__" FROM (SELECT "ID","STARS","TITLE","CREATE_TIM…` |
+| dameng/DamengQueryTest.java#query3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:51 | `SELECT rt.* FROM (SELECT "ID","STARS","TITLE","CREATE_TIME" FROM "MY_TOPIC" WHERE "ID" = ? ORDER BY …` |
+| dameng/DamengQueryTest.java#query4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:57：Java 在达梦实库上执行并断言结果（或只执行不断言）；C# 只核对渲染出的 SQL，实库验证在 3.1 冒烟里做 |  |
+| dameng/DamengQueryTest.java#query5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:66：Java 在达梦实库上执行并断言结果（或只执行不断言）；C# 只核对渲染出的 SQL，实库验证在 3.1 冒烟里做 |  |
+| dameng/DamengQueryTest.java#query6 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:77：Java 在达梦实库上执行并断言结果（或只执行不断言）；C# 只核对渲染出的 SQL，实库验证在 3.1 冒烟里做 |  |
+| dameng/DamengQueryTest.java#query7 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:86：Java 在达梦实库上执行并断言结果（或只执行不断言）；C# 只核对渲染出的 SQL，实库验证在 3.1 冒烟里做 |  |
+| dameng/DamengQueryTest.java#queryFormat1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:113 | `SELECT t."CREATE_TIME" AS "VALUE1",TO_CHAR(t."CREATE_TIME",'YYYY-MM-"01"') AS "VALUE2" FROM "MY_TOPI…` |
+| dameng/DamengQueryTest.java#queryFormat2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:114 | `SELECT t."CREATE_TIME" AS "VALUE1",TO_CHAR(t."CREATE_TIME",'YYYY"年"MM-"01"') AS "VALUE2" FROM "MY_TO…` |
+| dameng/DamengQueryTest.java#queryFormat3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:115 | `SELECT t."CREATE_TIME" AS "VALUE1",TO_CHAR(t."CREATE_TIME",'YYYY"年"MM-"01" HH24"时"MI"分"SS"秒"') AS "V…` |
+| dameng/DamengQueryTest.java#queryFormat4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:116 | `SELECT t."CREATE_TIME" AS "VALUE1",TO_CHAR(t."CREATE_TIME",'YYYY"年"MM-"01" HH24:MI"分"SS"秒"') AS "VAL…` |
+| dameng/DamengQueryTest.java#subQueryTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:122 | `SELECT t."ID",t."STARS",t."TITLE",t."CREATE_TIME" FROM "MY_TOPIC" t LEFT JOIN (SELECT t1."TITLE" AS …` |
+| dameng/DamengQueryTest.java#test1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:129：Java 在达梦实库上执行并断言结果（或只执行不断言）；C# 只核对渲染出的 SQL，实库验证在 3.1 冒烟里做 |  |
+| dameng/DamengQueryTest.java#test111 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:139：Java 在达梦实库上执行并断言结果（或只执行不断言）；C# 只核对渲染出的 SQL，实库验证在 3.1 冒烟里做 |  |
+| dameng/DamengQueryTest.java#testAll | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:145：Java 还断言带出银行卡的第二条语句与结果：要先在实库上读出用户才会发出，C# 只核对第一条，带出与结果在 3.1 冒烟里验证 | `SELECT t."ID",t."NAME",t."PHONE",t."AGE",t."CREATE_TIME" FROM "t_sys_user" t WHERE NOT (EXISTS(SELEC…` |
+| dameng/DamengQueryTest.java#testAll1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:152：Java 还断言带出银行卡的第二条语句与结果：要先在实库上读出用户才会发出，C# 只核对第一条，带出与结果在 3.1 冒烟里验证 | `SELECT t."ID",t."NAME",t."PHONE",t."AGE",t."CREATE_TIME" FROM "t_sys_user" t WHERE NOT (EXISTS(SELEC…` |
+| dameng/DamengQueryTest.java#testAll2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:159：Java 还断言带出银行卡的第二条语句与结果：要先在实库上读出用户才会发出，C# 只核对第一条，带出与结果在 3.1 冒烟里验证 | `SELECT t."ID",t."NAME",t."PHONE",t."AGE",t."CREATE_TIME" FROM "t_sys_user" t WHERE NOT (EXISTS(SELEC…` |
+| dameng/DamengQueryTest.java#testAllGroupJoin | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:166：Java 还断言带出银行卡的第二条语句与结果：要先在实库上读出用户才会发出，C# 只核对第一条，带出与结果在 3.1 冒烟里验证 | `SELECT t."ID",t."NAME",t."PHONE",t."AGE",t."CREATE_TIME" FROM "t_sys_user" t LEFT JOIN (SELECT t1."U…` |
+| dameng/DamengQueryTest.java#testAllGroupJoin2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:173：Java 还断言带出银行卡的第二条语句与结果：要先在实库上读出用户才会发出，C# 只核对第一条，带出与结果在 3.1 冒烟里验证 | `SELECT t."ID",t."NAME",t."PHONE",t."AGE",t."CREATE_TIME" FROM "t_sys_user" t LEFT JOIN (SELECT t1."U…` |
+| dameng/DamengQueryTest.java#testBooleanValue | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:183 | `SELECT (CASE WHEN (EXISTS(SELECT 1 FROM "t_bank_card" t2 WHERE t2."UID" = t."ID" AND ROWNUM < 2)) TH…` |
+| dameng/DamengQueryTest.java#testBooleanValue2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:183 | `SELECT (CASE WHEN (EXISTS(SELECT 1 FROM "t_bank_card" t2 WHERE t2."UID" = t."ID" AND ROWNUM < 2)) TH…` |
+| dameng/DamengQueryTest.java#testDraft9 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:189：Java 在达梦实库上断言结果；C# 只核对列与列之间的加减、相差渲染出的 SQL（两个常量之间的 C# 在本地算好，不写进 SQL），实库验证在 3.1 冒烟里做 |  |
+| dameng/DamengQueryTest.java#testEasyQuery | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:203：Java 在达梦实库上执行并断言结果（或只执行不断言）；C# 只核对渲染出的 SQL，实库验证在 3.1 冒烟里做 |  |
+| dameng/DamengQueryTest.java#testJoin1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:209：Java 在达梦实库上执行并断言结果（或只执行不断言）；C# 只核对渲染出的 SQL，实库验证在 3.1 冒烟里做 |  |
+| dameng/DamengQueryTest.java#testJoining | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:215 | `SELECT t."ID",t."NAME",t."PHONE",t."AGE",t."CREATE_TIME" FROM "t_sys_user" t LEFT JOIN (SELECT t1."U…` |
+| dameng/DamengQueryTest.java#testJoining1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:222 | `SELECT t."ID",t."NAME",t."PHONE",t."AGE",t."CREATE_TIME" FROM "t_sys_user" t LEFT JOIN (SELECT t1."U…` |
+| dameng/DamengQueryTest.java#testMaxColumns1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:230 | `SELECT "ID","STARS","TITLE","CREATE_TIME" FROM "MY_TOPIC" WHERE (SELECT MAX(__mmc.__col__) FROM (SEL…` |
+| dameng/DamengQueryTest.java#testMaxColumns2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:236 | `SELECT "ID","STARS","TITLE","CREATE_TIME" FROM "MY_TOPIC" WHERE (SELECT MAX(__mmc.__col__) FROM (SEL…` |
+| dameng/DamengQueryTest.java#testMaxColumns3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:243 | `SELECT "ID","STARS","TITLE","CREATE_TIME" FROM "MY_TOPIC" WHERE (SELECT MIN(__mmc.__col__) FROM (SEL…` |
+| dameng/DamengQueryTest.java#testQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:250 | `SELECT t."ID",t."NAME",t."ISDELETE" AS "IS_DELETE",t."ROWNUMBER" AS "ROW_NUMBER" FROM "MY_CUSTOM" t` |
+| dameng/DamengQueryTest.java#testQueryAlias | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:255 | `SELECT t."ID",t."NAME",t."ROWNUMBER" AS "ROW_NUMBER",t."ISDELETE" AS "IS_DELETE" FROM "MY_CUSTOM" t` |
+| dameng/DamengQueryTest.java#testQueryAlias2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:260 | `SELECT t."ID",t."NAME",t."ROWNUMBER",t."ISDELETE" FROM "MY_CUSTOM" t` |
+| dameng/DamengQueryTest.java#testQueryAlias3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:264 | `SELECT t."ID",t."NAME",t."ROWNUMBER",t."ISDELETE" FROM "MY_CUSTOM" t` |
+| dameng/DamengQueryTest.java#testaa | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengQueryTest.cs:270：Java 在达梦实库上执行并断言结果（或只执行不断言）；C# 只核对渲染出的 SQL，实库验证在 3.1 冒烟里做 |  |
+| dameng/MathQueryTest.java#testPropertyMath1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengMathQueryTest.cs:6：Java 的 DTO 代理 set() 同名列也写 AS，C# 同名不写；Java 还在实库 10000 行随机数上比对结果，实库验证在 3.1 冒烟里做 | `SELECT t."TEST_VALUE" AS "TEST_VALUE",ABS(t."TEST_VALUE") AS "TEST_ABS",SIGN(t."TEST_VALUE") AS "TES…` |
+| dameng/UpdateJoinTest.java#testTopicInsertOrUpdate | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengUpdateJoinTest.cs:10：Java 在达梦实库上执行（不断言）；C# 只核对渲染出的 MERGE，实库验证在 3.1 冒烟里做 |  |
+| dameng/UpdateJoinTest.java#testUpdateJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengUpdateJoinTest.cs:16 | `UPDATE "doc_bank_card" t INNER JOIN "doc_user" t1 ON t1."ID" = t."UID" SET t."TYPE" = t1."NAME" WHER…` |
+| dameng/UpdateJoinTest.java#testUpdateJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengUpdateJoinTest.cs:21 | `UPDATE "doc_bank_card" t INNER JOIN "doc_bank" t1 ON t1."ID" = t."BANK_ID" INNER JOIN "doc_user" t2 …` |
 
 ### DuckDB 方言（`dialect.duckdb`，M6）
 

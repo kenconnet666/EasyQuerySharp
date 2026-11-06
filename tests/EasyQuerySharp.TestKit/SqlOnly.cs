@@ -16,12 +16,13 @@ public static class SqlOnly
         ["oracle"] = OracleDialect.Instance,
         ["sqlite"] = SqliteDialect.Instance,
         ["duckdb"] = DuckDbDialect.Instance,
+        ["dameng"] = DamengDialect.Instance,
     };
 
     private static readonly Dictionary<string, EasyDb> Cache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Lock Gate = new();
 
-    /// <summary>按方言短名（mysql / pgsql / mssql / oracle / sqlite / duckdb）取 EasyDb。</summary>
+    /// <summary>按方言短名（mysql / pgsql / mssql / oracle / sqlite / duckdb / dameng）取 EasyDb。</summary>
     public static EasyDb Db(string dialect)
     {
         lock (Gate)

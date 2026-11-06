@@ -156,20 +156,29 @@ public abstract partial class SqlDialect
     protected static string EscapeLike(string value) => value.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
 
     /// <summary>
-    /// 写 ORDER BY 的一项。指定了 NULL 位置时默认用 CASE 模拟（与 Java 的 OrderByNullsModeSQLFunction 一致，各库通用）：
-    /// <c>CASE WHEN x IS NULL THEN 1 ELSE 0 END ASC,x ASC</c>；原生片段不追加方向。
+    /// 指定了 NULL 位置时是否写原生的 <c>NULLS FIRST / LAST</c>（Java 的 OracleOrderByNullsModeSQLFunction）；
+    /// 默认 false，用 CASE 模拟（Java 的 OrderByNullsModeSQLFunction，各库通用）。
+    /// </summary>
+    protected virtual bool NativeNullsOrder => false;
+
+    /// <summary>
+    /// 写 ORDER BY 的一项。指定了 NULL 位置时按 <see cref="NativeNullsOrder"/> 写成 <c>x ASC NULLS LAST</c>，
+    /// 或 <c>CASE WHEN x IS NULL THEN 1 ELSE 0 END ASC,x ASC</c>；原生片段不追加方向。
     /// </summary>
     public virtual void WriteOrderByItem(SqlRenderer renderer, OrderByItem item)
     {
-        if (item.Nulls is { } nulls)
-            renderer.Append("CASE WHEN ").Write(item.Expr).Append(nulls == NullsOrder.Last ? " IS NULL THEN 1 ELSE 0 END ASC," : " IS NULL THEN 0 ELSE 1 END ASC,");
+        var emulateNulls = item.Nulls is not null && !NativeNullsOrder;
+        if (emulateNulls)
+            renderer.Append("CASE WHEN ").Write(item.Expr).Append(item.Nulls == NullsOrder.Last ? " IS NULL THEN 1 ELSE 0 END ASC," : " IS NULL THEN 0 ELSE 1 END ASC,");
         renderer.Write(item.Expr);
-        if (!item.Raw) renderer.Append(item.Descending ? " DESC" : " ASC");
+        if (item.Raw) return;
+        renderer.Append(item.Descending ? " DESC" : " ASC");
+        if (item.Nulls is { } nulls && !emulateNulls) renderer.Append(nulls == NullsOrder.Last ? " NULLS LAST" : " NULLS FIRST");
     }
 
     /// <summary>
     /// 带组内排序的字符串聚合。默认是 PostgreSQL / SQLite 的写法：<c>STRING_AGG(x, ? ORDER BY …)</c>；
-    /// MySQL 写成 <c>GROUP_CONCAT(x ORDER BY … SEPARATOR ?)</c>，SQL Server / Oracle 写成 <c>WITHIN GROUP (ORDER BY …)</c>。
+    /// MySQL 写成 <c>GROUP_CONCAT(x ORDER BY … SEPARATOR ?)</c>，SQL Server / Oracle 写成 <c>… WITHIN GROUP (ORDER BY …)</c>。
     /// </summary>
     public virtual void WriteOrderedStringJoin(SqlRenderer renderer, OrderedStringJoinExpr join)
     {

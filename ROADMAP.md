@@ -15,8 +15,8 @@
 
 ## 现状（2026-11-06）
 
-- 对标：已移植 1933、偏离 153、不适用 140、骨架 5、待做 173。
-- 待做的分布：方言 83（达梦 51、HANA 21、ForUpdate 冒烟 5、ClickHouse 4、Kingbase 2），分库分表 48，其余 42（code-first、表名映射、零散）。
+- 对标：已移植 1964、偏离 174、不适用 140、骨架 6、待做 120。
+- 待做的分布：方言 30（HANA 21、ForUpdate 冒烟 4、ClickHouse 4 等，均在进行中），分库分表 48，其余 42（code-first、表名映射、零散）。
 - 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17、DuckDB（进程内）；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
 
 ## 已定的取舍
@@ -107,7 +107,11 @@ R → 1 → 2 → 3 → 4 → 5。
 
 每个方言交付三样东西：方言类、在 `TestDatabases` 里登记、实库冒烟。容器起得来的再加一个 CI 任务。
 
-- [ ] 3.1 达梦：方言继承 Oracle，覆盖差异部分。用例有 DamengQueryTest、DamengForUpdateTest、UpdateJoinTest、MathQueryTest、MigrationDamengTest，以及 QueryTest26 testAAA（达梦上用对一导航条件删除）。
+- [~] 3.1 达梦：`DamengDialect` 继承 Oracle、`UseDameng`，`SqlOnly` 与文档快照加上达梦。缺实库冒烟（本机没有达梦库和 DM.DmProvider 驱动，`TestDatabases` 也还没登记）。
+  - 覆盖的差异（对照 Java 的 sql-dameng）：带连接的更新写成 `UPDATE t INNER JOIN … SET`；转布尔 `CAST(x AS BIT)`；日期相差用 `CAST(终点 AS TIMESTAMP WITH TIME ZONE)-起点` 的间隔；不排序的 LISTAGG 不写 `WITHIN GROUP(ORDER BY 1)`；NULL 位置用 CASE 模拟（Java 只给 Oracle 写原生 NULLS LAST）。Java 没有覆盖、按 TS 版在 DM8 上实测的结果补的：截断到秒经过 `TO_CHAR` / `TO_TIMESTAMP`（DATE 只到日）、UTC 时间 `GETUTCDATE()`（没有 `SYS_EXTRACT_UTC`）、建表用 INT / BIGINT / BIT / DOUBLE / REAL / TIME 与 `IDENTITY(1, 1)`。
+  - 顺手补齐 Oracle（达梦沿用）：拼接式 LIKE 写成 `LIKE ('%'||TO_CHAR(?)||'%')`；带组内排序的字符串聚合写成 `LISTAGG(..) WITHIN GROUP(ORDER BY …)`（原来落到 STRING_AGG），SQL Server 同样改成 `STRING_AGG(..) WITHIN GROUP (ORDER BY …)`。
+  - 用例：DamengQueryTest 40、DamengForUpdateTest 7、UpdateJoinTest 3、MathQueryTest 1、QueryTest26 testAAA、ForUpdateDialectToSQLSmokeTest damengForUpdateToSQLSmoke 共 53 个：只渲染 SQL、逐字比对 Java；Java 只断言结果或只执行不断言的 21 个记偏离（实库验证留给冒烟）；testForUpdateBlocksConcurrentTransaction（两个事务争行锁）留骨架。testAAA：Java 的达梦删除不支持连接（抛异常），C# 沿用 Oracle 按 ROWID 删除。
+  - 冒烟要验证：`UPDATE … INNER JOIN`、`DELETE … WHERE ROWID IN`、`GETUTCDATE()`、`IDENTITY(1, 1)`、日期相差与加减的结果、DmProvider 的参数占位（`:p0`）。MigrationDamengTest 断言的是 code-first 同步语句（注释、默认值、`execute immediate`）的 MD5，归到 4.1。
 - [ ] 3.2 SAP HANA：
   - `Sql.Hana.Text`；
   - fork 的 HanaSqlTest、HanaTextSqlTest、三个 live 用例，以及 InsertSelect / JsonValueConverter 的 HANA 用例；
@@ -124,7 +128,7 @@ R → 1 → 2 → 3 → 4 → 5。
 
 ## 阶段 4 平台能力
 
-- [ ] 4.1 code-first：建表（注释、索引、外键）、只增不删的同步、`RenamedFrom`、`ToSql()`、读取库结构（MigrationTest 等 15 个）。
+- [ ] 4.1 code-first：建表（注释、索引、外键）、只增不删的同步、`RenamedFrom`、`ToSql()`、读取库结构（MigrationTest 等 15 个，含 MigrationDamengTest）。
 - [ ] 4.2 表名映射：查询级 `MapTable`（导航、隐式 join、include 跟着一起变；fork TableNameMapping 的 7 个用例）、`AsTable` 剩余的用例、`InSchema`、`WithTableLink`。
 - [ ] 4.3 `FilterBy` / `SortBy` 剩余的 6 个用例，以及 `Table(request)`。
 - [ ] 4.4 分库分表（ShardingTest 48 个，另有 H2 的 3 个骨架：H2OrderTest ×2、H2QueryTest allTypeTestSharding1），先写决策文档 0006：草案已写（[0006](docs/decisions/0006-sharding.md)），末尾“待定”的 5 点确认后开工：

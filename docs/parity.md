@@ -27,7 +27,7 @@
 |---|---|---|---|---|
 | 字符串函数 | `func.string` | 131 | 优先映射 BCL：`Contains` / `StartsWith` / `Trim` / `ToUpper` / `Substring` / `IndexOf` / `Length` / `Replace` / `PadLeft`；没有 BCL 对应的用扩展方法：`Like` / `NotLike`；`Contains` 等对应 Java 的 like（`LIKE ?`，% 在参数里），`LikeContains` / `LikeStartsWith` / `LikeEndsWith` 对应 Java 的 contains / startsWith / endsWith（`LIKE CONCAT('%',?,'%')`） | 阶段 1 |
 | 日期函数 | `func.date` | 101 | `AddDays` / `AddMonths` / `.Year` / `.DayOfWeek` / `ToString("yyyy-MM")`（格式串按方言翻译）/ `Sql.Now()`；日期相减 `(end - start).TotalDays` / `.Days` / `.TotalHours`（对应 Java 的 duration）；`DateTime` / `DateOnly` / `DateTimeOffset`；日期截断 `p.CreatedAt.DateTrunc(DateTruncUnit.Month)`（MySQL、PG、SQLite、SQL Server 2022 的 DATETRUNC、Oracle 的 TRUNC；周从周一起） | 完成 |
-| 通用函数 | `func.general` | 59 | `??`（nullOrDefault）/ `x.NullIf(y)` / `x.EqualsNullSafe(y)`（按方言写 `<=>` / `IS NOT DISTINCT FROM` / `IS`）/ `Sql.Random()` / `Sql.MaxColumns(a, b, c)`、`Sql.MinColumns(..)`（一行里几个值取最大 / 最小：MySQL、PG 的 GREATEST / LEAST，SQLite 的多参数 MAX / MIN，SQL Server 的 VALUES，Oracle 的 UNION ALL 派生表） | 阶段 3 |
+| 通用函数 | `func.general` | 59 | `??`（nullOrDefault）/ `x.NullIf(y)` / `x.EqualsNullSafe(y)`（按方言写 `<=>` / `IS NOT DISTINCT FROM` / `IS`）/ `Sql.Random()` / `Sql.MaxColumns(a, b, c)`、`Sql.MinColumns(..)`（一行里几个值取最大 / 最小：MySQL、PG 的 GREATEST / LEAST，SQLite 的多参数 MAX / MIN，SQL Server 的 VALUES，Oracle / 达梦的 UNION ALL 派生表） | 阶段 3 |
 | 字符串聚合 | `func.joining` | 29 | `g.StringJoin(p => p.Name, ",")`，集合导航上写 `string.Join(",", u.Posts.Select(p => p.Name))`；链上的 `OrderBy` / `ThenBy` 写进聚合 | 完成 |
 | JSON 函数 | `func.json` | 12 | `Sql.Json(u.Attrs).Get / Text / Value<T> / Length / ContainsKey`；方言专属的在 `Sql.MySql.Json(..)` / `Sql.Pg.Jsonb(..)` 下 | 完成 |
 | 数学函数 | `func.math` | 4 | 映射 `Math.Abs` / `Round` / `Floor` / `Ceiling` / `Pow` / `Sqrt` / `Sign` / `Log` / `Exp` / `Truncate` | 完成 |
@@ -54,9 +54,9 @@
 | 插入 | `write.insert` | 50 | `db.Insert(entities).ExecuteAsync()`，`.FillGeneratedKeys()` 回填自增键；字典写入 `db.InsertMap(table, rows)`；INSERT … SELECT：`q.InsertInto(table).Column(name, value)`（HANA 的用例随阶段 3） | 完成 |
 | 更新 | `write.update` | 59 | `db.Update<T>().Set(u => new T { Age = u.Age + 1 }).Where(..).ExecuteAsync()`；`db.Update(entity)` 按主键整行更新；`.Columns(..)` 限定列、`.WhereColumns(..)` 换定位列；字典 `db.UpdateMap(..)`；没有任何 SET 时抛异常（Java 是静默返回 0） | 完成 |
 | 删除 | `write.delete` | 25 | `db.Delete<T>().Where(..).ExecuteAsync()`；没有条件时必须写 `.All()`；逻辑删除的实体要真删时用 `.Hard()`；条件里可以用集合导航和对一导航 | 阶段 1 |
-| upsert | `write.upsert` | 13 | `.OnConflictIgnore(冲突列?)` / `.OnConflictUpdate(更新列?, 冲突列?)`：MySQL（INSERT IGNORE / ON DUPLICATE KEY UPDATE）、PG 与 SQLite（ON CONFLICT）、SQL Server 与 Oracle（单行 MERGE）；MySQL 上忽略冲突也可以写成 `ON DUPLICATE KEY UPDATE 主键 = VALUES(主键)`（`new MySqlDialect { IgnoreConflictAsKeyUpdate = true }`） | 完成 |
+| upsert | `write.upsert` | 13 | `.OnConflictIgnore(冲突列?)` / `.OnConflictUpdate(更新列?, 冲突列?)`：MySQL（INSERT IGNORE / ON DUPLICATE KEY UPDATE）、PG 与 SQLite（ON CONFLICT）、SQL Server、Oracle 与达梦（单行 MERGE）；MySQL 上忽略冲突也可以写成 `ON DUPLICATE KEY UPDATE 主键 = VALUES(主键)`（`new MySqlDialect { IgnoreConflictAsKeyUpdate = true }`） | 完成 |
 | 写哪些列、批量执行 | `write.strategy` | 26 | `.Columns(ColumnStrategy.OnlyNotNull)`，全局默认 `EasyDbOptions.UpdateStrategy`；`.Batch()` 按 SQL 分组一次发出（驱动支持时走 `DbBatch`），不在事务里时每组一个事务 | 完成 |
-| UPDATE / DELETE 里用导航 | `write.join` | 10 | `db.Update<Card>().Set(c => new Card { Type = c.User!.Name }).Where(c => c.User!.Name!.Contains("x"))`：对一导航生成 JOIN。MySQL：`UPDATE t INNER JOIN … SET` / `DELETE t FROM … JOIN`；PostgreSQL：`UPDATE … FROM` / `DELETE … USING`；SQL Server：`UPDATE t SET … FROM … JOIN` / `DELETE t FROM … JOIN`；SQLite：`UPDATE … AS t … FROM` / `DELETE … AS t WHERE EXISTS(…)`；Oracle：按 ROWID 的 `MERGE` / `DELETE … WHERE ROWID IN (…)` | 完成 |
+| UPDATE / DELETE 里用导航 | `write.join` | 10 | `db.Update<Card>().Set(c => new Card { Type = c.User!.Name }).Where(c => c.User!.Name!.Contains("x"))`：对一导航生成 JOIN。MySQL：`UPDATE t INNER JOIN … SET` / `DELETE t FROM … JOIN`；PostgreSQL：`UPDATE … FROM` / `DELETE … USING`；SQL Server：`UPDATE t SET … FROM … JOIN` / `DELETE t FROM … JOIN`；SQLite：`UPDATE … AS t … FROM` / `DELETE … AS t WHERE EXISTS(…)`；Oracle：按 ROWID 的 `MERGE` / `DELETE … WHERE ROWID IN (…)`；达梦：`UPDATE t INNER JOIN … SET`，删除同 Oracle | 完成 |
 | 追踪与差异更新 | `tracking` | 62 | `using var tracking = db.BeginTracking();` 后查出的实体被追踪，`db.Update(entity)` 只更新改过的列；`AsTracking()` / `AsNoTracking()`；`db.GetTrackedChanges(entity)`；不追踪时 `db.Update(after).Changes(before)` 只写两份之间不同的列 | 完成 |
 | 聚合根保存 | `save.aggregate` | 39 | `db.Save(root).ExecuteAsync()`（必须在追踪作用域与事务里）；级联声明 `[Navigate(Cascade = Cascade.Delete)]`；`.With(SaveBehavior.X)`、`.SavePath(..)`、`.RemoveRoot()`、`[SaveKey]`，见 [0004](decisions/0004-aggregate-save.md) | 完成 |
 
@@ -95,7 +95,7 @@
 | SQL Server | `dialect.mssql` | 38 | Microsoft.Data.SqlClient；`options.UseSqlServer(..)`；Upstream 的 38 个 mssql 用例（库 `mssql_eq`）在实库跑通，CI 有独立的 upstream 分片；日期格式按 Java 写成 CONVERT / SUBSTRING 段，拼接式 LIKE 先 `CAST(.. AS NVARCHAR(MAX))`，`Math.Round` / `Atan2` / `Truncate` 按 SQL Server 改写 | 第一档，阶段 2（2.1 完成） |
 | Oracle | 归在上面各项 | — | Oracle.ManagedDataAccess.Core；`options.UseOracle(..)` | 第一档，阶段 2 |
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | 13 | — | 不做 |
-| 达梦 | `dialect.dameng` | 51 | DM.DmProvider；方言继承 Oracle | 第二档，阶段 3 |
+| 达梦 | `dialect.dameng` | 51 | DM.DmProvider；`options.UseDameng(..)`；方言继承 Oracle（ROWNUM 分页、MERGE、LISTAGG、FROM DUAL），覆盖带连接的更新（`UPDATE t INNER JOIN … SET`）、转布尔 `CAST(x AS BIT)`、日期相差、不排序的 LISTAGG 不写 WITHIN GROUP、NULL 位置用 CASE、截断到秒、UTC 时间与建表类型；51 个用例只比对 SQL（Java 只断言结果的记偏离），并发行锁 1 个留骨架 | 第二档，阶段 3（3.1 缺实库冒烟） |
 | 人大金仓 / openGauss | `dialect.kingbase` | 2 | Npgsql；与 PG 共用方言 | 第二档，阶段 3 |
 | DuckDB | `dialect.duckdb` | 16 | DuckDB.NET.Data.Full（只在测试项目里引用）；`options.UseDuckDb(..)` | 第二档，完成 |
 | ClickHouse | `dialect.clickhouse` | 4 | ClickHouse.Client | 第二档，阶段 3 |
