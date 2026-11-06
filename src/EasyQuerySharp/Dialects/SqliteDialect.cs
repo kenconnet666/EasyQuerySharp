@@ -209,6 +209,8 @@ public class SqliteDialect : SqlDialect
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("GROUP_CONCAT(DISTINCT ").Write(a[0]).Append(",").Write(a[1]).Append(")");
         f[SqlFunctionNames.Now] = Template("datetime(current_timestamp,'localtime')");
         f[SqlFunctionNames.UtcNow] = Template("CURRENT_TIMESTAMP");
+        f[SqlFunctionNames.PadLeft] = (r, a) => Padding(r.Append("("), a).Append(" || ").Write(a[0]).Append(")");
+        f[SqlFunctionNames.PadRight] = (r, a) => Padding(r.Append("(").Write(a[0]).Append(" || "), a).Append(")");
         DateFunctions(f,
             unit => unit == DateUnit.Millisecond ? "datetime({0},(({1})/1000)||' seconds')" : "datetime({0},({1})||' " + Lower(unit) + "s')",
             part => part == DatePart.IsoDayOfWeek
@@ -222,5 +224,15 @@ public class SqliteDialect : SqlDialect
             {
                 DateUnit.Day => "/86400", DateUnit.Hour => "/3600", DateUnit.Minute => "/60", DateUnit.Second => "", _ => "*1000",
             });
+    }
+
+    // SQLite 没有 LPAD / RPAD（Java 写的 PADL 来自扩展库，默认没有）：n 个填充字符（zeroblob 的十六进制 '00' 逐个换成它）取差的那几个，
+    // 字符串够长时差是负数、取到空串，不截断（与 .NET 的 PadLeft、Java 的写法一致）
+    private static SqlRenderer Padding(SqlRenderer r, IReadOnlyList<SqlExpr> a)
+    {
+        r.Append("substr(replace(hex(zeroblob(").Write(a[1]).Append(")), '00', ");
+        if (a.Count > 2) r.Write(a[2]);
+        else r.Append("' '");
+        return r.Append("), 1, ").Write(a[1]).Append(" - length(").Write(a[0]).Append("))");
     }
 }

@@ -12,7 +12,7 @@
 | `s.Substring(i, n)` | `SUBSTR(s, i+1, n)` | 下标从 0 开始，常量直接加 1 |
 | `s.Replace(a, b)` | `REPLACE` | |
 | `s.IndexOf(x)` | `LOCATE(x, s) - 1` | 找不到是 -1，与 C# 一致 |
-| `s.PadLeft(n, c)` / `PadRight` | `LPAD` / `RPAD` | SQLite 没有 |
+| `s.PadLeft(n, c)` / `PadRight` | `LPAD` / `RPAD` | 比 n 长时 LPAD 截断成 n 个字符（.NET 原样返回）；SQLite 没有 LPAD，用 `zeroblob` 拼出填充字符，不截断 |
 | `a + b`、`string.Concat`、插值字符串 `$"{a}-{b}"` | `CONCAT(..)` | Oracle / SQLite 用 `||` |
 | `string.IsNullOrEmpty(s)` / `IsNullOrWhiteSpace` | `s IS NULL OR s = ''` 等 | |
 | `string.Compare(a, b)` / `a.CompareTo(b)` | `CASE WHEN a = b THEN 0 …` | |
@@ -38,6 +38,24 @@ SELECT UPPER(t.`title`) AS `upper`,CHAR_LENGTH(t.`title`) AS `length`,SUBSTR(t.`
 -- SQL Server
 SELECT UPPER(t.[title]) AS [upper],LEN(t.[title]) AS [length],SUBSTRING(t.[title],1,2) AS [first],REPLACE(t.[title],?,?) AS [replaced],LTRIM(RTRIM(CONCAT(?,t.[title],?))) AS [trimmed],(CHARINDEX(?,t.[title]) - 1) AS [position] FROM [t_post] t WHERE t.[id] <= ? ORDER BY t.[id] ASC;
 -- params: ['查询', 'query', ' ', ' ', 'join', 2]
+```
+<!-- /card -->
+
+<!-- card: func/Pad sql=mysql,sqlite -->
+```csharp
+db.Query<User>().Where(u => u.Id <= 3).OrderBy(u => u.Id).Select(u => u.Name.PadLeft(6, '*')).ToListAsync();
+```
+
+```sql
+-- MySQL
+SELECT LPAD(t.`name`, 6, ?) FROM `t_user` t WHERE t.`id` <= ? ORDER BY t.`id` ASC;
+-- params: ['*', 3]
+```
+
+```sql
+-- SQLite
+SELECT (substr(replace(hex(zeroblob(6)), '00', ?), 1, 6 - length(t."name")) || t."name") FROM "t_user" t WHERE t."id" <= ? ORDER BY t."id" ASC;
+-- params: ['*', 3]
 ```
 <!-- /card -->
 
@@ -424,7 +442,7 @@ SELECT t.`title` FROM `t_post` t WHERE REPLACE(t.`title`, ' ', '') LIKE ?;
 
 | 能力 | 不支持或有差异的方言 |
 |---|---|
-| `PadLeft` / `PadRight` | SQLite 没有 `LPAD` / `RPAD` |
+| `PadLeft` / `PadRight` | SQLite 用 `substr(replace(hex(zeroblob(n)), '00', c), …)` 拼出填充字符再连接；SQL Server 与 Java 一样写成 `LPAD` / `RPAD`，但 SQL Server 没有这两个函数（执行报错）；MySQL 的 `LPAD` 必须有填充字符，`PadLeft(n)` 不带字符时执行报错（与 Java 一致） |
 | `Sql.Json(..)` | 支持：MySQL / MariaDB、PostgreSQL 家族、SQLite、DuckDB、ClickHouse、Db2；SQL Server、Oracle、达梦、HANA、TDengine 渲染时报不支持 |
 | `DateTrunc` | TDengine 只能截到天及以下 |
 | 日期加减 | TDengine 只能写字面量时长，按参数加减报不支持 |

@@ -17,6 +17,10 @@ public static partial class FunctionExamples
                 (" " + p.Title + " ").Trim(), p.Title.IndexOf("join")))
             .ToListAsync();
 
+    [Example("func", "补齐：PadLeft / PadRight（SQLite 没有 LPAD，拼出填充字符）")]
+    public static Task<List<string>> Pad(EasyDb db) =>
+        db.Query<User>().Where(u => u.Id <= 3).OrderBy(u => u.Id).Select(u => u.Name.PadLeft(6, '*')).ToListAsync();
+
     [Example("func", "拼接：+、string.Concat、插值字符串")]
     public static Task<List<string>> Concat(EasyDb db) =>
         db.Query<User>().Where(u => u.Age != null).OrderBy(u => u.Id).Take(3).Select(u => $"{u.Name}（{u.Age} 岁）").ToListAsync();

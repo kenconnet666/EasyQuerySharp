@@ -2,6 +2,10 @@
 SELECT UPPER(t."title") AS "upper",CHAR_LENGTH(t."title") AS "length",SUBSTR(t."title",1,2) AS "first",REPLACE(t."title",?,?) AS "replaced",TRIM(CONCAT(?,t."title",?)) AS "trimmed",(STRPOS(t."title",?) - 1) AS "position" FROM "t_post" t WHERE t."id" <= ? ORDER BY t."id" ASC;
 -- params: ['查询', 'query', ' ', ' ', 'join', 2]
 
+-- Pad：补齐：PadLeft / PadRight（SQLite 没有 LPAD，拼出填充字符）
+SELECT LPAD(t."name", 6, ?) FROM "t_user" t WHERE t."id" <= ? ORDER BY t."id" ASC;
+-- params: ['*', 3]
+
 -- Concat：拼接：+、string.Concat、插值字符串
 SELECT CONCAT(t."name",?,t."age",?) FROM "t_user" t WHERE t."age" IS NOT NULL ORDER BY t."id" ASC LIMIT 3;
 -- params: ['（', ' 岁）']
