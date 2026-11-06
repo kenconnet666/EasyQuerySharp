@@ -26,9 +26,9 @@ public sealed class DatabaseConnectivityTests
         var table = $"eqs_probe_{Guid.NewGuid():N}"[..20];
         if (db == TestDatabases.TDengine)
         {
-            // TDengine 的连接串只连到服务器，表要建在库里
-            await ExecuteAsync(connection, "CREATE DATABASE IF NOT EXISTS eqs PRECISION 'ms'", ct);
-            table = "eqs." + table;
+            // TDengine 的连接串只连到服务器，表要建在库里；用自己的库：与 TDengineLiveSuite 同时建同一个库会报 "Database in creating status"
+            await ExecuteAsync(connection, "CREATE DATABASE IF NOT EXISTS eqs_probe PRECISION 'ms'", ct);
+            table = "eqs_probe." + table;
         }
         await ExecuteAsync(connection, CreateProbeTable(db, table), ct);
         try

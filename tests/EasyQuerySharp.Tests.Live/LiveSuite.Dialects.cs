@@ -120,7 +120,7 @@ public abstract partial class LiveSuite
         Assert.Equal(4, await db.Query<Post>().CountAsync(Ct));
     }
 
-    // 同一个实体换一张表读：根表换成归档表（导航跟着换属于计划中的查询级表名映射，这里只验证根表）
+    // 同一个实体换一张表读：根表换成归档表（导航、子查询、带出跟着换见 LiveSuite.TableMapping 的 MapTable）
     [Fact]
     public async Task ReadsAnotherTableForTheSameEntity()
     {

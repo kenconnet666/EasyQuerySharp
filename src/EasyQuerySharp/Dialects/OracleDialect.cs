@@ -45,6 +45,14 @@ public class OracleDialect : SqlDialect
     /// <summary>读库结构时判断自增列（1 / 0）。</summary>
     private protected virtual string IntrospectedIdentity => "CASE c.identity_column WHEN 'YES' THEN 1 ELSE 0 END";
 
+    /// <summary>
+    /// 读库结构时索引列的写法（user_ind_columns 别名 ic）。降序列与函数索引在 ic 里是隐藏的虚拟列 SYS_NC…$，
+    /// 实际的写法在这一隐藏列的默认值里（12.2 起有 VARCHAR2 的 data_default_vc；data_default 是 LONG，驱动读不出来），降序列是 <c>"QTY"</c>，去掉引号。
+    /// </summary>
+    private protected virtual string IntrospectedIndexColumn =>
+        "COALESCE((SELECT CASE WHEN REGEXP_LIKE(hc.data_default_vc, '^\"[^\"]+\"$') THEN SUBSTR(hc.data_default_vc, 2, LENGTH(hc.data_default_vc) - 2) ELSE hc.data_default_vc END "
+        + "FROM user_tab_cols hc WHERE hc.table_name = ic.table_name AND hc.column_name = ic.column_name AND hc.hidden_column = 'YES'), ic.column_name)";
+
     /// <summary>读 USER_* 数据字典（当前用户的表，同 TS 版）；别名加引号，读出来是小写。</summary>
     internal override CatalogQueries? CatalogQueries => new(
         "SELECT t.table_name AS \"table_name\", c.comments AS \"comment\" FROM user_tables t LEFT JOIN user_tab_comments c ON c.table_name = t.table_name ORDER BY t.table_name",
@@ -55,7 +63,7 @@ public class OracleDialect : SqlDialect
         + "WHERE k.constraint_type = 'P' AND k.table_name = c.table_name AND kc.column_name = c.column_name) THEN 1 ELSE 0 END AS \"primary_key\" "
         + "FROM user_tab_columns c LEFT JOIN user_col_comments m ON m.table_name = c.table_name AND m.column_name = c.column_name ORDER BY c.table_name, c.column_id",
         "SELECT i.table_name AS \"table_name\", i.index_name AS \"index_name\", CASE i.uniqueness WHEN 'UNIQUE' THEN 1 ELSE 0 END AS \"is_unique\", "
-        + "ic.column_name AS \"column_name\" FROM user_indexes i JOIN user_ind_columns ic ON ic.index_name = i.index_name "
+        + $"{IntrospectedIndexColumn} AS \"column_name\" FROM user_indexes i JOIN user_ind_columns ic ON ic.index_name = i.index_name "
         + "WHERE NOT EXISTS (SELECT 1 FROM user_constraints k WHERE k.index_name = i.index_name AND k.constraint_type = 'P') "
         + "ORDER BY i.table_name, i.index_name, ic.column_position",
         "SELECT k.table_name AS \"table_name\", k.constraint_name AS \"constraint_name\", kc.column_name AS \"column_name\", "
@@ -67,6 +75,18 @@ public class OracleDialect : SqlDialect
 
     /// <inheritdoc />
     public override string ParameterPlaceholder(int index, SqlParameterValue parameter) => ":p" + index;
+
+    /// <summary>
+    /// ODP.NET 不认 Guid、DateOnly、TimeOnly（赋值时报 Value does not fall within the expected range）：
+    /// Guid 按 CHAR(36) 列传文本，DateOnly 传当天零点的 DateTime，TimeOnly 传 TimeSpan（INTERVAL DAY TO SECOND 列）。
+    /// </summary>
+    public override object? ParameterValue(SqlParameterValue parameter) => parameter.Value switch
+    {
+        Guid g => g.ToString(),
+        DateOnly d => d.ToDateTime(TimeOnly.MinValue),
+        TimeOnly t => t.ToTimeSpan(),
+        var value => value,
+    };
 
     /// <summary>自增键用 <c>RETURNING "id" INTO :p</c> 写进输出参数（Oracle 的 RETURNING 必须带 INTO）。</summary>
     public override void WriteInsertReturning(SqlRenderer renderer, IReadOnlyList<SqlExpr> returning)

@@ -29,6 +29,20 @@ public abstract partial class LiveSuite
         Assert.Equal(("carol", null), (rows[^1].Value1, rows[^1].Value2));
     }
 
+    // 投影成整个实体（TS 不写 select 时按实体名分组的整行）：左连接没匹配上时整个实体是 null，而不是各列都为 null 的对象
+    [Fact]
+    public async Task ReturnsWholeRowsOfEveryJoinedTable()
+    {
+        var db = await SeededAsync();
+        var rows = await db.Query<User>()
+            .LeftJoin<Post>((u, p) => p.UserId == u.Id)
+            .OrderBy((u, p) => u.Id).ThenBy((u, p) => p.Id)
+            .Select((u, p) => new Draft<User, Post?>(u, p))
+            .ToListAsync(Ct);
+        Assert.Equal(("alice", "orm tips"), (rows[0].Value1.Name, rows[0].Value2?.Title));
+        Assert.Equal(("carol", (Post?)null), (rows[^1].Value1.Name, rows[^1].Value2));
+    }
+
     // globex 没有员工：右连接里照样出现，用户一侧为 null
     [Fact]
     public async Task RightJoinsAndKeepsEveryRowOfTheNewTable()

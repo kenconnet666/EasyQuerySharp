@@ -69,7 +69,7 @@ internal sealed partial class ExpressionTranslator
                     template = step.Method.Name switch
                     {
                         nameof(MySqlJsonEdit.Set) => "JSON_SET(" + template + "," + Next(args, step.Arguments[0]) + "," + Next(args, step.Arguments[1]) + ")",
-                        nameof(MySqlJsonEdit.SetJson) => "JSON_SET(" + template + "," + Next(args, step.Arguments[0]) + ",CAST(" + Next(args, step.Arguments[1]) + " AS JSON))",
+                        nameof(MySqlJsonEdit.SetJson) => "JSON_SET(" + template + "," + Next(args, step.Arguments[0]) + ",JSON_EXTRACT(" + Next(args, step.Arguments[1]) + ",'$'))",
                         nameof(MySqlJsonEdit.ArrayAppend) => "JSON_ARRAY_APPEND(" + template + "," + Next(args, step.Arguments[0]) + "," + Next(args, step.Arguments[1]) + ")",
                         nameof(MySqlJsonEdit.Remove) => "JSON_REMOVE(" + template + "," + string.Join(",", NonEmpty(step, NextAll(args, step.Arguments[0]))) + ")",
                         _ => throw Unsupported(step),
@@ -170,7 +170,8 @@ internal sealed partial class ExpressionTranslator
     // 编辑的 lambda：e => e.A().B()，从参数往外依次返回各步
     private static List<MethodCallExpression> EditSteps(MethodCallExpression call, Type editType)
     {
-        var lambda = (LambdaExpression)StripConvert(call.Arguments[0]);
+        if (StripConvert(call.Arguments[0]) is not LambdaExpression lambda)
+            throw Unsupported(call, "编辑要在查询里直接写成 lambda：e => e.Set(..).Remove(..)，不能传委托变量（委托里的调用读不出来）");
         var steps = new List<MethodCallExpression>();
         var e = lambda.Body;
         while (e is MethodCallExpression step && step.Method.DeclaringType == editType)

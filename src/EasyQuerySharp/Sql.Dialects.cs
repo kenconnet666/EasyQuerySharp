@@ -107,7 +107,7 @@ public sealed class MySqlJsonEdit
     /// <summary>把 path 处设为 <paramref name="value"/>（文字或数；布尔、对象、数组用 <see cref="SetJson"/>）：<c>JSON_SET(…,?,?)</c>。</summary>
     public MySqlJsonEdit Set(string path, object? value) => throw Sql.OnlyInQuery();
 
-    /// <summary>把 path 处设为一段 JSON（<c>"true"</c>、<c>"{\"a\":1}"</c>）：<c>JSON_SET(…,?,CAST(? AS JSON))</c>。</summary>
+    /// <summary>把 path 处设为一段 JSON（<c>"true"</c>、<c>"{\"a\":1}"</c>）：<c>JSON_SET(…,?,JSON_EXTRACT(?,'$'))</c>（MariaDB 没有 <c>CAST(? AS JSON)</c>）。</summary>
     public MySqlJsonEdit SetJson(string path, string json) => throw Sql.OnlyInQuery();
 
     /// <summary>往 path 处的数组末尾追加 <paramref name="value"/>：<c>JSON_ARRAY_APPEND(…,?,?)</c>。</summary>

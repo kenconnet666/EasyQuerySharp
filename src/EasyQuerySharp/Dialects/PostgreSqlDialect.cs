@@ -24,7 +24,10 @@ public class PostgreSqlDialect : SqlDialect
     /// <summary>PostgreSQL 的 SET 列不能带表别名（<c>SET t."a"</c> 会被当成复合列）。</summary>
     public override bool QualifySetColumns => false;
 
-    /// <summary>类型名与 Java 的 PgSQLMigrationEntityParser 一致：INT4 / INT8 / INT2、BOOL、FLOAT4 / FLOAT8、numeric(16,2)；二进制列用 BYTEA。</summary>
+    /// <summary>
+    /// 类型名与 Java 的 PgSQLMigrationEntityParser 一致：INT4 / INT8 / INT2、BOOL、FLOAT4 / FLOAT8、numeric(16,2)；二进制列用 BYTEA；
+    /// Guid 用原生的 UUID（Npgsql 把 Guid 参数按 uuid 传，存进文本列后 <c>= ?</c> 报 operator does not exist: character = uuid）。
+    /// </summary>
     protected override string ClrColumnType(Type type, Metadata.ColumnMetadata column) => type switch
     {
         _ when type == typeof(int) || type.IsEnum => "INT4",
@@ -35,6 +38,7 @@ public class PostgreSqlDialect : SqlDialect
         _ when type == typeof(double) => "FLOAT8",
         _ when type == typeof(decimal) => "numeric(16,2)",
         _ when type == typeof(byte[]) => "BYTEA",
+        _ when type == typeof(Guid) => "UUID",
         _ => base.ClrColumnType(type, column),
     };
 

@@ -203,7 +203,15 @@ public abstract partial class LiveSuite
         Assert.Equal(2, await db.Query<Comment>().Where(c => c.Post!.User!.Company!.Name == "acme").CountAsync(Ct));
     }
 
-    // UNION 的各分支在 SQLite 上不能加括号：方言决定写法，各库都能执行
+    // 投影里集合导航的条件引用外层的行：带出按父键批量查，子查询里没有外层的行，翻译时报不支持（不会悄悄查错）
+    [Fact]
+    public async Task RejectsOuterRowReferencesInsideCollectionProjections()
+    {
+        var db = await SeededAsync();
+        await Assert.ThrowsAsync<NotSupportedException>(() =>
+            db.Query<User>().Select(u => new { Posts = u.Posts!.Where(p => p.Title == u.Name).Select(p => p.Id).ToList() }).ToListAsync(Ct));
+    }
+
     // 沿两级集合导航展开：公司 → 用户 → 帖子，条件、排序、投影都写在最后取出的帖子表上
     [Fact]
     public async Task FlattensCollectionNavigationsWithSelectMany()
