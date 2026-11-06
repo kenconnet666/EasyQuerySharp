@@ -339,15 +339,14 @@ public sealed class SqlRenderer
         return this;
     }
 
-    // 与 Java 逐字一致：( (q1)  UNION  (q2) )；方言不允许分支加括号时（SQLite）写 ( q1  UNION  q2 )
+    // 与 Java 逐字一致：( (q1)  UNION  (q2) )；各分支怎么写由方言决定（SQLite、SQL Server 不允许分支自带 ORDER BY / LIMIT）
     private SqlRenderer WriteCompound(IReadOnlyList<SelectQuery> parts, bool all)
     {
-        var (open, close) = Dialect.ParenthesizeCompoundParts ? ("(", ")") : ("", "");
         Append("( ");
         for (var i = 0; i < parts.Count; i++)
         {
             if (i > 0) Append(all ? "  UNION ALL  " : "  UNION  ");
-            Append(open).WriteSelect(parts[i]).Append(close);
+            Dialect.WriteCompoundPart(this, parts[i]);
         }
         return Append(" )");
     }

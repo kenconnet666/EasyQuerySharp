@@ -34,8 +34,8 @@ public static class IncludeExamples
             .Include(u => u.Posts, q => q.OrderByDescending(p => p.Views).Take(1))
             .ToListAsync();
 
-    /// <summary>（不是卡片）UnionAll 模式在 SQLite 上渲染出的 SQL 执行不了（见 BACKLOG），这里保证代码能编译。</summary>
-    public static EasyDb IncludeTakeUnionAll(System.Data.Common.DbDataSource dataSource)
+    /// <summary>（不是卡片）配置项写在创建 EasyDb 的地方，这里保证代码能编译。</summary>
+    public static EasyDb IncludeUnionAllOptions(System.Data.Common.DbDataSource dataSource)
     {
         // <snippet:include-union-all>
         var db = new EasyDb(o =>
@@ -46,6 +46,13 @@ public static class IncludeExamples
         // </snippet:include-union-all>
         return db;
     }
+
+    [Example("include", "UnionAll 模式：每个父对象一段，UNION ALL 合并")]
+    public static Task<List<User>> IncludeTakeUnionAll(EasyDb db) =>
+        DocsDb.Reconfigure(db, o => o.IncludeLimitMode = IncludeLimitMode.UnionAll)
+            .Query<User>().Where(u => u.Id <= 2).OrderBy(u => u.Id)
+            .Include(u => u.Posts, q => q.OrderByDescending(p => p.Views).Take(1))
+            .ToListAsync();
 
     [Example("include", "父键多时分批：IncludeGroupSize")]
     public static Task<List<Company>> IncludeGroupSize(EasyDb db) =>

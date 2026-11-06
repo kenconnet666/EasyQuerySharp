@@ -2130,7 +2130,8 @@ override EasyQuerySharp.Dialects.SqliteDialect.CreateTableSql(EasyQuerySharp.Met
 override EasyQuerySharp.Dialects.SqliteDialect.InlinePrimaryKey(EasyQuerySharp.Metadata.ColumnMetadata! key) -> bool
 override EasyQuerySharp.Dialects.SqliteDialect.LastInsertIdQuery.get -> string?
 override EasyQuerySharp.Dialects.SqliteDialect.Name.get -> string!
-override EasyQuerySharp.Dialects.SqliteDialect.ParenthesizeCompoundParts.get -> bool
+override EasyQuerySharp.Dialects.SqliteDialect.WriteCompoundPart(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! part) -> void
+override EasyQuerySharp.Dialects.SqlServerDialect.WriteCompoundPart(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! part) -> void
 override EasyQuerySharp.Dialects.SqliteDialect.QualifySetColumns.get -> bool
 override EasyQuerySharp.Dialects.SqliteDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
 override EasyQuerySharp.Dialects.SqliteDialect.SupportsWriteReturning.get -> bool
@@ -2515,7 +2516,8 @@ virtual EasyQuerySharp.Dialects.SqlDialect.NativeNullsOrder.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.ParameterName(int index) -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.ParameterPlaceholder(int index) -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.ParameterWrap(string? columnDbType) -> (string! Before, string! After)?
-virtual EasyQuerySharp.Dialects.SqlDialect.ParenthesizeCompoundParts.get -> bool
+virtual EasyQuerySharp.Dialects.SqlDialect.WriteCompoundPart(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! part) -> void
+static EasyQuerySharp.Dialects.SqlDialect.IsOrderedOrPaged(EasyQuerySharp.SqlAst.SelectQuery! part) -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.QualifySetColumns.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.QuoteIdentifier(string! identifier) -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.RecursiveCteColumnList.get -> bool

@@ -22,8 +22,15 @@ public class SqliteDialect : SqlDialect
     /// <summary>SQLite 的 SET 列不能带表别名。</summary>
     public override bool QualifySetColumns => false;
 
-    /// <inheritdoc />
-    public override bool ParenthesizeCompoundParts => false;
+    /// <summary>
+    /// SQLite 的 UNION 分支不能加括号，也不能自带 ORDER BY / LIMIT（只能写在整个 UNION 后面）：带了的分支包一层 <c>SELECT * FROM (q)</c>，
+    /// 其余直接写 <c>q</c>。
+    /// </summary>
+    public override void WriteCompoundPart(SqlRenderer renderer, SelectQuery part)
+    {
+        if (IsOrderedOrPaged(part)) renderer.Append("SELECT * FROM (").WriteSelect(part).Append(")");
+        else renderer.WriteSelect(part);
+    }
 
     /// <summary><c>UPDATE "a" AS t SET "c" = t1."d" FROM "b" t1 , "c" t2 WHERE 各 ON 条件 AND 原条件</c>（SQLite 3.33 起；目标表的别名要写 AS）。</summary>
     public override void WriteJoinedUpdate(SqlRenderer renderer, UpdateStatement update)

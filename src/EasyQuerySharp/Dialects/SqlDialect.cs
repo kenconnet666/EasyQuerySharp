@@ -64,8 +64,11 @@ public abstract partial class SqlDialect
     /// <summary>EXISTS 子查询是否保留只取前几行的 LIMIT（集合导航的 Any 带 <c>LIMIT 1</c>，与 Java 一致）；HANA 的关联子查询不支持 LIMIT，覆盖成 false。</summary>
     public virtual bool LimitInExists => true;
 
-    /// <summary>UNION 的各分支是否加括号 <c>( (q1)  UNION  (q2) )</c>；SQLite 不允许，覆盖成 false。</summary>
-    public virtual bool ParenthesizeCompoundParts => true;
+    /// <summary>写 UNION 的一个分支：默认加括号 <c>(q)</c>（与 Java 一致，分支可以自带 ORDER BY 与分页）。</summary>
+    public virtual void WriteCompoundPart(SqlRenderer renderer, SelectQuery part) => renderer.Append("(").WriteSelect(part).Append(")");
+
+    /// <summary>分支自带排序或分页（如带出按父对象取段的 UNION ALL 模式）：不允许这样写的方言把它包成派生表。</summary>
+    protected static bool IsOrderedOrPaged(SelectQuery part) => part.OrderBy.Count > 0 || part.Limit is not null || part.Offset is not null;
 
     /// <summary>递归 CTE 是否要在名字后写列名清单 <c>"cte" ("a","b") AS (…)</c>（Oracle 必须写）；默认不写。</summary>
     public virtual bool RecursiveCteColumnList => false;

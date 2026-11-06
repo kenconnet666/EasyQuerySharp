@@ -117,6 +117,22 @@ public abstract partial class LiveSuite
         Assert.Equal(["alice", "carol"], names.Select(r => r.Value1));
     }
 
+    // 分支自己排序、取段（SQLite 不允许分支带 ORDER BY / LIMIT，包一层再合并）
+    [Fact]
+    public async Task UnionsBranchesThatAreOrderedAndLimited()
+    {
+        var db = await SeededAsync();
+        var oldest = db.Query<User>().Where(u => u.Age != null).OrderByDescending(u => u.Age).Take(1).Select(u => new Draft<string>(u.Name));
+        var first = db.Query<User>().OrderBy(u => u.Id).Take(1).Select(u => new Draft<string>(u.Name));
+        Assert.Equal(["alice", "alice"], (await oldest.UnionAll(first).ToListAsync(Ct)).Select(r => r.Value1));
+
+        // 带出按父对象取段的 UNION ALL 模式（Java 的 includeLimitMode）：每个父对象一个分支
+        var unionAll = await SeededAsync(o => o.IncludeLimitMode = IncludeLimitMode.UnionAll);
+        var users = await unionAll.Query<User>().OrderBy(u => u.Id)
+            .Include(u => u.Posts, q => q.OrderByDescending(p => p.Amount).Take(1)).ToListAsync(Ct);
+        Assert.Equal([["sql 100%"], ["hello"], []], users.Select(u => u.Posts!.Select(p => p.Title).ToArray()));
+    }
+
     // CTE 和真实的表连接，第二个 CTE 建立在第一个之上
     [Fact]
     public async Task RegistersCtesAndJoinsThemChainingOneOnAnother()

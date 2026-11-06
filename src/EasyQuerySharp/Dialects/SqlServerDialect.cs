@@ -144,6 +144,16 @@ public class SqlServerDialect : SqlDialect
     }
 
     /// <summary>
+    /// SQL Server 括号里的 UNION 分支不能带 ORDER BY（ORDER BY 只能写在整个语句后面，派生表里配 TOP / OFFSET 可以）：
+    /// 带排序或分页的分支写成 <c>(SELECT * FROM (q) t)</c>，其余照常 <c>(q)</c>。
+    /// </summary>
+    public override void WriteCompoundPart(SqlRenderer renderer, SelectQuery part)
+    {
+        if (IsOrderedOrPaged(part)) renderer.Append("(SELECT * FROM (").WriteSelect(part).Append(") t)");
+        else base.WriteCompoundPart(renderer, part);
+    }
+
+    /// <summary>
     /// 有跳过行数时写 <c>OFFSET … ROWS FETCH NEXT … ROWS ONLY</c>。SQL Server 要求有 ORDER BY：没有时按分组键，再不然按主键排序，
     /// 都没有时补 <c>ORDER BY (SELECT 1)</c>（与 Java 一致，Java 在最后一种情况下报错）。
     /// </summary>

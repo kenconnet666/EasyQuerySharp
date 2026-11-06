@@ -101,6 +101,33 @@ var db = new EasyDb(o =>
 ```
 <!-- /snippet -->
 
+分支的写法按方言：默认与 Java 一致写成 `(… LIMIT n)`；SQLite 的分支不能加括号、也不能带 ORDER BY / LIMIT，写成 `SELECT * FROM (…)`；SQL Server 括号里不能带 ORDER BY，写成 `(SELECT * FROM (…) t)`：
+
+<!-- card: include/IncludeTakeUnionAll sql=mysql,sqlite -->
+```csharp
+DocsDb.Reconfigure(db, o => o.IncludeLimitMode = IncludeLimitMode.UnionAll)
+    .Query<User>().Where(u => u.Id <= 2).OrderBy(u => u.Id)
+    .Include(u => u.Posts, q => q.OrderByDescending(p => p.Views).Take(1))
+    .ToListAsync();
+```
+
+```sql
+-- MySQL
+SELECT `id`,`name`,`age`,`company_id`,`department_id`,`manager_id`,`level`,`joined_at` FROM `t_user` WHERE `id` <= ? ORDER BY `id` ASC;
+-- params: [2]
+SELECT t1.`id`,t1.`author_id`,t1.`category_id`,t1.`title`,t1.`status`,t1.`views`,t1.`published_at` FROM ( (SELECT t.`id`,t.`author_id`,t.`category_id`,t.`title`,t.`status`,t.`views`,t.`published_at` FROM `t_post` t WHERE t.`author_id` = ? ORDER BY t.`views` DESC LIMIT 1)  UNION ALL  (SELECT t.`id`,t.`author_id`,t.`category_id`,t.`title`,t.`status`,t.`views`,t.`published_at` FROM `t_post` t WHERE t.`author_id` = ? ORDER BY t.`views` DESC LIMIT 1) ) t1;
+-- params: [1, 2]
+```
+
+```sql
+-- SQLite
+SELECT "id","name","age","company_id","department_id","manager_id","level","joined_at" FROM "t_user" WHERE "id" <= ? ORDER BY "id" ASC;
+-- params: [2]
+SELECT t1."id",t1."author_id",t1."category_id",t1."title",t1."status",t1."views",t1."published_at" FROM ( SELECT * FROM (SELECT t."id",t."author_id",t."category_id",t."title",t."status",t."views",t."published_at" FROM "t_post" t WHERE t."author_id" = ? ORDER BY t."views" DESC LIMIT 1)  UNION ALL  SELECT * FROM (SELECT t."id",t."author_id",t."category_id",t."title",t."status",t."views",t."published_at" FROM "t_post" t WHERE t."author_id" = ? ORDER BY t."views" DESC LIMIT 1) ) t1;
+-- params: [1, 2]
+```
+<!-- /card -->
+
 导航上声明的 `[Navigate(OrderBy = "…", Limit = n, Offset = m)]` 是带出时的默认排序和条数；带出查询的配置里写 `q.IgnoreNavigationDefaults()` 时不用它们（自己写了排序、条数时本来就以自己的为准）。
 
 ### 分批与后补
@@ -304,7 +331,6 @@ SELECT `id`,`parent_id`,`name` FROM `t_category`;
 ## 限制
 
 - 投影里的集合不支持 `Take` / `Skip`（`u.Posts!.OrderBy(..).Take(2).Select(..).ToList()` 报不支持）：每个父对象取几条用 `Include(.., q => q.Take(n))`、DTO 属性上的 `[Navigate(Limit = n)]` 或 `IAutoIncludeConfigure`。
-- `IncludeLimitMode.UnionAll` 在 SQLite 上生成的 SQL 执行不了（SQLite 不允许 UNION 的成员带 ORDER BY / LIMIT）。
 - 投影里有带出时不能流式读取（`AsAsyncEnumerable()` 报错），要用 `ToListAsync()`。
 - 多次查询之间数据可能被改，需要一致的快照时把整组查询放进同一个事务。
 - 不做"一条 SQL 用 JSON 聚合出整棵树"，理由见 [0002](../decisions/0002-object-tree-and-dto.md#3-执行策略对一用-join对多分层批量查询)。

@@ -27,6 +27,12 @@ SELECT t.`id`,t.`name`,t.`age`,t.`company_id`,t.`department_id`,t.`manager_id`,t
 SELECT t2.`id` AS `id`,t2.`author_id` AS `author_id`,t2.`category_id` AS `category_id`,t2.`title` AS `title`,t2.`status` AS `status`,t2.`views` AS `views`,t2.`published_at` AS `published_at` FROM (SELECT t1.`id` AS `id`,t1.`author_id` AS `author_id`,t1.`category_id` AS `category_id`,t1.`title` AS `title`,t1.`status` AS `status`,t1.`views` AS `views`,t1.`published_at` AS `published_at` FROM (SELECT t.`id`,t.`author_id`,t.`category_id`,t.`title`,t.`status`,t.`views`,t.`published_at`,(ROW_NUMBER() OVER (PARTITION BY t.`author_id` ORDER BY t.`views` DESC)) AS `__row__` FROM `t_post` t WHERE t.`author_id` IN (?,?,?,?,?,?,?,?,?)) t1 WHERE t1.`__row__` >= ? AND t1.`__row__` <= ?) t2;
 -- params: [1, 2, 3, 4, 5, 7, 8, 9, 10, 1, 1]
 
+-- IncludeTakeUnionAll：UnionAll 模式：每个父对象一段，UNION ALL 合并
+SELECT `id`,`name`,`age`,`company_id`,`department_id`,`manager_id`,`level`,`joined_at` FROM `t_user` WHERE `id` <= ? ORDER BY `id` ASC;
+-- params: [2]
+SELECT t1.`id`,t1.`author_id`,t1.`category_id`,t1.`title`,t1.`status`,t1.`views`,t1.`published_at` FROM ( (SELECT t.`id`,t.`author_id`,t.`category_id`,t.`title`,t.`status`,t.`views`,t.`published_at` FROM `t_post` t WHERE t.`author_id` = ? ORDER BY t.`views` DESC LIMIT 1)  UNION ALL  (SELECT t.`id`,t.`author_id`,t.`category_id`,t.`title`,t.`status`,t.`views`,t.`published_at` FROM `t_post` t WHERE t.`author_id` = ? ORDER BY t.`views` DESC LIMIT 1) ) t1;
+-- params: [1, 2]
+
 -- IncludeGroupSize：父键多时分批：IncludeGroupSize
 SELECT `id`,`name`,`city` FROM `t_company` ORDER BY `id` ASC;
 SELECT t.`id`,t.`name`,t.`age`,t.`company_id`,t.`department_id`,t.`manager_id`,t.`level`,t.`joined_at` FROM `t_user` t WHERE t.`company_id` IN (?,?);
