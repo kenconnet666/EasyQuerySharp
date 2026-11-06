@@ -173,7 +173,7 @@ public class HanaDialect : SqlDialect
         f[SqlFunctionNames.InCsv] = Template("(LOCATE(',' || {1} || ',', ',' || {0} || ',') > 0)");
         f[SqlFunctionNames.MaxColumns] = Call("GREATEST");
         f[SqlFunctionNames.MinColumns] = Call("LEAST");
-        // 没有 TRUNC / LOG10：截断用 ROUND 的 ROUND_DOWN 模式，对数的底数在前
+        // 没有 TRUNC / LOG10：截断用 ROUND 的 ROUND_DOWN 模式，以 10 为底写 LOG(10,x)（底数在前，同基类的 LogBase）
         f[SqlFunctionNames.Truncate] = (r, a) =>
         {
             r.Append("ROUND(").Write(a[0]).Append(",");
@@ -182,7 +182,6 @@ public class HanaDialect : SqlDialect
             r.Append(",ROUND_DOWN)");
         };
         f[SqlFunctionNames.Log10] = Template("LOG(10,{0})");
-        f["LOG"] = Reordered("LOG", 1, 0);
         f[SqlFunctionNames.Random] = Template("RAND()");
         f[SqlFunctionNames.UtcNow] = Template("CURRENT_UTCTIMESTAMP");
         f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("STRING_AGG(TO_NVARCHAR(").Write(a[0]).Append("), ").Write(a[1]).Append(")");
