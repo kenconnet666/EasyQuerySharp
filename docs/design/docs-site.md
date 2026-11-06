@@ -2,6 +2,8 @@
 
 文档站的目标和 TS 版一致：**每个能力一页，每页若干张示例卡片；每张卡片显示 C# 代码、各方言的 SQL 和在示例数据上的结果**。卡片在构建时实跑，所以文档本身也是一层测试。
 
+> 现状（2026-11）：站点本身暂不做（见 BACKLOG），1.0 的文档是 `docs/guide/` 下的 Markdown 指南（ROADMAP 5.3）。卡片（`docs/examples`）与各方言的 SQL 快照（`docs/sql-snapshots`）照常随功能补，`tools/DocsExamples --check` 在 CI 里校验；下面关于站点的部分留作以后的设计。
+
 ## TS 版的现状（参考对象）
 
 - 示例写在 `apps/docs/src/pages/**/*.examples.ts` 里，共 24 个文件、491 张卡片，页面上引用 505 处。

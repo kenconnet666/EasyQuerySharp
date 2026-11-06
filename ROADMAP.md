@@ -75,11 +75,7 @@ R → 1 → 2 → 3 → 4 → 5。
   - 新增分析器 EQ0007：只能在查询里用的方法（`Sql` 上的扩展方法等）在表达式树之外调用时，编译报错；
   - 引入 `Microsoft.CodeAnalysis.PublicApiAnalyzers`（只在开发期用），建立公共 API 基线。
 - [x] R.4 落地删减：search 的 45 个、SQL Server 2008 的 13 个用例在 `tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs` 标为不适用；文档站、AOT、原 M9 已记进 BACKLOG。
-- [ ] R.5 文档对齐现状：
-  - `architecture.md` 的模块表按实际情况重写：方言和加密都在核心里；测试项目是 TestKit / Upstream / Live / Generator；没有 `apps/docs`。同时修正"运行时不反射实体"、EQ0006 的含义、`BeginTransaction` 是同步方法这几处；
-  - 0001 / 0002 里已被取代的写法要改掉：`MySql.JsonContains`；`Save().Cascade()` 和 `OrphanPolicy`（已由 0004 取代）；`MapConfig`（实际是 `IAutoIncludeConfigure<T>`）；`ToTreeAsync(id, parentId)` / `DescendantsOf`（实际是 `AsTreeCte`）；Source Generator 的范围。四份决策的状态改成"已定"；
-  - 0003：L1 项目 `EasyQuerySharp.Tests` 并不存在（`SqlOnly` 在 TestKit 里，L1 用例放在 Upstream 里）；本地与 CI 的分工改成按方言分档；
-  - `parity.md`：开头的说明和"C# 写法"一列按实际 API 刷新；把旧 ROADMAP 里已完成项的限制和方言差异并进去；逐个核对旧 ROADMAP 里标 `[~]` 的项（2.4、4.4、4.5、4.7、4.9、4.10、7.5），还剩的内容并进下面的阶段。
+- [x] R.5 文档对齐现状：`architecture.md` 按实际的模块、管线、抽象、分析器重写；0001–0003 按实现修订并改为已定（0002 的级联保存改指 0004）；`parity.md` 的 C# 写法按实际 API 刷新，状态列改成对应的阶段；旧 ROADMAP 里标 `[~]` 的项逐个核对，剩余内容已在阶段 1–4 或 BACKLOG 里。
 - [ ] R.6 复核偏离：把 224 条偏离按原因分类（C# 类型系统、API 形状、Java 的 bug、功能缺口），属于功能缺口的改回待做。重点看 nav.flat（26 条）、tracking（17 条）、save.aggregate（14 条）。
 - [ ] R.7 代码走查：找出重复代码、死代码和过长的文件（`QueryBase`、`SqlDialect`、`SqlRenderer`、`SavePlan`），整理单独提交。
 

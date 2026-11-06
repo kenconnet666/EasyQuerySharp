@@ -14,3 +14,5 @@
 - AOT 与裁剪（旧 1.1 / 9.4 / 10.3）：元数据与物化器的 Source Generator、用 interceptors 在编译期预翻译查询。表达式树查询在 NativeAOT 下只能解释执行，物化已接近手写 ADO.NET（读 100 行 1.2 ms，手写 0.95 ms）；等有 AOT 部署需求、且 interceptors 不再标为实验性时再做。
 - TS 版独有的能力（旧 M9）：多态（判别列加子类）、只读库 `AsReadOnly()`、开发期 N+1 检测、`dotnet eqs pull` 从库反向生成实体、多个模型程序集注册到同一个库。不在 Java 对标范围内，有真实需求时再做。
 - 跟进上游新增的用例：对标基准冻结在 `sql-test` 2315 个（上游 main 3.3.1 已到 2410 个）。1.0 之后另起工作项，用 `ParityTests --rescan` 对比差异。
+- 带出查询的父键在 PG 上写成 `= ANY(?)`，只占一个参数（旧 ROADMAP 4.4）：现在按 `IncludeGroupSize` 分批 IN，够用；基准显示参数绑定是瓶颈时再做。
+- 投影里直接写非导航的关联查询（`Select(o => new { o.No, Lines = db.Query<Line>().Where(l => l.OrderNo == o.No).ToList() })`），规划器自动按键批量（旧 ROADMAP 4.9）：现在用 `FillMany` / `FillOne` 表达，Java 的 fill 用例都已覆盖。
