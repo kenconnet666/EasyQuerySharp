@@ -153,9 +153,11 @@ R → 1 → 2 → 3 → 4 → 5。
   - `FilterOp.Contains` / `StartsWith` / `EndsWith` 改成与 `Sql.LikeContains` 等相同（Java 的 CONTAINS 等：`LIKE CONCAT(…)`，值里的通配符按字面），whereObject2 / 4 / 6、DocTest test1、ExampleTest sampleTest1 移植；
   - 声明了条数的对一导航（Java 的 OneToOne + limit + orderByProps，如"第一张卡"）在条件、投影、隐式子查询里按排序取那一行（原来是普通 LEFT JOIN，会匹配全部行），`FilterNavigation` 的条件写进它的 ON，MySQL8Test4 testFilter 移植；
   - `Table(request)` 写成 `ToPageAsync(TableRequest)`（C# 的终结方法命名）：`TableRequest.Parse` 读地址栏参数（与 TS 的 parseTableRequest 同一约定），`filter.列` IN、`search.列` 包含、`sort` 只认结果里的列，带了 `total` 不再计数；条件树与整天区间（TS 11b.3a）记进 BACKLOG。
-- [ ] 4.4 分库分表（ShardingTest 48 个，另有 H2 的 3 个骨架：H2OrderTest ×2、H2QueryTest allTypeTestSharding1），先写决策文档 0006：[0006](docs/decisions/0006-sharding.md) 已定（2026-11-06，按草案的推荐），实现中：
-  - 分表：按取模或按时间路由、按条件裁剪、库内 UNION ALL、写入路由；
-  - 分库：路由，在内存里做归并排序和分页，跨库合并 `count` / `sum` / `min` / `max`。
+- [x] 4.4 分库分表（ShardingTest 48 个，另有 H2 的 3 个骨架：H2OrderTest ×2、H2QueryTest allTypeTestSharding1），按 [0006](docs/decisions/0006-sharding.md) 实现，用法见 [分库分表指南](docs/guide/sharding.md)：
+  - 规则：`options.Shard<T>(r => r.Mod(..) / ByYear / ByMonth / ByDay(..))`，可加 `ExtraKey(..)`、`DefaultOrder(..)`；自定义规则实现 `IShardRule`；数据源 `WithDefaultDataSourceName(..)` / `AddDataSource(..)`；`db.GetShardRule<T>()` 读规则。
+  - 路由（`Sharding/`）在翻译好的 `SelectQuery` 与执行器之间：按所在查询的 WHERE 裁剪（AND 取交集、OR 取并集、IN 取各值并集；条件矛盾时空路由，不访问数据库；`MaxShardNodes` 上限）；最外层分片表的节点按数据源分组、按 `MaxUnionTables`（64）切块，一块一条 `(SELECT * FROM a UNION ALL SELECT * FROM b) t`；嵌套处内联成 UNION ALL（只能在一个数据源）。执行器接收 `SelectQuery` 的入口覆盖终结方法、Include、树查询；多条语句并行执行，k 路归并（隐藏排序列、`SqlDialect.DefaultNullsOrder`）、统一分页，count / any / sum / min / max 合并；跨单元的分组、去重、Avg、窗口、流式读取报 `NotSupportedException`。`ToShardingPageAsync` 按节点计数（`ShardingPage<T>.TotalLines`）。
+  - 写入：插入按 `NodeOf`，按实体更新 / 删除同样，按条件逐节点串行；Set 里改分片键、`Returning`、`InsertSelect`、聚合保存里的分片实体报错。环境事务按数据源各开连接、依次提交（不是分布式事务）。code-first 按节点在各自的数据源建表、删表、同步。
+  - 用例：ShardingTest 44 个移植，sharding40–42 偏离（每个分支只展开自己的节点：30 / 58 / 484，UNION ALL 两倍），test111 不适用；`ShardingFixture` 用 `easy-query-test` 加 2021 / 2022 / 2023 三个库，87 张表由分片的 code-first 建、种子经分片写入。H2OrderTest ×2、allTypeTestSharding1 在 SQLite 上移植（`MaxUnionTables = 1`，覆盖内存归并）。LiveSuite 加分片一组（路由、裁剪、UNION ALL、计数与分页合并、逐节点写入、两个库与跨库事务），SQLite / MySQL / PG / DuckDB 通过，Oracle 没有第二个库（`ShardDataSources = false`）。0006 没写到的细节记在它末尾的“实现中的补充”。
 - [ ] 4.5 二级缓存 `EasyQuerySharp.Caching`，先写决策文档 0007（用例在 QueryTest25：test11a、test11a1、topicIntegerTest、xxx）：草案已写（[0007](docs/decisions/0007-second-level-cache.md)），末尾“待定”确认后开工；
   - 参照 Java 的 `sql-extension/sql-cache`：单实体、多实体、键值三种缓存查询，写入后让缓存失效；
   - 对接 `Microsoft.Extensions.Caching` 的抽象，支持本机和分布式两级。

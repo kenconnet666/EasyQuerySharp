@@ -136,3 +136,23 @@ H2OrderTest 的 2 个与 H2QueryTest#allTypeTestSharding1 复用同一套实现�
 3. 事务按数据源各开各的、依次提交，不是原子的（与 Java 一致），文档写明。
 4. 取模默认用 Java 的字符串哈希，与 Java 已写入的数据互通。
 5. sharding40–42 记为偏离，期望值用正确语义（30 / 58 / 484）。
+
+## 实现中的补充
+
+0006 没写到、或写得不够细的地方，按最接近 Java 又不损正确性的做法定下（2026-11-06）：
+
+1. **节点上限**：`EasyDbOptions.MaxShardNodes`，默认 128（Java 的 `maxShardingRouteCount`），一条语句裁剪后命中的节点（最外层加嵌套处）超过它时报错。Java 只检查按条件的写入，这里查询也检查，防止条件漏写时扫遍全部分表；可以调大。
+2. **默认数据源的名字**：`DefaultDataSourceName` 默认 `ds0`（Java 的默认值），`WithDefaultDataSourceName(..)` 改；`AddDataSource` 登记的在 `EasyDbOptions.DataSources`。自定义规则用 `Shard<T>(IShardRule)` 登记。
+3. **语句带数据源**：`SqlStatement.DataSource`（init，null 是默认数据源），监听器能看到语句在哪个库执行；执行失败的异常消息带上数据源。
+4. **默认排序**：0006 写的是“带 Take”，实现里带 `Skip` 也补（只跳过不取时跨表的顺序同样不确定）；分组、去重的查询不补。
+5. **跨单元不能合并的形状**：除了分组、去重、Avg、窗口、流式读取，聚合投影（没有 GROUP BY 的 `Select(g => Sql.Count())` 这类）与原生排序片段（`OrderByRaw`）同样报 `NotSupportedException`；`ReadAsync`（自己读结果集）按流式读取处理。
+6. **NULL 的位置**：`SqlDialect.DefaultNullsOrder(descending)`（公共的虚方法，方言可覆盖）：默认 NULL 最小，PostgreSQL 系、Oracle 系、Db2 相反，DuckDB、ClickHouse 总在最后。排序项指定了 `NullsFirst / NullsLast` 时按指定的。字符串按序数比较（Java 的 `String.compareTo`），可能与数据库的排序规则不同。
+7. **隐藏列**：排序列已在结果里时直接用，否则追加成别名 `eqs_order_N` 的隐藏列；读取函数拿到的是只露出原有列的读取器，按整行读的 Map 投影也看不到隐藏列。
+8. **SUM 的合并**：整数精确相加（DuckDB 的 SUM 返回 HUGEINT），有浮点时按 double，其余按 decimal。
+9. **`ToShardingPageAsync` 的返回值**：`ShardingPage<T>`（`Rows`、`Total`、`PageIndex`、`PageSize`、`TotalLines`），`TotalLines` 按路由顺序（数据源分组、规则里的顺序）每个节点一项；传回时项数必须相同，小于 0 的项重新计数。最外层没有分片表时只有一项。
+10. **嵌套处的空路由**：嵌套处的分片表条件互相矛盾时，任取所在数据源的一张分表（它的条件本来就查不到行）；流式读取、`ReadAsync` 的空路由同样任取一张。
+11. **按实体更新改了分片键**：追踪的实体改了分片键时报错（行按旧值所在的表定位，不会迁移）；不追踪时无从得知，按当前值落到的表执行。
+12. **取模的哈希**：按 Java `AbstractModTableRoute` 的 `Math.abs(hashCode % mod)`；ShardingTest 的 TopicShardingTableRoute 没有取绝对值，用例里的键都是数字串、哈希为正，结果相同。
+13. **code-first**：节点的默认索引名、外键名以节点表名开头（PostgreSQL 等库的索引名在 schema 里唯一）；离线的 `PlanSync(types, tables)` 只能比较默认数据源里的表，节点在别的数据源时报错。
+14. **夹具**：`ShardingFixture` 是类级固件（程序集固件里的 `MySqlFixture` 先重建 `easy-query-test`），种子用 `Batch()` 批量写入；H2 的三个分表用例在 SQLite 上用 `MaxUnionTables = 1`（Java 的每表一条语句），顺带覆盖内存归并。
+15. **sharding40–42**：UNION 去重后 30 / 58 / 484 行，UNION ALL 是两倍（Java 的第二个断言误写成了第一个列表）。

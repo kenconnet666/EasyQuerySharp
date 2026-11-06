@@ -26,6 +26,7 @@
 按能力写的用法、限制与对应的 Java 写法（ROADMAP 5.3 补齐其余能力）。
 
 - [依赖注入](guide/dependency-injection.md)：`services.AddEasyQuery(..)`，多个库按名字注入，从容器取数据源、监听器、拦截器，生命周期。
+- [分库分表](guide/sharding.md)：登记规则与数据源、按条件裁剪、同库分表的 UNION ALL 与跨库归并、写入路由、事务、code-first、限制。
 
 ## 设计
 
