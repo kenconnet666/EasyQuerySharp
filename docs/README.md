@@ -1,16 +1,15 @@
 # 文档索引
 
-工作约定见仓库根的 [CLAUDE.md](../CLAUDE.md)，里程碑见 [ROADMAP.md](../ROADMAP.md)。
+工作约定见仓库根的 [CLAUDE.md](../CLAUDE.md)，路线图见 [ROADMAP.md](../ROADMAP.md)。
 
 ## 先读
 
 | 文档 | 内容 |
 |---|---|
-| [ROADMAP.md](../ROADMAP.md) | 里程碑 M0–M10、工作项、每个里程碑的完成标准 |
-| [parity.md](parity.md) | 能力对照总表：Java 的每种能力、用例数、计划的 C# 写法、所属里程碑 |
-| parity-tests.md | 逐条用例对照，由 `tools/ParityTests` 生成，ROADMAP 0.7 完成后才有 |
+| [ROADMAP.md](../ROADMAP.md) | 到 1.0 的剩余工作：已定的取舍、整理轮 R 与阶段 1–5、完成标准 |
+| [parity.md](parity.md) | 能力对照总表：Java 的每种能力、用例数、C# 写法 |
+| [parity-tests.md](parity-tests.md) | 逐条用例对照，由 `tools/ParityTests` 生成，不要手改 |
 | [BACKLOG.md](BACKLOG.md) | 记下但暂时不做的事 |
-| [HANDOFF.md](HANDOFF.md) | 交接记录：换机器继续时先读 |
 
 ## 设计决定
 
@@ -28,5 +27,5 @@
 
 | 仓库 | 用途 |
 |---|---|
-| `C:\Users\lionheart\IdeaProjects\easy-query` | Java 原版（软 fork）。用例在 `sql-test`、`sql-fork-test`；fork 的规划在 `docs/fork/` |
-| `C:\Users\lionheart\IdeaProjects\easy-query-ts` | TS 移植版。对照工具在 `tools/parity-tests.mjs`、`tools/capabilities.mjs`；共用实库套件在 `packages/test/src/suite.ts`；文档站在 `apps/docs`；设计决定在 `docs/decisions/` |
+| `C:\Users\Administrator\IdeaProjects\easy-query`（相对仓库根 `..\..\IdeaProjects\easy-query`） | Java 原版（软 fork）。用例在 `sql-test`、`sql-fork-test`；fork 的规划在 `docs/fork/`。本机这份是上游 dromara 的 main（3.3.1），没有 fork 部分：fork 的 89 个用例只在快照 `tools/ParityTests/java-tests.json` 里 |
+| `C:\Users\Administrator\RiderProjects\easy-query-ts`（相对仓库根 `..\easy-query-ts`） | TS 移植版。对照工具在 `tools/parity-tests.mjs`、`tools/capabilities.mjs`；共用实库套件在 `packages/test/src/suite.ts`；文档站在 `apps/docs`；设计决定在 `docs/decisions/` |

@@ -1,6 +1,6 @@
 # EasyQuerySharp 工作约定
 
-easy-query（Java，`C:\Users\lionheart\IdeaProjects\easy-query`，软 fork）的 C# 实现，参考 TS 版（`C:\Users\lionheart\IdeaProjects\easy-query-ts`）。
+easy-query（Java，`C:\Users\Administrator\IdeaProjects\easy-query`，软 fork）的 C# 实现，参考 TS 版（`C:\Users\Administrator\RiderProjects\easy-query-ts`）。
 规划在 [ROADMAP.md](ROADMAP.md)，文档索引在 [docs/README.md](docs/README.md)。每次开工先读 ROADMAP 和相关的 decisions。
 
 ## 不变的原则
@@ -21,6 +21,8 @@ easy-query（Java，`C:\Users\lionheart\IdeaProjects\easy-query`，软 fork）�
 5. 写文档：能力页加示例卡片，然后重新生成 SQL 快照。
 6. 重新生成 `docs/parity-tests.md`；推送并开 PR；CI 全部通过后 squash 合并，更新 ROADMAP 的状态。
 
+本地只跑和改动相关的测试，全量交给 CI。推送后不用等，下次提交前先用 `gh run list --limit 1` 看上一次的结果，有失败先修。
+
 遇到以下情况，在 ROADMAP 对应项下标 `[!]` 并写明原因，然后换下一个独立的项，不要猜：
 - 规划之外的新公共概念；
 - 新增第三方依赖；
@@ -31,7 +33,7 @@ easy-query（Java，`C:\Users\lionheart\IdeaProjects\easy-query`，软 fork）�
 ## 环境
 
 - .NET 10 SDK 装在 `~\.dotnet`。PATH 上的 `C:\Program Files\dotnet` 只有 11 preview，按 `global.json` 解析不到 10。所以命令行要显式调用 `& "$HOME\.dotnet\dotnet.exe"`，或者先把 `~\.dotnet` 放到 PATH 前面。
-- 数据库在 WSL Debian 的 Docker 里，compose 项目名 `easy-query-sharp-dev`，端口 4xxxx。密码和连接串在 `.local/db.env`，不提交。
+- 数据库在 WSL Debian 的 Docker 里，compose 项目名 `easy-query-sharp-dev`，端口 4xxxx。密码和连接串在 `.local/db.env`，不提交，换机器时要重新写（`db.sh` 首次运行会生成）。
 
 ## 常用命令
 
