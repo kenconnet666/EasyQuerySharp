@@ -235,5 +235,81 @@ jobs:
           project: ${{ env.LIVE_TESTS }}
           report-name: test-results-oracle
 
-  # 达梦、openGauss、ClickHouse、Db2、TDengine：对应方言包（ROADMAP M6）落地时，在 TestDatabases 登记驱动后按上面的模式加任务。
+  # ClickHouse：ClickHouseLiveSuite（主键由应用给值的分析型冒烟）；连接串里的会话设置由套件自己追加
+  clickhouse:
+    name: ClickHouse 25.8
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      clickhouse:
+        image: clickhouse/clickhouse-server:25.8@sha256:0152dd511befe6a2c2ef53e930726179669b08116da78500b37c51c96ff5ee77
+        env:
+          CLICKHOUSE_USER: eqs
+          CLICKHOUSE_PASSWORD: EqsCi2026Pass
+          CLICKHOUSE_DB: eqs
+        ports: ['8123:8123']
+        options: >-
+          --ulimit nofile=262144:262144
+          --health-cmd "wget -qO- http://127.0.0.1:8123/ping"
+          --health-interval 3s --health-timeout 3s --health-retries 40
+    env:
+      EQS_CLICKHOUSE_CS: Host=127.0.0.1;Port=8123;Username=eqs;Password=EqsCi2026Pass;Database=eqs
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/dotnet-test
+        with:
+          require-dbs: clickhouse
+          project: ${{ env.LIVE_TESTS }}
+          report-name: test-results-clickhouse
+
+  # TDengine：TDengineLiveSuite（时间戳主键的冒烟）走 taosAdapter 的 WebSocket，不用装客户端；账号是镜像默认的 root / taosdata
+  tdengine:
+    name: TDengine 3.3
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      tdengine:
+        image: tdengine/tdengine:3.3.6.13@sha256:79d32ce8a42f64c7dbfc33946a36b3e176ea23c0cd695a1bc9e8aa889ca03b88
+        env:
+          TZ: UTC
+        ports: ['6041:6041']
+        options: >-
+          --health-cmd "bash -c 'echo > /dev/tcp/127.0.0.1/6041'"
+          --health-interval 3s --health-timeout 3s --health-retries 60
+    env:
+      EQS_TDENGINE_CS: protocol=WebSocket;host=127.0.0.1;port=6041;username=root;password=taosdata
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/dotnet-test
+        with:
+          require-dbs: tdengine
+          project: ${{ env.LIVE_TESTS }}
+          report-name: test-results-tdengine
+
+  # Db2 12.1（镜像 6.7 GB、要 privileged，首次建库几分钟）：服务容器不能等日志里的 "Setup has completed"，改用 docker run 后轮询日志。
+  # Linux 上的驱动是 Net.IBM.Data.Db2-lnx（TestKit 按操作系统引用），自带的 CLI 原生库在输出目录的 clidriver/lib，依赖 libxml2
+  db2:
+    name: Db2 12.1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      EQS_DB2_CS: Server=127.0.0.1:50000;Database=eqs;UID=db2inst1;PWD=EqsCi2026Pass
+      LD_LIBRARY_PATH: ${{ github.workspace }}/tests/EasyQuerySharp.Tests.Live/bin/Release/net10.0/clidriver/lib
+    steps:
+      - name: Start Db2
+        run: >-
+          docker run -d --name db2 --privileged -p 50000:50000 -e LICENSE=accept -e DB2INST1_PASSWORD=EqsCi2026Pass
+          -e DBNAME=eqs -e ARCHIVE_LOGS=false -e AUTOCONFIG=false
+          icr.io/db2_community/db2:12.1.2.0@sha256:9cc0d21df5d86cd9a5ce1c65c390dc10d56b1d38ab6e992c8a08eda677368781
+      - uses: actions/checkout@v7
+      - run: sudo apt-get install -y --no-install-recommends libxml2
+      - name: Wait for Db2
+        run: timeout 1200 bash -c 'until docker logs db2 2>&1 | grep -q "Setup has completed"; do sleep 10; done'
+      - uses: ./.github/actions/dotnet-test
+        with:
+          require-dbs: db2
+          project: ${{ env.LIVE_TESTS }}
+          report-name: test-results-db2
+
+  # 达梦、openGauss：实库冒烟（ROADMAP 3.1、3.4）落地时，在 TestDatabases 登记驱动后按上面的模式加任务。
   # HANA 需要 12 GB 内存，GitHub 托管的 runner 跑不了，只在本机用 infra/dev 的 hana profile 验证。

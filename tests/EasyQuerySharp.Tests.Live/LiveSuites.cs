@@ -86,6 +86,15 @@ public sealed class OracleLiveSuite : LiveSuite
     protected override LiveSuiteOptions Options { get; } = new() { JsonFunctions = false, ShardDataSources = false };
 }
 
+/// <summary>Db2 12.1：用连接串里的用户自己的 schema（建第二个库要几分钟，分库用例跳过）。</summary>
+public sealed class Db2LiveSuite : LiveSuite
+{
+    protected override TestDatabase Database => TestDatabases.Db2;
+    protected override SqlDialect Dialect => Db2Dialect.Instance;
+    // GREATEST / LEAST 碰到 NULL 返回 NULL；没有 NOWAIT；SQL/JSON 路径取不了数组长度
+    protected override LiveSuiteOptions Options { get; } = new() { ExtremesIgnoreNull = false, NoWait = false, JsonLength = false, ShardDataSources = false };
+}
+
 /// <summary>DuckDB（进程内）：临时文件库（内存库每条连接各是一个库，跨连接看不到表）；没有行锁。</summary>
 public sealed class DuckDbLiveSuite : LiveSuite
 {

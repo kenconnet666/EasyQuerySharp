@@ -1,10 +1,13 @@
 using System.Data.Common;
+using ClickHouse.Driver.ADO;
 using DuckDB.NET.Data;
+using IBM.Data.Db2;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using MySqlConnector;
 using Npgsql;
 using Oracle.ManagedDataAccess.Client;
+using TDengine.Data.Client;
 
 namespace EasyQuerySharp.TestKit.Databases;
 
@@ -17,13 +20,18 @@ namespace EasyQuerySharp.TestKit.Databases;
 /// <param name="Factory">ADO.NET 驱动工厂。</param>
 /// <param name="ParameterPrefix">驱动认的命名参数前缀，Oracle 是 <c>:</c>，DuckDB 是 <c>$</c>，其余是 <c>@</c>。</param>
 /// <param name="InProcessConnectionString">进程内数据库的固定连接串；为 null 表示要从环境读。</param>
+/// <param name="PositionalParameters">SQL 里只认位置参数 <c>?</c>（TDengine）；参数对象的名字仍要带 <paramref name="ParameterPrefix"/>。</param>
 public sealed record TestDatabase(
     string Key,
     string DisplayName,
     DbProviderFactory Factory,
     string ParameterPrefix = "@",
-    string? InProcessConnectionString = null)
+    string? InProcessConnectionString = null,
+    bool PositionalParameters = false)
 {
+    /// <summary>SQL 里名为 <paramref name="name"/> 的参数占位符。</summary>
+    public string Placeholder(string name) => PositionalParameters ? "?" : ParameterPrefix + name;
+
     /// <summary>连接串所在的环境变量名。</summary>
     public string EnvironmentVariable => $"EQS_{Key.ToUpperInvariant()}_CS";
 
@@ -110,8 +118,25 @@ public static class TestDatabases
     /// <summary>DuckDB（进程内）：连接串里的 <c>:memory:</c> 每条连接各是一个库，用例要共享数据时自己指定临时文件。</summary>
     public static readonly TestDatabase DuckDb = new("duckdb", "DuckDB", DuckDBClientFactory.Instance, ParameterPrefix: "$", InProcessConnectionString: "Data Source=:memory:");
 
+    /// <summary>ClickHouse 25.8（HTTP 接口）：驱动把 <c>@name</c> 改写成带类型的 <c>{name:Type}</c>。</summary>
+    public static readonly TestDatabase ClickHouse = new("clickhouse", "ClickHouse 25.8", ClickHouseConnectionFactory.Instance);
+
+    /// <summary>IBM Db2 12.1 Community。</summary>
+    public static readonly TestDatabase Db2 = new("db2", "Db2 12.1", Db2Factory());
+
+    /// <summary>TDengine 3.3（WebSocket，不用装客户端）：SQL 里是 <c>?</c>，参数对象的名字要以 <c>@</c> 开头。</summary>
+    public static readonly TestDatabase TDengine = new("tdengine", "TDengine 3.3", new TDengineFactory(), PositionalParameters: true);
+
+    // Db2 的 CLI 驱动按系统代码页通信，中文 Windows（936）上连接直接失败、只报 "no error information available"：
+    // 在驱动加载前把客户端代码页固定成 UTF-8（1208）。环境里已经设置的不覆盖
+    private static DbProviderFactory Db2Factory()
+    {
+        if (Environment.GetEnvironmentVariable("DB2CODEPAGE") is null) Environment.SetEnvironmentVariable("DB2CODEPAGE", "1208");
+        return DB2Factory.Instance;
+    }
+
     /// <summary>全部登记的数据库。</summary>
-    public static IReadOnlyList<TestDatabase> All { get; } = [Sqlite, MySql, MySql8018, MariaDb, PostgreSql, SqlServer, Oracle, DuckDb];
+    public static IReadOnlyList<TestDatabase> All { get; } = [Sqlite, MySql, MySql8018, MariaDb, PostgreSql, SqlServer, Oracle, DuckDb, ClickHouse, Db2, TDengine];
 
     /// <summary><c>EQS_REQUIRE_DBS</c>（逗号分隔的 Key）里列出的必须可用的数据库。</summary>
     public static IReadOnlySet<string> RequiredKeys { get; } =
