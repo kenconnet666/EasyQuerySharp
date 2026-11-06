@@ -2,251 +2,157 @@
 
 状态标记：`[ ]` 未开始、`[~]` 进行中、`[x]` 完成、`[!]` 待决（原因写在该项下面）。每项一个分支一个 PR，规则见 [CLAUDE.md](CLAUDE.md)。
 
-**目标**：完整对标 easy-query（Java）。对标基准是上游 `sql-test` 的 2315 个用例加 fork `sql-fork-test` 的 89 个，共 2404 个，每个都要有对应的 C# 测试，状态由 `tools/ParityTests` 统计。同时参考 easy-query-ts 的写法、测试结构和文档站。
+本文只列还没做完的事。已完成能力的写法与限制见 [能力对照总表](docs/parity.md) 和各能力文档；2026-11-06 重新规划之前的版本见 git `0f0b76f:ROADMAP.md`。
 
-设计依据：
-- [0001 查询 API 路线](docs/decisions/0001-query-api-route.md)
-- [0002 对象树与 DTO](docs/decisions/0002-object-tree-and-dto.md)
-- [0003 测试对标](docs/decisions/0003-testing-and-parity.md)
-- [0004 聚合根保存](docs/decisions/0004-aggregate-save.md)
-- [架构](docs/design/architecture.md)
-- [文档站](docs/design/docs-site.md)
-- [能力对照总表](docs/parity.md)
+## 目标
 
-## 每个里程碑的完成标准
+**1.0：成熟可用。**
 
-1. **用例**：对照表里，归在本里程碑的能力"待做"为 0。偏离和不适用的每一条都写了理由。
-2. **实库**：L3 共用套件中对应的用例组在 SQLite、MySQL 8.4、PG 17 上全部通过。从 M6 开始，还要在该方言的 CI 任务里全部通过。
-3. **文档**：每个能力有文档页和示例卡片，各方言的 SQL 快照已更新并提交。
+- **对标**：Java 的 2404 个用例（上游 `sql-test` 2315 个、fork `sql-fork-test` 89 个），每个都有对应的 C# 测试，或者标为不适用并写明理由。基准冻结在 `tools/ParityTests/java-tests.json`。
+- **按可发布的标准做**：公共 API 冻结、文档齐全、有基准对比、能打包。是否发布到 nuget.org 到阶段 5 再定。
+
+设计依据：[0001 查询 API 路线](docs/decisions/0001-query-api-route.md)、[0002 对象树与 DTO](docs/decisions/0002-object-tree-and-dto.md)、[0003 测试对标](docs/decisions/0003-testing-and-parity.md)、[0004 聚合根保存](docs/decisions/0004-aggregate-save.md)、[架构](docs/design/architecture.md)。
+
+## 现状（2026-11-06）
+
+- 对标：已移植 1726、偏离 224、不适用 78、骨架 6、待做 370。
+- 待做的分布：方言 222，平台能力 128（分库分表 48、search 45、code-first 15、表名 / schema / link 14、按对象筛选 6），其余零散 20。
+- 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
+
+## 已定的取舍
+
+**范围**
+
+- 不做，对应的用例标为不适用：
+  - search 扩展（`sql-search`，45 个）：这是第三方贡献的 URL 参数约定，由前端选运算符；同类需求用 `FilterBy` / `SortBy`。
+  - SQL Server 2008 的 ROW_NUMBER 分页（13 个）：SQL Server 2008 已于 2019 年停止支持。
+- 要做：分库分表、二级缓存、ClickHouse / TDengine / Db2、关联键匹配策略（Java 的 `relationPropertyStrategy`）。
+- 暂不做，记进 [BACKLOG](docs/BACKLOG.md)：文档站、AOT 与元数据 / 物化器的 Source Generator、TS 版独有的能力（原 M9）。
+
+**架构**
+
+- **方言留在核心包里**，只负责渲染 SQL。驱动由用户通过 `DbDataSource` 传入，核心不引用任何驱动。只有用到驱动专属 API（批量复制、PG 数组类型等）时，才单独出包。
+- **方言分两档**：
+  - 第一档，CI 跑全部实库用例：SQLite、MySQL 8.4 / 8.0.18（PolarDB 基线）/ MariaDB、PG 17、SQL Server、Oracle。
+  - 第二档，比对 SQL 文本，再加实库冒烟：达梦、HANA、DuckDB、Kingbase / openGauss、ClickHouse、TDengine、Db2。容器起得来的进 CI，起不来的在本地验证。
+- **生成器只保留 `[Projection]` 和分析器**。`[MapFrom<T>]` 的映射在运行时构造，编译期校验交给分析器。核心如实标注 `RequiresDynamicCode` / `RequiresUnreferencedCode`。
+- **嵌套事务对齐 Java**：已经在事务里时再开事务，直接抛异常。
+- **规划外的新公共概念先写决策文档**：关联键匹配策略、分库分表、二级缓存。
+- **新依赖只进各自的包**：生成器引用 Microsoft.CodeAnalysis，依赖注入和缓存引用 Microsoft.Extensions 的抽象包，核心仍然零依赖。
+
+**对标基准**
+
+- 冻结在现有快照，不随上游增长。上游 main（3.3.1）的 `sql-test` 已经有 2410 个用例，跟进上游另起工作项。
+- fork 仓库不在本机，fork 的 89 个用例只存在于快照里。
+
+## 每个阶段的完成标准
+
+1. **用例**：归在本阶段的待做为 0；偏离和不适用每一条都写了理由。
+2. **实库**：对应的用例组在相关数据库上通过；第一档方言要在 CI 里通过。
+3. **文档**：每个能力都有示例卡片，各方言的 SQL 快照已更新并提交。
 4. **CI**：全部任务通过。
 
 ## 执行顺序
 
-M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8 → M10，M9 按需穿插。
+R → 1 → 2 → 3 → 4 → 5。
 
-- 文档卡片随各里程碑一起补，M8 只负责收尾和站点。
 - 某一项进入待决状态时，跳到顺序里下一个不依赖它的项。
 - 每完成一块功能顺手整理（拆文件、合并重复、删死代码），整理单独提交。
+- 示例卡片和 SQL 快照随功能一起补。
 
-2026-11 定下的剩余阶段（按顺序）：
+## R 整理（不加新功能）
 
-| 阶段 | 内容 |
-|---|---|
-| A 基础设施 | L3 `LiveSuite`（1.12）、表达式形状缓存与基准（1.7）、生成器与分析器项目、`DocsExamples` 卡片与快照（1.11）、示例模型（0.10） |
-| B M1–M3 清零 | 基本查询、函数、多表组合的剩余用例，以及它们需要的新能力 |
-| C M4 | 一对多展开、按 DTO 自动带出与 `[MapFrom]`、树与递归 CTE、多对多分组合并 |
-| D M5 | 聚合根保存、`Changes`、`DbBatch`、INSERT … SELECT、枚举 / 值对象、SM4、MERGE |
-| E M6 | 各方言实库验证与新方言、方言专属函数、RETURNING、H2 用例改到 SQLite |
-| F M7 | 表名映射、分库分表、search、按对象筛选剩余、code-first、二级缓存、依赖注入 |
+- [ ] R.1 冻结对标基准：
+  - `tools/ParityTests` 默认只读快照，重新扫描必须显式写 `--rescan --java <路径>`；
+  - 快照里记下 Java 上游与 fork 的 commit（fork 的 commit 找不到时写明"未知"）。
+  - 修好之前**不要在本机运行 ParityTests**：本机的 Java 仓库在默认路径上，工具会用上游 3.3.1 重写快照，丢掉 fork 的 89 个用例。
+- [ ] R.2 正确性问题：
+  - 环境事务结束后没有真正弹出 AsyncLocal：`EndAsync` 是 async 方法，里面的赋值不会传回调用方。同一个 async 方法里循环开事务时，已经结束的事务会串成链表，每条语句都要遍历一遍，造成泄漏、越跑越慢。改成在 AsyncLocal 里放可变的 holder。
+  - 嵌套事务：已经在事务里时，`BeginTransaction` 抛异常（对齐 Java 的 `repeat begin transaction`）。现在的做法是另开一个连接、另起一个事务。
+  - 追踪作用域在并行查询时共用同一个普通 `Dictionary`：要么加锁，要么检测到并发时报错。
+- [ ] R.3 修正 API（1.0 之前一次改完）：
+  - `ToAsyncEnumerable()` 改名 `AsAsyncEnumerable()`；
+  - `db.QuerySql<T>(..)`（返回可组合的查询）改名 `db.FromSql<T>(..)`；
+  - `Select<TDto>()` 和 `SelectAutoInclude<TDto>()` 合并成 `Select<TDto>()`：DTO 里与导航同名的成员自动带出，`[MapFrom<T>]` 只用作编译期校验；
+  - `ToDictionariesAsync()` / `FirstDictionaryOrDefaultAsync()` 改名 `ToRowsAsync()` / `FirstRowOrDefaultAsync()`；
+  - 删掉 `Limit(offset, rows)`；`LimitSelect` 能用 `Skip` / `Take` 加 `AsSubQuery()` 表达的话也删掉；
+  - 补上 `UseSqlServer` / `UseOracle`，和 `UseMySql` 等入口一致；
+  - 构造 `EasyDb` 时冻结 `EasyDbOptions`，之后再修改就抛异常；
+  - 新增分析器 EQ0007：只能在查询里用的方法（`Sql` 上的扩展方法等）在表达式树之外调用时，编译报错；
+  - 引入 `Microsoft.CodeAnalysis.PublicApiAnalyzers`（只在开发期用），建立公共 API 基线。
+- [ ] R.4 落地删减：search 的 45 个、SQL Server 2008 的 13 个用例标为不适用并写理由；文档站、AOT、原 M9 记进 BACKLOG。
+- [ ] R.5 文档对齐现状：
+  - `architecture.md` 的模块表按实际情况重写：方言和加密都在核心里；测试项目是 TestKit / Upstream / Live / Generator；没有 `apps/docs`。同时修正"运行时不反射实体"、EQ0006 的含义、`BeginTransaction` 是同步方法这几处；
+  - 0001 / 0002 里已被取代的写法要改掉：`MySql.JsonContains`；`Save().Cascade()` 和 `OrphanPolicy`（已由 0004 取代）；`MapConfig`（实际是 `IAutoIncludeConfigure<T>`）；`ToTreeAsync(id, parentId)` / `DescendantsOf`（实际是 `AsTreeCte`）；Source Generator 的范围。四份决策的状态改成"已定"；
+  - 0003：L1 项目 `EasyQuerySharp.Tests` 并不存在（`SqlOnly` 在 TestKit 里，L1 用例放在 Upstream 里）；本地与 CI 的分工改成按方言分档；
+  - `parity.md`：开头的说明和"C# 写法"一列按实际 API 刷新；把旧 ROADMAP 里已完成项的限制和方言差异并进去；逐个核对旧 ROADMAP 里标 `[~]` 的项（2.4、4.4、4.5、4.7、4.9、4.10、7.5），还剩的内容并进下面的阶段。
+- [ ] R.6 复核偏离：把 224 条偏离按原因分类（C# 类型系统、API 形状、Java 的 bug、功能缺口），属于功能缺口的改回待做。重点看 nav.flat（26 条）、tracking（17 条）、save.aggregate（14 条）。
+- [ ] R.7 代码走查：找出重复代码、死代码和过长的文件（`QueryBase`、`SqlDialect`、`SqlRenderer`、`SavePlan`），整理单独提交。
 
-用例按"做完哪一步才能过"归到阶段，不按能力标签：
-- B 先做 5.7 的按列写入策略（M1 写入用例依赖它），JSON 函数连同 6.8 的 MySQL / PG 方言入口一起做；
-- `M8Save*`、`NamedEnumTest`、fork 的 InsertSelect 归 D，行锁方言冒烟归 E，`IncludeConditionTest` 归 C。
+完成标准：文档与代码一致；对标表里的待做只剩各阶段计划内的项；CI 全绿。
 
-已定的取舍：
-- **M8 文档站暂不做**；卡片与 SQL 快照照常随功能补。
-- 聚合根保存（5.11）、分库分表（7.3 / 7.4）先写决策文档 0004 / 0005 再实现。
-- SM4 在核心包里自己实现，不引第三方库；用国标测试向量和 Java 密文校验。
-- 驱动拿不到的方言（HANA、达梦等）退回本地验证或标 `[!]`，不阻塞后续。
-- 元数据与物化器的 Source Generator（1.1）放在 F 之后，与 AOT 验证（10.3）一起做。
-- **SAP HANA 也进 CI**：用 HANA Express 容器并压低内存（`--agree-to-sap-license`，限制 `global_allocation_limit`、关闭不需要的服务），跑不起来时再退回只在本地验证。
-- 生成器项目引用 Microsoft.CodeAnalysis、依赖注入与缓存包引用 Microsoft.Extensions 的抽象包：都只在各自的包里，核心包仍零依赖。
-- M10 不发 NuGet；基准对比、AOT 验证、README 可以做。
+## 阶段 1 核心收尾
 
-## M0 地基
+- [ ] 1.1 关联键匹配策略（Java 的 `relationPropertyStrategy`）：
+  - 先写决策文档 0005；
+  - 在导航上声明匹配策略，内置"逗号分隔 id"的实现，并按方言渲染（MySQL 用 `FIND_IN_SET`，PG 用 `= ANY(string_to_array(..))`，SQLite 拼接逗号后用 LIKE）；
+  - 隐式子查询、分组合并、Include、DTO 自动带出都能用；聚合保存不支持；
+  - 用例：M8Test1 testRelationColumns / testRelationColumns1。
+- [ ] 1.2 沿导航拉平取列表：用 LINQ 的 `SelectMany`（`q.SelectMany(a => a.Bs).SelectMany(b => b.Cs).Select(c => c.Name)`）。用例是 QueryTest25 testToListFlat1 / test11a 和 RelationTest testOneToOne；做完后复核 nav.flat 的偏离能不能改回已移植。
+- [ ] 1.3 值对象 `[ValueObject]`。
+- [ ] 1.4 不追踪时的差异更新 `db.Update<T>().Changes(before, after)`。
+- [ ] 1.5 批量写入走 `DbBatch`。
+- [ ] 1.6 `Returning()`：PG 的 UPDATE / DELETE … RETURNING，其余方言在渲染期报错（fork ReturningSqlTest、ReturningLiveTest）。
+- [ ] 1.7 窗口取值函数省略排序时，沿用查询的 ORDER BY。
+- [ ] 1.8 零散用例：
+  - QueryTest25 test11a1 / topicIntegerTest / xxx、QueryTest26 testAAA；
+  - QueryTestRelationTest testRelation（Include 的配置并入平铺带出、分页后再按段取）；
+  - fork ProxySmokeTest；
+  - 骨架：GeneralFunctionsTest testDoubleConcat / MySQLInsertIgnore2UpdateKey / MySQLInsertIgnore2UpdateKey2，NumberFunctionsTest subQueryMySQL。
 
-- [x] 0.1 解决方案布局：
-  - `src/`、`tests/` 两个目录；
-  - `Directory.Build.props`：.NET 10、可空引用类型、警告视为错误、分析器级别 latest-recommended；
-  - 中央包版本管理：同时固定有漏洞的传递依赖版本；
-  - `global.json`：测试走 Microsoft Testing Platform。
-- [x] 0.2 本地数据库 `infra/dev`：
-  - compose 项目名 `easy-query-sharp-dev`，端口统一 4xxxx；
-  - 默认启动 MySQL 8.4 和 PG 17；其余数据库按 profile 启动：polardb、mariadb、mssql、oracle、dameng、opengauss、clickhouse、db2、tdengine、hana；
-  - `db.sh` 首次运行时生成 `.local/db.env`。
-- [x] 0.3 实库测试基础设施：
-  - `TestDatabases` 登记各数据库，连接串用 `EQS_<KEY>_CS`；
-  - `EQS_REQUIRE_DBS` 列出的库连不上时判失败；
-  - 连通性自检已在七个库上实测通过：SQLite、MySQL 8.4 / 8.0.18、MariaDB、PG、SQL Server、Oracle。
-- [x] 0.4 CI `.github/workflows/ci.yml`：
-  - `core` 任务：SQLite、MySQL、PG，跑整个解决方案；
-  - 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 四个任务；
-  - 每天定时运行一次；失败时上传 TRX 报告。
-- [x] 0.5 设计文档：0001–0003、架构、文档站、能力对照总表、本路线图、`CLAUDE.md`。
-- [x] 0.6 推到 GitHub，让 CI 首次跑通。需要建远程仓库，等用户操作。
-- [x] 0.7 `tools/ParityTests`：
-  - 扫描 Java 的 2404 个用例并归类；
-  - 读出 C# 测试上的 `[Upstream]` 标注；
-  - 生成 `docs/parity-tests.md`；
-  - `--scaffold` 生成测试骨架，期望 SQL 和参数从 Java 原样搬过来；
-  - `--check` 加进 CI。
-- [~] 0.8 L1 项目 `tests/EasyQuerySharp.Tests`：
-  - `SqlOnly` 会话，对应 Java 的 `EmptyDataSource`；
-  - `Listen()` / `ListenAll()` 捕获 SQL；
-  - `AssertSql` 和 `AssertParams`，参数按 Java 风格输出类型名，例如 `123xxx(String)`。
-- [x] 0.9 L2 项目 `tests/EasyQuerySharp.Tests.Upstream`：
-  - 移植 Java 的实体模型（先移 `BaseTest` 用到的那些）；
-  - `MySqlFixture`：建表并写入种子数据，code-first 做好之前先执行 Java 的 SQL 脚本；
-  - 对照表的初始状态是 2404 条全部待做。
-- [x] 0.10 示例模型 `samples/EasyQuerySharp.Samples`：TS 文档站的表与种子数据（15 张；门店的值对象、支付的多态随 5.4 / 9.1 补上）。
+## 阶段 2 第一档方言
 
-## M1 内核与单表
+- [ ] 2.1 SQL Server：
+  - Upstream 夹具改用 UpperCamelCase 命名；
+  - 移植 MsSQLQueryTest、MsSQLUpdateJoinTest、MSSQLTest1、MSSQLMathQueryTest 共 38 个用例；
+  - CI 的 mssql 任务加跑 Upstream 的 Mssql 命名空间。
+- [ ] 2.2 Oracle：实库验证；补骨架 NumberFunctionsTest subQueryORACLE。
+- [ ] 2.3 UPDATE / DELETE 里用对一导航（`write.join`），在 SQL Server、Oracle、SQLite 上补齐（现在抛 NotSupportedException）；`DateTrunc` 也在这三个方言上补齐。
+- [ ] 2.4 L3 `LiveSuite` 从现在的 4 组扩到 TS 的 23 组，`LiveSuiteOptions` 按方言裁剪能力；在第一档的每个库上全部通过（MySQL 8.0.18、MariaDB 各算一个库）。
 
-覆盖能力：`query.basic` 402、`query.page` 22、`sql.native` 50、`write.insert` / `write.update` / `write.delete` 共 115、`column.generated`。方言做 MySQL、SQLite、PostgreSQL，也就是本地必测的三个库。
+## 阶段 3 第二档方言
 
-- [~] 1.1 元数据：
-  - 特性 `[Table]`、`[Column]`、`[Key]`、`[ColumnIgnore]`、`[InsertIgnore]`、`[UpdateIgnore]`；
-  - 命名约定，默认驼峰转下划线；
-  - Source Generator 产出 `EntityMetadata` 和 `DbDataReader` 物化器，运行时不反射。
-- [x] 1.2 查询模型：
-  - 不可变的 `IQuery<T>`；
-  - `Where` / `WhereIf` / `OrderBy` / `Select` / `Skip` / `Take` / `Distinct`；
-  - 终结方法 `ToListAsync` / `FirstAsync` / `FirstOrDefaultAsync` / `SingleAsync` / `AnyAsync` / `CountAsync` / `FindAsync`。
-- [x] 1.3 表达式翻译：
-  - 比较、逻辑、算术、null、三元、`??`；
-  - 闭包参数提取，翻译路径上禁止 `Compile()`；
-  - `Contains` 要识别三种形状：数组、`List<T>`、first-class span 的 `MemoryExtensions`；
-  - `string` 的 `Contains` / `StartsWith` / `EndsWith`，以及 `Like`；
-  - 不支持的写法报错时，消息里带上原始表达式。
-- [x] 1.4 SQL AST、`Dialect` 基类、渲染器：
-  - 输出与 Java 逐字对齐：单表不加别名，多表依次 `t`、`t1`…，逗号后不留空格，列顺序等于属性声明顺序；
-  - `ParameterStyle` 支持 `Question` / `Named` / `Positional`。
-- [x] 1.5 MySQL 方言（同时兼容 8.0.18）、SQLite 方言、PostgreSQL 方言。
-- [x] 1.6 执行层：
-  - `Session` / `Driver` 基于 `DbDataSource`；
-  - 环境事务基于 `AsyncLocal`；
-  - 执行事件，对接 `ILogger` 和 `ActivitySource`；
-  - 全链路传递 `CancellationToken`。
-- [x] 1.7 表达式形状缓存与基准（`benchmarks/EasyQuerySharp.Benchmarks`）。实测编译读取函数约 1 ms，占一条查询开销的大头，翻译 + 渲染只要十几 µs；所以缓存的是读取函数：按读取树的结构做键，引用类型常量（带出计划、换算委托）提成参数，同形状只编译一次（`ShaperCache`）。读 100 行实体从 2.2 ms 降到 1.2 ms（手写 ADO.NET 0.95 ms）；`ToSql` 不再编译读取函数。翻译结果本身暂不缓存，等基准显示有必要再做。
-- [x] 1.8 写入：
-  - `Insert` 支持返回自增键或整个实体；
-  - `Update` 支持 `Set` 表达式和按主键整行更新；
-  - `Delete` 没有条件时必须写 `.All()`；
-  - 写入一律以 `ExecuteAsync` 结束。
-- [x] 1.9 原生 SQL：`db.Sql<T>($"...")`（插值处理器，值自动参数化）和 `Sql.Raw<T>`。
-- [x] 1.10 `ToPageAsync`。
-- [x] 1.11 `tools/DocsExamples` 首版：卡片写在 `docs/examples`，在 SQLite 上实跑、录下结果后在其余五种方言上回放，写出 `docs/sql-snapshots`；`--check` 进 CI。首批"查询 / 基础""写入" 23 张。站点用的 examples.json 与代码截取随文档站（M8）做。
-- [x] 1.12 L3 `LiveSuite` 基类和 `LiveSuiteOptions`，首批用例组：queries、writes、native SQL（每个数据库一个薄子类，每个用例 code-first 重建表与种子；已在 SQLite、MySQL 8.4、PG 17 全部通过）。
+每个方言交付三样东西：方言类、在 `TestDatabases` 里登记、实库冒烟。容器起得来的再加一个 CI 任务。
 
-## M2 表达式与函数
+- [ ] 3.1 达梦：方言继承 Oracle，覆盖差异部分。用例有 DamengQueryTest、DamengForUpdateTest、UpdateJoinTest、MathQueryTest、MigrationDamengTest。
+- [ ] 3.2 SAP HANA：
+  - `Sql.Hana.Text`；
+  - fork 的 HanaSqlTest、HanaTextSqlTest、三个 live 用例，以及 InsertSelect / JsonValueConverter 的 HANA 用例；
+  - HANA Express 压低内存后进 CI，跑不起来就退回本地验证。
+- [ ] 3.3 DuckDB（进程内运行，CI 直接跑）：DuckDBQueryTest、AllTypeTest、DuckDBMathQueryTest，以及 duckdb 版的 M8Save4Test。
+- [ ] 3.4 PG 家族：Kingbase（MyKingbaseESTest，骨架 testKingbaseCte）、openGauss。
+- [ ] 3.5 ClickHouse（ClickHouseTest）、TDengine、Db2：Java 用例很少或没有，主要靠裁剪后的 L3 套件验证。
+- [ ] 3.6 H2 的 74 个用例：与方言无关的改到 SQLite 上移植，标为偏离；只测 H2 方言本身的标为不适用。
+- [ ] 3.7 跨方言的零散用例：ForUpdateDialectToSQLSmokeTest 剩下的方言、NullSafeSqlTest nullSafeEqualsPerDialect。
 
-覆盖能力：`func.string` 128、`func.date` 96、`func.general` 53、`func.joining` 29、`func.json` 12、`func.math` 4、`expr.case` 27、`window` 38、`lock` 27，加上 fork 的 dateTrunc、NULLIF、null-safe 等值、窗口 frame、NoWait / SkipLocked。
+## 阶段 4 平台能力
 
-- [x] 2.1 函数表机制：
-  - `[SqlFunction]` 扩展方法；
-  - BCL 方法映射：`string`、`Math`、`DateTime` / `DateOnly` / `DateTimeOffset`；
-  - 用户的自定义函数和内置函数写法一样。
-- [x] 2.2 字符串、数学、通用函数：`NullIf` / `EqualsNullSafe`（null 安全相等，按方言写 `<=>` / `IS NOT DISTINCT FROM` / `IS`）。Java 的 maxColumns / minColumns（GREATEST / LEAST）没有用例覆盖，有需求再加。
-- [~] 2.3 日期函数：格式串按方言翻译，加减、取部分、`DateDiff`、`Sql.DateTrunc`（MySQL / PG；其余方言随 M6）。
-- [~] 2.4 `Sql.Case`，以及带过滤的聚合，例如 `g.Count(p => p.Paid)`。
-- [~] 2.5 窗口函数：`Sql.Over.*` 系列，包括 frame、`Ntile` / `PercentRank` / `CumeDist`（API、渲染与 `Part<T,…>` 投影已完成；取值函数省略排序时沿用查询的 ORDER BY 待做）。
-- [x] 2.6 字符串聚合 `StringJoin`，以及 JSON 取值 `Sql.Json(列).Get / Text / Value<T> / Length / ContainsKey`（MySQL、PG、SQLite；PG 的 json / jsonb 列写入时参数加类型转换）。
-- [x] 2.7 行锁：`ForUpdate` / `ForUpdateNoWait` / `ForUpdateSkipLocked`（Java 没有 FOR SHARE，不做）。H2、达梦、DB2、ClickHouse、DuckDB 的冒烟用例随 M6 方言一起移植。
-- [~] 2.8 SQL Server 和 Oracle 方言的**渲染部分**，只做 SQL 比对：Java 的三组函数测试（约 100 个用例）在 MySQL、MSSQL、PG、Oracle 上各有一份。实库验证放到 M6。
-- [x] 2.9 分析器首版（`src/EasyQuerySharp.Generator`，测试在 `tests/EasyQuerySharp.Tests.Generator`，说明见 [analyzers.md](docs/design/analyzers.md)；打进核心包随 M10 做）：
-  - EQ0001：不支持翻译的方法；
-  - EQ0002：表达式树里不能写的语法，给出改写建议。
+- [ ] 4.1 code-first：建表（注释、索引、外键）、只增不删的同步、`RenamedFrom`、`ToSql()`、读取库结构（MigrationTest 等 15 个）。
+- [ ] 4.2 表名映射：查询级 `MapTable`（导航、隐式 join、include 跟着一起变；fork TableNameMapping 的 7 个用例）、`AsTable` 剩余的用例、`InSchema`、`WithTableLink`。
+- [ ] 4.3 `FilterBy` / `SortBy` 剩余的 6 个用例，以及 `Table(request)`。
+- [ ] 4.4 分库分表（ShardingTest 48 个），先写决策文档 0006：
+  - 分表：按取模或按时间路由、按条件裁剪、库内 UNION ALL、写入路由；
+  - 分库：路由，在内存里做归并排序和分页，跨库合并 `count` / `sum` / `min` / `max`。
+- [ ] 4.5 二级缓存 `EasyQuerySharp.Caching`，先写决策文档 0007：
+  - 参照 Java 的 `sql-extension/sql-cache`：单实体、多实体、键值三种缓存查询，写入后让缓存失效；
+  - 对接 `Microsoft.Extensions.Caching` 的抽象，支持本机和分布式两级。
+- [ ] 4.6 依赖注入 `EasyQuerySharp.DependencyInjection`：`AddEasyQuery`，多个库按名字注入。
 
-## M3 多表与组合查询
+完成标准：2404 个用例的待做为 0。
 
-覆盖能力：`query.join` 88、`query.group` 78、`query.union` 18、`query.cte` 11、`query.map` 11、`query.stream` 9、`query.reuse` 2，加上 fork 的 rollup / cube / grouping。
+## 阶段 5 发布准备
 
-- [x] 3.1 显式 join：`IQuery<T1..T8>` 由仓库内的生成器产出；right join 之后，前面表的列按可空处理。
-- [x] 3.2 `GroupBy` / `Having` / 投影里的 `g.Key`，以及 `Rollup()` / `Cube()` / `g.Grouping(键)`（MySQL 写 WITH ROLLUP、没有 CUBE；SQLite 都不支持）。
-- [x] 3.3 子查询：`In(subQuery)`、`Exists`、派生表 `AsSubQuery()`。
-- [x] 3.4 `Union` / `UnionAll`，CTE：`AsCte(name)`，递归 CTE（树查询 `AsTreeCte`）。
-- [x] 3.5 流式读取 `ToAsyncEnumerable()`，无实体查询 `db.SqlQueryAsync<Dictionary<..>>`、`QuerySql<Dictionary<..>>(sql, params)` 与 `ToDictionariesAsync`。
-  - [x] Java 的 Map 查询构造器（`mapQueryable()` / `queryable(Map.class).asTable(..)` / `queryable("表名")`）：`db.Table(..)` + `DynamicRow.Get<T>(..)`，复用同一条查询管线。
-- [x] 3.6 LINQ 查询语法（`from … where … orderby … join … group … select`）：与方法链生成同样的 SQL（`Extras/QuerySyntaxTest`）；`join … equals …` 支持单值与匿名类型复合键，连续多个 join 的透明标识符不支持（用 `InnerJoin`）。
-
-## M4 导航与对象树（[0002](docs/decisions/0002-object-tree-and-dto.md)）
-
-覆盖能力：`nav.subquery` 142、`nav.groupJoin` 67、`nav.flat` 56、`nav.include` 37、`dto.autoInclude` 35、`tree` 25、`fill` 4。
-
-- [x] 4.1 关系元数据：
-  - `[Navigate]` 支持一对一、多对一、一对多、多对多（中间表）、直达路径、`ExtraFilter`；
-  - 可空引用类型决定 JOIN 方式。
-- [x] 4.2 隐式 join：条件、排序、投影里出现多对一导航时自动 JOIN。
-- [x] 4.3 隐式子查询：`Any` / `!Any` / `Count` / `Sum` / `Max` / `Min` / `Average` / `Where(..).聚合`，以及分组合并：`GroupJoin(nav, q => …)`（一对多、多对多、嵌套、导航级条件与值过滤）、`GroupJoinAll()` 全部合并、`GroupJoinNoMerge()` 不提取共有条件；UPDATE / DELETE 的条件里同样可用。
-- [~] 4.4 归一管线：内联器、规划器、按叶子往根构造的物化器。对多集合每层一次批量 IN 查询；IN 列表按方言上限分批，PG 用 `ANY`。
-- [~] 4.5 投影里的嵌套集合：`Where` / `OrderBy` / `Take`（ROW_NUMBER）、`First` / `ElementAt`；`oneOfMany`（导航上的 `First` / `ElementAt` 已完成）。
-- [x] 4.6 可复用投影：`Project(map)`（对一套用、对多等同 `Select`）与 `[Projection]` 方法（生成器在编译期产出表达式并登记，查询里内联成方法体；投影结果上取成员会折回原来的列），写法不受支持时报 EQ0006。
-- [~] 4.7 自动映射（Java 的 selectAutoInclude）：`SelectAutoInclude<TDto>()` 按 DTO 结构带出导航（嵌套 DTO 列表 / 对象走带出查询）、`IAutoIncludeConfigure<T>`（带出条件、根查询配置）、`[MapExpression]`（额外列）、`[MapPath]`（平铺：对一路径默认走共用的带出查询，`Join = true` 时主查询 JOIN）、经过集合再沿导航走的平铺路径（逐段查中间表）、`IncludeGroupSize` / `WithConfigureArgument`、树形 DTO 拼树已完成（运行时构造表达式）、`[MapFrom<T>]`（`Select<TDto>()` 按结构带出）与分析器 EQ0003 / EQ0005 已完成；映射表达式的编译期生成随 1.1 一起做；综合用例 QueryTestRelationTest testRelation（include 配置并入平铺带出、分页包装取段）待做。
-- [x] 4.8 `Include(nav, q => …)` 可以嵌套；ExtraFilter 的分析器 EQ0004（Include、嵌套、多对多经中间表、ExtraFilter / ExtraMappingFilter、子数据 Take 按父对象分段（`IncludeLimitMode` 分区 / UNION ALL）、`LoadIncludeAsync`、复合键、直达导航（逐段查中间表）、导航声明的排序与条数（`OrderBy` / `Limit`）已完成、分析器 EQ0004 已完成）。
-- [~] 4.9 填充：投影里写非导航的关联查询，规划器按键批量执行（`FillMany` / `FillOne` 已完成，带 Take 时按键 UNION ALL）。
-- [~] 4.10 树：`AsTreeCte`（递归 CTE，上下两个方向、层级上限、子节点条件）、`ToTreeAsync`、树结果投影到 DTO（手写投影或 `SelectAutoInclude`；DTO 自带或沿用实体的自关联导航）已完成；递归 DTO 由生成器诊断。
-- [ ] 4.11 `ToAsyncEnumerable(batchSize)` 按批流式读取对象树；`.AsSnapshot()` 保证多次查询的一致性。没有对应的 Java 用例，挪到 BACKLOG。
-- [!] 4.12 关联键的自定义比较（Java 的 `relationPropertyStrategy`，如 `find_in_set`：本表一列逗号分隔的 id 关联多行）。规划外的新公共概念（导航上的关联策略），待确认 API 再做；对应 M8Test1 testRelationColumns / testRelationColumns1。- [!] 4.13 沿导航路径拉平直接取列表（Java 的 `toList(t -> t.bList().flatElement().cList().flatElement().cname())`）。C# 目前用 `[MapPath]` DTO 表达，查询本身直接返回拉平值是规划外的新 API，待确认；对应 QueryTest25 testToListFlat1、RelationTest testOneToOne（后者还有 include2 + select(VO) 的组合）。
-
-## M5 写入进阶与列规则
-
-覆盖能力：`write.upsert` 13、`write.strategy` 19、`write.join` 10、`tracking` 62、`save.aggregate` 39、`interceptor` 3、`logicDelete` 10、`version` 13、`column.encryption` 8、`column.converter`，加上 fork 的 insert-select 和 JSON 列。
-
-- [x] 5.1 拦截器：`QueryFilter<T>`、`EntityInterceptor<T>`（含按条件更新追加 SET）；默认关闭、按名启用 / 关闭。内置多租户、自动填充不做成库功能，用这两个基类几行即可写出（见 InterceptorTest）。
-- [x] 5.2 逻辑删除：布尔、删除时间与自定义策略（`ILogicDeleteStrategy`）；可以按导航单独关闭（`u.Posts.DisableLogicDelete().Any(..)`、对一导航 `Sql.DisableLogicDelete(p.Author)`），导航也可换表（`AsTable`）；`.Hard()`。
-- [x] 5.3 乐观锁 `[Version]`：`WithVersion` / `IgnoreVersion`，按实体写入成功后写回新版本；冲突检测用 `ExecuteAsync(expectedRows)` 抛 `ConcurrencyException`。
-- [~] 5.4 值转换器、枚举存储方式、值对象 `[ValueObject]`、JSON 列（`JsonValueConverter<T>`、枚举按名字存 `EnumNameConverter<T>` / 枚举上的 `[StoreAsName]` 已完成；值对象待做）。
-- [x] 5.5 列加密：与 Java 的 AES / SM4 密文兼容，支持分段 LIKE（`[Encryption]`、`AesBase64EncryptionStrategy`、自带实现的 `Sm4` 与 `Sm4HexEncryptionStrategy`，共用 `SegmentedEncryptionStrategy` 的分段规则；国标测试向量校验）。库端加解密用列的 SQL 读写转换 `[Column(SqlConversion = typeof(…))]`（`ColumnSqlConversion`：查询套读取模板、写入与比较的值套写入模板）已完成。
-- [x] 5.6 upsert：`OnConflictIgnore()` / `OnConflictUpdate()`：MySQL（INSERT IGNORE / ON DUPLICATE KEY UPDATE）、PG 与 SQLite（ON CONFLICT），SQL Server 与 Oracle 改写成单行 MERGE；约束列只取写入了的列。
-- [ ] 5.7 写入策略：按列策略只写非空列；批量写入用 `DbBatch`。
-- [x] 5.8 UPDATE / DELETE 里用导航：集合导航翻译成关联子查询；对一导航生成 JOIN，MySQL 用多表语法，PostgreSQL 用 FROM / USING。SQL Server、Oracle、SQLite 的写法随 M6 实库验证再加（现在抛 NotSupportedException）。
-- [x] 5.9 INSERT … SELECT：`Query<T>.InsertInto(表?)` 把查询结果整批写进表（来源包成 eq_src，按列名对应），`.Column(名, 值)` 追加固定值列（HANA 的用例随 HANA 方言补）。
-- [~] 5.10 追踪：`BeginTracking()` / `AsTracking()` 加差异更新、`WhereColumns` 用原始值（已完成）；不追踪时用 `Changes(before, after)`。
-- [~] 5.11 聚合根保存：按 [0004](docs/decisions/0004-aggregate-save.md) 实现（`db.Save(root)`、级联声明 `Cascade`、`SaveBehavior`、`SavePath`、`[SaveKey]`、按追踪快照增删改、生成键回填、必须在事务与追踪作用域里）。
-
-## M6 方言铺开
-
-覆盖能力：`dialect.mssql` 38、`dialect.mssql2008` 13、`dialect.dameng` 51、`dialect.duckdb` 16、`dialect.clickhouse` 4、`dialect.kingbase` 2、`dialect.h2` 74（另行处理），加上 fork 的方言专属函数和 RETURNING。
-
-每个方言是一个包，交付四样东西：方言类、驱动适配、在 `TestDatabases` 里登记、CI 任务（HANA 除外）。
-
-- [ ] 6.1 SQL Server，包括 2008 的 ROW_NUMBER 分页。
-- [ ] 6.2 Oracle。
-- [ ] 6.3 达梦：方言继承 Oracle，覆盖差异部分。
-- [ ] 6.4 MariaDB：MySQL 方言的变体。
-- [ ] 6.5 openGauss 和人大金仓 PG 模式：与 PG 共用方言。
-- [ ] 6.6 DuckDB（进程内，本地也可以跑）、ClickHouse、Db2、TDengine。
-- [ ] 6.7 SAP HANA：HANA Express 压低内存进 CI；驱动或镜像拿不到时退回本地验证。
-- [~] 6.8 方言静态入口（嵌套在 `Sql` 下，避免与驱动的命名空间 `MySql.*` 冲突）：
-  - [x] `Sql.MySql.Json(列).Contains / HasMember / Overlaps / ContainsPath / Edit(..)`、`Sql.MySql.Match(..).Against / Score`；
-  - [x] `Sql.Pg.Jsonb(列).Contains / ContainedBy / HasKey / HasAnyKey / HasAllKeys / Edit(..)`、`Sql.Pg.Array`、`Sql.Pg.FullText`；
-  - `Hana.Text`；
-  - [x] 用错方言时在渲染期报错；用户自己的方言函数用 `[SqlFunction]`，写法与内置入口一致。
-- [ ] 6.9 `Returning()`，用于 PG 的 UPDATE / DELETE。
-- [ ] 6.10 H2 的 74 个用例：和方言无关的改在 SQLite 上移植，标为偏离；只测 H2 方言本身的标为不适用。
-- [ ] 6.11 L3 共用套件在每个方言上全部通过；`LiveSuiteOptions` 按方言裁剪能力。
-
-## M7 平台能力
-
-覆盖能力：`codeFirst` 17、`table.rename` 45、`table.schema` 19、`table.link` 13、`sharding` 48、`dto.object` 101、`search` 45。
-
-- [~] 7.1 code-first：建表（注释、索引、外键）、只增不删的同步、`RenamedFrom`、`ToSql()`、读库结构。
-- [ ] 7.2 查询级表名映射 `MapTable`：导航、隐式 join、include 都跟着变；`InSchema`、`WithTableLink`。
-- [ ] 7.3 分表：按取模、按时间路由；按条件裁剪；库内 UNION ALL；写入路由。
-- [ ] 7.4 分库：路由；在内存里归并排序和分页，`count` / `sum` / `min` / `max` 跨库合并。
-- [~] 7.5 `FilterBy` / `SortBy`（已完成：条件类型、多属性 OR、区间、导航路径、集合 EXISTS、允许排序的属性）/ `Table(request)`，对应 Java 的 `whereObject` / `orderByObject`。
-- [ ] 7.6 `EasyQuerySharp.Search`：Java search 扩展的参数约定。
-- [ ] 7.7 二级缓存接口，提供本机和分布式两级。
-- [ ] 7.8 `EasyQuerySharp.DependencyInjection`：`AddEasyQuery`，读写分离（replica）。
-
-## M8 文档站
-
-- [ ] 8.1 站点 `apps/docs`：读取 `examples.json`，提供方言切换、SQL 格式化、结果表格，可以复用 TS 文档站的组件。
-- [ ] 8.2 页面结构对齐 TS：模型、查询、函数、导航、写入、列规则、运维；每页写清方言支持矩阵和对应的 Java 方法名。
-- [ ] 8.3 卡片规模对齐 TS（约 500 张），每个公开 API 至少出现在一张卡片里。
-- [ ] 8.4 CI 加一个文档任务：`DocsExamples --check`（快照没过期、卡片都能跑）和站点构建。
-
-## M9 TS 版独有的能力（按需）
-
-- [ ] 9.1 多态（判别列加子类）。
-- [x] 9.2 计算属性 `[Computed(nameof(静态表达式))]`（对应 Java 的 sqlConversion 计算列）：SELECT 里写成表达式 AS 列名，条件、排序、分组、JOIN 里展开，插入更新跳过；`[Column(AutoSelect = false)]` 时只在显式投影里出现。
-- [ ] 9.3 只读库 `AsReadOnly()`、开发期 N+1 检测。
-- [ ] 9.4 用 interceptors 做编译期预翻译。等官方文档不再标为实验性再做，在此之前先依赖运行时缓存。
-- [ ] 9.5 `dotnet eqs pull`：从库反向生成实体；多个模型程序集注册到同一个库。
-
-## M10 发布
-
-- [ ] 10.1 NuGet 打包：Source Link、确定性构建、包说明；生成器和核心包放在一起分发。
-- [ ] 10.2 BenchmarkDotNet：和 EF Core、FreeSql、SqlSugar、Dapper 对比查询翻译、物化、对象树。
-- [ ] 10.3 Native AOT 和裁剪验证：用一个示例应用发布 AOT。
-- [ ] 10.4 README、入门教程、从 Java / TS 迁移的指南。
+- [ ] 5.1 冻结公共 API：PublicApiAnalyzers 的基线转为已发布（Shipped），公开成员都有 XML 文档。
+- [ ] 5.2 基准对比：用 BenchmarkDotNet 和 EF Core、Dapper、FreeSql、SqlSugar 比较查询翻译、物化、对象树三项；根据结果决定要不要缓存翻译结果。
+- [ ] 5.3 文档：在 `docs/guide/` 下按能力写 Markdown 指南（用法、方言支持矩阵、限制、对应的 Java 方法名），代码片段和 SQL 由 DocsExamples 生成；另写 README、入门教程，以及从 Java / TS 迁移的指南。
+- [ ] 5.4 打包：NuGet 元数据、Source Link、确定性构建，生成器和分析器随核心包一起分发。是否发布到 nuget.org 在这一步决定。

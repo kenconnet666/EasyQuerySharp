@@ -9,4 +9,8 @@
 - 方言能力做进类型系统（参考 TS 的 `Adapter<C>`）：先用运行时检查加分析器。
 - 一条 SQL 用 JSON 聚合出整棵对象树：不做，理由见 [0002](decisions/0002-object-tree-and-dto.md)。
 - 标量投影之后再聚合（`q.Select(x => x.Score ?? 0m).SumAsync(v => v)`）：选择器参数绑定到单列派生表还不支持，多表时直接用 `SumAsync((a, b) => …)`；有真实需求时再补。
-- 对象树按批流式读取（`ToAsyncEnumerable(batchSize)`）与 `.AsSnapshot()`（ROADMAP 4.11）：没有对应的 Java 用例，有真实需求时再做。
+- 对象树按批流式读取（`AsAsyncEnumerable(batchSize)`）与 `.AsSnapshot()`（旧 ROADMAP 4.11）：没有对应的 Java 用例，有真实需求时再做。
+- 文档站（旧 M8：`apps/docs` 读 examples.json，方言切换、结果表格，约 500 张卡片）：1.0 先用 `docs/guide` 下的 Markdown 指南，要对外发布时再做站点。
+- AOT 与裁剪（旧 1.1 / 9.4 / 10.3）：元数据与物化器的 Source Generator、用 interceptors 在编译期预翻译查询。表达式树查询在 NativeAOT 下只能解释执行，物化已接近手写 ADO.NET（读 100 行 1.2 ms，手写 0.95 ms）；等有 AOT 部署需求、且 interceptors 不再标为实验性时再做。
+- TS 版独有的能力（旧 M9）：多态（判别列加子类）、只读库 `AsReadOnly()`、开发期 N+1 检测、`dotnet eqs pull` 从库反向生成实体、多个模型程序集注册到同一个库。不在 Java 对标范围内，有真实需求时再做。
+- 跟进上游新增的用例：对标基准冻结在 `sql-test` 2315 个（上游 main 3.3.1 已到 2410 个）。1.0 之后另起工作项，用 `ParityTests --rescan` 对比差异。
