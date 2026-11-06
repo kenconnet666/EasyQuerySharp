@@ -10,7 +10,8 @@ namespace EasyQuerySharp.Dialects;
 /// <list type="bullet">
 /// <item>更新、删除是 mutation：<c>ALTER TABLE 表 UPDATE … WHERE …</c> / <c>ALTER TABLE 表 DELETE WHERE …</c>，不能带别名，不能走导航连接；</item>
 /// <item>没有自增列、upsert、RETURNING、行锁，用到时抛 <see cref="NotSupportedException"/>；</item>
-/// <item>建表 <c>ENGINE = MergeTree ORDER BY (主键)</c>，可空列由 <c>NULL</c> 修饰成 Nullable。</item>
+/// <item>建表 <c>ENGINE = MergeTree ORDER BY (主键)</c>，可空列由 <c>NULL</c> 修饰成 Nullable；</item>
+/// <item>LEFT JOIN 没匹配上的列默认是类型的默认值而不是 NULL，要在连接上设 <c>join_use_nulls = 1</c>。</item>
 /// </list>
 /// 驱动（如 ClickHouse.Client）由用户通过 <see cref="System.Data.Common.DbDataSource"/> 传入：<c>o.UseClickHouse(dataSource)</c>。
 /// </summary>

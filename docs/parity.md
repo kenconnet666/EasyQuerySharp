@@ -98,9 +98,9 @@
 | 达梦 | `dialect.dameng` | 51 | DM.DmProvider；方言继承 Oracle | 第二档，阶段 3 |
 | 人大金仓 / openGauss | `dialect.kingbase` | 2 | Npgsql；与 PG 共用方言 | 第二档，阶段 3 |
 | DuckDB | `dialect.duckdb` | 16 | DuckDB.NET.Data.Full（只在测试项目里引用）；`options.UseDuckDb(..)` | 第二档，完成 |
-| ClickHouse | `dialect.clickhouse` | 4 | ClickHouse.Client | 第二档，阶段 3 |
+| ClickHouse | `dialect.clickhouse` | 4 | ClickHouse.Client；`options.UseClickHouse(..)`；更新、删除写成 `ALTER TABLE` 的 mutation，没有 upsert、自增列、行锁；4 个用例只渲染、已移植，实库冒烟待做 | 第二档，阶段 3（3.5 进行中） |
 | SAP HANA | `dialect.hana` | 18 | SAP HANA ADO.NET 驱动 | 第二档，阶段 3 |
-| Db2 / TDengine | 没有用例 | — | Net.IBM.Data.Db2 / TDengine.Connector | 第二档，阶段 3 |
+| Db2 / TDengine | 没有用例 | — | Net.IBM.Data.Db2 / TDengine.Connector；`options.UseDb2(..)` / `options.UseTDengine(..)`；Db2 分页 `OFFSET … FETCH`、行锁 `FOR UPDATE WITH RS`、upsert 写成 `MERGE … USING (VALUES …)`；TDengine 没有 UPDATE、upsert、行锁，建表时时间戳主键排第一列；SQL 文本有 C# 用例，实库冒烟待做 | 第二档，阶段 3（3.5 进行中） |
 | H2 | `dialect.h2` | 74 | 没有 .NET 驱动：和方言无关的用例改在 SQLite 上移植（偏离），只测 H2 方言本身的标不适用 | 阶段 3 |
 
 ## fork 新增（`sql-fork-test`，89 个用例）

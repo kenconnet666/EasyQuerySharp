@@ -117,7 +117,13 @@ R → 1 → 2 → 3 → 4 → 5。
   - 用例：Upstream 的 `DuckDb` 命名空间移植 17 个（`duckdb/` 的 16 个加 ForUpdateDialectToSQLSmokeTest 的 duckDB 一条）。readExcel1–4 只核对 SQL、记为偏离（read_xlsx 在 excel 扩展里，要联网安装，还要有 xlsx 文件；表函数用 `AsTableSegment` 替换表引用）；DuckDBMathQueryTest 与 PG 同样因 `Math.Pow` / `Atan2` 的参数是 Double 记为偏离；其余已移植。另有 `DuckDbDialectTest` 验证 Java 没覆盖到的写法（LIKE、序列、upsert、JSON）。
   - 实库：`DuckDbLiveSuite` 36 组通过（行锁一组跳过）；固件和套件都用临时文件并留一个连接不关（DuckDB.NET 在最后一个连接关闭时关库，反复开关慢 4 倍）。进程内运行，随 core 任务一起跑，不需要新的 CI 任务。
 - [ ] 3.4 PG 家族：Kingbase（MyKingbaseESTest，骨架 testKingbaseCte、GeneralFunctionsTest testDoubleConcat）、openGauss。
-- [ ] 3.5 ClickHouse（ClickHouseTest）、TDengine、Db2：Java 用例很少或没有，主要靠裁剪后的 L3 套件验证。
+- [~] 3.5 ClickHouse（ClickHouseTest）、TDengine、Db2：Java 用例很少或没有，主要靠裁剪后的 L3 套件验证。方言类在核心里只渲染 SQL，`options.UseClickHouse / UseDb2 / UseTDengine(..)`，`SqlOnly` 里登记。
+  - ClickHouse：反引号、`LIMIT … OFFSET`；更新、删除是 mutation `ALTER TABLE … UPDATE / DELETE WHERE …`（与 Java 一致；不能带别名、不能走导航，没有条件时补 `WHERE 1 = 1`）；没有 upsert、自增列、行锁，用到时抛 NotSupportedException（Java 照搬了 MySQL 的 `INSERT IGNORE` / `ON DUPLICATE KEY`，ClickHouse 执行不了）；函数用 `substringUTF8` / `positionUTF8`、`toYear` / `addDays` / `dateDiff`、`formatDateTime`（分钟是 `%i`）、`JSONExtract*`、`arrayStringConcat(groupArray(..))`；建表 `ENGINE = MergeTree ORDER BY (主键)`。
+  - Db2：`OFFSET … ROWS FETCH NEXT … ROWS ONLY` / `FETCH FIRST`（与 Java 一致，跳过行数而没有排序时按分组键或第一个主键排序）；行锁 `FOR UPDATE WITH RS`（CS 隔离级别下游标离开的行就解锁）、`SKIP LOCKED DATA`，没有 NOWAIT；冲突处理写成 `MERGE … USING (VALUES …)`；插入后取 `IDENTITY_VAL_LOCAL()`；字符串函数按 `CODEUNITS32`，日期用带单位的时长、`TRUNC_TIMESTAMP`、`VARCHAR_FORMAT`，`LISTAGG` 的分隔符写成字面量，`ATAN2` 是 (x, y)。Java 的 DB2CastSQLFunction、多参数 CONCAT、`AT TIME ZONE` 的 UtcNow、`USING (SELECT ? AS …)` 的 MERGE 在 Db2 上执行不了，按 Db2 改写。
+  - TDengine：反引号、`LIMIT … OFFSET`；没有 UPDATE（与 Java 一致）、upsert、自增列、行锁；删除不带别名、只按本表的列过滤；`TO_CHAR` / `TIMEDIFF` / `TIMETRUNCATE`，时长只能写字面量，所以日期加减不支持；建表时 DateTime 主键排第一列、列不写 NULL。
+  - 公共：`SqlDialect.WriteUpdate` / `WriteDelete` 让方言改写不走连接的更新、删除；SQL Server 的转义 LIKE 抽成 `WriteEscapedLike`（Db2、ClickHouse、TDengine 共用）；`WriteMerge` 可覆盖。
+  - 用例：ClickHouseTest 4 个、ForUpdateDialectToSQLSmokeTest 的 clickHouse / db2 两条移植（只渲染）；`Dialects/` 下另有 `ClickHouseDialectTest`、`Db2DialectTest`、`TDengineDialectTest` 核对分页、写入、连接、分组、函数表、行锁与建表的 SQL 文本。
+  - 待做：实库冒烟。compose 已有 clickhouse / db2 / tdengine 三个 profile；要在 TestKit 里加测试用的驱动（ClickHouse.Client、Net.IBM.Data.Db2、TDengine.Connector，新依赖先说明）、`TestDatabases` 登记、LiveSuite 子类按能力裁剪（参照 TS 的 analyticSuite / tdengine live 测试），跑通后各方言的参数占位符、函数表再按实库修正。
 - [ ] 3.6 H2 的 74 个用例：与方言无关的改到 SQLite 上移植，标为偏离；只测 H2 方言本身的标为不适用。
 - [ ] 3.7 跨方言的零散用例：ForUpdateDialectToSQLSmokeTest 剩下的方言、NullSafeSqlTest nullSafeEqualsPerDialect。
 
