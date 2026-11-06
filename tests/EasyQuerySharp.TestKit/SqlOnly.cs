@@ -18,6 +18,8 @@ public static class SqlOnly
         ["duckdb"] = DuckDbDialect.Instance,
         ["dameng"] = DamengDialect.Instance,
         ["hana"] = HanaDialect.Instance,
+        ["kingbase"] = KingbaseDialect.Instance,
+        ["gauss"] = GaussDbDialect.Instance,
     };
 
     private static readonly Dictionary<string, EasyDb> Cache = new(StringComparer.OrdinalIgnoreCase);

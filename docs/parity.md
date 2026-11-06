@@ -96,7 +96,7 @@
 | Oracle | 归在上面各项 | — | Oracle.ManagedDataAccess.Core；`options.UseOracle(..)` | 第一档，阶段 2 |
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | 13 | — | 不做 |
 | 达梦 | `dialect.dameng` | 51 | DM.DmProvider；`options.UseDameng(..)`；方言继承 Oracle（ROWNUM 分页、MERGE、LISTAGG、FROM DUAL），覆盖带连接的更新（`UPDATE t INNER JOIN … SET`）、转布尔 `CAST(x AS BIT)`、日期相差、不排序的 LISTAGG 不写 WITHIN GROUP、NULL 位置用 CASE、截断到秒、UTC 时间与建表类型；51 个用例只比对 SQL（Java 只断言结果的记偏离），并发行锁 1 个留骨架 | 第二档，阶段 3（3.1 缺实库冒烟） |
-| 人大金仓 / openGauss | `dialect.kingbase` | 2 | Npgsql；与 PG 共用方言 | 第二档，阶段 3 |
+| 人大金仓 / GaussDB（openGauss） | `dialect.kingbase` | 2 | 驱动由调用方传入；`options.UseKingbase(..)` / `options.UseGaussDb(..)`，`KingbaseDialect` / `GaussDbDialect` 继承 PG 方言，只覆盖 Java 两个模块与 PG 不同的写法（STRPOS 式 LIKE、条件当值写 CASE；Kingbase 另有两两嵌套的 CONCAT、日期加减与相差、树查询起点 `0+0`）。MyKingbaseESTest 实为 MySQL 上的多对多带出排序用例，改在 SQLite 上移植（偏离）；没有实库，只比对 SQL | 第二档，阶段 3（3.4 完成 SQL 文本，实库冒烟待做） |
 | DuckDB | `dialect.duckdb` | 16 | DuckDB.NET.Data.Full（只在测试项目里引用）；`options.UseDuckDb(..)` | 第二档，完成 |
 | ClickHouse | `dialect.clickhouse` | 4 | ClickHouse.Client | 第二档，阶段 3 |
 | SAP HANA | `dialect.hana` | 18 | HANA 客户端自带的 Sap.Data.Hana（不在 nuget.org）；`options.UseHana(..)`；位置参数 `?`，`LIMIT … OFFSET`，拼接逐对写 `||`，日期格式化用 `TO_NVARCHAR`（格式串里的文字单独拼接），条件当值写三值 CASE，upsert 写 `MERGE … FROM DUMMY`，带导航的更新写按主键对上的 MERGE、删除写 EXISTS，EXISTS 子查询不带 LIMIT，自增键取 `CURRENT_IDENTITY_VALUE()`，建表 `CREATE COLUMN TABLE`；没有递归 CTE、`STRING_AGG` 不能去重、`Sql.Json` 未实现。SQL 文本按 fork 用例核对，实库冒烟未做 | 第二档，阶段 3 |

@@ -12,9 +12,9 @@ internal static partial class IncludeRunner
 {
     /// <summary>
     /// 父键 → 子数据的目标键：经过中间导航（<see cref="IncludePlan.Via"/>）时逐段查中间表换成下一段的键；
-    /// 多对多再经中间表换成目标键；其余情况父键就是目标键。
+    /// 多对多再经中间表换成目标键；其余情况父键就是目标键。中间表每段一条查询，键多于 <paramref name="groupSize"/> 时 IN 拆成 OR。
     /// </summary>
-    private static async Task<List<(CompositeKey Parent, CompositeKey Target)>> ResolveLinksAsync(EasyDb db, IncludePlan plan, CancellationToken ct)
+    private static async Task<List<(CompositeKey Parent, CompositeKey Target)>> ResolveLinksAsync(EasyDb db, IncludePlan plan, int groupSize, CancellationToken ct)
     {
         if (plan.Via.FirstOrDefault(v => v.KeyMatch != KeyMatch.Equal) is { } csvStep)
             throw new NotSupportedException($"带出路径经过的 {csvStep} 的键是逗号列表，不能作为中间一段");
@@ -25,11 +25,11 @@ internal static partial class IncludeRunner
             var next = i + 1 < plan.Via.Count ? plan.Via[i + 1] : plan.Navigation;
             // 经过的是多对多：先经它的中间表换成目标键
             if (step.Mapping is { } stepMapping)
-                links = Compose(links, await LoadLinksAsync(db, step, stepMapping, links.Select(l => l.Target), ct).ConfigureAwait(false));
-            links = Compose(links, await LoadViaAsync(db, step, next, links.Select(l => l.Target), plan.DirectVia, ct).ConfigureAwait(false));
+                links = Compose(links, await LoadLinksAsync(db, step, stepMapping, links.Select(l => l.Target), groupSize, ct).ConfigureAwait(false));
+            links = Compose(links, await LoadViaAsync(db, step, next, links.Select(l => l.Target), plan.DirectVia, groupSize, ct).ConfigureAwait(false));
         }
         if (plan.Navigation.Mapping is { } mapping && links.Count > 0)
-            links = Compose(links, await LoadLinksAsync(db, plan.Navigation, mapping, links.Select(l => l.Target), ct).ConfigureAwait(false));
+            links = Compose(links, await LoadLinksAsync(db, plan.Navigation, mapping, links.Select(l => l.Target), groupSize, ct).ConfigureAwait(false));
         return plan.Navigation.KeyMatch == KeyMatch.SelfCsv ? SplitCsv(links, plan.Navigation.TargetColumns[0].ClrType) : links;
 
         // (父, 中间键) 与 (中间键, 下一段键) 连成 (父, 下一段键)；同一对只留一个
@@ -62,10 +62,10 @@ internal static partial class IncludeRunner
 
     // 按目标键取子数据的条件：键是逗号列表时写成 Sql.InCsv(目标键, "k1,k2,…")（与 Java 的 FIND_IN_SET 一致），否则 IN / 复合键 OR
     // single：只有一个父对象的键（UNION ALL 的一段），单列写成 = 而不是 IN (?)（与 Java 一致）
-    private static LambdaExpression KeyFilter(NavigationMetadata nav, IReadOnlyCollection<CompositeKey> keys, bool single = false)
+    private static LambdaExpression KeyFilter(NavigationMetadata nav, IReadOnlyCollection<CompositeKey> keys, int groupSize, bool single = false)
     {
         if (nav.KeyMatch == KeyMatch.Equal)
-            return single && nav.TargetColumns is [var keyColumn] ? KeyEquals(nav.Target.Type, keyColumn, keys.Single()) : KeyIn(nav.Target.Type, nav.TargetColumns, keys);
+            return single && nav.TargetColumns is [var keyColumn] ? KeyEquals(nav.Target.Type, keyColumn, keys.Single()) : KeyIn(nav.Target.Type, nav.TargetColumns, keys, groupSize);
         var p = Expression.Parameter(nav.Target.Type, "x");
         var column = nav.TargetColumns[0];
         var list = string.Join(",", keys.Select(k => Convert.ToString(k.First, System.Globalization.CultureInfo.InvariantCulture)).Distinct());
@@ -79,7 +79,7 @@ internal static partial class IncludeRunner
     /// 直达导航（DirectMapping）写成 <c>SELECT 本段目标列, 下一段自身列 FROM 表 WHERE …</c>，复合键写成 <c>((a =? AND b =?) OR …)</c>。
     /// </summary>
     private static async Task<List<(CompositeKey From, CompositeKey To)>> LoadViaAsync(
-        EasyDb db, NavigationMetadata step, NavigationMetadata next, IEnumerable<CompositeKey> keys, bool direct, CancellationToken ct)
+        EasyDb db, NavigationMetadata step, NavigationMetadata next, IEnumerable<CompositeKey> keys, bool direct, int groupSize, CancellationToken ct)
     {
         var table = new EntityTableSource(step.Target);
         var query = new SelectQuery(table);
@@ -101,7 +101,7 @@ internal static partial class IncludeRunner
             toOrdinals = next.SelfColumns.Select(c => Select(c, alias: true)).ToArray();
             fromOrdinals = step.TargetColumns.Select(c => Select(c, alias: true)).ToArray();
         }
-        query.Where.Add(KeysIn(table, step.TargetColumns, keys.Distinct().ToList()));
+        query.Where.Add(KeysIn(table, step.TargetColumns, keys.Distinct().ToList(), groupSize));
         var statement = SqlRenderer.Render(db.Options.Dialect, query);
         var rows = await db.Executor.QueryAsync(statement, r => (From: CompositeKey.Read(r, fromOrdinals), To: CompositeKey.Read(r, toOrdinals)), ct)
             .ConfigureAwait(false);
@@ -113,12 +113,19 @@ internal static partial class IncludeRunner
     private static string TupleInTemplate(int columns, int keys) =>
         "(" + string.Join(" OR ", Enumerable.Range(0, keys).Select(k =>
             "(" + string.Join(" AND ", Enumerable.Range(0, columns).Select(i => $"{{{i}}} ={{{columns + k * columns + i}}}")) + ")")) + ")";
-    // 单列键：列 IN (…)；复合键：((a =? AND b =?) OR (…))（与 Java 一致，= 后面不留空格）。键值先转成列的 CLR 类型
-    private static SqlExpr KeysIn(EntityTableSource table, IReadOnlyList<ColumnMetadata> columns, IReadOnlyList<CompositeKey> keys)
+    // 单列键：列 IN (…)，多于 groupSize 个时拆成 (列 IN (…) OR 列 IN (…))；复合键：((a =? AND b =?) OR (…))（与 Java 一致，= 后面不留空格）。
+    // 键值先转成列的 CLR 类型
+    private static SqlExpr KeysIn(EntityTableSource table, IReadOnlyList<ColumnMetadata> columns, IReadOnlyList<CompositeKey> keys, int groupSize)
     {
         SqlExpr Value(object value, ColumnMetadata column) => ExpressionTranslator.Parameter(ValueReader.ConvertTo(value, column.ClrType), column.ClrType);
         if (columns.Count == 1)
-            return new InExpr(table.Column(columns[0]), keys.Select(k => k.First).Distinct().Select(v => Value(v, columns[0])).ToList(), negated: false);
+        {
+            var column = table.Column(columns[0]);
+            var values = keys.Select(k => k.First).Distinct().Select(v => Value(v, columns[0])).ToList();
+            return values.Count <= groupSize
+                ? new InExpr(column, values, negated: false)
+                : LogicalExpr.GroupedOr([.. values.Chunk(groupSize).Select(chunk => new InExpr(column, chunk, negated: false))]);
+        }
         var arguments = columns.Select(c => (SqlExpr)table.Column(c)).ToList();
         foreach (var key in keys) arguments.AddRange(columns.Zip(key.Values(columns.Count), (c, v) => Value(v, c)));
         return new FragmentExpr(TupleInTemplate(columns.Count, keys.Count), arguments, isPredicate: true);
@@ -126,18 +133,14 @@ internal static partial class IncludeRunner
 
     // 多对多的中间表：按父键取出 (父键, 目标键) 对
     private static async Task<List<(CompositeKey Parent, CompositeKey Target)>> LoadLinksAsync(
-        EasyDb db, NavigationMetadata nav, EntityMetadata mapping, IEnumerable<CompositeKey> parentKeys, CancellationToken ct)
+        EasyDb db, NavigationMetadata nav, EntityMetadata mapping, IEnumerable<CompositeKey> parentKeys, int groupSize, CancellationToken ct)
     {
         if (nav.SelfMappingColumns.Count != 1 || nav.TargetMappingColumns.Count != 1) throw new NotSupportedException($"复合键的多对多导航 {nav} 的带出还不支持");
         var table = new EntityTableSource(mapping);
-        var self = table.Column(nav.SelfMappingColumns[0]);
-        var target = table.Column(nav.TargetMappingColumns[0]);
         var query = new SelectQuery(table);
-        query.Columns.Add(new SelectColumn(self, null));
-        query.Columns.Add(new SelectColumn(target, null));
-        var values = parentKeys.Select(k => k.First).Distinct()
-            .Select(v => (SqlExpr)ExpressionTranslator.Parameter(ValueReader.ConvertTo(v, nav.SelfMappingColumns[0].ClrType), nav.SelfMappingColumns[0].ClrType)).ToList();
-        query.Where.Add(new InExpr(self, values, negated: false));
+        query.Columns.Add(new SelectColumn(table.Column(nav.SelfMappingColumns[0]), null));
+        query.Columns.Add(new SelectColumn(table.Column(nav.TargetMappingColumns[0]), null));
+        query.Where.Add(KeysIn(table, nav.SelfMappingColumns, parentKeys.ToList(), groupSize));
         if (nav.ExtraMappingFilter is { } mappingFilter)
         {
             var translator = new ExpressionTranslator([]);
@@ -165,17 +168,22 @@ internal static partial class IncludeRunner
         return Expression.Lambda(Expression.Equal(Expression.Property(p, column.Property), value), p);
     }
 
-    // 单列键：x => keys.Contains(x.Key)；复合键：((x.A =? AND x.B =?) OR (…))（与 Java 一致，= 后面不留空格）。键值先转成列的 CLR 类型
-    private static LambdaExpression KeyIn(Type entityType, IReadOnlyList<ColumnMetadata> columns, IReadOnlyCollection<CompositeKey> keys)
+    // 单列键：x => keys.Contains(x.Key)，多于 groupSize 个时拆成 x => k1.Contains(x.Key) || k2.Contains(x.Key) …，写成 (… IN (…) OR … IN (…))；
+    // 复合键：((x.A =? AND x.B =?) OR (…))（与 Java 一致，= 后面不留空格）。键值先转成列的 CLR 类型
+    private static LambdaExpression KeyIn(Type entityType, IReadOnlyList<ColumnMetadata> columns, IReadOnlyCollection<CompositeKey> keys, int groupSize)
     {
         var p = Expression.Parameter(entityType, "x");
         if (columns.Count == 1)
         {
             var column = columns[0];
             var listType = typeof(List<>).MakeGenericType(column.ClrType);
-            var list = (IList)Activator.CreateInstance(listType)!;
-            foreach (var key in keys.Select(k => k.First).Distinct()) list.Add(ValueReader.ConvertTo(key, column.ClrType));
-            return Expression.Lambda(Expression.Call(Expression.Constant(list), listType.GetMethod("Contains")!, Expression.Property(p, column.Property)), p);
+            Expression Contains(object[] values)
+            {
+                var list = (IList)Activator.CreateInstance(listType)!;
+                foreach (var value in values) list.Add(ValueReader.ConvertTo(value, column.ClrType));
+                return Expression.Call(Expression.Constant(list), listType.GetMethod("Contains")!, Expression.Property(p, column.Property));
+            }
+            return Expression.Lambda(keys.Select(k => k.First).Distinct().Chunk(groupSize).Select(Contains).Aggregate(Expression.OrElse), p);
         }
         var arguments = columns.Select(c => (Expression)Expression.Convert(Expression.Property(p, c.Property), typeof(object))).ToList();
         foreach (var key in keys)

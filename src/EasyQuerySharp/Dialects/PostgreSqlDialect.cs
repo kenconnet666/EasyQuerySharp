@@ -4,7 +4,8 @@ using EasyQuerySharp.SqlAst;
 namespace EasyQuerySharp.Dialects;
 
 /// <summary>
-/// PostgreSQL 方言（17 实测）。openGauss、人大金仓 PG 模式共用。驱动用 Npgsql：<c>o.UsePostgreSql(NpgsqlDataSource.Create(cs))</c>。
+/// PostgreSQL 方言（17 实测）。驱动用 Npgsql：<c>o.UsePostgreSql(NpgsqlDataSource.Create(cs))</c>。
+/// PG 内核的 Kingbase、GaussDB / openGauss 各有子类（<see cref="KingbaseDialect"/>、<see cref="GaussDbDialect"/>）。
 /// </summary>
 public class PostgreSqlDialect : SqlDialect
 {

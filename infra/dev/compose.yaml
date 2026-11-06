@@ -174,7 +174,7 @@ services:
     volumes:
       - dameng-data:/opt/dmdbms/data
 
-  # openGauss（PG 协议；GaussDB 的开源版，人大金仓 PG 模式也走同一方言）
+  # openGauss（PG 协议；GaussDB 的开源版，方言是 GaussDbDialect）
   opengauss:
     profiles: [opengauss]
     image: opengauss/opengauss-server:latest@sha256:d554be1b8b08165a8b19348f0ca236b5d61a4832ffadac0340ded973c34f38e4

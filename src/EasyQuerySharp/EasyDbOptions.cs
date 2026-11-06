@@ -109,7 +109,10 @@ public sealed class EasyDbOptions
         set => field = Mutable(value);
     } = IncludeLimitMode.Partition;
 
-    /// <summary>带出查询每次最多按多少个父键查（<c>IN (…)</c> 的项数，超出时分成几条查询；对应 Java 的 relationGroupSize），默认 512。</summary>
+    /// <summary>
+    /// 带出查询每次最多按多少个父键查（<c>IN (…)</c> 的项数，超出时分成几条查询；对应 Java 的 relationGroupSize），默认 512。
+    /// 多对多的中间表和带排序的多对多只查一条，IN 按这个大小拆成 OR。
+    /// </summary>
     public int IncludeGroupSize
     {
         get;
@@ -151,6 +154,12 @@ public sealed class EasyDbOptions
 
     /// <summary>使用 SAP HANA 方言（驱动是 HANA 客户端自带的 Sap.Data.Hana，不在 nuget.org 上）。</summary>
     public EasyDbOptions UseHana(DbDataSource? dataSource = null) => Use(HanaDialect.Instance, dataSource);
+
+    /// <summary>使用人大金仓 KingbaseES 方言。</summary>
+    public EasyDbOptions UseKingbase(DbDataSource? dataSource = null) => Use(KingbaseDialect.Instance, dataSource);
+
+    /// <summary>使用华为 GaussDB / openGauss 方言。</summary>
+    public EasyDbOptions UseGaussDb(DbDataSource? dataSource = null) => Use(GaussDbDialect.Instance, dataSource);
 
     /// <summary>使用任意方言。</summary>
     public EasyDbOptions Use(SqlDialect dialect, DbDataSource? dataSource = null)

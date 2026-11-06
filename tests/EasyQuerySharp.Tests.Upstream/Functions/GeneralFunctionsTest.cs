@@ -172,67 +172,21 @@ public sealed class GeneralFunctionsTest
             "SELECT rt1.* FROM (SELECT rt.*, ROWNUM AS \"__rownum__\" FROM (SELECT t1.\"value1\" AS \"value1\",t1.\"value2\" AS \"value2\" FROM (SELECT t.\"id\" AS \"value1\",COUNT(*) AS \"value2\" FROM \"doc_bank_card\" t WHERE t.\"type\" = ? GROUP BY t.\"id\") t1 ORDER BY t1.\"value2\" ASC) rt WHERE ROWNUM < 6) rt1 WHERE rt1.\"__rownum__\" > 2",
             "123(String)");
 
-    [Fact(Skip = "待移植")]
-    [Upstream("GeneralFunctionsTest.java#testDoubleConcat", Pending = true)]
-    public Task TestDoubleConcat()
-    {
-        // 期望 SQL：SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","star","publish_time","score","status","order","is_top","top" FROM "t_blog" WHERE "deleted" = ? AND CONCAT(CONCAT(CONCAT(CONCAT(CONCAT(CONCAT(CONCAT(CONCAT(?,"title"),?),"star"),?),"content"),?),?),?) = ?
-        // 期望参数：false(Boolean),你好:(String),我叫(String),你好吗!我今年(String),岁了,(String),12(Integer),你呢(String),比较一下(String)
-        // Java 原文：
-        // ListenerContextManager listenerContextManager = new ListenerContextManager();
-        // EasyEntityQuery easyEntityQuery = create(listenerContextManager, new KingbaseESDatabaseConfiguration());
-        // listenerContextManager.startCreateListen();
-        // 
-        // try {
-        // 
-        //     List<BlogEntity> list = easyEntityQuery.queryable(BlogEntity.class)
-        //             .where(t_blog -> {
-        //                 t_blog.expression().stringFormat("你好:{0}我叫{1}你好吗!我今年{2}岁了,{3}你呢", t_blog.title(), t_blog.star(), t_blog.content(), 12)
-        //                         .eq("比较一下");
-        //             }).toList();
-        // } catch (Exception ignored) {
-        // 
-        // }
-        // ListenerContext listenerContext = listenerContextManager.getListenContext();
-        // listenerContextManager.clear();
-        // 
-        // Assert.assertNotNull(listenerContext.getJdbcExecuteAfterArg());
-        // JdbcExecuteAfterArg jdbcExecuteAfterArg = listenerContext.getJdbcExecuteAfterArg();
-        // Assert.assertEquals("SELECT \"id\",\"create_time\",\"update_time\",\"create_by\",\"update_by\",\"deleted\",\"title\",\"content\",\"url\",\"star\",\"publish_time\",\"score\",\"status\",\"order\",\"is_top\",\"top\" FROM \"t_blog\" WHERE \"deleted\" = ? AND CONCAT(CONCAT(CONCAT(CONCAT(CONCAT(CONCAT(CONCAT(CONCAT(?,\"title\"),?),\"star\"),?),\"content\"),?),?),?) = ?", jdbcExecuteAfterArg.getBeforeArg().getSql());
-        // Assert.assertEquals("false(Boolean),你好:(String),我叫(String),你好吗!我今年(String),岁了,(String),12(Integer),你呢(String),比较一下(String)", EasySQLUtil.sqlParameterToString(jdbcExecuteAfterArg.getBeforeArg().getSqlParameters().get(0)));
-        return Task.CompletedTask;
-    }
+    // Kingbase 的 CONCAT 只接受两个参数（Oracle 兼容模式）：string.Format 拼出的 9 段两两嵌套。
+    // 超过三个参数时显式写数组：展开形式会选中 params ReadOnlySpan 的重载，表达式树里不能用
+    [Fact, Upstream("GeneralFunctionsTest.java#testDoubleConcat")]
+    public void TestDoubleConcat() =>
+        SqlOnly.AssertStatement(SqlOnly.Db("kingbase").Query<BlogEntity>()
+                .Where(b => string.Format("你好:{0}我叫{1}你好吗!我今年{2}岁了,{3}你呢", new object?[] { b.Title, b.Star, b.Content, 12 }) == "比较一下").ToStatement(),
+            "SELECT \"id\",\"create_time\",\"update_time\",\"create_by\",\"update_by\",\"deleted\",\"title\",\"content\",\"url\",\"star\",\"publish_time\",\"score\",\"status\",\"order\",\"is_top\",\"top\" FROM \"t_blog\" WHERE \"deleted\" = ? AND CONCAT(CONCAT(CONCAT(CONCAT(CONCAT(CONCAT(CONCAT(CONCAT(?,\"title\"),?),\"star\"),?),\"content\"),?),?),?) = ?",
+            "false(Boolean),你好:(String),我叫(String),你好吗!我今年(String),岁了,(String),12(Integer),你呢(String),比较一下(String)");
 
-    [Fact(Skip = "待移植")]
-    [Upstream("GeneralFunctionsTest.java#testKingbaseCte", Pending = true)]
-    public Task TestKingbaseCte()
-    {
-        // 期望 SQL：WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0+0 AS "deep",t1."id",t1."parent_id",t1."content",t1."user_id",t1."post_id",t1."create_at" FROM "t_comment" t1) UNION ALL (SELECT t2."deep" + 1 AS "deep",t3."id",t3."parent_id",t3."content",t3."user_id",t3."post_id",t3."create_at" FROM "as_tree_cte" t2 INNER JOIN "t_comment" t3 ON t3."id" = t2."parent_id") ) SELECT t."id",t."parent_id",t."content",t."user_id",t."post_id",t."create_at",t."deep" FROM "as_tree_cte" t
-        // Java 原文：
-        // ListenerContextManager listenerContextManager = new ListenerContextManager();
-        // EasyEntityQuery easyEntityQuery = create(listenerContextManager, new KingbaseESDatabaseConfiguration());
-        // listenerContextManager.startCreateListen();
-        // 
-        // try {
-        // 
-        //     List<MyComment3> treeList = easyEntityQuery.queryable(Comment.class)
-        //             .asTreeCTE(o -> {
-        //                 o.setUp(true);
-        //                 o.setDeepColumnName("deep");
-        //             })
-        //             .selectAutoInclude(MyComment3.class)
-        //             .toTreeList();
-        // } catch (Exception ignored) {
-        // 
-        // }
-        // ListenerContext listenerContext = listenerContextManager.getListenContext();
-        // listenerContextManager.clear();
-        // 
-        // Assert.assertNotNull(listenerContext.getJdbcExecuteAfterArg());
-        // JdbcExecuteAfterArg jdbcExecuteAfterArg = listenerContext.getJdbcExecuteAfterArg();
-        // Assert.assertEquals("WITH RECURSIVE \"as_tree_cte\" AS ( (SELECT 0+0 AS \"deep\",t1.\"id\",t1.\"parent_id\",t1.\"content\",t1.\"user_id\",t1.\"post_id\",t1.\"create_at\" FROM \"t_comment\" t1)  UNION ALL  (SELECT t2.\"deep\" + 1 AS \"deep\",t3.\"id\",t3.\"parent_id\",t3.\"content\",t3.\"user_id\",t3.\"post_id\",t3.\"create_at\" FROM \"as_tree_cte\" t2 INNER JOIN \"t_comment\" t3 ON t3.\"id\" = t2.\"parent_id\") ) SELECT t.\"id\",t.\"parent_id\",t.\"content\",t.\"user_id\",t.\"post_id\",t.\"create_at\",t.\"deep\" FROM \"as_tree_cte\" t", jdbcExecuteAfterArg.getBeforeArg().getSql());
-        return Task.CompletedTask;
-    }
+    // Kingbase 的树查询起点层级写成 0+0（Java 的 KingbaseESCTERecursiveProvider）。
+    // Java 是 selectAutoInclude(MyComment3).toTreeList()，拼树时层级列跟在最后；不连库只能 ToSql，直接取实体时层级列同样在最后，SQL 相同
+    [Fact, Upstream("GeneralFunctionsTest.java#testKingbaseCte")]
+    public void TestKingbaseCte() =>
+        Assert.Equal("WITH RECURSIVE \"as_tree_cte\" AS ( (SELECT 0+0 AS \"deep\",t1.\"id\",t1.\"parent_id\",t1.\"content\",t1.\"user_id\",t1.\"post_id\",t1.\"create_at\" FROM \"t_comment\" t1)  UNION ALL  (SELECT t2.\"deep\" + 1 AS \"deep\",t3.\"id\",t3.\"parent_id\",t3.\"content\",t3.\"user_id\",t3.\"post_id\",t3.\"create_at\" FROM \"as_tree_cte\" t2 INNER JOIN \"t_comment\" t3 ON t3.\"id\" = t2.\"parent_id\") ) SELECT t.\"id\",t.\"parent_id\",t.\"content\",t.\"user_id\",t.\"post_id\",t.\"create_at\",t.\"deep\" FROM \"as_tree_cte\" t",
+            SqlOnly.Db("kingbase").Query<Mysql8.Comment>().AsTreeCte(o => { o.Up = true; o.DeepColumnName = "deep"; }).ToSql());
 
     [Fact, Upstream("GeneralFunctionsTest.java#unionSQLite")]
     public void UnionSQLite()
