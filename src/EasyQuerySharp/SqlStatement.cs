@@ -21,6 +21,9 @@ public sealed record SqlStatement(string CommandText, string Text, IReadOnlyList
     /// <summary>在哪个数据源上执行（分库分表路由后写入，见 <see cref="EasyDbOptions.AddDataSource"/>）；null 是默认数据源。</summary>
     public string? DataSource { get; init; }
 
+    /// <summary>写入语句的标记（表、种类、取主键）：执行成功后据此通知写入监听器；查询与原生 SQL 为 null。</summary>
+    internal Execution.WriteMark? Write { get; init; }
+
     /// <inheritdoc />
     public override string ToString() => Text;
 }

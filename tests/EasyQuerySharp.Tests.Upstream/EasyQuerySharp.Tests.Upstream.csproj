@@ -9,12 +9,15 @@
 
     <ItemGroup>
         <ProjectReference Include="..\EasyQuerySharp.TestKit\EasyQuerySharp.TestKit.csproj" />
+        <!-- 二级缓存：QueryTest25 的缓存用例与 Extras/CacheTest；HybridCache 由容器创建 -->
+        <ProjectReference Include="..\..\src\EasyQuerySharp.Caching\EasyQuerySharp.Caching.csproj" />
         <!-- 生成器与分析器：[Projection] 方法的表达式在编译期产出（与使用者引用核心包时一样） -->
         <ProjectReference Include="..\..\src\EasyQuerySharp.Generator\EasyQuerySharp.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="xunit.v3" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     </ItemGroup>
 
     <ItemGroup>

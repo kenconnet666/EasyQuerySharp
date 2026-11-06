@@ -161,3 +161,20 @@ C# 独有的用例覆盖每种写入的失效、主键提取的各种 WHERE 形�
 8. 与 Java 的行为差异照第 5–7 节：All 分页先分页再取行、UPDATE 也清索引、All 增加排序。
 9. ROADMAP 4.5 的文案是“kv、all 两种”（Java 的 Multi 是注释掉的死代码）。
 10. L2 的测试先用内存版 `IDistributedCache` 模拟两实例，不做真 Redis 冒烟。
+
+## 实现中的补充
+
+HybridCache（10.11.0）的行为先在 `Extras/HybridCacheProbeTest` 里探测：`DisableUnderlyingData` 的探测在没有时返回 default、不调用工厂也不写入；`RemoveAsync` 清掉自己的本机层与 L2（别的实例的本机层还在）；`SetAsync` 同时写 L2。与调研不同、据此调整的有三处：
+
+- **工厂里不查库**：`GetOrCreateAsync` 的工厂在不带调用方 ExecutionContext 的工作项里执行，AsyncLocal 不流动（按当前用户取租户的拦截器、环境事务、`SqlCapture` 都看不到），在工厂里查库会把别的租户的数据写进这个租户的缓存键。所以索引桶与行桶一样是"探测、没有就查库、`SetAsync`"（§6 写的是索引桶走 `GetOrCreateAsync`），同一实例里同时的未命中不再合并成一次查询；只有表纪元（工厂只生成随机令牌）用 `GetOrCreateAsync`。
+- **本机层的过期时间取放进本机层的那次调用的选项**，包括从 L2 读进本机层的探测；探测因此也带上 `Expiration` / `LocalCacheExpiration`，否则别的实例读进来的值用默认的 5 分钟。
+- **`MemoryDistributedCache` 不算 L2**（HybridCache 把它当作没有分布式层），测试用自写的进程内 `IDistributedCache` 模拟共享的 Redis，指南里写明 `AddDistributedMemoryCache()` 没有 L2 的效果。
+
+其余细化：
+
+- 桶存成 JSON 字符串（HybridCache 内置的字符串序列化），不受使用方配置的序列化器影响，本机层直接存不可变的字符串。表纪元在 L2 上存一天（本机层仍按 `LocalCacheExpiration`），桶不会因为纪元先过期而整表失效。
+- 键里的表是 `schema.表`（有 schema 时）；主键文本用经转换器之后的数据库值、不变区域格式化（日期用 `O`），索引存这些文本，读出时还原成主键类型。
+- 主键提取：顶层 AND 里全由主键 `=` / `IN` 组成的 OR（按 `MaxInClauseSize` 拆开的 IN）取并集；冲突时更新的 upsert 只有在约束列就是单列主键、且数据库只在写出的约束列上处理冲突时（不是 MySQL 的 ON DUPLICATE KEY，它在任何唯一键上冲突都更新）才给出主键，否则为 null。
+- 不在事务里逐条执行时，中途失败之前已经自动提交的写入照样通知再抛出原来的异常；批量写入自己的本地事务回滚了就不通知。一次通知里每个监听器、每张表都会试到，失败的异常最后一起包成一个 `EasyQueryException`。
+- 缓存的失效不理会调用方的取消令牌（数据库已经写入，半途而废会留下旧值）。`EasyDbOptions` 另有公开的 `WriteListeners`（与 `Listeners` 对称），`cache.Of(db)` 据此检查这个库接上了缓存；`KvCache` / `AllCache` 的拦截器开关与核心查询一样是四个（另有 `EnableInterceptors()`）。
+- 分片实体（0006）不能进缓存：分片写入的事件里是各分片的实际表名，按逻辑表登记的失效对不上，`cache.Of(db)` 发现登记的实体在这个库上分片时抛 `NotSupportedException`。多数据源事务里的写入在全部数据源提交后才通知。

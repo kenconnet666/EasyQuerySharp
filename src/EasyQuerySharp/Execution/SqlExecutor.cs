@@ -80,10 +80,13 @@ internal sealed class SqlExecutor(EasyDb db)
         if (EasyTransaction.Current(db) is { } transaction)
         {
             var (connection, dbTransaction) = await transaction.EnsureStartedAsync(dataSource, ct).ConfigureAwait(false);
-            return await work(new SqlSession(db, connection, dbTransaction)).ConfigureAwait(false);
+            return await work(new SqlSession(db, connection, dbTransaction) { Writes = transaction.Writes }).ConfigureAwait(false);
         }
         await using var owned = await db.OpenConnectionAsync(dataSource, ct).ConfigureAwait(false);
-        return await work(new SqlSession(db, owned, null)).ConfigureAwait(false);
+        // 不在事务里：会话结束时通知写入监听器（事务里的写入由事务在全部提交后通知）
+        var writes = WriteLog.Create(db);
+        var session = new SqlSession(db, owned, null) { Writes = writes };
+        return writes is null ? await work(session).ConfigureAwait(false) : await writes.RunAsync(() => work(session), ct).ConfigureAwait(false);
     }
 
     private SqlStatement Render(SelectQuery query) => Rendering.SqlRenderer.Render(db.Options.Dialect, query);
@@ -97,6 +100,9 @@ internal sealed class SqlExecutor(EasyDb db)
 /// <summary>绑定在一个连接上的执行会话；每条语句都通知监听器。</summary>
 internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransaction? transaction)
 {
+    /// <summary>成功执行的写入记在这里，供写入监听器（见 <see cref="WriteLog"/>）；没有写入监听器时为 null，什么也不记。</summary>
+    public WriteLog? Writes { get; init; }
+
     /// <summary>执行查询。</summary>
     public async Task<List<T>> QueryAsync<T>(SqlStatement statement, Func<DbDataReader, T> shaper, CancellationToken ct)
     {
@@ -175,8 +181,11 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
     {
         if (transaction is not null) return await work(this).ConfigureAwait(false);
         await using var local = await connection.BeginTransactionAsync(ct).ConfigureAwait(false);
-        var result = await work(new SqlSession(db, connection, local)).ConfigureAwait(false);
+        // 这一批的写入在本地事务提交之后才算数
+        var session = new SqlSession(db, connection, local) { Writes = Writes is null ? null : WriteLog.Create(db) };
+        var result = await work(session).ConfigureAwait(false);
         await local.CommitAsync(ct).ConfigureAwait(false);
+        if (session.Writes is { } committed) Writes!.Append(committed);
         return result;
     }
 
@@ -268,6 +277,7 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
         try
         {
             e.Rows = await body().ConfigureAwait(false);
+            Writes?.Record(statements);
         }
         catch (Exception ex) when (ex is not ResultSizeLimitException)
         {

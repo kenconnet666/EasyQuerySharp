@@ -99,7 +99,7 @@ jobs:
       - name: Docs examples check
         run: dotnet run --project tools/DocsExamples -c Release --no-build -- --check
 
-  # 打包：只打可打包的项目（核心带生成器、依赖注入），版本追加构建号（见 src/Directory.Build.props）；GITHUB_ACTIONS 下按正式构建（ContinuousIntegrationBuild）
+  # 打包：只打可打包的项目（核心带生成器、依赖注入、二级缓存），版本追加构建号（见 src/Directory.Build.props）；GITHUB_ACTIONS 下按正式构建（ContinuousIntegrationBuild）
   pack:
     name: pack (nupkg, snupkg)
     runs-on: ubuntu-latest

@@ -45,8 +45,9 @@
 | [从 Java / TS 迁移](guide/migration.md) | 写法差别，Java → C#、TS → C# 的 API 对照表 |
 | [依赖注入](guide/dependency-injection.md) | `services.AddEasyQuery(..)`，多个库按名字注入，从容器取数据源、监听器、拦截器，生命周期 |
 | [分库分表](guide/sharding.md) | 登记规则与数据源、按条件裁剪、同库分表的 UNION ALL 与跨库归并、写入路由、事务、code-first、限制 |
+| [二级缓存](guide/caching.md) | `EasyQuerySharp.Caching` 的 kv / all 缓存、HybridCache 两级存储、写入后的自动失效与写入监听、一致性限制 |
 
-开发中、还没有指南的能力：建表与迁移（code-first，ROADMAP 4.1）、二级缓存（4.5，[0007](decisions/0007-second-level-cache.md)）。
+建表与迁移（code-first，ROADMAP 4.1）的用法见 [实体与映射](guide/entities.md) 与 [方言](guide/dialects.md)，单独的指南待补。
 
 ## 设计
 

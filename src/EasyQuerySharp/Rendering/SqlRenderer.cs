@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using EasyQuerySharp.Dialects;
+using EasyQuerySharp.Execution;
 using EasyQuerySharp.SqlAst;
 
 namespace EasyQuerySharp.Rendering;
@@ -66,10 +67,11 @@ public sealed class SqlRenderer
     {
         insert.Table.Alias = null;
         var r = new SqlRenderer(dialect, routes);
+        var write = WriteMark.Insert(insert, dialect.UpsertMatchesOnlyConflictColumns);
         if (insert.Conflict is not null && dialect.InsertConflictUsesMerge)
         {
             dialect.WriteMerge(r, insert);
-            return r.Build();
+            return r.Build(write);
         }
         r.Append(dialect.InsertKeyword(insert)).WriteTableName(insert.Table).Append(" (");
         for (var i = 0; i < insert.Columns.Count; i++)
@@ -87,7 +89,7 @@ public sealed class SqlRenderer
         }
         if (insert.Conflict is not null) dialect.WriteInsertConflict(r, insert);
         if (insert.Returning.Count > 0) dialect.WriteInsertReturning(r, insert.Returning);
-        return r.Build();
+        return r.Build(write);
     }
 
     /// <summary>渲染一条 INSERT … SELECT：来源查询包成派生表 eq_src，按输出列名写进目标表（与 Java fork 一致）。</summary>
@@ -102,7 +104,7 @@ public sealed class SqlRenderer
             .Append(string.Join(",", names.Select(n => "eq_src." + dialect.QuoteIdentifier(n))));
         foreach (var value in insert.ExtraValues) r.Append(",").Write(value);
         r.Append(" FROM (").WriteSelect(insert.Source).Append(") eq_src");
-        return r.Build();
+        return r.Build(WriteMark.InsertSelect(insert));
     }
 
     /// <summary>渲染一条更新。</summary>
@@ -124,7 +126,7 @@ public sealed class SqlRenderer
             dialect.WriteUpdate(r, update);
             r.WriteReturning(update.Returning);
         }
-        return r.Build();
+        return r.Build(WriteMark.Update(update));
     }
 
     /// <summary>渲染一条删除。</summary>
@@ -146,7 +148,7 @@ public sealed class SqlRenderer
             dialect.WriteDelete(r, delete);
             r.WriteReturning(delete.Returning);
         }
-        return r.Build();
+        return r.Build(WriteMark.Delete(delete));
     }
 
     // 带连接的写法里目标表会再出现一次（自连接），RETURNING 的列名重名（与 TS 版一致）
@@ -295,6 +297,9 @@ public sealed class SqlRenderer
         Append(" ").Append(table is EntityTableSource { Link: { } link } ? link(keyword) : keyword).Append(" ");
 
     private SqlStatement Build() => new(_command.ToString(), _text.ToString(), _parameters);
+
+    // 写入语句带上标记，执行成功后据此通知写入监听器
+    private SqlStatement Build(WriteMark write) => new(_command.ToString(), _text.ToString(), _parameters) { Write = write };
 
     /// <summary>输出 <c> WHERE a AND b</c>；没有条件时什么也不写。</summary>
     public SqlRenderer WriteWhere(IReadOnlyList<SqlExpr> where)

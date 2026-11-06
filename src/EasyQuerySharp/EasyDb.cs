@@ -68,6 +68,9 @@ public sealed class EasyDb
     /// </summary>
     public Sharding.IShardRule? GetShardRule<T>() => Shards.RuleOf(typeof(T));
 
+    /// <summary>实体 <paramref name="entityType"/> 的分片规则；不分片时为 null。</summary>
+    public Sharding.IShardRule? GetShardRule(Type entityType) => Shards.RuleOf(entityType);
+
     /// <summary>从实体 <typeparamref name="T"/> 开始一条查询。</summary>
     public Query<T> Query<T>() => new(new QueryState(this, [new EntitySource(typeof(T))]) { ValueFilter = Options.QueryValueFilter });
 
@@ -213,6 +216,9 @@ public sealed class EasyDb
 
     /// <summary>开启环境事务（见 <see cref="EasyTransaction"/>）。当前异步流程已经在这个库的事务里时抛出 <see cref="InvalidOperationException"/>（不支持嵌套）。</summary>
     public EasyTransaction BeginTransaction(IsolationLevel isolation = IsolationLevel.Unspecified) => new(this, isolation);
+
+    /// <summary>当前异步流程是否在这个库的事务里（事务里的语句读得到自己未提交的写入，如二级缓存据此绕过缓存）。</summary>
+    public bool InTransaction => AmbientTransaction.Current is not null;
 
     /// <summary>在事务里执行 <paramref name="work"/>：正常结束提交，抛出异常回滚。</summary>
     public async Task TransactionAsync(Func<Task> work, IsolationLevel isolation = IsolationLevel.Unspecified, CancellationToken cancellationToken = default)

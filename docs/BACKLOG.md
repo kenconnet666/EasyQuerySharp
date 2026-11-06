@@ -36,3 +36,6 @@
 - code-first 不建库（Java 的 `createDatabaseIfNotExists`）：库由连接串决定，建库属于部署，要从连接串拆出服务器与库名、各方言写法不同；有需求时再做。
 - 分片查询跨单元的平均值：可以改写成各单元的 `SUM` 与 `COUNT` 再合并（Java 的 GroupAvgBehaviorEnum），0006 没做，现在报 `NotSupportedException` 让调用方自己算；有需求时再做，跨单元的分组同理。
 - 分片查询的并发上限（Java 的 `maxShardingQueryLimit`）：不在事务里时每个单元各取一个连接并行执行，`ToShardingPageAsync` 按节点计数时一个节点一个连接；连接池吃紧时再加按数据源的并发上限。
+- 二级缓存的多实例本机层失效通知（TS 的 CacheTransport、Java 的 Redis 发布订阅）：1.0 靠 `LocalCacheExpiration` 兜底（0007 §8），要更及时时再做，或等带 backplane 的 HybridCache 实现。
+- 二级缓存同一实例里同时的未命中各查一次库：HybridCache 的工厂里不能查库（AsyncLocal 不流动，见 0007 末尾），要合并时自己按键做单飞；小表的 all 一般用不上。
+- 依赖注入包自动接上容器里的 `IWriteListener`（像 `IExecutionListener` 那样）：现在在配置函数里写 `o.UseCache(sp.GetRequiredService<EasyCache>())`；有第二种写入监听器的需求时再加。
