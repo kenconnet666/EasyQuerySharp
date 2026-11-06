@@ -202,6 +202,7 @@ SELECT t.`name`,t.`age`,t1.`name` AS `company` FROM `t_user` t LEFT JOIN `t_comp
 | `forUpdate()` / `forShare()` | `ForUpdate()` / 不支持 |
 | `withSignal(signal)` | `CancellationToken` 参数 |
 | `onExecute` | `IExecutionListener` |
-| `createTables` / `createTablesSql` | `db.CodeFirst.CreateTablesAsync(..)` / `CreateTableSql(type)`；同步、迁移开发中 |
+| `createTables` / `createTablesSql` | `db.CodeFirst.CreateTablesAsync(..)` / `CreateTableSql(type)` |
+| `planSync` / `syncTables` / `introspect` / `tableExists` | `db.CodeFirst.PlanSyncAsync(..)` / `SyncTablesAsync(..)` / `ReadTablesAsync()` / `TableExistsAsync(type)` |
 
 TS 版独有、C# 还没有的：多态实体（`entity.union`）、只读库（`db.readonly()`）、读写分离（`replicas`）、N+1 检测、`mergeSchemas` / `db.mount`、`eqts pull` / `eqts snapshot`、`forShare` / `advisoryLock`；其中有计划的记在 [BACKLOG](../BACKLOG.md)。

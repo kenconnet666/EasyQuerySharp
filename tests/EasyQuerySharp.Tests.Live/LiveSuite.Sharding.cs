@@ -53,6 +53,8 @@ public abstract partial class LiveSuite
         return db;
     }
 
+    private static DateTime OrderDay(int month, int day) => new(2026, month, day, 8, 0, 0);
+
     private static string Text(int i) => i.ToString(CultureInfo.InvariantCulture);
 
     // 写入按 id 落到各自的表；按 id 查只查那一张表；条件互相矛盾时不访问数据库
@@ -121,6 +123,62 @@ public abstract partial class LiveSuite
         Assert.Equal(1, await db.Delete(seven).ExecuteAsync(Ct));
         Assert.Equal(5, await db.Delete<ShardLog>().Where(l => l.Kind == "odd").ExecuteAsync(Ct));
         Assert.Equal(6, await db.Query<ShardLog>().CountAsync(Ct));
+    }
+
+    /// <summary>按月分成 t_shard_order_202601 … _202603 的订单（都在默认数据源；对应 TS 的 ShardOrder）。</summary>
+    [Table("t_shard_order")]
+    public sealed class ShardOrder
+    {
+        [Column(PrimaryKey = true)]
+        public int Id { get; set; }
+
+        public DateTime At { get; set; }
+
+        public int Amount { get; set; }
+    }
+
+    // 一个库里按月分表：code-first 建出每个月的表；按范围裁剪到一张或几张表（几张时是一条 UNION ALL），
+    // 分片键落在没有表的月份时查不到、不访问数据库；按条件的更新删除只碰裁剪出的表，行数相加
+    [Fact]
+    public async Task ShardingPrunesMonthTablesByRangeAndWritesTableByTable()
+    {
+        var dataSource = DataSources.GetOrAdd(await ConnectionStringAsync(), cs => Database.Factory.CreateDataSource(cs));
+        var db = new EasyDb(o => o.Use(Dialect, dataSource).AddListener(SqlCapture.Instance)
+            .Shard<ShardOrder>(r => r.ByMonth(e => e.At, from: new DateTime(2026, 1, 1), to: () => new DateTime(2026, 3, 15))));
+        await db.CodeFirst.DropTablesIfExistsAsync([typeof(ShardOrder)], Ct);
+        await db.CodeFirst.CreateTablesAsync([typeof(ShardOrder)], Ct);
+        try
+        {
+            var names = (await db.CodeFirst.ReadTablesAsync(Ct)).Select(t => t.Name.ToLowerInvariant()).ToList();
+            Assert.All(["t_shard_order_202601", "t_shard_order_202602", "t_shard_order_202603"], t => Assert.Contains(t, names));
+            Assert.True(await db.CodeFirst.TableExistsAsync(typeof(ShardOrder), Ct));
+            await db.Insert(
+                new ShardOrder { Id = 1, At = OrderDay(1, 10), Amount = 10 }, new ShardOrder { Id = 2, At = OrderDay(2, 3), Amount = 20 },
+                new ShardOrder { Id = 3, At = OrderDay(2, 20), Amount = 30 }, new ShardOrder { Id = 4, At = OrderDay(3, 5), Amount = 40 }).ExecuteAsync(Ct);
+
+            using var listen = SqlCapture.Listen();
+            var feb = db.Query<ShardOrder>().Where(o => o.At >= new DateTime(2026, 2, 1) && o.At < new DateTime(2026, 3, 1));
+            Assert.Equal(50, await feb.SumAsync(o => o.Amount, Ct));
+            Assert.Contains("t_shard_order_202602", listen.Last.Statement.Text);
+            Assert.DoesNotContain("UNION", listen.Last.Statement.Text);
+
+            Assert.Equal([3, 4], (await db.Query<ShardOrder>().Where(o => o.At >= OrderDay(2, 15)).OrderBy(o => o.Id).ToListAsync(Ct)).Select(o => o.Id));
+            Assert.Single(System.Text.RegularExpressions.Regex.Matches(listen.Last.Statement.Text, "UNION ALL"));
+
+            var before = listen.Events.Count;
+            Assert.Equal(0, await db.Query<ShardOrder>().Where(o => o.At == OrderDay(7, 1)).CountAsync(Ct));
+            Assert.Equal(before, listen.Events.Count);
+
+            Assert.Equal(3, await db.Update<ShardOrder>().Set(o => o.Amount, 0).Where(o => o.At >= OrderDay(2, 1)).ExecuteAsync(Ct));
+            Assert.Equal(10, await db.Query<ShardOrder>().SumAsync(o => o.Amount, Ct));
+            int[] ids = [1, 4];
+            Assert.Equal(2, await db.Delete<ShardOrder>().Where(o => ids.Contains(o.Id)).ExecuteAsync(Ct));
+            Assert.Equal(2, await db.Query<ShardOrder>().CountAsync(Ct));
+        }
+        finally
+        {
+            await db.CodeFirst.DropTablesIfExistsAsync([typeof(ShardOrder)], Ct);
+        }
     }
 
     // 两个库：按时间裁剪到一个库；跨库时并行查询再归并排序、分页，计数与聚合相加；跨库的分组不支持

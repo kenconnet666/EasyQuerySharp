@@ -261,13 +261,87 @@ public abstract partial class LiveSuite
         Assert.Equal(0, await db.Query<Comment>().CountAsync(Ct));
     }
 
-    // 条件是"公司名为空"：UPDATE 里的对一导航按 INNER JOIN 连接（与 Java 一致），没有公司的 carol 不会被匹配；
-    // 同样的条件写在查询里是 LEFT JOIN，会查到她
-    [Fact(Skip = "待确认：UPDATE 里 Company.Name == null 在 SQLite 上改 0 行（INNER JOIN），而同样的条件在 SELECT 里匹配 carol；TS 版期望改 1 行")]
-    public async Task UpdatesThroughALeftJoinedToOneNavigationMatchesRowsWithoutATarget()
+    // 条件是"公司名为空"：UPDATE 里的对一导航按 INNER JOIN 连接（与 Java 的 UpdateDeleteJoinTest 一致，各方言的
+    // UPDATE … JOIN / FROM / MERGE 都是内连接），没有公司的 carol 不在连接结果里；同样的条件写在查询里是 LEFT JOIN，会查到她。
+    // TS 版按 LEFT JOIN 改到 carol；C# 跟 Java。要连没有公司的行一起改，条件写在外键上
+    [Fact]
+    public async Task UpdatesThroughAToOneNavigationOnlyRowsThatHaveATarget()
     {
         var db = await SeededAsync();
         Assert.Equal(1, await db.Query<User>().Where(u => u.Company!.Name == null).CountAsync(Ct));
-        Assert.Equal(1, await db.Update<User>().Set(u => u.Age, 99).Where(u => u.Company!.Name == null).ExecuteAsync(Ct));
+        Assert.Equal(0, await db.Update<User>().Set(u => u.Age, 99).Where(u => u.Company!.Name == null).ExecuteAsync(Ct));
+        Assert.Equal(1, await db.Update<User>().Set(u => u.Age, 99).Where(u => u.CompanyId == null).ExecuteAsync(Ct));
+        Assert.Equal(99, (await db.Query<User>().FindAsync(3L, Ct))!.Age);
+    }
+
+    // 多对一导航的目标是别的聚合根：保存时不级联（TS 会先存目标），只把目标的主键回填到外键；改成 null 时外键置空，目标不动
+    [Fact]
+    public async Task BackfillsTheKeyOfAManyToOneTargetWithoutSavingIt()
+    {
+        var db = await SeededAsync();
+        var initech = new Company { Name = "initech" };
+        await db.Insert(initech).FillGeneratedKeys().ExecuteAsync(Ct);
+        using (db.BeginTracking())
+        {
+            var dave = NewUser();
+            dave.Company = initech;
+            initech.Name = "renamed";
+            await using var tx = db.BeginTransaction();
+            await db.Save(dave).ExecuteAsync(Ct);
+            await tx.CommitAsync(Ct);
+            Assert.Equal(initech.Id, dave.CompanyId);
+        }
+        Assert.Equal("initech", (await db.Query<Company>().FindAsync(initech.Id, Ct))!.Name);
+
+        using (db.BeginTracking())
+        {
+            var dave = await db.Query<User>().Where(u => u.Name == "dave").Include(u => u.Company).SingleAsync(Ct);
+            dave.Company = null;
+            await using var tx = db.BeginTransaction();
+            await db.Save(dave).ExecuteAsync(Ct);
+            await tx.CommitAsync(Ct);
+        }
+        Assert.Null((await db.Query<User>().AsNoTracking().Where(u => u.Name == "dave").SingleAsync(Ct)).CompanyId);
+        Assert.Equal(1, await db.Query<Company>().Where(c => c.Id == initech.Id).CountAsync(Ct));
+    }
+
+    // 写入监听（TS 的 afterWrite）：每条写入语句按表通知一次，主键从语句里取；事务里推迟到提交之后，回滚的丢弃
+    // （TS 的 afterWrite 在事务里同步调用、抛错让写入回滚；C# 的监听在提交后调用，用于缓存失效这类事后通知）
+    [Fact]
+    public async Task NotifiesWriteListenersAfterEveryCommittedWrite()
+    {
+        var log = new WriteLog();
+        var db = await SeededAsync(o => o.AddWriteListener(log));
+        log.Events.Clear();
+        await db.Insert(new Company { Name = "initech" }).ExecuteAsync(Ct);
+        await db.Update<Post>().Set(p => p.Title, "x").Where(p => p.UserId == 1).ExecuteAsync(Ct);
+        await db.Delete<Comment>().Where(c => c.Id == 1).ExecuteAsync(Ct);
+        Assert.Equal(["Insert:t_company", "Update:t_post", "Delete:t_comment:1"], log.Events);
+
+        log.Events.Clear();
+        await using (var tx = db.BeginTransaction())
+        {
+            await db.Insert(new Company { Name = "umbrella" }).ExecuteAsync(Ct);
+            Assert.Empty(log.Events);
+            await tx.CommitAsync(Ct);
+        }
+        Assert.Equal(["Insert:t_company"], log.Events);
+
+        log.Events.Clear();
+        await using (db.BeginTransaction())
+            await db.Insert(new Company { Name = "rolled back" }).ExecuteAsync(Ct);
+        Assert.Empty(log.Events);
+        Assert.Equal(0, await db.Query<Company>().Where(c => c.Name == "rolled back").CountAsync(Ct));
+    }
+
+    private sealed class WriteLog : Execution.IWriteListener
+    {
+        public List<string> Events { get; } = [];
+
+        public ValueTask OnWrittenAsync(Execution.WriteEvent e, CancellationToken cancellationToken)
+        {
+            lock (Events) Events.Add(string.Join(":", [e.Kind.ToString(), e.Table, .. e.Keys?.Select(k => k.ToString()!) ?? []]));
+            return ValueTask.CompletedTask;
+        }
     }
 }
