@@ -99,7 +99,7 @@ public class DuckDbDialect : PostgreSqlDialect
 
     // 序列名只用字母数字下划线，不必加引号（nextval 的参数是字符串，里面再加引号要转义）
     private static string SequenceName(EntityMetadata entity, ColumnMetadata column) =>
-        string.Concat($"{entity.Schema}_{entity.TableName}_{column.Name}_seq".Select(ch => char.IsAsciiLetterOrDigit(ch) ? ch : '_'));
+        string.Concat(string.Join('_', new[] { entity.Schema, entity.TableName, column.Name, "seq" }.Where(part => part is not null)).Select(ch => char.IsAsciiLetterOrDigit(ch) ? ch : '_'));
 
     /// <inheritdoc />
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
