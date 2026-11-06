@@ -112,10 +112,11 @@ R → 1 → 2 → 3 → 4 → 5。
   - 顺手补齐 Oracle（达梦沿用）：拼接式 LIKE 写成 `LIKE ('%'||TO_CHAR(?)||'%')`；带组内排序的字符串聚合写成 `LISTAGG(..) WITHIN GROUP(ORDER BY …)`（原来落到 STRING_AGG），SQL Server 同样改成 `STRING_AGG(..) WITHIN GROUP (ORDER BY …)`。
   - 用例：DamengQueryTest 40、DamengForUpdateTest 7、UpdateJoinTest 3、MathQueryTest 1、QueryTest26 testAAA、ForUpdateDialectToSQLSmokeTest damengForUpdateToSQLSmoke 共 53 个：只渲染 SQL、逐字比对 Java；Java 只断言结果或只执行不断言的 21 个记偏离（实库验证留给冒烟）；testForUpdateBlocksConcurrentTransaction（两个事务争行锁）留骨架。testAAA：Java 的达梦删除不支持连接（抛异常），C# 沿用 Oracle 按 ROWID 删除。
   - 冒烟要验证：`UPDATE … INNER JOIN`、`DELETE … WHERE ROWID IN`、`GETUTCDATE()`、`IDENTITY(1, 1)`、日期相差与加减的结果、DmProvider 的参数占位（`:p0`）。MigrationDamengTest 断言的是 code-first 同步语句（注释、默认值、`execute immediate`）的 MD5，归到 4.1。
-- [ ] 3.2 SAP HANA：
-  - `Sql.Hana.Text`；
-  - fork 的 HanaSqlTest、HanaTextSqlTest、三个 live 用例，以及 InsertSelect / JsonValueConverter 的 HANA 用例；
-  - HANA Express 压低内存后进 CI，跑不起来就退回本地验证。
+- [~] 3.2 SAP HANA：`HanaDialect` 直接继承标准写法（与 Oracle、PG 都只有部分相同），`options.UseHana(..)`；SQL 按 fork 用例核对，实库冒烟还没做。
+  - [x] 方言：位置参数 `?`、`LIMIT … OFFSET`（只跳过时补 `LIMIT 2147483647`）、拼接逐对写 `((a || b) || c)`、`TO_NVARCHAR` 日期格式（格式串里的文字单独拼接）、条件当值写三值 CASE、`MERGE … FROM DUMMY` upsert、带导航的更新写按主键对上的 MERGE、删除写 EXISTS、EXISTS 子查询不带 LIMIT（`SqlDialect.LimitInExists`）、`CURRENT_IDENTITY_VALUE()` 取自增键、`FOR UPDATE IGNORE LOCKED`、`CREATE COLUMN TABLE` 与匿名块代替 IF [NOT] EXISTS、DateTrunc；
+  - [x] `Sql.Hana.Text(..).Contains / Fuzzy / Score`（CONTAINS、FUZZY、SCORE）；
+  - [x] fork 的 HanaSqlTest 6 个、HanaTextSqlTest 2 个、InsertSelectSqlTest#hanaUsesQuotedNames 移植；三个 live 文件与 JsonValueConverterLiveTest#hanaNclobColumn 共 14 个，其中 12 个按 SQL 文本移植、记偏离（实库验证留到冒烟），两个 LocalDateTime 往返用例要实库，留作骨架；
+  - [ ] 实库冒烟：驱动 Sap.Data.Hana 随 HANA 客户端安装、不在 nuget.org，TestDatabases 还没登记 HANA；起 infra/dev 的 hana profile 后补夹具，跑上面的 live 用例与 LiveSuite。HANA Express 要 12 GB 内存，进不了 GitHub 托管的 CI，只在本地验证。
 - [x] 3.3 DuckDB（进程内运行，CI 直接跑）：`DuckDbDialect` 继承 PostgreSQL 方言只覆盖差异，`options.UseDuckDb(..)`；驱动 DuckDB.NET.Data.Full 只在 TestKit 里引用，核心仍零依赖。
   - 方言：参数写 `$p0`（DuckDB.NET 不认 `@`）；含 `%` / `_` 的 LIKE 值用 `STRPOS`；日期格式 `strftime`、加减 `date_add`、相差 `DATEDIFF`；`TRUNC` 不带位数；JSON 用 `json_array_length` / `json_exists`；没有行锁（`FOR UPDATE` 抛 NotSupportedException）；DuckDB 没有 IDENTITY，自增列建表时先 `CREATE SEQUENCE`、列默认 `nextval`，删表时一并删序列。
   - 顺手：PostgreSQL 的 `IndexOf` 原来写 `INSTR`（PG 没有这个函数），改成 `STRPOS`；`SqlDialect.ColumnDefinition` 多传所属实体。

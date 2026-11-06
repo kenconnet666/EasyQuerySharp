@@ -192,7 +192,7 @@ public sealed class SqlRenderer
             case ComputedExpr c: Write(c.Inner); break;
             case BlankCheckExpr b: WriteBlankCheck(b); break;
             case CaseExpr c: WriteCase(c); break;
-            case ExistsExpr e: Append(e.Negated ? "NOT EXISTS(" : "EXISTS(").WriteSelect(e.Query).Append(")"); break;
+            case ExistsExpr e: Append(e.Negated ? "NOT EXISTS(" : "EXISTS(").WriteExistsQuery(e.Query).Append(")"); break;
             case SubQueryExpr s: Append("(").WriteSelect(s.Query).Append(")"); break;
             default: throw new NotSupportedException($"无法渲染 SQL 节点 {expr.GetType().Name}");
         }
@@ -206,6 +206,9 @@ public sealed class SqlRenderer
         Dialect.WritePagedSelect(this, q, () => WriteUnpagedSelect(q));
         return this;
     }
+
+    // EXISTS 只看有没有行：方言不允许子查询带 LIMIT 时（HANA）去掉只取前几行的限制，结果不变
+    private SqlRenderer WriteExistsQuery(SelectQuery q) => Dialect.LimitInExists || q.Offset is > 0 ? WriteSelect(q) : WriteUnpagedSelect(q);
 
     private SqlRenderer WriteUnpagedSelect(SelectQuery q)
     {

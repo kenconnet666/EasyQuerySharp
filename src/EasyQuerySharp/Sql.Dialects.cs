@@ -41,6 +41,20 @@ public static partial class Sql
         /// <summary>全文检索：查询串用 <c>websearch_to_tsquery</c> 解析（<c>easy query</c>、<c>"短语"</c>、<c>a or b</c>、<c>-排除</c>）。</summary>
         public static PgFullText FullText(object? column) => throw OnlyInQuery();
     }
+
+    /// <summary>
+    /// SAP HANA 专属函数的入口（对应 Java 的 Hana.text），只能写在查询表达式里，能用在隐式子查询中：
+    /// <code>
+    /// db.Query&lt;Doc&gt;().Where(d =&gt; Sql.Hana.Text(d.Title, d.Body).Fuzzy("easy qurey", 0.8))   // CONTAINS((title,body),?,FUZZY(0.8))
+    ///     .OrderByDescending(d =&gt; Sql.Hana.Text(d.Title).Score())                            // SCORE()
+    /// </code>
+    /// 用在别的方言上时渲染期抛出 <see cref="NotSupportedException"/>。
+    /// </summary>
+    public static class Hana
+    {
+        /// <summary>全文检索：列上要有 FULLTEXT INDEX（模糊检索要 <c>FUZZY SEARCH INDEX ON</c>），否则 CONTAINS 按整列的值匹配。</summary>
+        public static HanaText Text(params object?[] columns) => throw OnlyInQuery();
+    }
 }
 
 /// <summary>
@@ -230,4 +244,22 @@ public sealed class PgFullText
 
     /// <summary>用指定的文本搜索配置算相关度。</summary>
     public double Rank(string config, string query) => throw Sql.OnlyInQuery();
+}
+
+/// <summary>SAP HANA 全文检索 <c>CONTAINS(列,?)</c>（由 <see cref="Sql.Hana.Text"/> 得到）；多列时写成 <c>CONTAINS((a,b),?)</c>。</summary>
+[SuppressMessage("Performance", "CA1822", Justification = "标记方法：只在表达式树里出现，不会被调用")]
+public sealed class HanaText
+{
+    private HanaText()
+    {
+    }
+
+    /// <summary>精确检索（按词，支持 <c>"短语"</c>、<c>OR</c>、<c>-排除</c>、<c>*</c>）：<c>CONTAINS(col,?)</c>。</summary>
+    public bool Contains(string query) => throw Sql.OnlyInQuery();
+
+    /// <summary>容错检索，<paramref name="threshold"/> 是 0–1 的最低相似度（写进 SQL）：<c>CONTAINS(col,?,FUZZY(0.8))</c>。</summary>
+    public bool Fuzzy(string query, double threshold) => throw Sql.OnlyInQuery();
+
+    /// <summary>同一查询里 CONTAINS 的相关度（0–1）：<c>SCORE()</c>，放在投影或排序里。</summary>
+    public double Score() => throw Sql.OnlyInQuery();
 }

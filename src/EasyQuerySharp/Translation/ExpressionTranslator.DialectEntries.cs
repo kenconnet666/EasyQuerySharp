@@ -8,25 +8,25 @@ namespace EasyQuerySharp.Translation;
 
 internal sealed partial class ExpressionTranslator
 {
-    /// <summary>方言入口（<c>Sql.MySql.*</c> / <c>Sql.Pg.*</c>）上的方法。</summary>
+    /// <summary>方言入口（<c>Sql.MySql.*</c> / <c>Sql.Pg.*</c> / <c>Sql.Hana.*</c>）上的方法。</summary>
     private static bool IsDialectEntry(Type declaring) =>
         (declaring.IsGenericType ? declaring.GetGenericTypeDefinition() : declaring) is var d
-        && (d == typeof(MySqlJson<>) || d == typeof(MySqlMatch) || d == typeof(PgJsonb<>) || d == typeof(PgArray) || d == typeof(PgFullText));
+        && (d == typeof(MySqlJson<>) || d == typeof(MySqlMatch) || d == typeof(PgJsonb<>) || d == typeof(PgArray) || d == typeof(PgFullText) || d == typeof(HanaText));
 
     // Sql.MySql.Json(col).Contains(..) 等：按 Java fork 的模板展开成片段，标上要求的方言（渲染期检查）
     private FragmentExpr TranslateDialectEntry(MethodCallExpression call)
     {
         if (call.Object is not MethodCallExpression { Method.DeclaringType: { } entry } view)
-            throw Unsupported(call, "方言函数要直接写在 Sql.MySql.Xxx(列) / Sql.Pg.Xxx(列) 上");
+            throw Unsupported(call, "方言函数要直接写在 Sql.MySql.Xxx(列) / Sql.Pg.Xxx(列) / Sql.Hana.Xxx(列) 上");
         var name = $"Sql.{entry.Name}.{view.Method.Name}";
-        var dialect = entry == typeof(Sql.MySql) ? typeof(MySqlDialect) : typeof(PostgreSqlDialect);
+        var dialect = entry == typeof(Sql.MySql) ? typeof(MySqlDialect) : entry == typeof(Sql.Hana) ? typeof(HanaDialect) : typeof(PostgreSqlDialect);
         var args = new List<SqlExpr>();
         string template;
-        if (view.Method.Name == nameof(Sql.MySql.Match))
+        if (view.Method.Name is nameof(Sql.MySql.Match) or nameof(Sql.Hana.Text))
         {
             args.AddRange(Items(view.Arguments[0]));
-            if (args.Count == 0) throw Unsupported(call, "Sql.MySql.Match 至少要有一列");
-            template = MySqlMatch(call, args);
+            if (args.Count == 0) throw Unsupported(call, $"{name} 至少要有一列");
+            template = view.Method.Name == nameof(Sql.Hana.Text) ? HanaText(call, args) : MySqlMatch(call, args);
         }
         else
         {
@@ -92,6 +92,20 @@ internal sealed partial class ExpressionTranslator
             _ => " IN NATURAL LANGUAGE MODE",
         };
         return "MATCH(" + columns + ") AGAINST(" + Next(args, call.Arguments[0]) + modeSql + ")";
+    }
+
+    // 多列时列清单加括号：CONTAINS((a,b),?)；模糊检索的阈值写进 SQL（HANA 的 FUZZY 只收字面量）
+    private string HanaText(MethodCallExpression call, List<SqlExpr> args)
+    {
+        if (call.Method.Name == nameof(EasyQuerySharp.HanaText.Score)) return "SCORE()";
+        var columns = string.Join(",", Enumerable.Range(0, args.Count).Select(i => "{" + i + "}"));
+        if (args.Count > 1) columns = "(" + columns + ")";
+        var query = Next(args, call.Arguments[0]);
+        if (call.Method.Name == nameof(EasyQuerySharp.HanaText.Contains)) return "CONTAINS(" + columns + "," + query + ")";
+        var threshold = Convert.ToDouble(ClientEvaluator.Evaluate(call.Arguments[1]), System.Globalization.CultureInfo.InvariantCulture);
+        if (threshold is not (>= 0 and <= 1))
+            throw new ArgumentException($"Sql.Hana.Text(..).Fuzzy 的阈值要在 0 到 1 之间，实际是 {threshold}");
+        return "CONTAINS(" + columns + "," + query + ",FUZZY(" + threshold.ToString(System.Globalization.CultureInfo.InvariantCulture) + "))";
     }
 
     private string PgJsonb(MethodCallExpression call, List<SqlExpr> args)

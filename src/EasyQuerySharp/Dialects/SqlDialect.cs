@@ -61,6 +61,9 @@ public abstract partial class SqlDialect
         WritePaging(renderer, query);
     }
 
+    /// <summary>EXISTS 子查询是否保留只取前几行的 LIMIT（集合导航的 Any 带 <c>LIMIT 1</c>，与 Java 一致）；HANA 的关联子查询不支持 LIMIT，覆盖成 false。</summary>
+    public virtual bool LimitInExists => true;
+
     /// <summary>UNION 的各分支是否加括号 <c>( (q1)  UNION  (q2) )</c>；SQLite 不允许，覆盖成 false。</summary>
     public virtual bool ParenthesizeCompoundParts => true;
 

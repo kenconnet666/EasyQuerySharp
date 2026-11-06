@@ -17,4 +17,10 @@ public sealed class InsertSelectSqlTest
         Assert.Equal("INSERT INTO \"t_fork_post\" (\"id\",\"user_id\",\"title\",\"amount\") SELECT eq_src.\"id\",eq_src.\"user_id\",eq_src.\"title\",eq_src.\"amount\""
             + " FROM (SELECT \"id\",\"user_id\",\"title\",\"amount\" FROM \"t_fork_post\" WHERE \"title\" = ?) eq_src",
             SqlOnly.Db("pgsql").Query<ForkPost>().Where(p => p.Title == "x").InsertInto().ToSql());
+
+    [Fact, Upstream("fork/insert/InsertSelectSqlTest.java#hanaUsesQuotedNames")]
+    public void HanaUsesQuotedNames() =>
+        Assert.Equal("INSERT INTO \"t_fork_post_archive\" (\"id\",\"user_id\",\"title\",\"amount\") SELECT eq_src.\"id\",eq_src.\"user_id\",eq_src.\"title\",eq_src.\"amount\""
+            + " FROM (SELECT \"id\",\"user_id\",\"title\",\"amount\" FROM \"t_fork_post\") eq_src",
+            SqlOnly.Db("hana").Query<ForkPost>().InsertInto("t_fork_post_archive").ToSql());
 }

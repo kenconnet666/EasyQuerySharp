@@ -121,6 +121,8 @@ EasyQuerySharp.Dialects.DamengDialect.DamengDialect() -> void
 EasyQuerySharp.Dialects.DuckDbDialect
 EasyQuerySharp.Dialects.DuckDbDialect.DuckDbDialect() -> void
 EasyQuerySharp.Dialects.FunctionWriter
+EasyQuerySharp.Dialects.HanaDialect
+EasyQuerySharp.Dialects.HanaDialect.HanaDialect() -> void
 EasyQuerySharp.Dialects.MySqlDialect
 EasyQuerySharp.Dialects.MySqlDialect.IgnoreConflictAsKeyUpdate.get -> bool
 EasyQuerySharp.Dialects.MySqlDialect.IgnoreConflictAsKeyUpdate.init -> void
@@ -371,6 +373,7 @@ EasyQuerySharp.EasyDbOptions.UpdateStrategy.set -> void
 EasyQuerySharp.EasyDbOptions.Use(EasyQuerySharp.Dialects.SqlDialect! dialect, System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseDameng(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseDuckDb(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
+EasyQuerySharp.EasyDbOptions.UseHana(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseMySql(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseOracle(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UsePostgreSql(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
@@ -457,6 +460,10 @@ EasyQuerySharp.Filtering.ValueFilter
 EasyQuerySharp.Filtering.ValueFilter.All = 0 -> EasyQuerySharp.Filtering.ValueFilter
 EasyQuerySharp.Filtering.ValueFilter.NotNull = 1 -> EasyQuerySharp.Filtering.ValueFilter
 EasyQuerySharp.Filtering.ValueFilter.NotNullOrBlank = 2 -> EasyQuerySharp.Filtering.ValueFilter
+EasyQuerySharp.HanaText
+EasyQuerySharp.HanaText.Contains(string! query) -> bool
+EasyQuerySharp.HanaText.Fuzzy(string! query, double threshold) -> bool
+EasyQuerySharp.HanaText.Score() -> double
 EasyQuerySharp.IAutoIncludeConfigure<TEntity>
 EasyQuerySharp.IAutoIncludeConfigure<TEntity>.Configure(EasyQuerySharp.Querying.Query<TEntity>! query) -> EasyQuerySharp.Querying.Query<TEntity>!
 EasyQuerySharp.ICteView<TSelf>
@@ -1311,6 +1318,7 @@ EasyQuerySharp.Schema.CodeFirst.CreateTablesAsync(params System.Type![]! entityT
 EasyQuerySharp.Schema.CodeFirst.DropTablesIfExistsAsync(System.Collections.Generic.IEnumerable<System.Type!>! entityTypes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 EasyQuerySharp.Schema.CodeFirst.DropTablesIfExistsAsync(params System.Type![]! entityTypes) -> System.Threading.Tasks.Task!
 EasyQuerySharp.Sql
+EasyQuerySharp.Sql.Hana
 EasyQuerySharp.Sql.MySql
 EasyQuerySharp.Sql.Over
 EasyQuerySharp.Sql.Pg
@@ -1746,6 +1754,26 @@ override EasyQuerySharp.Dialects.DuckDbDialect.RegisterFunctions(System.Collecti
 override EasyQuerySharp.Dialects.DuckDbDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
 override EasyQuerySharp.Dialects.DuckDbDialect.WriteLock(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.RowLock rowLock) -> void
 override EasyQuerySharp.Dialects.DuckDbDialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
+override EasyQuerySharp.Dialects.HanaDialect.CastTemplate(System.Type! targetType) -> string!
+override EasyQuerySharp.Dialects.HanaDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
+override EasyQuerySharp.Dialects.HanaDialect.CreateTableStatement(EasyQuerySharp.Metadata.EntityMetadata! entity, string! body) -> string!
+override EasyQuerySharp.Dialects.HanaDialect.DropTableIfExistsSql(EasyQuerySharp.Metadata.EntityMetadata! entity) -> string!
+override EasyQuerySharp.Dialects.HanaDialect.InsertConflictUsesMerge.get -> bool
+override EasyQuerySharp.Dialects.HanaDialect.LastInsertIdQuery.get -> string?
+override EasyQuerySharp.Dialects.HanaDialect.LimitInExists.get -> bool
+override EasyQuerySharp.Dialects.HanaDialect.MergeSourceSuffix.get -> string!
+override EasyQuerySharp.Dialects.HanaDialect.Name.get -> string!
+override EasyQuerySharp.Dialects.HanaDialect.ParameterPlaceholder(int index) -> string!
+override EasyQuerySharp.Dialects.HanaDialect.QualifySetColumns.get -> bool
+override EasyQuerySharp.Dialects.HanaDialect.RecursiveWith.get -> string!
+override EasyQuerySharp.Dialects.HanaDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
+override EasyQuerySharp.Dialects.HanaDialect.WriteJoinedDelete(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.DeleteStatement! statement) -> void
+override EasyQuerySharp.Dialects.HanaDialect.WriteJoinedUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
+override EasyQuerySharp.Dialects.HanaDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
+override EasyQuerySharp.Dialects.HanaDialect.WriteLock(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.RowLock rowLock) -> void
+override EasyQuerySharp.Dialects.HanaDialect.WriteModulo(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SqlExpr! left, EasyQuerySharp.SqlAst.SqlExpr! right) -> void
+override EasyQuerySharp.Dialects.HanaDialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
+override EasyQuerySharp.Dialects.HanaDialect.WritePaging(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
 override EasyQuerySharp.Dialects.MySqlDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
 override EasyQuerySharp.Dialects.MySqlDialect.CreateTableSql(EasyQuerySharp.Metadata.EntityMetadata! entity) -> string!
 override EasyQuerySharp.Dialects.MySqlDialect.InsertKeyword(EasyQuerySharp.SqlAst.InsertStatement! insert) -> string!
@@ -1900,6 +1928,7 @@ static EasyQuerySharp.Commands.MapValue.operator !=(EasyQuerySharp.Commands.MapV
 static EasyQuerySharp.Commands.MapValue.operator ==(EasyQuerySharp.Commands.MapValue? left, EasyQuerySharp.Commands.MapValue? right) -> bool
 static EasyQuerySharp.Dialects.DamengDialect.Instance.get -> EasyQuerySharp.Dialects.DamengDialect!
 static EasyQuerySharp.Dialects.DuckDbDialect.Instance.get -> EasyQuerySharp.Dialects.DuckDbDialect!
+static EasyQuerySharp.Dialects.HanaDialect.Instance.get -> EasyQuerySharp.Dialects.HanaDialect!
 static EasyQuerySharp.Dialects.MySqlDialect.Instance.get -> EasyQuerySharp.Dialects.MySqlDialect!
 static EasyQuerySharp.Dialects.OracleDialect.Instance.get -> EasyQuerySharp.Dialects.OracleDialect!
 static EasyQuerySharp.Dialects.PostgreSqlDialect.Instance.get -> EasyQuerySharp.Dialects.PostgreSqlDialect!
@@ -2005,6 +2034,7 @@ static EasyQuerySharp.Sql.EqualsNullSafe<T>(this T value, T other) -> bool
 static EasyQuerySharp.Sql.EqualsWith<T>(T a, T b) -> bool
 static EasyQuerySharp.Sql.Exists<TSelf, T>(EasyQuerySharp.Querying.QueryBase<TSelf!, T>! subQuery) -> bool
 static EasyQuerySharp.Sql.Group(bool predicate) -> bool
+static EasyQuerySharp.Sql.Hana.Text(params object?[]! columns) -> EasyQuerySharp.HanaText!
 static EasyQuerySharp.Sql.Identifier(string! name) -> EasyQuerySharp.SqlIdentifier!
 static EasyQuerySharp.Sql.In<T>(this T value, EasyQuerySharp.Querying.Query<T>! subQuery) -> bool
 static EasyQuerySharp.Sql.In<T>(this T value, params T[]! values) -> bool
@@ -2119,6 +2149,7 @@ virtual EasyQuerySharp.Dialects.SqlDialect.InlinePrimaryKey(EasyQuerySharp.Metad
 virtual EasyQuerySharp.Dialects.SqlDialect.InsertConflictUsesMerge.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.InsertKeyword(EasyQuerySharp.SqlAst.InsertStatement! insert) -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.LastInsertIdQuery.get -> string?
+virtual EasyQuerySharp.Dialects.SqlDialect.LimitInExists.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.MergeSourceSuffix.get -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.MergeTerminator.get -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.NativeNullsOrder.get -> bool
