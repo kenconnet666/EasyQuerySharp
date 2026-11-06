@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <!--
-      分析器与代码修复（以后也放源码生成器），随核心包分发。必须是 netstandard2.0（编译器在任意宿主里加载它）。
-      Roslyn 用 4.14：不能高于使用者 SDK 自带的编译器版本，否则分析器加载不了。
+      [Projection] 生成器与查询分析器。不单独出包，由核心包打进 analyzers/dotnet/cs（见 EasyQuerySharp.csproj）。
+      必须是 netstandard2.0（编译器在任意宿主里加载它）。Roslyn 用 4.14：不能高于使用者 SDK 自带的编译器版本，否则分析器加载不了。
     -->
 
     <PropertyGroup>

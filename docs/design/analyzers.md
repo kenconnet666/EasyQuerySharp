@@ -1,6 +1,6 @@
 # 分析器
 
-`src/EasyQuerySharp.Generator` 里的分析器在编译期指出运行时才会失败的查询写法。它是 netstandard2.0 程序集，Roslyn 固定在 4.14（不能高于使用者 SDK 自带的编译器）。测试在 `tests/EasyQuerySharp.Tests.Generator`：把代码片段连同真实的核心库一起编译，断言报出的诊断，每条诊断都有正例和反例。
+`src/EasyQuerySharp.Generator` 里的分析器在编译期指出运行时才会失败的查询写法。它是 netstandard2.0 程序集，Roslyn 固定在 4.14（不能高于使用者 SDK 自带的编译器）。不单独出包，打进核心包的 `analyzers/dotnet/cs`（不是运行时依赖），只装 `EasyQuerySharp.DependencyInjection` 也会经由核心包带上；仓库里从源码引用核心的项目不会自动带上，要自己以 `OutputItemType="Analyzer" ReferenceOutputAssembly="false"` 引用它（如 Tests.Upstream）。测试在 `tests/EasyQuerySharp.Tests.Generator`：把代码片段连同真实的核心库一起编译，断言报出的诊断，每条诊断都有正例和反例。
 
 EQ0001、EQ0002 只检查**查询表达式**：作为表达式树传给 EasyQuerySharp 方法的 lambda（`Where`、`Select`、`OrderBy`、`Set` 等），连同里面嵌套的 lambda（`u.Posts.Any(p => …)`）。普通的 LINQ to Objects 不检查。EQ0007 反过来，检查查询表达式**之外**的代码。
 
@@ -16,7 +16,7 @@ EQ0001、EQ0002 只检查**查询表达式**：作为表达式树传给 EasyQuer
 
 ## 生成器
 
-`ProjectionGenerator` 为每个 `[Projection]` 方法在所在的 partial 类型里生成一个模块初始化方法：把方法体原样写成 `Expression<Func<…>>`（在原来的 using 与类型里编译，名字解析与原方法一致），登记到 `ProjectionRegistry`。查询里调用该方法时内联成这棵表达式；在内存里调用就是普通方法。没有引用生成器时，查询里用到 `[Projection]` 方法会在运行时报错并说明要引用生成器。
+`ProjectionGenerator` 为每个 `[Projection]` 方法在所在的 partial 类型里生成一个模块初始化方法：把方法体原样写成 `Expression<Func<…>>`（在原来的 using 与类型里编译，名字解析与原方法一致），登记到 `ProjectionRegistry`。查询里调用该方法时内联成这棵表达式；在内存里调用就是普通方法。项目没有运行生成器时，查询里用到 `[Projection]` 方法会在运行时报错并说明怎样引用生成器。
 
 规则的发布记录在 `AnalyzerReleases.Unshipped.md`（发布时挪到 `Shipped`）。
 

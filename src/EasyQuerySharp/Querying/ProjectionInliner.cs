@@ -68,7 +68,7 @@ internal sealed class ProjectionInliner : ExpressionVisitor
         if (!call.Method.IsDefined(typeof(ProjectionAttribute), inherit: false)) return null;
         var expression = ProjectionRegistry.Find(call.Method)
                          ?? throw new InvalidOperationException(
-                             $"{call.Method.DeclaringType?.Name}.{call.Method.Name} 标了 [Projection]，但没有登记它的表达式：请引用 EasyQuerySharp.Generator 生成器，方法体只写一个表达式");
+                             $"{call.Method.DeclaringType?.Name}.{call.Method.Name} 标了 [Projection]，但没有登记它的表达式：所在项目没有运行生成器。生成器随 EasyQuerySharp 包分发；从源码引用核心的项目要以 Analyzer 方式引用 EasyQuerySharp.Generator");
         var arguments = call.Object is null ? call.Arguments : [call.Object, .. call.Arguments];
         Expression body = expression.Body;
         for (var i = 0; i < expression.Parameters.Count; i++) body = new ExpressionTranslator.ParameterReplacer(expression.Parameters[i], arguments[i]).Visit(body);

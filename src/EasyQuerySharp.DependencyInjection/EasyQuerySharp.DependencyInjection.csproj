@@ -6,9 +6,12 @@
         <PackageTags>$(PackageTags);dependency-injection</PackageTags>
     </PropertyGroup>
 
-    <!-- 只引用抽象包（见 ROADMAP "新依赖只进各自的包"）；公共 API 基线的规则与核心相同 -->
+    <!--
+      只引用抽象包（见 ROADMAP "新依赖只进各自的包"）；公共 API 基线的规则与核心相同。
+      核心的 PrivateAssets=none：包依赖默认排除 analyzers，只装这个包的项目就拿不到核心自带的生成器
+    -->
     <ItemGroup>
-        <ProjectReference Include="..\EasyQuerySharp\EasyQuerySharp.csproj" />
+        <ProjectReference Include="..\EasyQuerySharp\EasyQuerySharp.csproj" PrivateAssets="none" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
         <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
     </ItemGroup>
