@@ -40,6 +40,7 @@ public static class SampleDb
         await SampleData.InsertAsync(db, cancellationToken);
     }
 
+    // <snippet:sample-interceptors>
     /// <summary>工单只看 1 号租户。</summary>
     public sealed class TenantFilter : QueryFilter<Ticket>
     {
@@ -72,4 +73,5 @@ public static class SampleDb
         /// <inheritdoc />
         public override void BeforeConditionUpdate(UpdateSetBuilder<Doc> sets) => sets.Set(d => d.UpdatedAt, Now);
     }
+    // </snippet:sample-interceptors>
 }
