@@ -6,12 +6,15 @@ namespace EasyQuerySharp.Tests.Live;
 public abstract partial class LiveSuite
 {
     /// <summary>归档的用户：与 <see cref="User"/> 同结构的另一张表（只用来建表）。</summary>
-    [Table("t_user_archive")]
-    public sealed class UserArchive : User;
+    [Table("t_user_mapped")]
+    public sealed class MappedUserTable : User;
 
-    /// <summary>归档的帖子：与 <see cref="Post"/> 同结构的另一张表（只用来建表）。</summary>
-    [Table("t_post_archive")]
-    public sealed class PostArchive : Post;
+    /// <summary>
+    /// 归档的帖子：与 <see cref="Post"/> 同结构（自增键）的另一张表（只用来建表）。表名不用 t_post_archive：
+    /// 那张是 <see cref="Tests.Live.PostArchive"/> 的表（键不自增，INSERT … SELECT 要写入原帖的 id）。
+    /// </summary>
+    [Table("t_post_mapped")]
+    public sealed class MappedPostTable : Post;
 
     /// <summary>归档用户的 DTO：帖子按导航自动带出。</summary>
     public sealed class ArchivedUser
@@ -32,16 +35,16 @@ public abstract partial class LiveSuite
     public async Task IncludeAndImplicitSubqueryReadArchiveTables()
     {
         var db = await SeededAsync();
-        Type[] archives = [typeof(PostArchive), typeof(UserArchive)];
+        Type[] archives = [typeof(MappedPostTable), typeof(MappedUserTable)];
         await db.CodeFirst.DropTablesIfExistsAsync(archives, Ct);
         await db.CodeFirst.CreateTablesAsync(archives.Reverse(), Ct);
         try
         {
             var dave = new User { Name = "dave", Age = 40, Attrs = new UserAttrs([]), CreatedAt = CreatedAt };
-            await db.Insert(dave).AsTable("t_user_archive").FillGeneratedKeys().ExecuteAsync(Ct);
+            await db.Insert(dave).AsTable("t_user_mapped").FillGeneratedKeys().ExecuteAsync(Ct);
             await db.Insert(new Post { UserId = dave.Id, Title = "archived orm", Amount = 1m }, new Post { UserId = dave.Id, Title = "archived sql", Amount = 2m })
-                .AsTable("t_post_archive").ExecuteAsync(Ct);
-            var archive = db.Query<User>().MapTable<User>("t_user_archive").MapTable<Post>("t_post_archive");
+                .AsTable("t_post_mapped").ExecuteAsync(Ct);
+            var archive = db.Query<User>().MapTable<User>("t_user_mapped").MapTable<Post>("t_post_mapped");
 
             var counted = await archive.Where(u => u.Posts!.Any(p => p.Title.StartsWith("archived"))).Select(u => new { u.Name, Posts = u.Posts!.Count() }).ToListAsync(Ct);
             Assert.Equal([("dave", 2)], counted.Select(c => (c.Name, c.Posts)));
@@ -54,7 +57,7 @@ public abstract partial class LiveSuite
 
             // 只映射帖子：用户读原表，帖子读归档表；不映射时照旧读原表
             var tips = db.Query<User>().Where(u => u.Posts!.Any(p => p.Title == "orm tips"));
-            Assert.Equal(0, await tips.MapTable<Post>("t_post_archive").CountAsync(Ct));
+            Assert.Equal(0, await tips.MapTable<Post>("t_post_mapped").CountAsync(Ct));
             Assert.Equal(1, await tips.CountAsync(Ct));
         }
         finally
