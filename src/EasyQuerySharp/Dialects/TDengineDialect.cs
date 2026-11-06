@@ -1,3 +1,4 @@
+using System.Globalization;
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.Rendering;
 using EasyQuerySharp.SqlAst;
@@ -23,6 +24,37 @@ public class TDengineDialect : SqlDialect
 
     /// <inheritdoc />
     public override string QuoteIdentifier(string identifier) => $"`{identifier}`";
+
+    /// <summary>TDengine 没有事务：一批写入逐条生效。</summary>
+    public override bool SupportsTransactions => false;
+
+    /// <summary>
+    /// 值写成字面量、不绑定参数（与 TS 版一致）：TDengine.Connector 的参数化语句走 stmt 接口，taosAdapter 3.3 收到带参数的 DELETE 直接崩溃，
+    /// 驱动还拒收没有指定 Kind 的 DateTime。
+    /// </summary>
+    public override bool InlineParameters => true;
+
+    /// <summary>
+    /// 参数的字面量：字符串转义反斜杠与单引号；DateTime 写成 <c>'yyyy-MM-dd HH:mm:ss.fff'</c>，按连接的时区解析
+    /// （连接串带 <c>timezone=UTC</c> 时就是 UTC 的钟点，驱动读回时也按它换算）。
+    /// </summary>
+    public override string ParameterPlaceholder(int index, SqlParameterValue parameter) => parameter.Value switch
+    {
+        null => "NULL",
+        bool b => b ? "true" : "false",
+        string s => Literal(s),
+        char c => Literal(c.ToString()),
+        Guid g => Literal(g.ToString()),
+        DateTime t => Literal(t.ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)),
+        DateTimeOffset o => Literal(o.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss.fffZ", CultureInfo.InvariantCulture)),
+        Enum e => Convert.ToInt64(e, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture),
+        IFormattable number when IsNumber(number) => number.ToString(null, CultureInfo.InvariantCulture),
+        var other => throw new NotSupportedException($"TDengine 方言不能把 {other.GetType().Name} 写成字面量"),
+    };
+
+    private static string Literal(string text) => "'" + text.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("'", "\\'", StringComparison.Ordinal) + "'";
+
+    private static bool IsNumber(object value) => value is sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal;
 
     /// <summary>TDengine 没有行级锁。</summary>
     public override void WriteLock(SqlRenderer renderer, RowLock rowLock) =>

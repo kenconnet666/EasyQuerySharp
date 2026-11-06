@@ -119,6 +119,52 @@ public abstract partial class SqlDialect
         r.Append(parts[1].Replace("{1}", literal));
     };
 
+    // 夹在两个格式符之间时留在格式串里的分隔符
+    private const string DateFormatSeparators = "-/:., ";
+
+    /// <summary>
+    /// 格式串里只能有格式符与分隔符的日期格式化（HANA 的 TO_NVARCHAR、Db2 的 VARCHAR_FORMAT）：格式符和夹在格式符之间的分隔符写进 <c>函数(x,'…')</c>，
+    /// 其余文字单独作为字面量拼接，如 <c>yyyy年MM月dd日 HH:mm</c> 写成
+    /// <c>(F(x,'YYYY') || '年' || F(x,'MM') || '月' || F(x,'DD') || '日 ' || F(x,'HH24:MI'))</c>；<paramref name="tokens"/> 长的在前。
+    /// </summary>
+    protected static FunctionWriter SegmentedDateFormat(string function, params (string CSharp, string Sql)[] tokens) => (r, a) =>
+    {
+        var format = ((LiteralExpr)a[1]).Sql;
+        var parts = new List<(bool IsFormat, System.Text.StringBuilder Text)>();
+        for (var i = 0; i < format.Length;)
+        {
+            var token = TokenAt(i);
+            var inFormat = parts.Count > 0 && parts[^1].IsFormat;
+            if (token is { } t)
+            {
+                if (!inFormat) parts.Add((true, new()));
+                parts[^1].Text.Append(t.Sql);
+                i += t.CSharp.Length;
+                continue;
+            }
+            if (!(inFormat && DateFormatSeparators.Contains(format[i]) && TokenAt(i + 1) is not null) && (parts.Count == 0 || parts[^1].IsFormat))
+                parts.Add((false, new()));
+            parts[^1].Text.Append(format[i++]);
+        }
+        if (parts.Count > 1) r.Append("(");
+        for (var i = 0; i < parts.Count; i++)
+        {
+            if (i > 0) r.Append(" || ");
+            var text = parts[i].Text.ToString();
+            if (parts[i].IsFormat) r.Append(function + "(").Write(a[0]).Append(",'" + text + "')");
+            else r.Append("'" + text.Replace("'", "''", StringComparison.Ordinal) + "'");
+        }
+        if (parts.Count > 1) r.Append(")");
+
+        (string CSharp, string Sql)? TokenAt(int index)
+        {
+            foreach (var token in tokens)
+                if (string.CompareOrdinal(format, index, token.CSharp, 0, token.CSharp.Length) == 0)
+                    return token;
+            return null;
+        }
+    };
+
     /// <summary>
     /// 登记日期加减、取部分、相差三组函数：<paramref name="add"/> 的模板里 {0} 是日期、{1} 是数量；
     /// <paramref name="diff"/> 的模板里 {0} 是起点、{1} 是终点。

@@ -66,7 +66,7 @@ public class OracleDialect : SqlDialect
         + "WHERE k.constraint_type = 'R' ORDER BY k.table_name, k.constraint_name, kc.position");
 
     /// <inheritdoc />
-    public override string ParameterPlaceholder(int index) => ":p" + index;
+    public override string ParameterPlaceholder(int index, SqlParameterValue parameter) => ":p" + index;
 
     /// <summary>自增键用 <c>RETURNING "id" INTO :p</c> 写进输出参数（Oracle 的 RETURNING 必须带 INTO）。</summary>
     public override void WriteInsertReturning(SqlRenderer renderer, IReadOnlyList<SqlExpr> returning)

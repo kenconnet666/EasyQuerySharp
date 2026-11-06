@@ -176,10 +176,10 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
     }
 
     // 不在事务里时，一批在自己的本地事务里执行：各库一致地整批成功或整批不生效（PostgreSQL 的 DbBatch 本来如此），
-    // 也免得逐条自动提交（MySQL 每次提交都刷盘，1000 条慢几十倍）
+    // 也免得逐条自动提交（MySQL 每次提交都刷盘，1000 条慢几十倍）；没有事务的库（ClickHouse、TDengine）只能逐条生效
     private async Task<T> InOwnTransactionAsync<T>(Func<SqlSession, Task<T>> work, CancellationToken ct)
     {
-        if (transaction is not null) return await work(this).ConfigureAwait(false);
+        if (transaction is not null || !db.Options.Dialect.SupportsTransactions) return await work(this).ConfigureAwait(false);
         await using var local = await connection.BeginTransactionAsync(ct).ConfigureAwait(false);
         // 这一批的写入在本地事务提交之后才算数
         var session = new SqlSession(db, connection, local) { Writes = Writes is null ? null : WriteLog.Create(db) };
@@ -400,6 +400,7 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
 
     private void Bind(SqlStatement statement, DbParameterCollection target, Func<DbParameter> create)
     {
+        if (db.Options.Dialect.InlineParameters) return;
         for (var i = 0; i < statement.Parameters.Count; i++)
         {
             var p = create();

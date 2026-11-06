@@ -22,7 +22,7 @@ public class DuckDbDialect : PostgreSqlDialect
     public override string Name => "duckdb";
 
     /// <summary>DuckDB.NET 认 <c>$name</c> / <c>$1</c> 形式的参数，不认 <c>@name</c>。</summary>
-    public override string ParameterPlaceholder(int index) => "$p" + index;
+    public override string ParameterPlaceholder(int index, SqlParameterValue parameter) => "$p" + index;
 
     /// <summary>DuckDB 是分析型数据库，没有行级锁（与 Java 一致，不能悄悄忽略）。</summary>
     public override void WriteLock(SqlRenderer renderer, RowLock rowLock) =>

@@ -61,6 +61,8 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
 
     private async Task<(DbConnection Connection, DbTransaction Transaction)> StartAsync(string dataSource, CancellationToken ct)
     {
+        if (!_db.Options.Dialect.SupportsTransactions)
+            throw new NotSupportedException($"{_db.Options.Dialect.Name} 没有事务：语句各自生效，不能在 BeginTransaction 里执行");
         var connection = await _db.OpenConnectionAsync(dataSource, ct).ConfigureAwait(false);
         try
         {

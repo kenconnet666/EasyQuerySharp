@@ -161,7 +161,12 @@ internal static class QueryCompiler
             : new BinaryExpr(child.OwnerColumn(tree.ParentColumns[i]), SqlBinaryOperator.Equal, new ColumnExpr(walked, self.Name, self)))).ToList();
         var on = Filters(db, tree.Base, child).Concat(keys).ToList();
         var recursive = new SelectQuery(walked);
-        recursive.Joins.Add(new JoinClause(JoinKind.Inner, child.Table, LogicalExpr.And(on)));
+        if (db.Options.Dialect.RecursiveCteCommaJoin)
+        {
+            recursive.Joins.Add(new JoinClause(JoinKind.Comma, child.Table, null));
+            recursive.Where.AddRange(on);
+        }
+        else recursive.Joins.Add(new JoinClause(JoinKind.Inner, child.Table, LogicalExpr.And(on)));
         // 递归部分里引用自己的 CTE 同样当实体表加条件（与 Java 一致）
         var walkedRow = new DerivedBinding(walked, entity.Columns.ToDictionary(c => c.PropertyName, c => c.Name), entity);
         recursive.Where.AddRange(CteFilters(db, walked, entity, walkedRow, !tree.Base.DisableLogicDelete, tree.Base.Interceptors));

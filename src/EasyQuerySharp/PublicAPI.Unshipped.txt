@@ -2028,7 +2028,7 @@ override EasyQuerySharp.Dialects.DuckDbDialect.CreateTableSql(EasyQuerySharp.Met
 override EasyQuerySharp.Dialects.DuckDbDialect.DefaultNullsOrder(bool descending) -> EasyQuerySharp.SqlAst.NullsOrder
 override EasyQuerySharp.Dialects.DuckDbDialect.DropTableIfExistsSql(EasyQuerySharp.Metadata.EntityMetadata! entity) -> string!
 override EasyQuerySharp.Dialects.DuckDbDialect.Name.get -> string!
-override EasyQuerySharp.Dialects.DuckDbDialect.ParameterPlaceholder(int index) -> string!
+override EasyQuerySharp.Dialects.DuckDbDialect.ParameterPlaceholder(int index, EasyQuerySharp.SqlParameterValue! parameter) -> string!
 override EasyQuerySharp.Dialects.DuckDbDialect.ParameterWrap(string? columnDbType) -> (string! Before, string! After)?
 override EasyQuerySharp.Dialects.DuckDbDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
 override EasyQuerySharp.Dialects.DuckDbDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
@@ -2046,7 +2046,7 @@ override EasyQuerySharp.Dialects.HanaDialect.LastInsertIdQuery.get -> string?
 override EasyQuerySharp.Dialects.HanaDialect.LimitInExists.get -> bool
 override EasyQuerySharp.Dialects.HanaDialect.MergeSourceSuffix.get -> string!
 override EasyQuerySharp.Dialects.HanaDialect.Name.get -> string!
-override EasyQuerySharp.Dialects.HanaDialect.ParameterPlaceholder(int index) -> string!
+override EasyQuerySharp.Dialects.HanaDialect.ParameterPlaceholder(int index, EasyQuerySharp.SqlParameterValue! parameter) -> string!
 override EasyQuerySharp.Dialects.HanaDialect.QualifySetColumns.get -> bool
 override EasyQuerySharp.Dialects.HanaDialect.RecursiveWith.get -> string!
 override EasyQuerySharp.Dialects.HanaDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
@@ -2081,7 +2081,7 @@ override EasyQuerySharp.Dialects.OracleDialect.InsertConflictUsesMerge.get -> bo
 override EasyQuerySharp.Dialects.OracleDialect.MergeSourceSuffix.get -> string!
 override EasyQuerySharp.Dialects.OracleDialect.Name.get -> string!
 override EasyQuerySharp.Dialects.OracleDialect.NativeNullsOrder.get -> bool
-override EasyQuerySharp.Dialects.OracleDialect.ParameterPlaceholder(int index) -> string!
+override EasyQuerySharp.Dialects.OracleDialect.ParameterPlaceholder(int index, EasyQuerySharp.SqlParameterValue! parameter) -> string!
 override EasyQuerySharp.Dialects.OracleDialect.RecursiveCteColumnList.get -> bool
 override EasyQuerySharp.Dialects.OracleDialect.RecursiveWith.get -> string!
 override EasyQuerySharp.Dialects.OracleDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
@@ -2516,7 +2516,7 @@ virtual EasyQuerySharp.Dialects.SqlDialect.MergeSourceSuffix.get -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.MergeTerminator.get -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.NativeNullsOrder.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.ParameterName(int index) -> string!
-virtual EasyQuerySharp.Dialects.SqlDialect.ParameterPlaceholder(int index) -> string!
+virtual EasyQuerySharp.Dialects.SqlDialect.ParameterPlaceholder(int index, EasyQuerySharp.SqlParameterValue! parameter) -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.ParameterWrap(string? columnDbType) -> (string! Before, string! After)?
 virtual EasyQuerySharp.Dialects.SqlDialect.ParenthesizeCompoundParts.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.QualifySetColumns.get -> bool
@@ -2524,6 +2524,7 @@ virtual EasyQuerySharp.Dialects.SqlDialect.QuoteIdentifier(string! identifier) -
 virtual EasyQuerySharp.Dialects.SqlDialect.RecursiveCteColumnList.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.RecursiveWith.get -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
+virtual EasyQuerySharp.Dialects.SqlDialect.SupportsTransactions.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.SupportsWriteReturning.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.TreeDeepStart.get -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteDelete(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.DeleteStatement! statement) -> void
@@ -2566,3 +2567,18 @@ virtual EasyQuerySharp.Metadata.ColumnSqlConversion.CompareValue.get -> string?
 ~override EasyQuerySharp.Filtering.TableSort.ToString() -> string
 ~override EasyQuerySharp.WindowBound.Equals(object obj) -> bool
 ~override EasyQuerySharp.WindowBound.ToString() -> string
+override EasyQuerySharp.Dialects.ClickHouseDialect.SupportsTransactions.get -> bool
+override EasyQuerySharp.Dialects.TDengineDialect.SupportsTransactions.get -> bool
+override EasyQuerySharp.Dialects.ClickHouseDialect.ParameterPlaceholder(int index, EasyQuerySharp.SqlParameterValue! parameter) -> string!
+override EasyQuerySharp.Dialects.TDengineDialect.ParameterPlaceholder(int index, EasyQuerySharp.SqlParameterValue! parameter) -> string!
+override EasyQuerySharp.Dialects.Db2Dialect.ParameterPlaceholder(int index, EasyQuerySharp.SqlParameterValue! parameter) -> string!
+virtual EasyQuerySharp.Dialects.SqlDialect.RecursiveCteCommaJoin.get -> bool
+override EasyQuerySharp.Dialects.Db2Dialect.RecursiveCteCommaJoin.get -> bool
+override EasyQuerySharp.Dialects.Db2Dialect.WriteJoinedUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
+override EasyQuerySharp.Dialects.Db2Dialect.WriteJoinedDelete(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.DeleteStatement! statement) -> void
+override EasyQuerySharp.Dialects.Db2Dialect.ColumnDefinition(EasyQuerySharp.Metadata.EntityMetadata! entity, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
+EasyQuerySharp.Dialects.SqlDialect.WriteJoinedUpdateAsMerge(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
+static EasyQuerySharp.Dialects.SqlDialect.WriteJoinedDeleteAsExists(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.DeleteStatement! statement) -> void
+static EasyQuerySharp.Dialects.SqlDialect.SegmentedDateFormat(string! function, params (string! CSharp, string! Sql)[]! tokens) -> EasyQuerySharp.Dialects.FunctionWriter!
+virtual EasyQuerySharp.Dialects.SqlDialect.InlineParameters.get -> bool
+override EasyQuerySharp.Dialects.TDengineDialect.InlineParameters.get -> bool

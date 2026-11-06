@@ -28,9 +28,10 @@ internal static class RawSql
             {
                 if (values.Count >= parameters.Count)
                     throw new ArgumentException($"SQL 里的 ? 比参数多（参数 {parameters.Count} 个）：{sql}", nameof(parameters));
-                command.Append(dialect.ParameterPlaceholder(values.Count));
+                var value = Value(parameters[values.Count]);
+                command.Append(dialect.ParameterPlaceholder(values.Count, value));
                 text.Append('?');
-                values.Add(Value(parameters[values.Count]));
+                values.Add(value);
                 continue;
             }
             command.Append(c);
@@ -95,9 +96,10 @@ internal static class RawSql
 
         void AppendParameter(object? value)
         {
-            command.Append(dialect.ParameterPlaceholder(values.Count));
+            var parameter = Value(value);
+            command.Append(dialect.ParameterPlaceholder(values.Count, parameter));
             text.Append('?');
-            values.Add(Value(value));
+            values.Add(parameter);
         }
     }
 
