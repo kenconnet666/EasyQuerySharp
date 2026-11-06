@@ -28,14 +28,21 @@ internal static partial class JavaTestScanner
         ("sql-fork-test/src", "test/java/com/easy/query/fork/test/", "fork/"),
     ];
 
-    /// <summary>扫描 <paramref name="javaRepo"/> 下的全部用例，按 Id 排序。</summary>
-    public static IReadOnlyList<JavaTest> Scan(string javaRepo)
+    /// <summary>
+    /// 扫描 <paramref name="javaRepo"/> 下的全部用例，按 Id 排序。<paramref name="requireAllRoots"/> 为 false 时跳过缺失的用例目录
+    /// （只取方法体时，本机仓库可能是没有 fork 部分的上游）。
+    /// </summary>
+    public static IReadOnlyList<JavaTest> Scan(string javaRepo, bool requireAllRoots = true)
     {
         var result = new List<JavaTest>();
         foreach (var (dir, prefix, idPrefix) in Roots)
         {
             var root = Path.Combine(javaRepo, dir);
-            if (!Directory.Exists(root)) throw new DirectoryNotFoundException($"找不到 Java 用例目录：{root}");
+            if (!Directory.Exists(root))
+            {
+                if (requireAllRoots) throw new DirectoryNotFoundException($"找不到 Java 用例目录：{root}");
+                continue;
+            }
 
             foreach (var path in Directory.EnumerateFiles(root, "*.java", SearchOption.AllDirectories))
             {

@@ -45,13 +45,14 @@ internal static class ParityReport
     private static string Text(PortStatus s) => StatusText.First(x => x.Status == s).Text;
 
     /// <summary>生成 docs/parity-tests.md 的内容。</summary>
-    public static string Render(IReadOnlyList<ParityRow> rows)
+    public static string Render(IReadOnlyList<ParityRow> rows, string baselineSource)
     {
         var sb = new StringBuilder();
         sb.AppendLine("# Java 用例逐条对照");
         sb.AppendLine();
         sb.AppendLine("由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。");
         sb.AppendLine($"对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 {rows.Count} 个用例。");
+        sb.AppendLine($"基准冻结在 `tools/ParityTests/java-tests.json`，取自：{baselineSource}。");
         sb.AppendLine();
         sb.AppendLine("合计：" + string.Join("、", StatusText.Select(s => $"{s.Text} {rows.Count(r => r.Status == s.Status)}")) + "。");
         sb.AppendLine();

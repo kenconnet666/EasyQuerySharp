@@ -62,10 +62,7 @@ R → 1 → 2 → 3 → 4 → 5。
 
 ## R 整理（不加新功能）
 
-- [ ] R.1 冻结对标基准：
-  - `tools/ParityTests` 默认只读快照，重新扫描必须显式写 `--rescan --java <路径>`；
-  - 快照里记下 Java 上游与 fork 的 commit（fork 的 commit 找不到时写明"未知"）。
-  - 修好之前**不要在本机运行 ParityTests**：本机的 Java 仓库在默认路径上，工具会用上游 3.3.1 重写快照，丢掉 fork 的 89 个用例。
+- [x] R.1 冻结对标基准：`tools/ParityTests` 的对照表和 `--check` 只读快照，快照记下来源（现有基准取自 fork，commit 未记录）；`--scaffold` / `--show` 从本机 Java 仓库取方法体，缺 fork 部分也能用；`--rescan` 才改写快照。
 - [ ] R.2 正确性问题：
   - 环境事务结束后没有真正弹出 AsyncLocal：`EndAsync` 是 async 方法，里面的赋值不会传回调用方。同一个 async 方法里循环开事务时，已经结束的事务会串成链表，每条语句都要遍历一遍，造成泄漏、越跑越慢。改成在 AsyncLocal 里放可变的 holder。
   - 嵌套事务：已经在事务里时，`BeginTransaction` 抛异常（对齐 Java 的 `repeat begin transaction`）。现在的做法是另开一个连接、另起一个事务。
