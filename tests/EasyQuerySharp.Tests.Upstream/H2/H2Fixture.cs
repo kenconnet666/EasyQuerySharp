@@ -14,29 +14,55 @@ namespace EasyQuerySharp.Tests.Upstream.H2;
 public sealed class H2Fixture : IAsyncLifetime
 {
     private const string ConnectionString = "Data Source=eqs-upstream-h2;Mode=Memory;Cache=Shared";
+    private const string OrderConnectionString = "Data Source=eqs-upstream-h2-order;Mode=Memory;Cache=Shared";
 
     private static readonly Type[] Tables =
     [
         typeof(DefTable), typeof(DefTableLeft1), typeof(DefTableLeft2), typeof(DefTableLeft3), typeof(ALLTYPE), typeof(TbOrder), typeof(TbAccount),
-        typeof(DocUser), typeof(DocBank), typeof(DocBankCard), typeof(MyCategory),
+        typeof(DocUser), typeof(DocBank), typeof(DocBankCard), typeof(MyCategory), typeof(ALLTYPESharding),
     ];
 
     // 共享内存库只要还有一个连接开着就一直在
     private readonly SqliteConnection _keepAlive = new(ConnectionString);
+    private readonly SqliteConnection _keepOrderAlive = new(OrderConnectionString);
 
-    /// <summary>连到本固件库的 EasyDb（对应 Java 的 easyEntityQuery），带 <see cref="SqlCapture"/> 监听。</summary>
-    public EasyDb Db { get; } = new(o => o.Use(UnquotedSqliteDialect.Instance, SqliteFactory.Instance.CreateDataSource(ConnectionString)).AddListener(SqlCapture.Instance));
+    /// <summary>
+    /// 连到本固件库的 EasyDb（对应 Java 的 easyEntityQuery），带 <see cref="SqlCapture"/> 监听。
+    /// <see cref="ALLTYPESharding"/> 按 id 取模分两张表；与 Java 的分片执行器一样每张表一条语句、在内存里归并（MaxUnionTables = 1）。
+    /// </summary>
+    public EasyDb Db { get; } = new(o =>
+    {
+        o.MaxUnionTables = 1;
+        o.Use(UnquotedSqliteDialect.Instance, SqliteFactory.Instance.CreateDataSource(ConnectionString)).AddListener(SqlCapture.Instance)
+            .Shard<ALLTYPESharding>(r => r.Mod(t => t.Id, 2));
+    });
+
+    /// <summary>Java 的 easyEntityQuery2：只有按 id 取模分成 5 张表的 <see cref="H2Order"/>（Java 的 dsorder 库），每张表一条语句、在内存里归并。</summary>
+    public EasyDb OrderDb { get; } = new(o =>
+    {
+        o.MaxUnionTables = 1;
+        o.Use(UnquotedSqliteDialect.Instance, SqliteFactory.Instance.CreateDataSource(OrderConnectionString)).AddListener(SqlCapture.Instance)
+            .Shard<H2Order>(r => r.Mod(t => t.Id, 5));
+    });
 
     /// <inheritdoc />
     public async ValueTask InitializeAsync()
     {
         await _keepAlive.OpenAsync();
+        await _keepOrderAlive.OpenAsync();
         await Db.CodeFirst.CreateTablesAsync(Tables);
         await SeedAsync(Db);
+        // 与 Java 的 initData 相同：100 个订单，按 id 落到 t_order_0 … t_order_4
+        await OrderDb.CodeFirst.CreateTablesAsync(typeof(H2Order));
+        await OrderDb.Insert(Enumerable.Range(0, 100).Select(i => new H2Order { Id = i, Status = i % 3, Created = Id(i) })).ExecuteAsync();
     }
 
     /// <inheritdoc />
-    public async ValueTask DisposeAsync() => await _keepAlive.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        await _keepAlive.DisposeAsync();
+        await _keepOrderAlive.DisposeAsync();
+    }
 
     // 与 Java H2BaseTest.initData 相同的数据：四张 t_def_table* 各 1000 行、一行 ALLTYPE
     private static async Task SeedAsync(EasyDb db)
@@ -111,6 +137,9 @@ public abstract class H2Test(H2Fixture fixture)
 {
     /// <summary>连到本固件库的 EasyDb（对应 Java 的 easyEntityQuery）。</summary>
     protected EasyDb Db => fixture.Db;
+
+    /// <summary>只有分片订单表的 EasyDb（对应 Java 的 easyEntityQuery2）。</summary>
+    protected EasyDb OrderDb => fixture.OrderDb;
 
     /// <summary>当前测试的取消令牌。</summary>
     protected static CancellationToken Ct => TestContext.Current.CancellationToken;

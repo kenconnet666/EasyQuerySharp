@@ -297,21 +297,29 @@ internal static class ShardValues
     {
         if (a is string s && b is string t) return string.CompareOrdinal(s, t);
         if (a!.GetType() != b!.GetType() && IsNumber(a) && IsNumber(b))
-            return a is double or float || b is double or float
-                ? Convert.ToDouble(a, System.Globalization.CultureInfo.InvariantCulture).CompareTo(Convert.ToDouble(b, System.Globalization.CultureInfo.InvariantCulture))
-                : Convert.ToDecimal(a, System.Globalization.CultureInfo.InvariantCulture).CompareTo(Convert.ToDecimal(b, System.Globalization.CultureInfo.InvariantCulture));
+            return a is double or float || b is double or float ? ToDouble(a).CompareTo(ToDouble(b)) : ToDecimal(a).CompareTo(ToDecimal(b));
         return System.Collections.Comparer.DefaultInvariant.Compare(a, b);
     }
 
-    /// <summary>各单元 SUM 的和：整数按 long，有浮点时按 double，其余按 decimal（精确）。</summary>
+    /// <summary>各单元 SUM 的和：整数精确相加（DuckDB 的 SUM 返回 HUGEINT），有浮点时按 double，其余按 decimal（精确）。</summary>
     public static object Sum(IReadOnlyList<object> values)
     {
-        if (values.All(IsInteger)) return values.Sum(v => Convert.ToInt64(v, System.Globalization.CultureInfo.InvariantCulture));
-        if (values.Any(v => v is double or float)) return values.Sum(v => Convert.ToDouble(v, System.Globalization.CultureInfo.InvariantCulture));
-        return values.Sum(v => Convert.ToDecimal(v, System.Globalization.CultureInfo.InvariantCulture));
+        if (values.All(IsInteger))
+        {
+            var sum = values.Aggregate(System.Numerics.BigInteger.Zero, (total, v) => total + (v is System.Numerics.BigInteger big ? big : ToDecimalInteger(v)));
+            return sum >= long.MinValue && sum <= long.MaxValue ? (object)(long)sum : sum;
+        }
+        if (values.Any(v => v is double or float)) return values.Sum(ToDouble);
+        return values.Sum(ToDecimal);
+
+        static System.Numerics.BigInteger ToDecimalInteger(object v) => new(Convert.ToDecimal(v, System.Globalization.CultureInfo.InvariantCulture));
     }
 
-    private static bool IsInteger(object value) => value is sbyte or byte or short or ushort or int or uint or long or ulong;
+    private static double ToDouble(object value) => value is System.Numerics.BigInteger big ? (double)big : Convert.ToDouble(value, System.Globalization.CultureInfo.InvariantCulture);
+
+    private static decimal ToDecimal(object value) => value is System.Numerics.BigInteger big ? (decimal)big : Convert.ToDecimal(value, System.Globalization.CultureInfo.InvariantCulture);
+
+    private static bool IsInteger(object value) => value is sbyte or byte or short or ushort or int or uint or long or ulong or System.Numerics.BigInteger;
 
     private static bool IsNumber(object value) => IsInteger(value) || value is decimal or double or float;
 }
