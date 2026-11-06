@@ -247,9 +247,11 @@ services:
     platform: linux/amd64
     hostname: hxehost
     restart: unless-stopped
-    # SAP 公布的最低内存是 8g；HANA 把 cgroup 上限当物理内存，不要靠调大掩盖失败
-    mem_limit: 12g
-    memswap_limit: 12g
+    # HANA 把 cgroup 上限当物理内存，全局内存上限（GAL）取它的 90%；trim.sh 关掉 web dispatcher、diserver 与统计服务后，
+    # 跑完 Live 与 Upstream 的物理内存约 3.5 GB，但 HANA 按 GAL 记账时连代码段与分配器缓存一起算，峰值约 4.6 GB：
+    # 6g（GAL 5.5 GB）在测试中途报 global_allocation_limit reached，7g（GAL 6.5 GB）留 2 GB 余量。CI 也用这里的值，不要靠调大掩盖失败
+    mem_limit: 7g
+    memswap_limit: 7g
     shm_size: 2g
     stop_grace_period: 2m
     environment:

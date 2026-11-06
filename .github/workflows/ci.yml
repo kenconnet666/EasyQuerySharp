@@ -235,5 +235,57 @@ jobs:
           project: ${{ env.LIVE_TESTS }}
           report-name: test-results-oracle
 
+  # SAP HANA Express 2.0。镜像要自建（infra/dev/hana：启动时接受 SAP 开发者许可、裁掉测试用不到的服务），不能当服务容器，
+  # 用 infra/dev 的 compose 起，内存上限只在 compose 里写一处（runner 有 16 GB）。首次启动要初始化库，约 8 分钟，与客户端下载、构建并行。
+  # ADO.NET 驱动随 HANA 客户端发布、不在 nuget.org：从 SAP Development Tools 下载固定版本的 Linux 客户端（同样接受 SAP 开发者许可），按版本缓存，
+  # 用 EQS_HANA_DRIVER 指给 TestKit 在运行时加载。Upstream 项目里只有 fork 的 HANA 用例连库，其余用例与 core 任务重复但不连库，开销不大。
+  hana:
+    name: SAP HANA Express 2.0
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      # 16-64 位字母数字，含大小写与数字（infra/dev/hana/start.sh 校验）
+      EQS_DEV_HANA_PASSWORD: EqsCi2026Pass0Hana
+      EQS_HANA_CS: Server=127.0.0.1:49041;UserName=SYSTEM;Password=EqsCi2026Pass0Hana
+      HANA_CLIENT_VERSION: 2.30.27
+      EQS_HANA_DRIVER: ${{ github.workspace }}/.hdbclient/dotnetcore
+    steps:
+      - uses: actions/checkout@v7
+      - name: Start HANA Express
+        # compose 会对整个文件做变量替换，其余服务的密码变量也要有值（这些服务不会启动）
+        run: |
+          grep -o 'EQS_DEV_[A-Z0-9]*_PASSWORD' infra/dev/compose.yaml | sort -u | sed "s/$/=$EQS_DEV_HANA_PASSWORD/" > "$RUNNER_TEMP/db.env"
+          docker compose -f infra/dev/compose.yaml --env-file "$RUNNER_TEMP/db.env" --profile hana up -d --build hana
+      - name: Cache HANA client
+        id: hana-client
+        uses: actions/cache@v6
+        with:
+          path: .hdbclient
+          key: hanaclient-${{ env.HANA_CLIENT_VERSION }}-linux-x64
+      - name: Install HANA client
+        if: steps.hana-client.outputs.cache-hit != 'true'
+        run: |
+          download=$(mktemp -d)
+          curl -fsSL --retry 3 --cookie 'eula_3_2_agreed=tools.hana.ondemand.com/developer-license-3_2.txt'             -o "$download/hanaclient.tar.gz" "https://tools.hana.ondemand.com/additional/hanaclient-${HANA_CLIENT_VERSION}-linux-x64.tar.gz"
+          tar -xzf "$download/hanaclient.tar.gz" -C "$download"
+          # 安装程序在包的根目录或 client/ 下
+          installer=$(find "$download" -maxdepth 2 -type f -name hdbinst | head -n 1)
+          "$installer" --batch --path="$GITHUB_WORKSPACE/.hdbclient"
+          ls "$EQS_HANA_DRIVER"/v10.0/Sap.Data.Hana.Net.v10.0.dll
+      - name: Wait for HANA
+        run: |
+          container=$(docker compose -f infra/dev/compose.yaml --env-file "$RUNNER_TEMP/db.env" --profile hana ps -q hana)
+          for _ in $(seq 1 120); do
+            status=$(docker inspect -f '{{.State.Health.Status}}' "$container")
+            if [[ $status == healthy ]]; then docker stats --no-stream "$container"; exit 0; fi
+            sleep 10
+          done
+          docker logs --tail 200 "$container"
+          exit 1
+      - uses: ./.github/actions/dotnet-test
+        with:
+          require-dbs: hana
+          project: tests/EasyQuerySharp.Tests.Live tests/EasyQuerySharp.Tests.Upstream
+          report-name: test-results-hana
+
   # 达梦、openGauss、ClickHouse、Db2、TDengine：对应方言包（ROADMAP M6）落地时，在 TestDatabases 登记驱动后按上面的模式加任务。
-  # HANA 需要 12 GB 内存，GitHub 托管的 runner 跑不了，只在本机用 infra/dev 的 hana profile 验证。
