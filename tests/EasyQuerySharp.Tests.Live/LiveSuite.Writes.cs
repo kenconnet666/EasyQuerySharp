@@ -70,6 +70,48 @@ public abstract partial class LiveSuite
         Assert.Equal(1, (await db.Query<User>().FindAsync(1L, Ct))!.Age);
     }
 
+    // 同一个异步方法里先后开几个事务：提交、回滚后环境事务真正结束，之后的语句不再走旧事务，也能再开新事务
+    [Fact]
+    public async Task RunsTransactionsOneAfterAnotherInTheSameMethod()
+    {
+        var db = await SeededAsync();
+        for (var age = 1; age <= 3; age++)
+        {
+            await using var tx = db.BeginTransaction();
+            await db.Update<User>().Set(u => u.Age, age).Where(u => u.Id == 1).ExecuteAsync(Ct);
+            await tx.CommitAsync(Ct);
+        }
+        await using (var tx = db.BeginTransaction())
+        {
+            await db.Update<User>().Set(u => u.Age, 9).Where(u => u.Id == 1).ExecuteAsync(Ct);
+            await tx.RollbackAsync(Ct);
+        }
+        await db.Update<User>().Set(u => u.Age, 4).Where(u => u.Id == 2).ExecuteAsync(Ct);
+        Assert.Equal(3, (await db.Query<User>().FindAsync(1L, Ct))!.Age);
+        Assert.Equal(4, (await db.Query<User>().FindAsync(2L, Ct))!.Age);
+    }
+
+    // 与 Java 一致：已经在事务里时不能再开事务
+    [Fact]
+    public async Task RejectsNestedTransactions()
+    {
+        var db = await SeededAsync();
+        await using var tx = db.BeginTransaction();
+        Assert.Throws<InvalidOperationException>(() => db.BeginTransaction());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => db.TransactionAsync(() => Task.CompletedTask, cancellationToken: Ct));
+    }
+
+    // 追踪作用域里并行查询：各条查询的结果都进同一个作用域
+    [Fact]
+    public async Task TracksEntitiesQueriedInParallel()
+    {
+        var db = await SeededAsync();
+        using var tracking = db.BeginTracking();
+        var users = await Task.WhenAll(Enumerable.Range(0, 12).Select(i => db.Query<User>().FindAsync(i % 3 + 1L, Ct)));
+        foreach (var user in users) Assert.Empty(db.GetTrackedChanges(user!));
+        Assert.Equal(3, users.Distinct().Count());
+    }
+
     // 三个事务同时读改写同一行：FOR UPDATE 让它们排队，结果不丢更新
     [Fact]
     public async Task SerializesConcurrentTransactionsThatLockTheSameRow()
