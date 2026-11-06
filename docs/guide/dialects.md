@@ -15,7 +15,7 @@
 | Oracle 23ai | `UseOracle` | `OracleDialect` | Oracle.ManagedDataAccess.Core | 第一档 | CI 跑实库套件；Java 用例的实库核对进行中（ROADMAP 2.2） |
 | DuckDB | `UseDuckDb` | `DuckDbDialect`（继承 PG） | DuckDB.NET.Data.Full | 第二档 | 进程内，本地与 CI 跑实库套件 |
 | 达梦 DM8 | `UseDameng` | `DamengDialect`（继承 Oracle） | DM.DmProvider | 第二档 | 只比对 SQL 文本，实库冒烟待做 |
-| SAP HANA | `UseHana` | `HanaDialect` | Sap.Data.Hana（随 HANA 客户端安装） | 第二档 | 只比对 SQL 文本 |
+| SAP HANA 2.0 | `UseHana` | `HanaDialect` | Sap.Data.Hana（随 HANA 客户端安装） | 第二档 | 本地与 CI（HANA Express 2.00.088）跑实库套件与 fork 的 HANA 用例 |
 | 人大金仓 Kingbase | `UseKingbase` | `KingbaseDialect`（继承 PG） | 金仓的 ADO.NET 驱动 | 第二档 | 只比对 SQL 文本 |
 | GaussDB / openGauss | `UseGaussDb` | `GaussDbDialect`（继承 PG） | 兼容 PG 协议的驱动 | 第二档 | 只比对 SQL 文本 |
 | ClickHouse | `UseClickHouse` | `ClickHouseDialect` | ClickHouse.Client | 第二档 | 只比对 SQL 文本 |
@@ -138,11 +138,27 @@ MERGE INTO "t_order_item" t1 USING (SELECT ? AS "order_id",? AS "product_id",? A
 - **SQL Server**：日期格式化按 Java 写成 `CONVERT` / `SUBSTRING` 段；拼接式 LIKE 先 `CAST(.. AS NVARCHAR(MAX))`；条件当值写成 `CASE WHEN`；`MERGE` 一次一行。
 - **Oracle / 达梦**：`ROWNUM` 分页；IN 列表最多 1000 项，设置 `EasyDbOptions.MaxInClauseSize = 1000` 自动拆成 OR；空字符串就是 NULL；`Sql.MaxColumns` 写 `UNION ALL … FROM DUAL`。
 - **DuckDB**：进程内数据库，最后一个连接关闭时关库，应用里留一个连接不关能快很多；没有 `IDENTITY`，自增列建表时建序列；没有行锁。
-- **HANA**：位置参数 `?`；没有递归 CTE；`STRING_AGG` 不能去重；`Sql.Hana.Text(..)` 全文检索。驱动不在 nuget.org。
+- **HANA**：位置参数 `?`；没有递归 CTE；`STRING_AGG` 不能去重；`GREATEST` / `LEAST` 碰到 NULL 返回 NULL；`DECIMAL` 列求平均先转成不定小数位的 `DECIMAL`（不然按列的小数位截断）；还没有 `Sql.Json`；`Sql.Hana.Text(..)` 全文检索（列上要先建 `FULLTEXT INDEX`）。驱动不在 nuget.org，见下面的“HANA 的驱动与实库测试”。
 - **Kingbase / GaussDB**：继承 PG，只覆盖 Java 两个模块与 PG 不同的写法（`STRPOS` 式 LIKE、条件当值写 CASE；Kingbase 的 `CONCAT` 两两嵌套、日期加减与相差）。
 - **ClickHouse**：分析型，没有自增列、upsert、行锁；更新删除是 `ALTER TABLE … UPDATE / DELETE`，不能带别名、不能走导航；建表 `ENGINE = MergeTree`。
 - **Db2**：字符串函数按 `CODEUNITS32`；`LISTAGG` 的分隔符写成字面量；没有 `NOWAIT`。
 - **TDengine**：时序库，没有 UPDATE、upsert、自增列、行锁、字符串聚合；删除只能按本表的列过滤；日期加减只能写字面量时长；表要有一个 `DateTime` 主键（行的时间戳）。
+
+## HANA 的驱动与实库测试
+
+Sap.Data.Hana 随 SAP HANA 客户端发布，不在 nuget.org 上。应用里引用客户端安装目录下 `dotnetcore/v10.0/Sap.Data.Hana.Net.v10.0.dll`（按目标框架选 v6.0 / v8.0 / v10.0），原生库 `libadonetHDB` 在它的上一级目录，驱动按环境变量 `HDBDOTNETCORE` 找它（Windows 的安装程序会设好）：
+
+```csharp
+var db = new EasyDb(o => o.UseHana(HanaFactory.Instance.CreateDataSource("Server=host:39041;UserName=..;Password=..;Current Schema=APP")));
+```
+
+本仓库的实库测试不引用它，TestKit 在运行时加载：
+
+1. 从 [SAP Development Tools](https://tools.hana.ondemand.com/#hanatools) 下载 HANA Client（Windows x64 是 `hanaclient-<版本>-windows-x64.zip`，下载前要接受 SAP 开发者许可），解压后执行 `hdbinst --batch --path="C:\Program Files\sap\hdbclient"`。装在别处时用环境变量 `EQS_HANA_DRIVER` 指向客户端的 `dotnetcore` 目录（TestKit 依次找 `EQS_HANA_DRIVER`、`HDBDOTNETCORE`、Windows 与 Linux 的默认安装位置；找不到时 HANA 的测试跳过，在 `EQS_REQUIRE_DBS` 里时判失败）。
+2. 起库：`bash infra/dev/db.sh --profile hana up -d --build`。镜像启动时接受 SAP 开发者许可（`--agree-to-sap-license`），首次启动要初始化约 8 分钟；`infra/dev/hana/trim.sh` 在启动后关掉 web dispatcher、diserver 与统计服务，容器限 7g（HANA 按它取 90% 作全局内存上限）。
+3. 在 `.local/db.env` 里取消 `EQS_HANA_CS` 的注释。测试按 schema 隔离：实库套件用 `EQS_LIVE` / `EQS_LIVE_DS1`，fork 的 HANA 用例每次运行重建 `EQS_FORK`。
+
+CI 的 `hana` 任务做同样的事：用 compose 起镜像，下载固定版本的 Linux 客户端并按版本缓存。
 
 ## 自定义方言
 
@@ -160,7 +176,7 @@ var db = new EasyDb(o => o.Use(new MyDialect(), dataSource));
 ## 限制
 
 - 不在列表里的库：H2 没有 .NET 驱动，不支持（Java 的 H2 用例改在 SQLite 上移植）；SQL Server 2008 的 `ROW_NUMBER` 分页不做（已停止支持）；Doris、Neon、PGlite 等 TS 版支持的库没有专门的方言（Neon 用 PostgreSQL 方言即可）。
-- 第二档里标"只比对 SQL 文本"的方言还没有实库冒烟（ROADMAP 3.1–3.5）。
+- 第二档里标"只比对 SQL 文本"的方言还没有实库冒烟（ROADMAP 3.1、3.4、3.5）。
 - 方言专属函数（`Sql.MySql`、`Sql.Pg`、`Sql.Hana`）用错方言时在渲染期报错，不在编译期。
 
 ## 对应 Java

@@ -15,9 +15,9 @@
 
 ## 现状（2026-11-06）
 
-- 对标：已移植 2062、偏离 197、不适用 142、骨架 3、待做 0。
-- 待做清零。骨架 3 都要实库：HANA 2、达梦行锁 1。
-- 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17、DuckDB（进程内）；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
+- 对标：已移植 2076、偏离 185、不适用 142、骨架 1、待做 0。
+- 待做清零。骨架 1 要实库：达梦行锁。
+- 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17、DuckDB（进程内）；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle、HANA 任务（HANA 任务 2026-11-07 新加，还没在 CI 上跑过）。master 的 CI 全绿。
 
 ## 已定的取舍
 
@@ -40,7 +40,7 @@
 - **嵌套事务对齐 Java**：已经在事务里时再开事务，直接抛异常。
 - **规划外的新公共概念先写决策文档**：关联键匹配策略、分库分表、二级缓存。
 - **新依赖只进各自的包**：生成器引用 Microsoft.CodeAnalysis，依赖注入引用 Microsoft.Extensions 的抽象包，缓存引用 HybridCache，核心仍然零依赖。
-- **第二档方言的测试驱动只进 TestKit**（2026-11-06 定）：达梦 DM.DmProvider、ClickHouse、Db2、TDengine 的 .NET 驱动只在测试里引用，用于实库冒烟；nuget.org 上没有的（HANA 的 Sap.Data.Hana）不引用。
+- **第二档方言的测试驱动只进 TestKit**（2026-11-06 定）：达梦 DM.DmProvider、ClickHouse、Db2、TDengine 的 .NET 驱动只在测试里引用，用于实库冒烟；nuget.org 上没有的（HANA 的 Sap.Data.Hana）不引用，TestKit 在运行时从本机装的 HANA 客户端加载，没装时按没配置跳过。
 - **集合导航取段之后聚合按 C# 语义**（2026-11-06 定）：`string.Join(",", u.Cards.OrderBy(..).Take(2).Select(..))` 先取段再聚合，不照 Java 把 LIMIT 写在聚合外面（Java 拼的是全部行，PG 上还会报错），M8BankTest test7 / test7_2 / test8 记偏离。
 - **分库分表实现时补的公开成员保留**（2026-11-06 定）：`MaxShardNodes`、`DataSources`、`Shard<T>(IShardRule)`、`SqlStatement.DataSource`、`SqlDialect.DefaultNullsOrder`、`ShardingPage<T>`，记在 0006 的“实现中的补充”。
 
@@ -116,11 +116,12 @@ R → 1 → 2 → 3 → 4 → 5。
   - 顺手补齐 Oracle（达梦沿用）：拼接式 LIKE 写成 `LIKE ('%'||TO_CHAR(?)||'%')`；带组内排序的字符串聚合写成 `LISTAGG(..) WITHIN GROUP(ORDER BY …)`（原来落到 STRING_AGG），SQL Server 同样改成 `STRING_AGG(..) WITHIN GROUP (ORDER BY …)`。
   - 用例：DamengQueryTest 40、DamengForUpdateTest 7、UpdateJoinTest 3、MathQueryTest 1、QueryTest26 testAAA、ForUpdateDialectToSQLSmokeTest damengForUpdateToSQLSmoke 共 53 个：只渲染 SQL、逐字比对 Java；Java 只断言结果或只执行不断言的 21 个记偏离（实库验证留给冒烟）；testForUpdateBlocksConcurrentTransaction（两个事务争行锁）留骨架。testAAA：Java 的达梦删除不支持连接（抛异常），C# 沿用 Oracle 按 ROWID 删除。
   - 冒烟要验证：`UPDATE … INNER JOIN`、`DELETE … WHERE ROWID IN`、`GETUTCDATE()`、`IDENTITY(1, 1)`、日期相差与加减的结果、DmProvider 的参数占位（`:p0`）。MigrationDamengTest 断言的是 code-first 同步语句（注释、默认值、`execute immediate`）的 MD5，归到 4.1。
-- [~] 3.2 SAP HANA：`HanaDialect` 直接继承标准写法（与 Oracle、PG 都只有部分相同），`options.UseHana(..)`；SQL 按 fork 用例核对，实库冒烟还没做。
+- [x] 3.2 SAP HANA：`HanaDialect` 直接继承标准写法（与 Oracle、PG 都只有部分相同），`options.UseHana(..)`；SQL 按 fork 用例核对，在 HANA Express 2.00.088 上做了实库冒烟。
   - [x] 方言：位置参数 `?`、`LIMIT … OFFSET`（只跳过时补 `LIMIT 2147483647`）、拼接逐对写 `((a || b) || c)`、`TO_NVARCHAR` 日期格式（格式串里的文字单独拼接）、条件当值写三值 CASE、`MERGE … FROM DUMMY` upsert、带导航的更新写按主键对上的 MERGE、删除写 EXISTS、EXISTS 子查询不带 LIMIT（`SqlDialect.LimitInExists`）、`CURRENT_IDENTITY_VALUE()` 取自增键、`FOR UPDATE IGNORE LOCKED`、`CREATE COLUMN TABLE` 与匿名块代替 IF [NOT] EXISTS、DateTrunc；
   - [x] `Sql.Hana.Text(..).Contains / Fuzzy / Score`（CONTAINS、FUZZY、SCORE）；
-  - [x] fork 的 HanaSqlTest 6 个、HanaTextSqlTest 2 个、InsertSelectSqlTest#hanaUsesQuotedNames 移植；三个 live 文件与 JsonValueConverterLiveTest#hanaNclobColumn 共 14 个，其中 12 个按 SQL 文本移植、记偏离（实库验证留到冒烟），两个 LocalDateTime 往返用例要实库，留作骨架；
-  - [!] 实库冒烟（2026-11-06 查过：本机没有 HANA 客户端，也没有构建过 hana 镜像；客户端要从 SAP 下载并接受许可协议，需要用户自己装）：驱动 Sap.Data.Hana 随 HANA 客户端安装、不在 nuget.org，TestDatabases 还没登记 HANA；起 infra/dev 的 hana profile 后补夹具，跑上面的 live 用例与 LiveSuite。HANA Express 要 12 GB 内存，进不了 GitHub 托管的 CI，只在本地验证。
+  - [x] fork 的 HanaSqlTest 6 个、HanaTextSqlTest 2 个、InsertSelectSqlTest#hanaUsesQuotedNames 移植；三个 live 文件与 JsonValueConverterLiveTest#hanaNclobColumn 共 14 个在实库上执行，核对 Java 的 SQL 文本与读回的结果，记已移植（含两个 LocalDateTime 往返用例：.NET 驱动往返精确到微秒，夏令时缺口里的时间原样读回）；FunctionsLiveTest、LockWaitLiveTest 也加上 HANA（Java 同样在 HANA 上跑）；
+  - [x] 实库冒烟（2026-11-07，HANA Express 2.00.088，客户端 2.30.27 的 Sap.Data.Hana.Net.v10.0）：TestKit 运行时加载驱动（`EQS_HANA_DRIVER`、`HDBDOTNETCORE` 或默认安装位置），`TestDatabases.Hana` 按 schema 隔离（连接串的 `Current Schema`）；`HanaLiveSuite` 全部通过，跳过 HANA 2.0 没有的递归 CTE、还没做的 `Sql.Json`，`GREATEST` / `LEAST` 碰到 NULL 返回 NULL（同 MySQL）。修了一处：`DECIMAL(p,s)` 列的 AVG 按列的小数位截断（503.6875 得 503.68），改成 `AVG(CAST(x AS DECIMAL))`。
+  - [x] 内存与 CI：`infra/dev/hana/trim.sh` 在启动完成后关掉 web dispatcher、diserver 与统计服务，compose 的上限从 12g 降到 7g（HANA 按它取 90% 作全局内存上限，不另设）。实测（2026-11-07，全新数据卷）：首次启动 450 秒、物理内存峰值 3.4 GB；跑完 Live 与 Upstream 物理内存约 3.5 GB，HANA 记账的峰值 4.6 GB（含代码段，6g 时 GAL 只有 5.5 GB，测试中途报内存不足，所以取 7g）。CI 加 `hana` 任务：用 compose 起镜像，从 SAP Development Tools 下载固定版本 2.30.27 的 Linux 客户端（接受 SAP 开发者许可）并按版本缓存，`require-dbs: hana` 跑实库套件与 Upstream。
 - [x] 3.3 DuckDB（进程内运行，CI 直接跑）：`DuckDbDialect` 继承 PostgreSQL 方言只覆盖差异，`options.UseDuckDb(..)`；驱动 DuckDB.NET.Data.Full 只在 TestKit 里引用，核心仍零依赖。
   - 方言：参数写 `$p0`（DuckDB.NET 不认 `@`）；含 `%` / `_` 的 LIKE 值用 `STRPOS`；日期格式 `strftime`、加减 `date_add`、相差 `DATEDIFF`；`TRUNC` 不带位数；JSON 用 `json_array_length` / `json_exists`；没有行锁（`FOR UPDATE` 抛 NotSupportedException）；DuckDB 没有 IDENTITY，自增列建表时先 `CREATE SEQUENCE`、列默认 `nextval`，删表时一并删序列。
   - 顺手：PostgreSQL 的 `IndexOf` 原来写 `INSTR`（PG 没有这个函数），改成 `STRPOS`；`SqlDialect.ColumnDefinition` 多传所属实体。
