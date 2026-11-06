@@ -125,32 +125,23 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     public Commands.InsertSelectCommand<T> InsertInto(string? table = null) => new(Open, table);
 
     /// <summary>
-    /// 按属性名自动投影到 DTO（对应 Java 的 select(Dto.class)）：DTO 的每个可写属性取实体上的同名列，
-    /// DTO 属性上的 <c>[Column("…")]</c> 决定别名。标了 <see cref="Metadata.MapFromAttribute{TEntity}"/> 的 DTO 同 <see cref="SelectAutoInclude{TResult}"/>，按结构带出导航。
+    /// 按 DTO 的结构自动投影（对应 Java 的 select(Dto.class) 与 selectAutoInclude(Dto.class)）：同名属性取列；与实体导航同名的属性按导航映射——
+    /// 集合是嵌套 DTO（或实体）的列表、对一是嵌套 DTO（或实体），都用带出查询按父键批量取（没有 N+1）；<c>[MapPath("A.B")]</c> 取导航路径上的值，
+    /// <c>[MapExpression]</c> 的属性取表达式的值，DTO 属性上的 <c>[Column("…")]</c> 决定别名。
+    /// DTO 实现 <see cref="IAutoIncludeConfigure{TEntity}"/> 时给它的带出查询加条件、排序、条数（根 DTO 实现时配置这条查询本身）；
+    /// 标了 <see cref="Metadata.MapFromAttribute{TEntity}"/> 的 DTO 由分析器在编译期校验成员，声明的实体必须是 <typeparamref name="T"/>。
+    /// <typeparamref name="TResult"/> 是 <c>Dictionary&lt;string, object?&gt;</c> 时取全部列，键是列名。
     /// </summary>
+    /// <example><code>db.Query&lt;SysUser&gt;().Select&lt;UserDto&gt;()   // UserDto { Id, Name, List&lt;CardDto&gt; BankCards }</code></example>
     public Query<TResult> Select<TResult>() where TResult : new()
     {
-        // 标了 [MapFrom<T>] 的 DTO 按结构映射并带出导航（同 SelectAutoInclude）
-        if (AutoProjection.MapFromEntity(typeof(TResult)) is { } source)
-        {
-            if (source != typeof(T)) throw new InvalidOperationException($"{typeof(TResult).Name} 声明的是 [MapFrom<{source.Name}>]，不能从 {typeof(T).Name} 的查询映射");
-            return SelectAutoInclude<TResult>();
-        }
-        return new(Open with { Selector = AutoProjection.Build(Db.Metadata.Get<T>(), typeof(TResult)) });
-    }
-
-    /// <summary>
-    /// 按 DTO 的结构自动投影并带出导航（对应 Java 的 selectAutoInclude）：同名属性取列；与实体导航同名的属性按导航映射——
-    /// 集合是嵌套 DTO（或实体）的列表、对一是嵌套 DTO（或实体），都用带出查询按父键批量取（没有 N+1）；<c>[MapPath("A.B")]</c> 取导航路径上的值。
-    /// 嵌套 DTO 实现 <see cref="IAutoIncludeConfigure{TEntity}"/> 时给它的带出查询加条件、排序、条数（根 DTO 实现时配置这条查询本身）；
-    /// <c>[MapExpression]</c> 的属性取表达式的值。
-    /// </summary>
-    /// <example><code>db.Query&lt;SysUser&gt;().SelectAutoInclude&lt;UserDto&gt;()   // UserDto { Id, Name, List&lt;CardDto&gt; BankCards }</code></example>
-    public Query<TResult> SelectAutoInclude<TResult>() where TResult : new()
-    {
+        if (AutoProjection.MapFromEntity(typeof(TResult)) is { } source && source != typeof(T))
+            throw new InvalidOperationException($"{typeof(TResult).Name} 声明的是 [MapFrom<{source.Name}>]，不能从 {typeof(T).Name} 的查询映射");
+        var entity = Db.Metadata.Get<T>();
+        if (typeof(TResult) == typeof(Dictionary<string, object?>)) return new(Open with { Selector = AutoProjection.Build(entity, typeof(TResult)) });
         // 根 DTO 也实现了 IAutoIncludeConfigure<T> 时，先按它配置这条查询（如合并分组、加条件）
         var configured = AutoProjection.ConfigureOf(typeof(TResult), typeof(T)) is { } configure ? configure(Open) : Open;
-        return new(configured with { Selector = AutoProjection.BuildWithIncludes(Db.Metadata, Db.Metadata.Get<T>(), typeof(TResult)) });
+        return new(configured with { Selector = AutoProjection.BuildWithIncludes(Db.Metadata, entity, typeof(TResult)) });
     }
 
     /// <summary>

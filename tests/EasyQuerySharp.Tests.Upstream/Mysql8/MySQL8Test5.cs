@@ -315,7 +315,7 @@ public sealed class MySQL8Test5(Mysql8Fixture fixture) : Mysql8Test(fixture)
         var tree = await Db.Query<SysDept>().Where(s => new[] { "abc-算法部", "abc-召回模型", "abc-渠道部" }.Contains(s.Name))
             .AsTreeCte(o => { o.Up = true; o.DeepColumnName = "deep"; })
             .OrderBy(s => s.Id)
-            .SelectAutoInclude<SysDeptTreeResp>().ToTreeAsync(Ct);
+            .Select<SysDeptTreeResp>().ToTreeAsync(Ct);
         static string Format(SysDeptTreeResp d) => $"SysDeptTreeResp(id={d.Id}, pid={d.Pid}, name={d.Name}, deep={d.Deep}, children=[{string.Join(", ", d.Children!.Select(Format))}])";
         Assert.Equal("[SysDeptTreeResp(id=2, pid=0, name=总部B, deep=2, children=[SysDeptTreeResp(id=21, pid=2, name=研发中心, deep=1, children=[SysDeptTreeResp(id=211, pid=21, name=abc-算法部, deep=0, children=[])])]), SysDeptTreeResp(id=2, pid=0, name=总部B, deep=2, children=[SysDeptTreeResp(id=22, pid=2, name=市场中心, deep=1, children=[SysDeptTreeResp(id=222, pid=22, name=abc-渠道部, deep=0, children=[])])]), SysDeptTreeResp(id=2, pid=0, name=总部B, deep=4, children=[SysDeptTreeResp(id=21, pid=2, name=研发中心, deep=3, children=[SysDeptTreeResp(id=211, pid=21, name=abc-算法部, deep=2, children=[SysDeptTreeResp(id=2111, pid=211, name=推荐算法, deep=1, children=[SysDeptTreeResp(id=21111, pid=2111, name=abc-召回模型, deep=0, children=[])])])])])]",
             "[" + string.Join(", ", tree.Select(Format)) + "]");

@@ -82,7 +82,7 @@ public sealed class DocTest1(MySqlFixture fixture) : MySqlTest(fixture)
     [Fact, Upstream("doc/DocTest1.java#testBlog5")]
     public async Task TestBlog5()
     {
-        var statement = await Failed(() => Db.Query<TestSelf>().Where(t => t.Uid == "1").SelectAutoInclude<TopicSelfVO>().ToListAsync(Ct));
+        var statement = await Failed(() => Db.Query<TestSelf>().Where(t => t.Uid == "1").Select<TopicSelfVO>().ToListAsync(Ct));
         SqlOnly.AssertStatement(statement,
             "SELECT t1.`name` AS `uname1`,t3.`name` AS `uname2`,t.`id`,t.`name` FROM `test_self` t LEFT JOIN `my_user` t1 ON t1.`id` = t.`uid` LEFT JOIN `test_self` t2 ON t2.`id` = t.`pid` LEFT JOIN `my_user` t3 ON t3.`id` = t2.`uid` WHERE t.`uid` = ?",
             "1(String)");

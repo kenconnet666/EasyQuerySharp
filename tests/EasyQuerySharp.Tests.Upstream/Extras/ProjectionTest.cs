@@ -62,15 +62,10 @@ public sealed class ProjectionTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
     }
 
     [Fact]
-    public async Task SelectMapFromDtoIncludesLikeSelectAutoInclude()
+    public async Task SelectOfMapFromDtoIncludesNavigationsAndRequiresItsEntity()
     {
-        using var listen = SqlCapture.Listen();
         var list = await Db.Query<Mysql8.SysUser>().Select<UserCardsVo>().ToListAsync(Ct);
-        var viaSelect = listen.Events.Select(e => e.Statement.Text).ToList();
         Assert.Contains(list, u => u.BankCards is { Count: > 0 });
-        using var again = SqlCapture.Listen();
-        await Db.Query<Mysql8.SysUser>().SelectAutoInclude<UserCardsVo>().ToListAsync(Ct);
-        Assert.Equal(again.Events.Select(e => e.Statement.Text), viaSelect);
         Assert.Throws<InvalidOperationException>(() => Db.Query<SysBankCard>().Select<UserCardsVo>());
     }
     // 在内存里调用就是普通方法

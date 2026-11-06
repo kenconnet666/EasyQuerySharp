@@ -196,7 +196,7 @@ public sealed class QueryTest14(MySqlFixture fixture) : MySqlTest(fixture)
             }.Select(j => new TestJoinEntity { FirstId = j.First, SecondId = j.Second, Type = j.Type }).ToList()).ExecuteAsync(Ct);
 
         using var listen = SqlCapture.Listen();
-        var list = await Db.Query<TestUserEntity>().SelectAutoInclude<TestUserDTO>().ToListAsync(Ct);
+        var list = await Db.Query<TestUserEntity>().Select<TestUserDTO>().ToListAsync(Ct);
         Assert.Equal(5, listen.Events.Count);
         listen.AssertSql(0, "SELECT t.`id`,t.`name`,t.`password` FROM `t_test_user` t");
         listen.AssertSql(1, "SELECT `first_id`,`second_id` FROM `t_test_join` WHERE `first_id` IN (?,?,?) AND `type` = ?");

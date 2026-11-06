@@ -128,7 +128,7 @@ public sealed class QueryTest16(MySqlFixture fixture) : MySqlTest(fixture)
     public async Task Test111()
     {
         using var listen = SqlCapture.Listen();
-        await Assert.ThrowsAnyAsync<Exception>(() => Db.Query<NavfUser>().SelectAutoInclude<UVO>().ToListAsync(Ct));
+        await Assert.ThrowsAnyAsync<Exception>(() => Db.Query<NavfUser>().Select<UVO>().ToListAsync(Ct));
         listen.AssertSql("SELECT t.`id` AS `__relation__id` FROM `sys_user` t WHERE t.`deleted` = ?");
         listen.AssertParams("0(Integer)");
     }

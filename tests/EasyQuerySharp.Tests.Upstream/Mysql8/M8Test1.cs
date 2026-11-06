@@ -100,7 +100,7 @@ public sealed class M8Test1(Mysql8Fixture fixture) : Mysql8Test(fixture)
     {
         using var listen = SqlCapture.Listen();
         var list = await Db.Query<SysBankCard>().GroupBy(c => c.Uid).Select(g => new BankCardGroupBO { Uid = g.Key, Count = g.Count() })
-            .Where(b => b.User!.Name != null).SelectAutoInclude<BankCardSelectAutoInclude>().ToListAsync(Ct);
+            .Where(b => b.User!.Name != null).Select<BankCardSelectAutoInclude>().ToListAsync(Ct);
         Assert.Equal(2, listen.Events.Count);
         listen.AssertSql(0, GroupedCards + " LEFT JOIN `t_sys_user` t2 ON t2.`id` = t1.`uid` WHERE t2.`name` IS NOT NULL");
         listen.AssertSql(1, UsersById);
@@ -113,7 +113,7 @@ public sealed class M8Test1(Mysql8Fixture fixture) : Mysql8Test(fixture)
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<SysBankCard>().GroupBy(c => c.Uid).Select(g => new BankCardGroupBO { Uid = g.Key, Count = g.Count() })
-            .SelectAutoInclude<BankCardSelectAutoInclude>().ToListAsync(Ct);
+            .Select<BankCardSelectAutoInclude>().ToListAsync(Ct);
         Assert.Equal(2, listen.Events.Count);
         listen.AssertSql(0, GroupedCards);
         listen.AssertSql(1, UsersById);

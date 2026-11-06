@@ -474,7 +474,7 @@ public sealed class MySQL8Test2(Mysql8Fixture fixture) : Mysql8Test(fixture)
     public async Task IncludePartitionBy()
     {
         using var listen = SqlCapture.Listen();
-        var list = await Db.Query<SysBank>().SelectAutoInclude<SysBankXDTO>().ToListAsync(Ct);
+        var list = await Db.Query<SysBank>().Select<SysBankXDTO>().ToListAsync(Ct);
         Assert.All(list, b => Assert.True(b.BankCards!.Count <= 3));
         listen.AssertSql(0, "SELECT t.`id`,t.`name`,t.`create_time` FROM `t_bank` t");
         listen.AssertSql(1, "SELECT t2.`id` AS `id`,t2.`code` AS `code`,t2.`type` AS `type`,t2.`uid` AS `__relation__uid`,t2.`bank_id` AS `__relation__bankId` FROM (SELECT t1.`id` AS `id`,t1.`uid` AS `uid`,t1.`code` AS `code`,t1.`type` AS `type`,t1.`bank_id` AS `bank_id`,t1.`open_time` AS `open_time` FROM (SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time`,(ROW_NUMBER() OVER (PARTITION BY t.`bank_id`)) AS `__row__` FROM `t_bank_card` t WHERE t.`bank_id` IN (?,?,?)) t1 WHERE t1.`__row__` >= ? AND t1.`__row__` <= ?) t2");
@@ -487,7 +487,7 @@ public sealed class MySQL8Test2(Mysql8Fixture fixture) : Mysql8Test(fixture)
     public async Task IncludePartitionBy1()
     {
         using var listen = SqlCapture.Listen();
-        await Db.Query<SysBank>().SelectAutoInclude<SysBankYDTO>().ToListAsync(Ct);
+        await Db.Query<SysBank>().Select<SysBankYDTO>().ToListAsync(Ct);
         listen.AssertSql(0, "SELECT t.`id`,t.`name`,t.`create_time` FROM `t_bank` t");
         listen.AssertSql(1, "SELECT t2.`id` AS `id`,t2.`uid` AS `uid`,t2.`code` AS `code`,t2.`type` AS `type`,t2.`bank_id` AS `__relation__bankId` FROM (SELECT t1.`id` AS `id`,t1.`uid` AS `uid`,t1.`code` AS `code`,t1.`type` AS `type`,t1.`bank_id` AS `bank_id`,t1.`open_time` AS `open_time` FROM (SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time`,(ROW_NUMBER() OVER (PARTITION BY t.`bank_id`)) AS `__row__` FROM `t_bank_card` t WHERE t.`bank_id` IN (?,?,?)) t1 WHERE t1.`__row__` >= ? AND t1.`__row__` <= ?) t2");
         listen.AssertParams(1, "1(String),2(String),3(String),1(Long),3(Long)");

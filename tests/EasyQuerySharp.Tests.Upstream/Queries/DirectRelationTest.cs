@@ -82,7 +82,7 @@ public sealed class DirectRelationTest(MySqlFixture fixture) : MySqlTest(fixture
     public async Task Test4()
     {
         using var listen = SqlCapture.Listen();
-        var list = await Db.Query<Direct1>().SelectAutoInclude<Direct1DTO>().ToListAsync(Ct);
+        var list = await Db.Query<Direct1>().Select<Direct1DTO>().ToListAsync(Ct);
         listen.AssertSql(0, Direct1Rows);
         listen.AssertSql(1, Direct2Links);
         listen.AssertParams(1, "1(String),2(String)");
@@ -103,7 +103,7 @@ public sealed class DirectRelationTest(MySqlFixture fixture) : MySqlTest(fixture
     public async Task Test5()
     {
         using var listen = SqlCapture.Listen();
-        var list = await Db.Query<Direct1>().SelectAutoInclude<Direct1DTO2>().ToListAsync(Ct);
+        var list = await Db.Query<Direct1>().Select<Direct1DTO2>().ToListAsync(Ct);
         listen.AssertSql(0, Direct1Rows);
         listen.AssertSql(1, Direct2Links);
         listen.AssertParams(1, "1(String),2(String)");

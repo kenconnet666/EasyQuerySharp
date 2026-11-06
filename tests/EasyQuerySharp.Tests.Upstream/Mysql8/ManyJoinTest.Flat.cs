@@ -33,7 +33,7 @@ public sealed partial class ManyJoinTest
     public async Task TestFlatExtra()
     {
         using var listen = SqlCapture.Listen();
-        var list = await Db.Query<M8Role>().SelectAutoInclude<RoleSelectAutoExtra>().ToListAsync(Ct);
+        var list = await Db.Query<M8Role>().Select<RoleSelectAutoExtra>().ToListAsync(Ct);
         Assert.Equal(4, listen.Events.Count);
         listen.AssertSql(0, "SELECT t.`id`,t.`name`,t.`create_time` FROM `m8_role` t");
         listen.AssertSql(1, "SELECT `role_id`,`menu_id` FROM `m8_role_menu` WHERE `role_id` IN (?)");
@@ -71,7 +71,7 @@ public sealed partial class ManyJoinTest
     [Fact, Upstream("mysql8/ManyJoinTest.java#testFlatMenuOwner")]
     public async Task TestFlatMenuOwner()
     {
-        var list = await Db.Query<M8Role>().SelectAutoInclude<M8RoleDTO>().ToListAsync(Ct);
+        var list = await Db.Query<M8Role>().Select<M8RoleDTO>().ToListAsync(Ct);
         Assert.Equal("o123", Assert.Single(Assert.Single(list).Menus!).Id);
     }
 
@@ -92,7 +92,7 @@ public sealed partial class ManyJoinTest
     [Fact, Upstream("mysql8/ManyJoinTest.java#testFlatMenuOwner1")]
     public async Task TestFlatMenuOwner1()
     {
-        var list = await Db.Query<M8Role>().SelectAutoInclude<M8RoleDTO2>().ToListAsync(Ct);
+        var list = await Db.Query<M8Role>().Select<M8RoleDTO2>().ToListAsync(Ct);
         Assert.Equal(["o123"], Assert.Single(list).MenuOwnerIds!);
     }
 
@@ -129,7 +129,7 @@ public sealed partial class ManyJoinTest
     [Fact, Upstream("mysql8/ManyJoinTest.java#testFlatMenuOwnerFlatValueConverter")]
     public async Task TestFlatMenuOwnerFlatValueConverter()
     {
-        var list = await Db.Query<M8Role>().SelectAutoInclude<M8RoleFlatConverterDTO>().ToListAsync(Ct);
+        var list = await Db.Query<M8Role>().Select<M8RoleFlatConverterDTO>().ToListAsync(Ct);
         Assert.NotEmpty(list);
         Assert.All(list.SelectMany(r => r.Menus!), menu => Assert.EndsWith("*", menu.Name));
     }
