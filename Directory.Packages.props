@@ -13,9 +13,11 @@
         <PackageVersion Include="xunit.v3.extensibility.core" Version="4.0.2" />
     </ItemGroup>
 
-    <!-- 分析器（只在 EasyQuerySharp.Generator 与它的测试里引用） -->
+    <!-- 分析器 -->
     <ItemGroup>
         <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+        <!-- 公共 API 基线（只在 EasyQuerySharp 里作为开发期分析器引用，不进运行时依赖） -->
+        <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="4.14.0" />
     </ItemGroup>
 
     <!-- 基准 -->
