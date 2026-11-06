@@ -1,6 +1,1 @@
 #nullable enable
-Microsoft.Extensions.DependencyInjection.EasyQueryServiceCollectionExtensions
-static Microsoft.Extensions.DependencyInjection.EasyQueryServiceCollectionExtensions.AddEasyQuery(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! name, System.Action<EasyQuerySharp.EasyDbOptions!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static Microsoft.Extensions.DependencyInjection.EasyQueryServiceCollectionExtensions.AddEasyQuery(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, string! name, System.Action<System.IServiceProvider!, EasyQuerySharp.EasyDbOptions!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static Microsoft.Extensions.DependencyInjection.EasyQueryServiceCollectionExtensions.AddEasyQuery(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<EasyQuerySharp.EasyDbOptions!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static Microsoft.Extensions.DependencyInjection.EasyQueryServiceCollectionExtensions.AddEasyQuery(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<System.IServiceProvider!, EasyQuerySharp.EasyDbOptions!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
