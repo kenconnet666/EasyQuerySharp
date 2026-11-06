@@ -1,0 +1,13 @@
+{
+  "enabledPlugins": {
+    "easy-query-sharp-lsp@easy-query-sharp": true
+  },
+  "extraKnownMarketplaces": {
+    "easy-query-sharp": {
+      "source": {
+        "source": "directory",
+        "path": "./.claude/marketplace"
+      }
+    }
+  }
+}

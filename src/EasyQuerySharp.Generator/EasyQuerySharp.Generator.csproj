@@ -20,10 +20,6 @@
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
     </ItemGroup>
 
-    <!-- 规则的发布记录（RS2008）：新规则先写进 Unshipped，发布时挪到 Shipped -->
-    <ItemGroup>
-        <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
-        <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
-    </ItemGroup>
+    <!-- 规则的发布记录（RS2008）在 AnalyzerReleases.*.md：Microsoft.CodeAnalysis.Analyzers 会自动把它们加进 AdditionalFiles；新规则先写进 Unshipped，发布时挪到 Shipped -->
 
 </Project>

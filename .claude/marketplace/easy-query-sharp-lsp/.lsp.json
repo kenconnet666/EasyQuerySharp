@@ -1,0 +1,11 @@
+{
+  "csharp": {
+    "command": "cmd",
+    "args": ["/d", "/c", "${CLAUDE_PLUGIN_ROOT}\\csharp-ls.cmd", "${CLAUDE_PROJECT_DIR}"],
+    "extensionToLanguage": {
+      ".cs": "csharp"
+    },
+    "workspaceFolder": "${CLAUDE_PROJECT_DIR}",
+    "startupTimeout": 180000
+  }
+}

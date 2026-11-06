@@ -33,6 +33,7 @@ easy-query（Java，`C:\Users\Administrator\IdeaProjects\easy-query`，软 fork�
 ## 环境
 
 - .NET 10 SDK 装在 `~\.dotnet`。PATH 上的 `C:\Program Files\dotnet` 只有 11 preview，按 `global.json` 解析不到 10。所以命令行要显式调用 `& "$HOME\.dotnet\dotnet.exe"`，或者先把 `~\.dotnet` 放到 PATH 前面。
+- C# 的语义查询（定义、引用、悬停、实现、调用层级、文件诊断）用 `LSP` 工具：项目插件 `easy-query-sharp-lsp`（`.claude/marketplace`，在 `.claude/settings.json` 里启用）启动 `dotnet-tools.json` 固定版本的 csharp-ls，加载 `EasyQuerySharp.slnx`，首次请求要等约 10 秒加载解决方案。新机器上第一次打开时在 `/plugin` 里信任仓库内的插件市场。跨文件重命名等重构在 Rider 开着时用 `rider` MCP；Java 参考仓库的语义查询用 `idea` MCP。
 - 数据库在 WSL Debian 的 Docker 里，compose 项目名 `easy-query-sharp-dev`，端口 4xxxx。密码和连接串在 `.local/db.env`，不提交，换机器时要重新写（`db.sh` 首次运行会生成）。
 
 ## 常用命令
