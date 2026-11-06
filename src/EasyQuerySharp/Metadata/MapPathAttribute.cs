@@ -1,7 +1,7 @@
 namespace EasyQuerySharp.Metadata;
 
 /// <summary>
-/// 自动映射（<c>SelectAutoInclude</c>）时这个 DTO 属性取导航路径上的值（对应 Java 的 <c>@NavigateFlat</c> / <c>@NavigateJoin</c>）：
+/// 自动映射（<c>Select&lt;TDto&gt;()</c>）时这个 DTO 属性取导航路径上的值（对应 Java 的 <c>@NavigateFlat</c> / <c>@NavigateJoin</c>）：
 /// <list type="bullet">
 /// <item>路径全是对一导航：默认像 <c>@NavigateFlat</c> 那样走带出查询，同一导航上的几个平铺属性共用一条
 /// <c>SELECT 列…, 键 AS __relation__键 FROM 目标表 WHERE 键 IN (…)</c>；<see cref="Join"/> 为 true 时像 <c>@NavigateJoin</c> 那样在主查询里 JOIN；</item>

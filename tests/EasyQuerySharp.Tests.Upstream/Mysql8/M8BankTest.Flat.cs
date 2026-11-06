@@ -35,7 +35,7 @@ public sealed partial class M8BankTest
         await Db.Query<SysUser>().Select(u => new Part<SysUser, string?>(u, u.BankCards!.OrderBy(c => c.OpenTime).First().Code)).ToListAsync(Ct);
 
         using var listen = SqlCapture.Listen();
-        var list = await Db.Query<SysBankCard>().IncludeGroupSize(1).SelectAutoInclude<SysBankCardDTO>().ToListAsync(Ct);
+        var list = await Db.Query<SysBankCard>().IncludeGroupSize(1).Select<SysBankCardDTO>().ToListAsync(Ct);
         listen.AssertSql(0, "SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time` FROM `t_bank_card` t");
         listen.AssertSql(1, "SELECT `phone`,`name`,`id` AS `__relation__id` FROM `t_sys_user` WHERE `id` IN (?)");
         listen.AssertParams(1, "u1(String)");
@@ -114,7 +114,7 @@ public sealed partial class M8BankTest
     public async Task TestExtraDTO()
     {
         using var listen = SqlCapture.Listen();
-        await Db.Query<SysBank>().WithConfigureArgument("myArg").SelectAutoInclude<SysBankDTO>().ToListAsync(Ct);
+        await Db.Query<SysBank>().WithConfigureArgument("myArg").Select<SysBankDTO>().ToListAsync(Ct);
         listen.AssertSql(0, "SELECT t.`id`,t.`name`,t.`create_time` FROM `t_bank` t");
         listen.AssertSql(1, "SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time` FROM `t_bank_card` t WHERE t.`bank_id` IN (?,?,?)");
         listen.AssertParams(1, "1(String),2(String),3(String)");
@@ -169,7 +169,7 @@ public sealed partial class M8BankTest
     public async Task TestExtraDTO123()
     {
         using var listen = SqlCapture.Listen();
-        var list = await Db.Query<SysBank>().WithConfigureArgument("myArg").SelectAutoInclude<SysBank2DTO>().ToListAsync(Ct);
+        var list = await Db.Query<SysBank>().WithConfigureArgument("myArg").Select<SysBank2DTO>().ToListAsync(Ct);
         listen.AssertSql(0, "SELECT t.`id`,t.`name`,t.`create_time` FROM `t_bank` t");
         listen.AssertSql(1, "SELECT `uid` AS `__relation__uid`,`bank_id` AS `__relation__bankId` FROM `t_bank_card` WHERE `bank_id` IN (?,?,?)");
         listen.AssertParams(1, "1(String),2(String),3(String)");

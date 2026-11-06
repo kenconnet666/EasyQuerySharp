@@ -269,7 +269,7 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
     public async Task TestTree2()
     {
         using var listen = SqlCapture.Listen();
-        var tree = await Db.Query<Comment>().AsTreeCte(o => o.DeepColumnName = "deep").SelectAutoInclude<MyComment>().ToTreeAsync(Ct);
+        var tree = await Db.Query<Comment>().AsTreeCte(o => o.DeepColumnName = "deep").Select<MyComment>().ToTreeAsync(Ct);
         listen.AssertSql("WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `deep`,t1.`id`,t1.`parent_id`,t1.`content`,t1.`user_id`,t1.`post_id`,t1.`create_at` FROM `t_comment` t1)  UNION ALL  (SELECT t2.`deep` + 1 AS `deep`,t3.`id`,t3.`parent_id`,t3.`content`,t3.`user_id`,t3.`post_id`,t3.`create_at` FROM `as_tree_cte` t2 INNER JOIN `t_comment` t3 ON t3.`parent_id` = t2.`id`) ) SELECT t.`id`,t.`parent_id`,t.`content`,t.`user_id`,t.`post_id`,t.`create_at`,t.`deep` FROM `as_tree_cte` t");
         Assert.Equal(3, tree.Count);
         Assert.Equal((C0122, C03ab), (tree[0].Id, tree[0].ParentId));
@@ -301,7 +301,7 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
     public async Task TestTree3()
     {
         using var listen = SqlCapture.Listen();
-        var tree = await Db.Query<Comment>().AsTreeCte(o => { o.Up = true; o.DeepColumnName = "deep"; }).SelectAutoInclude<MyComment>().ToTreeAsync(Ct);
+        var tree = await Db.Query<Comment>().AsTreeCte(o => { o.Up = true; o.DeepColumnName = "deep"; }).Select<MyComment>().ToTreeAsync(Ct);
         listen.AssertSql("WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `deep`,t1.`id`,t1.`parent_id`,t1.`content`,t1.`user_id`,t1.`post_id`,t1.`create_at` FROM `t_comment` t1)  UNION ALL  (SELECT t2.`deep` + 1 AS `deep`,t3.`id`,t3.`parent_id`,t3.`content`,t3.`user_id`,t3.`post_id`,t3.`create_at` FROM `as_tree_cte` t2 INNER JOIN `t_comment` t3 ON t3.`id` = t2.`parent_id`) ) SELECT t.`id`,t.`parent_id`,t.`content`,t.`user_id`,t.`post_id`,t.`create_at`,t.`deep` FROM `as_tree_cte` t");
         AssertUpTree(tree, n => n.Id, n => n.Deep, n => n.Children);
     }
@@ -311,7 +311,7 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
     public async Task TestTree4()
     {
         using var listen = SqlCapture.Listen();
-        var tree = await Db.Query<Comment>().AsTreeCte(o => { o.Up = true; o.DeepColumnName = "deep"; }).SelectAutoInclude<MyComment3>().ToTreeAsync(Ct);
+        var tree = await Db.Query<Comment>().AsTreeCte(o => { o.Up = true; o.DeepColumnName = "deep"; }).Select<MyComment3>().ToTreeAsync(Ct);
         listen.AssertSql("WITH RECURSIVE `as_tree_cte` AS ( (SELECT 0 AS `deep`,t1.`id`,t1.`parent_id`,t1.`content`,t1.`user_id`,t1.`post_id`,t1.`create_at` FROM `t_comment` t1)  UNION ALL  (SELECT t2.`deep` + 1 AS `deep`,t3.`id`,t3.`parent_id`,t3.`content`,t3.`user_id`,t3.`post_id`,t3.`create_at` FROM `as_tree_cte` t2 INNER JOIN `t_comment` t3 ON t3.`id` = t2.`parent_id`) ) SELECT t.`id`,t.`parent_id`,t.`content`,t.`user_id`,t.`post_id`,t.`create_at`,t.`deep` FROM `as_tree_cte` t");
         AssertUpTree(tree, n => n.Id, n => n.Deep, n => n.Children);
     }
@@ -321,7 +321,7 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
     public async Task TestTree5()
     {
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Db.Query<Comment>().Where(c => c.ParentId != null).FilterBy(new Comment()).AsTreeCte().SelectAutoInclude<MyComment4>().ToTreeAsync(Ct));
+            Db.Query<Comment>().Where(c => c.ParentId != null).FilterBy(new Comment()).AsTreeCte().Select<MyComment4>().ToTreeAsync(Ct));
         Assert.Equal("MyComment4 上没有属性 ParentId，拼树时取不到父子键", ex.Message);
     }
 
@@ -409,7 +409,7 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
     public async Task TestQueryFirstLimit2()
     {
         using var listen = SqlCapture.Listen();
-        await Db.Query<SysUser>().SelectAutoInclude<SysUserFirstCardDTO>().ToListAsync(Ct);
+        await Db.Query<SysUser>().Select<SysUserFirstCardDTO>().ToListAsync(Ct);
         listen.AssertSql(1, "SELECT t2.`code`,t2.`type`,t2.`open_time`,t2.`uid` AS `__relation__uid`" + FirstCardRanged);
         listen.AssertParams(1, "u1(String),u2(String),1(Long),1(Long)");
     }

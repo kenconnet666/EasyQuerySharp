@@ -3,7 +3,7 @@ using EasyQuerySharp.Metadata;
 
 namespace EasyQuerySharp.Tests.Upstream.Mysql8;
 
-// 按 DTO 结构自动带出（Java 的 selectAutoInclude，C# 的 SelectAutoInclude）
+// 按 DTO 结构自动带出（Java 的 selectAutoInclude，C# 的 Select<TDto>()）
 public sealed partial class M8BankTest
 {
     /// <summary>对应 Java：mysql8/vo/SysUserDTO（用户、储蓄卡与卡所属的银行）。</summary>
@@ -57,7 +57,7 @@ public sealed partial class M8BankTest
     public async Task TestExtraFilter()
     {
         using var listen = SqlCapture.Listen();
-        var list = await Db.Query<SysUser>().SelectAutoInclude<SysUserDTO>().ToListAsync(Ct);
+        var list = await Db.Query<SysUser>().Select<SysUserDTO>().ToListAsync(Ct);
         Assert.Equal(3, listen.Events.Count);
         listen.AssertSql(0, "SELECT t.`id`,t.`name`,t.`phone`,t.`age`,t.`create_time` FROM `t_sys_user` t");
         listen.AssertSql(1, "SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time` FROM `t_bank_card` t WHERE t.`type` = ? AND t.`uid` IN (?,?)");
@@ -130,7 +130,7 @@ public sealed partial class M8BankTest
     public async Task TestExtraFilter2()
     {
         using var listen = SqlCapture.Listen();
-        await Db.Query<SysUser>().SelectAutoInclude<SysUserDTO2>().ToListAsync(Ct);
+        await Db.Query<SysUser>().Select<SysUserDTO2>().ToListAsync(Ct);
         Assert.Equal(3, listen.Events.Count);
         listen.AssertSql(0, "SELECT IFNULL(t2.`__count2__`,0) AS `card_count`,t.`id`,t.`name`,t.`phone`,t.`age`,t.`create_time` FROM `t_sys_user` t LEFT JOIN (SELECT t1.`uid` AS `__group_key1__`,COUNT(*) AS `__count2__` FROM `t_bank_card` t1 GROUP BY t1.`uid`) t2 ON t2.`__group_key1__` = t.`id`");
         listen.AssertSql(1, "SELECT t.`id`,t.`uid`,t.`code`,t.`type`,t.`bank_id`,t.`open_time`,DATE_FORMAT(t1.`create_time`,'%Y-%m-%d') AS `bank_name_or123` FROM `t_bank_card` t INNER JOIN `t_bank` t1 ON t1.`id` = t.`bank_id` WHERE t.`type` = ? AND t.`uid` IN (?,?)");

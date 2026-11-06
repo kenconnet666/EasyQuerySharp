@@ -129,7 +129,7 @@ public sealed class PgQueryTest19(PgFixture fixture) : PgTest(fixture)
     public async Task Tree7()
     {
         using var listen = SqlCapture.Listen();
-        var tree = await Db.Query<MyCategory>().Where(m => m.Id == "1").AsTreeCte(o => o.DeepColumnName = "deep1").SelectAutoInclude<MyCategoryVO3>().ToTreeAsync(Ct);
+        var tree = await Db.Query<MyCategory>().Where(m => m.Id == "1").AsTreeCte(o => o.DeepColumnName = "deep1").Select<MyCategoryVO3>().ToTreeAsync(Ct);
         Assert.Equal("1", Assert.Single(tree).Id);
         Assert.Null(tree[0].Deep);
         listen.AssertSql("WITH RECURSIVE \"as_tree_cte\" AS ( (SELECT 0 AS \"deep1\",t1.\"id\",t1.\"parent_id\",t1.\"name\" FROM \"category\" t1 WHERE t1.\"id\" = ?)  UNION ALL  (SELECT t2.\"deep1\" + 1 AS \"deep1\",t3.\"id\",t3.\"parent_id\",t3.\"name\" FROM \"as_tree_cte\" t2 INNER JOIN \"category\" t3 ON t3.\"parent_id\" = t2.\"id\") ) SELECT t.\"id\",t.\"parent_id\",t.\"name\",t.\"deep1\" FROM \"as_tree_cte\" t");
@@ -140,7 +140,7 @@ public sealed class PgQueryTest19(PgFixture fixture) : PgTest(fixture)
     public async Task Tree8()
     {
         using var listen = SqlCapture.Listen();
-        var tree = await Db.Query<MyCategory>().Where(m => m.Id == "1").AsTreeCte().SelectAutoInclude<MyCategoryVO2>().ToTreeAsync(Ct);
+        var tree = await Db.Query<MyCategory>().Where(m => m.Id == "1").AsTreeCte().Select<MyCategoryVO2>().ToTreeAsync(Ct);
         Assert.Equal(2, Assert.Single(tree).Children!.Count);
         listen.AssertSql("WITH RECURSIVE \"as_tree_cte\" AS ( (SELECT 0 AS \"cte_deep\",t1.\"id\",t1.\"parent_id\",t1.\"name\" FROM \"category\" t1 WHERE t1.\"id\" = ?)  UNION ALL  (SELECT t2.\"cte_deep\" + 1 AS \"cte_deep\",t3.\"id\",t3.\"parent_id\",t3.\"name\" FROM \"as_tree_cte\" t2 INNER JOIN \"category\" t3 ON t3.\"parent_id\" = t2.\"id\") ) SELECT t.\"id\",t.\"parent_id\",t.\"name\",t.\"cte_deep\" FROM \"as_tree_cte\" t");
         listen.AssertParams("1(String)");

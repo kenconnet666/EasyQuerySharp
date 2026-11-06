@@ -71,7 +71,7 @@ internal sealed partial class ProjectionCompiler
 
     private IncludePlan? TryInclude(Expression value)
     {
-        // 自动映射（SelectAutoInclude）产出的带出标记：导航、带出查询的配置、子对象的投影都在参数里
+        // 自动映射（Select<TDto>()）产出的带出标记：导航、带出查询的配置、子对象的投影都在参数里
         if (ExpressionTranslator.StripConvert(value) is MethodCallExpression marker && marker.Method.DeclaringType == typeof(AutoIncludeMarkers))
         {
             if (marker.Arguments[0] is not MemberExpression { Expression: { } markerOwner } markerNav || translator.BindingOf(markerOwner) is not { OwnerEntity: not null } navOwner

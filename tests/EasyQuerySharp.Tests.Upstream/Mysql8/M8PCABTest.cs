@@ -138,7 +138,7 @@ public sealed class M8PCABTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
     public async Task TestFlat()
     {
         using var listen = SqlCapture.Listen();
-        var list = await Db.Query<M8Province>().SelectAutoInclude<M8ProvinceDTO>().ToListAsync(Ct);
+        var list = await Db.Query<M8Province>().Select<M8ProvinceDTO>().ToListAsync(Ct);
         Assert.Equal(4, listen.Events.Count);
         AssertBuildPath(listen);
         var city = Assert.Single(list).Cities!.Single(c => c.Id == "c1");
@@ -150,7 +150,7 @@ public sealed class M8PCABTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
     public async Task TestFlat1()
     {
         using var listen = SqlCapture.Listen();
-        await Db.Query<M8Province>().SelectAutoInclude<M8ProvinceDTO2>().ToListAsync(Ct);
+        await Db.Query<M8Province>().Select<M8ProvinceDTO2>().ToListAsync(Ct);
         Assert.Equal(5, listen.Events.Count);
         AssertBuildPath(listen);
         listen.AssertSql(4, "SELECT `id`,`build_id` AS `__relation__buildId` FROM `m8_build_license` WHERE `build_id` IN (?,?,?)");
@@ -162,7 +162,7 @@ public sealed class M8PCABTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
     public async Task TestFlat2()
     {
         using var listen = SqlCapture.Listen();
-        await Db.Query<M8Province>().SelectAutoInclude<M8ProvinceDTO3>().ToListAsync(Ct);
+        await Db.Query<M8Province>().Select<M8ProvinceDTO3>().ToListAsync(Ct);
         Assert.Equal(5, listen.Events.Count);
         AssertBuildPath(listen);
         listen.AssertSql(4, "SELECT t.`id`,t.`no`,t.`build_id` AS `__relation__buildId` FROM `m8_build_license` t WHERE t.`build_id` IN (?,?,?)");

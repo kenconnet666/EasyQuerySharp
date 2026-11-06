@@ -113,7 +113,7 @@ public sealed class IncludeConditionTest(Mysql8Fixture fixture) : Mysql8Test(fix
     {
         await SeedAsync();
         using var listen = SqlCapture.Listen();
-        var dto = Assert.Single(await Db.Query<MyTask>().Where(m => m.Id == "v1").SelectAutoInclude<MyTaskDTO1>().ToListAsync(Ct));
+        var dto = Assert.Single(await Db.Query<MyTask>().Where(m => m.Id == "v1").Select<MyTaskDTO1>().ToListAsync(Ct));
         Assert.Equal(["v1s1", "v1s2"], dto.MySubTask1List!.Select(s => s.Id));
         Assert.Null(dto.MyTask2Ext);
 
@@ -129,7 +129,7 @@ public sealed class IncludeConditionTest(Mysql8Fixture fixture) : Mysql8Test(fix
     {
         await SeedAsync();
         using var listen = SqlCapture.Listen();
-        var dto = Assert.Single(await Db.Query<MyTask>().Where(m => m.Id == "v2").SelectAutoInclude<MyTaskDTO2>().ToListAsync(Ct));
+        var dto = Assert.Single(await Db.Query<MyTask>().Where(m => m.Id == "v2").Select<MyTaskDTO2>().ToListAsync(Ct));
         Assert.Null(dto.MySubTask1List);
         Assert.Equal("任务2的扩展1", dto.MyTask2Ext!.Name);
 
