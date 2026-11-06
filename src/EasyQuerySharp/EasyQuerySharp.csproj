@@ -1,7 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <PackageId>EasyQuerySharp</PackageId>
         <Description>easy-query 的 C# 实现：基于表达式树的强类型 ORM，支持隐式 join、隐式子查询与 DTO 对象树。</Description>
+        <PackageTags>$(PackageTags);mysql;postgresql;sqlite;sqlserver;oracle</PackageTags>
     </PropertyGroup>
 
     <!--
@@ -16,5 +18,25 @@
     <PropertyGroup>
         <NoWarn>$(NoWarn);RS0026;RS0027</NoWarn>
     </PropertyGroup>
+
+    <!--
+      生成器与分析器随核心包分发，打进 analyzers/dotnet/cs：引用核心包就自带 [Projection] 生成器和查询分析器，它不是运行时依赖。
+      这个引用只用来先构建生成器、取到它的程序集。ReferenceOutputAssembly=false：不编译引用，NuGet 也不把它算进依赖图，所以不成为包依赖、
+      不传给引用核心的项目（仓库里要用生成器的项目自己以 Analyzer 方式引用，如 Tests.Upstream）。
+      输出放进自定义的 BundledAnalyzer 而不是 Analyzer：核心自己实现了那些"只能写在查询里"的方法，在核心上跑分析器会误报 EQ0007。
+    -->
+    <ItemGroup>
+        <ProjectReference Include="..\EasyQuerySharp.Generator\EasyQuerySharp.Generator.csproj" OutputItemType="BundledAnalyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <PropertyGroup>
+        <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);PackBundledAnalyzers</TargetsForTfmSpecificContentInPackage>
+    </PropertyGroup>
+
+    <Target Name="PackBundledAnalyzers" DependsOnTargets="ResolveProjectReferences">
+        <ItemGroup>
+            <TfmSpecificPackageFile Include="@(BundledAnalyzer)" PackagePath="analyzers/dotnet/cs" />
+        </ItemGroup>
+    </Target>
 
 </Project>

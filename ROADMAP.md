@@ -164,4 +164,11 @@ R → 1 → 2 → 3 → 4 → 5。
 - [ ] 5.1 冻结公共 API：PublicApiAnalyzers 的基线转为已发布（Shipped），公开成员都有 XML 文档。
 - [ ] 5.2 基准对比：用 BenchmarkDotNet 和 EF Core、Dapper、FreeSql、SqlSugar 比较查询翻译、物化、对象树三项；根据结果决定要不要缓存翻译结果。
 - [ ] 5.3 文档：在 `docs/guide/` 下按能力写 Markdown 指南（用法、方言支持矩阵、限制、对应的 Java 方法名），代码片段和 SQL 由 DocsExamples 生成；另写 README、入门教程，以及从 Java / TS 迁移的指南。
-- [ ] 5.4 打包：NuGet 元数据、Source Link、确定性构建，生成器和分析器随核心包一起分发。是否发布到 nuget.org 在这一步决定。
+- [!] 5.4 打包：NuGet 元数据、Source Link、确定性构建，生成器和分析器随核心包一起分发。是否发布到 nuget.org 在这一步决定。打包已就绪，发布等下面的决定。
+  - 已做：`src/Directory.Build.props` 是唯一的版本来源（`1.0.0-preview.1`，CI 打包传 `CiBuildNumber` 追加成 `-preview.1.ci.N`），统一写包元数据（作者、项目与仓库地址、发布说明链接、README、标签）、`.snupkg` 符号包、`PublishRepositoryUrl`，GitHub Actions 上开 `ContinuousIntegrationBuild`；Source Link、`Deterministic`、`EmbedUntrackedSources` 用 .NET SDK 的默认值。
+  - 出两个包：`EasyQuerySharp`（`lib/net10.0`，生成器在 `analyzers/dotnet/cs`，没有包依赖）、`EasyQuerySharp.DependencyInjection`（依赖核心与 Microsoft.Extensions.DependencyInjection.Abstractions；核心的分析器随依赖传递，只装它也有生成器）。其余项目都不打包。CI 的 pack 任务打包、检查生成器在包里、上传 artifact，不推送。
+  - [!] 发布前待定：
+    - 许可证：仓库还没有 LICENSE。Java 上游与 TS 版都是 Apache-2.0，本仓库搬了 Java 用例的 SQL 与建表脚本，选型要和它兼容。定了之后加 LICENSE 文件和 `PackageLicenseExpression`。
+    - 包名与前缀：`EasyQuerySharp`、`EasyQuerySharp.DependencyInjection` 在 nuget.org 上还没人占用（2026-11-06 查过）。要不要用 nuget.org 账号申请保留 `EasyQuerySharp.*` 前缀；另外 nuget.org 上已有不相干的 `Korzh.EasyQuery.*`，名字相近。`Authors` 现在填的是 GitHub 账号 kenconnet666，要和发布用的 nuget.org 账号对上。
+    - 版本与发布流程：首个公开版本是 `1.0.0-preview.1`，还是等 5.1 冻结 API 后直接发 1.0.0；发布由什么触发（例如打 tag），API key 放进仓库 secret，nupkg 与 snupkg 一起推送。
+    - 包里的 README 用的是仓库根的 README.md，内容还停在规划阶段，相对链接在 nuget.org 上也打不开，随 5.3 重写。
