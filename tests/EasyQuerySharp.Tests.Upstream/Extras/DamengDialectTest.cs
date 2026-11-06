@@ -46,6 +46,13 @@ public sealed class DamengDialectTest
             SqlOnly.Db("dameng").Query<DamengMyTopic>()
                 .Select(t => new Draft<DateTime, DateTime>(t.CreateTime!.Value.DateTrunc(DateTruncUnit.Second), t.CreateTime!.Value.DateTrunc(DateTruncUnit.Day))).ToSql());
 
+    // 加年 / 月：Java 沿用 Oracle 的 add_months，但达梦的 ADD_MONTHS 返回只有日期的 DATE（实测丢掉时间），改用保留时间的 DATEADD
+    [Fact]
+    public void AddYearsAndMonthsKeepTheTime() =>
+        SqlOnly.AssertStatement(SqlOnly.Db("dameng").Query<DamengMyTopic>()
+                .Select(t => new Draft<DateTime, DateTime>(t.CreateTime!.Value.AddYears(1), t.CreateTime!.Value.AddMonths(2))).ToStatement(),
+            "SELECT DATEADD(YEAR,?,t.\"create_time\") AS \"value1\",DATEADD(MONTH,?,t.\"create_time\") AS \"value2\" FROM \"MY_TOPIC\" t", "1(Long),2(Long)");
+
     // Java 只给 Oracle 覆盖了 NULL 位置的原生写法，达梦用通用的 CASE
     [Theory]
     [InlineData("oracle", "ORDER BY \"title\" ASC NULLS LAST")]

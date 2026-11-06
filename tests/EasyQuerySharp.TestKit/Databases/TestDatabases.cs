@@ -1,4 +1,5 @@
 using System.Data.Common;
+using Dm;
 using DuckDB.NET.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
@@ -15,14 +16,18 @@ namespace EasyQuerySharp.TestKit.Databases;
 /// <param name="Key">短名，用于环境变量名与 <c>EQS_REQUIRE_DBS</c>。</param>
 /// <param name="DisplayName">测试输出里显示的名字。</param>
 /// <param name="Factory">ADO.NET 驱动工厂。</param>
-/// <param name="ParameterPrefix">驱动认的命名参数前缀，Oracle 是 <c>:</c>，DuckDB 是 <c>$</c>，其余是 <c>@</c>。</param>
+/// <param name="ParameterPrefix">驱动认的命名参数前缀，Oracle、达梦是 <c>:</c>，DuckDB 是 <c>$</c>，其余是 <c>@</c>。</param>
 /// <param name="InProcessConnectionString">进程内数据库的固定连接串；为 null 表示要从环境读。</param>
+/// <param name="DatabaseKeyword">连接串里指定库的键：达梦按模式隔离，是 <c>Schema</c>。</param>
+/// <param name="DriverSettings">这个库必须的驱动设置，追加到配置的连接串后面（如 openGauss 不支持 Npgsql 归还连接时发的 <c>DISCARD ALL</c>）。</param>
 public sealed record TestDatabase(
     string Key,
     string DisplayName,
     DbProviderFactory Factory,
     string ParameterPrefix = "@",
-    string? InProcessConnectionString = null)
+    string? InProcessConnectionString = null,
+    string DatabaseKeyword = "Database",
+    string? DriverSettings = null)
 {
     /// <summary>连接串所在的环境变量名。</summary>
     public string EnvironmentVariable => $"EQS_{Key.ToUpperInvariant()}_CS";
@@ -66,10 +71,11 @@ public sealed record TestDatabase(
             if (IsRequired) Assert.Fail($"EQS_REQUIRE_DBS 要求 {Key}，但没有配置 {EnvironmentVariable}");
             return null;
         }
+        if (DriverSettings is not null) connectionString = $"{connectionString.TrimEnd(';')};{DriverSettings}";
         if (database is null) return connectionString;
         var builder = Factory.CreateConnectionStringBuilder()!;
         builder.ConnectionString = connectionString;
-        builder["Database"] = database;
+        builder[DatabaseKeyword] = database;
         return builder.ConnectionString;
     }
 
@@ -110,8 +116,14 @@ public static class TestDatabases
     /// <summary>DuckDB（进程内）：连接串里的 <c>:memory:</c> 每条连接各是一个库，用例要共享数据时自己指定临时文件。</summary>
     public static readonly TestDatabase DuckDb = new("duckdb", "DuckDB", DuckDBClientFactory.Instance, ParameterPrefix: "$", InProcessConnectionString: "Data Source=:memory:");
 
+    /// <summary>达梦 DM8（第二档，实库冒烟）：驱动 DM.DmProvider，命名参数 <c>:p0</c>；库名对应达梦的模式（<c>Schema</c>）。</summary>
+    public static readonly TestDatabase Dameng = new("dameng", "达梦 DM8", DmClientFactory.Instance, ParameterPrefix: ":", DatabaseKeyword: "Schema");
+
+    /// <summary>openGauss（第二档，实库冒烟）：PG 协议，用 Npgsql；openGauss 没有 DISCARD，连接回池时不重置会话。</summary>
+    public static readonly TestDatabase OpenGauss = new("opengauss", "openGauss", NpgsqlFactory.Instance, DriverSettings: "No Reset On Close=true");
+
     /// <summary>全部登记的数据库。</summary>
-    public static IReadOnlyList<TestDatabase> All { get; } = [Sqlite, MySql, MySql8018, MariaDb, PostgreSql, SqlServer, Oracle, DuckDb];
+    public static IReadOnlyList<TestDatabase> All { get; } = [Sqlite, MySql, MySql8018, MariaDb, PostgreSql, SqlServer, Oracle, DuckDb, Dameng, OpenGauss];
 
     /// <summary><c>EQS_REQUIRE_DBS</c>（逗号分隔的 Key）里列出的必须可用的数据库。</summary>
     public static IReadOnlySet<string> RequiredKeys { get; } =

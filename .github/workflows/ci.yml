@@ -235,5 +235,71 @@ jobs:
           project: ${{ env.LIVE_TESTS }}
           report-name: test-results-oracle
 
-  # 达梦、openGauss、ClickHouse、Db2、TDengine：对应方言包（ROADMAP M6）落地时，在 TestDatabases 登记驱动后按上面的模式加任务。
+  # 达梦 DM8（第二档冒烟）：实库套件，与 Upstream 里连实库的达梦行锁用例（模式 EQS_UPSTREAM）拆成两片并行
+  dameng:
+    name: Dameng DM8 ${{ matrix.shard.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - name: live
+            project: tests/EasyQuerySharp.Tests.Live
+            filter: ''
+          - name: upstream
+            project: tests/EasyQuerySharp.Tests.Upstream
+            filter: --filter-namespace "EasyQuerySharp.Tests.Upstream.Dameng"
+    services:
+      dameng:
+        image: xuxuclassmate/dameng:latest@sha256:c4088323442747a45d58bd33ef59e657c9b85f9e7dd956ba60b36d04a35b141d
+        env:
+          SYSDBA_PWD: EqsCi2026Pass
+          UNICODE_FLAG: 1
+          LENGTH_IN_CHAR: 1
+          CASE_SENSITIVE: 1
+          TZ: Asia/Shanghai
+        ports: ['5236:5236']
+        options: >-
+          --health-cmd "cd /opt/dmdbms/bin && ./disql -L -S SYSDBA/EqsCi2026Pass@127.0.0.1:5236 -e 'SELECT 1' < /dev/null"
+          --health-interval 5s --health-timeout 10s --health-retries 60 --health-start-period 20s
+    env:
+      EQS_DAMENG_CS: Server=127.0.0.1;Port=5236;User Id=SYSDBA;PWD=EqsCi2026Pass
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/dotnet-test
+        with:
+          require-dbs: dameng
+          project: ${{ matrix.shard.project }}
+          filter: ${{ matrix.shard.filter }}
+          report-name: test-results-dameng-${{ strategy.job-index }}
+
+  # openGauss 7（第二档冒烟，PG 协议，驱动用 Npgsql）：只跑实库套件
+  opengauss:
+    name: openGauss 7
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      opengauss:
+        image: opengauss/opengauss-server:latest@sha256:d554be1b8b08165a8b19348f0ca236b5d61a4832ffadac0340ded973c34f38e4
+        env:
+          # openGauss 要求带 #?!@$%^&*- 之一的符号
+          GS_PASSWORD: EqsCi2026Pass@
+          TZ: Asia/Shanghai
+        ports: ['5432:5432']
+        options: >-
+          --privileged
+          --health-cmd "echo 'SELECT 1' | su - omm -c 'gsql -d postgres -v ON_ERROR_STOP=1'"
+          --health-interval 5s --health-timeout 10s --health-retries 60 --health-start-period 30s
+    env:
+      EQS_OPENGAUSS_CS: Host=127.0.0.1;Port=5432;Username=gaussdb;Password=EqsCi2026Pass@;Database=postgres
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/dotnet-test
+        with:
+          require-dbs: opengauss
+          project: ${{ env.LIVE_TESTS }}
+          report-name: test-results-opengauss
+
+  # ClickHouse、Db2、TDengine：对应方言的实库冒烟（ROADMAP 3.x）时，在 TestDatabases 登记驱动后按上面的模式加任务。
   # HANA 需要 12 GB 内存，GitHub 托管的 runner 跑不了，只在本机用 infra/dev 的 hana profile 验证。

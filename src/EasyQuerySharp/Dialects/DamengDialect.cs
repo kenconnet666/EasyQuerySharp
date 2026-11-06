@@ -13,6 +13,7 @@ namespace EasyQuerySharp.Dialects;
 /// <item>排序的 NULL 位置用通用的 CASE 模拟（Java 没有给达梦覆盖 orderByNullsMode）。</item>
 /// </list>
 /// Java 没有覆盖、按 TS 版在 DM8 上实测补的：DATE 只有日期（与 Oracle 不同），截断到秒不能转成 DATE；没有 <c>SYS_EXTRACT_UTC</c>，UTC 时间用 <c>GETUTCDATE()</c>；
+/// 加年 / 月用 <c>DATEADD</c>（<c>ADD_MONTHS</c> 返回 DATE，丢掉时间）；
 /// 建表用 INT / BIGINT、布尔 BIT、浮点 DOUBLE / REAL、时间 TIME，自增列 <c>IDENTITY(1, 1)</c>。
 /// 驱动用达梦的 DmProvider（NuGet 包 DM.DmProvider），把它的 DbDataSource 传给 <c>o.UseDameng(..)</c>。
 /// </summary>
@@ -81,5 +82,8 @@ public class DamengDialect : OracleDialect
         // DATE 只到日：去掉秒以下的部分要经过字符串
         f[SqlFunctionNames.DateTrunc(DateTruncUnit.Second)] = Template("TO_TIMESTAMP(TO_CHAR({0}, 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS')");
         f[SqlFunctionNames.UtcNow] = Template("GETUTCDATE()");
+        // Java 沿用 Oracle 的 add_months，但达梦的 ADD_MONTHS 返回只有日期的 DATE（实测丢掉时间）；DATEADD 保留时间，月末同 C# 截到当月最后一天
+        f[SqlFunctionNames.DateAdd(DateUnit.Year)] = Template("DATEADD(YEAR,{1},{0})");
+        f[SqlFunctionNames.DateAdd(DateUnit.Month)] = Template("DATEADD(MONTH,{1},{0})");
     }
 }

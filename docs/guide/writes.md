@@ -187,7 +187,8 @@ MERGE INTO "t_order_item" t1 USING (SELECT ? AS "order_id",? AS "product_id",? A
 | 方言 | 忽略 | 更新 |
 |---|---|---|
 | MySQL / MariaDB / PolarDB | `INSERT IGNORE`（或 `new MySqlDialect { IgnoreConflictAsKeyUpdate = true }` 写成 `ON DUPLICATE KEY UPDATE 主键 = VALUES(主键)`） | `ON DUPLICATE KEY UPDATE` |
-| PostgreSQL 家族、SQLite、DuckDB | `ON CONFLICT DO NOTHING` | `ON CONFLICT (…) DO UPDATE SET … = EXCLUDED.…` |
+| PostgreSQL、Kingbase、SQLite、DuckDB | `ON CONFLICT DO NOTHING` | `ON CONFLICT (…) DO UPDATE SET … = EXCLUDED.…` |
+| GaussDB / openGauss（没有 `ON CONFLICT`） | `ON DUPLICATE KEY UPDATE NOTHING` | `ON DUPLICATE KEY UPDATE … = EXCLUDED.…`（冲突由表上的主键 / 唯一约束决定，不写冲突列） |
 | SQL Server、Oracle、达梦、Db2、HANA | `MERGE`（一次一行） | `MERGE` |
 | ClickHouse、TDengine | 不支持 | 不支持 |
 

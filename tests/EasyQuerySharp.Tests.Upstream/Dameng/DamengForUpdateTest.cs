@@ -1,3 +1,5 @@
+using EasyQuerySharp.Metadata;
+using EasyQuerySharp.TestKit.Databases;
 using SysBankCard = EasyQuerySharp.Tests.Upstream.Mysql8.SysBankCard;
 using SysUser = EasyQuerySharp.Tests.Upstream.Mysql8.SysUser;
 
@@ -44,10 +46,34 @@ public sealed class DamengForUpdateTest : DamengTest
         Assert.Contains("repeated", ex.Message);
     }
 
-    // 两个事务争同一行锁要连实库：本机没有达梦库与驱动，留到 3.1 的冒烟
-    [Fact(Skip = "缺：达梦实库与驱动，3.1 冒烟时补"), Upstream("dameng/DamengForUpdateTest.java#testForUpdateBlocksConcurrentTransaction", Pending = true)]
-    public void TestForUpdateBlocksConcurrentTransaction()
+    // 两个事务争同一行锁，连实库的达梦（EQS_DAMENG_CS，没有配置时跳过），表建在独立的模式 EQS_UPSTREAM 里。
+    // Java 的基类建表后没有写入 u1（锁不到行也就挡不住第二个事务），这里先写入 u1
+    [Fact, Upstream("dameng/DamengForUpdateTest.java#testForUpdateBlocksConcurrentTransaction")]
+    public async Task TestForUpdateBlocksConcurrentTransaction()
     {
+        var ct = TestContext.Current.CancellationToken;
+        const string schema = "EQS_UPSTREAM";
+        var dameng = TestDatabases.Dameng;
+        await using (var server = await dameng.OpenAsync(ct))
+        await using (var command = server.CreateCommand())
+        {
+            command.CommandText = $"SELECT 1 FROM SYSOBJECTS WHERE TYPE$ = 'SCH' AND NAME = '{schema}'";
+            if (await command.ExecuteScalarAsync(ct) is null)
+            {
+                command.CommandText = $"CREATE SCHEMA {schema}";
+                await command.ExecuteNonQueryAsync(ct);
+            }
+        }
+        var db = new EasyDb(o =>
+        {
+            o.UseDameng(dameng.CreateDataSource(schema)).AddListener(SqlCapture.Instance);
+            o.NameConversion = NameConversion.UpperUnderlined;
+        });
+        await db.CodeFirst.DropTablesIfExistsAsync([typeof(SysUser)], ct);
+        await db.CodeFirst.CreateTablesAsync([typeof(SysUser)], ct);
+        await db.Insert(new SysUser { Id = "u1", Name = "u1" }).ExecuteAsync(ct);
+
+        await RowLockAssert.SecondTransactionWaitsAsync(db, () => db.Query<SysUser>().Where(u => u.Id == "u1").ForUpdate().FirstOrDefaultAsync(ct));
     }
 
     [Fact, Upstream("dameng/DamengForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery")]

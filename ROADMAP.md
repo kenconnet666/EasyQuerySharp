@@ -15,9 +15,9 @@
 
 ## 现状（2026-11-06）
 
-- 对标：已移植 2056、偏离 203、不适用 142、骨架 3、待做 0。
-- 待做清零。骨架 3 都要实库：HANA 2、达梦行锁 1。
-- 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17、DuckDB（进程内）；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
+- 对标：已移植 2057、偏离 203、不适用 142、骨架 2、待做 0。
+- 待做清零。骨架 2 都要实库：HANA 2。
+- 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17、DuckDB（进程内）；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle、达梦、openGauss 任务。master 的 CI 全绿。
 
 ## 已定的取舍
 
@@ -111,11 +111,11 @@ R → 1 → 2 → 3 → 4 → 5。
 
 每个方言交付三样东西：方言类、在 `TestDatabases` 里登记、实库冒烟。容器起得来的再加一个 CI 任务。
 
-- [~] 3.1 达梦：`DamengDialect` 继承 Oracle、`UseDameng`，`SqlOnly` 与文档快照加上达梦。缺实库冒烟（本机没有达梦库和 DM.DmProvider 驱动，`TestDatabases` 也还没登记）。
+- [x] 3.1 达梦：`DamengDialect` 继承 Oracle、`UseDameng`，`SqlOnly` 与文档快照加上达梦；`TestDatabases` 登记 `dameng`（DM.DmProvider 8.3.1，命名参数 `:p0`，按模式隔离，连接串的库名键是 `Schema`），`DamengLiveSuite` 在 SYSDBA 下的模式 `EQS_LIVE` / `EQS_LIVE_DS1` 里跑，CI 有 dameng 任务（社区镜像 xuxuclassmate/dameng，内存不到 1 GB）。
   - 覆盖的差异（对照 Java 的 sql-dameng）：带连接的更新写成 `UPDATE t INNER JOIN … SET`；转布尔 `CAST(x AS BIT)`；日期相差用 `CAST(终点 AS TIMESTAMP WITH TIME ZONE)-起点` 的间隔；不排序的 LISTAGG 不写 `WITHIN GROUP(ORDER BY 1)`；NULL 位置用 CASE 模拟（Java 只给 Oracle 写原生 NULLS LAST）。Java 没有覆盖、按 TS 版在 DM8 上实测的结果补的：截断到秒经过 `TO_CHAR` / `TO_TIMESTAMP`（DATE 只到日）、UTC 时间 `GETUTCDATE()`（没有 `SYS_EXTRACT_UTC`）、建表用 INT / BIGINT / BIT / DOUBLE / REAL / TIME 与 `IDENTITY(1, 1)`。
   - 顺手补齐 Oracle（达梦沿用）：拼接式 LIKE 写成 `LIKE ('%'||TO_CHAR(?)||'%')`；带组内排序的字符串聚合写成 `LISTAGG(..) WITHIN GROUP(ORDER BY …)`（原来落到 STRING_AGG），SQL Server 同样改成 `STRING_AGG(..) WITHIN GROUP (ORDER BY …)`。
-  - 用例：DamengQueryTest 40、DamengForUpdateTest 7、UpdateJoinTest 3、MathQueryTest 1、QueryTest26 testAAA、ForUpdateDialectToSQLSmokeTest damengForUpdateToSQLSmoke 共 53 个：只渲染 SQL、逐字比对 Java；Java 只断言结果或只执行不断言的 21 个记偏离（实库验证留给冒烟）；testForUpdateBlocksConcurrentTransaction（两个事务争行锁）留骨架。testAAA：Java 的达梦删除不支持连接（抛异常），C# 沿用 Oracle 按 ROWID 删除。
-  - 冒烟要验证：`UPDATE … INNER JOIN`、`DELETE … WHERE ROWID IN`、`GETUTCDATE()`、`IDENTITY(1, 1)`、日期相差与加减的结果、DmProvider 的参数占位（`:p0`）。MigrationDamengTest 断言的是 code-first 同步语句（注释、默认值、`execute immediate`）的 MD5，归到 4.1。
+  - 用例：DamengQueryTest 40、DamengForUpdateTest 7、UpdateJoinTest 3、MathQueryTest 1、QueryTest26 testAAA、ForUpdateDialectToSQLSmokeTest damengForUpdateToSQLSmoke 共 53 个：只渲染 SQL、逐字比对 Java；Java 只断言结果或只执行不断言的 21 个记偏离（对应的写法由实库套件覆盖）；testForUpdateBlocksConcurrentTransaction 连实库移植。testAAA：Java 的达梦删除不支持连接（抛异常），C# 沿用 Oracle 按 ROWID 删除。
+  - 实库冒烟（DM8，2026-11-07）：LiveSuite 126 个用例除 `Sql.Json`（方言没有 JSON 写法，跳过）外全部通过，覆盖了原来列的待验证项：`UPDATE … INNER JOIN`、`DELETE … WHERE ROWID IN`、`GETUTCDATE()`（LiveSuite 新增 UTC 时间的断言，容器时区是 Asia/Shanghai）、`IDENTITY(1, 1)` 与回填自增键、日期相差与加减、`:p0` 参数，另有行锁（NOWAIT / SKIP LOCKED）、ROLLUP / CUBE、递归 CTE、分库。修了一处：加年 / 月原来沿用 Oracle 的 `add_months`，达梦的 ADD_MONTHS 返回只有日期的 DATE，时间被丢掉，改写成 `DATEADD(YEAR|MONTH, n, x)`（保留时间，月末截到当月最后一天，与 C# 一致；没有 Java 用例断言这条 SQL）。testForUpdateBlocksConcurrentTransaction 连实库移植（模式 `EQS_UPSTREAM`；Java 的基类没有写入 u1，C# 先写入再争锁）。MigrationDamengTest 断言的是 code-first 同步语句（注释、默认值、`execute immediate`）的 MD5，归到 4.1。
 - [~] 3.2 SAP HANA：`HanaDialect` 直接继承标准写法（与 Oracle、PG 都只有部分相同），`options.UseHana(..)`；SQL 按 fork 用例核对，实库冒烟还没做。
   - [x] 方言：位置参数 `?`、`LIMIT … OFFSET`（只跳过时补 `LIMIT 2147483647`）、拼接逐对写 `((a || b) || c)`、`TO_NVARCHAR` 日期格式（格式串里的文字单独拼接）、条件当值写三值 CASE、`MERGE … FROM DUMMY` upsert、带导航的更新写按主键对上的 MERGE、删除写 EXISTS、EXISTS 子查询不带 LIMIT（`SqlDialect.LimitInExists`）、`CURRENT_IDENTITY_VALUE()` 取自增键、`FOR UPDATE IGNORE LOCKED`、`CREATE COLUMN TABLE` 与匿名块代替 IF [NOT] EXISTS、DateTrunc；
   - [x] `Sql.Hana.Text(..).Contains / Fuzzy / Score`（CONTAINS、FUZZY、SCORE）；
@@ -126,10 +126,11 @@ R → 1 → 2 → 3 → 4 → 5。
   - 顺手：PostgreSQL 的 `IndexOf` 原来写 `INSTR`（PG 没有这个函数），改成 `STRPOS`；`SqlDialect.ColumnDefinition` 多传所属实体。
   - 用例：Upstream 的 `DuckDb` 命名空间移植 17 个（`duckdb/` 的 16 个加 ForUpdateDialectToSQLSmokeTest 的 duckDB 一条）。readExcel1–4 只核对 SQL、记为偏离（read_xlsx 在 excel 扩展里，要联网安装，还要有 xlsx 文件；表函数用 `AsTableSegment` 替换表引用）；DuckDBMathQueryTest 与 PG 同样因 `Math.Pow` / `Atan2` 的参数是 Double 记为偏离；其余已移植。另有 `DuckDbDialectTest` 验证 Java 没覆盖到的写法（LIKE、序列、upsert、JSON）。
   - 实库：`DuckDbLiveSuite` 36 组通过（行锁一组跳过）；固件和套件都用临时文件并留一个连接不关（DuckDB.NET 在最后一个连接关闭时关库，反复开关慢 4 倍）。进程内运行，随 core 任务一起跑，不需要新的 CI 任务。
-- [~] 3.4 PG 家族：Kingbase（MyKingbaseESTest，骨架 testKingbaseCte、GeneralFunctionsTest testDoubleConcat）、openGauss。
+- [~] 3.4 PG 家族：Kingbase（MyKingbaseESTest，骨架 testKingbaseCte、GeneralFunctionsTest testDoubleConcat）、openGauss。openGauss 的实库冒烟已做，剩 Kingbase。
   - 已做：`KingbaseDialect` / `GaussDbDialect`（对应 Java 的 sql-kingbase-es、sql-gauss-db）继承 PG 方言，只覆盖 Java 与 PG 不同的写法：两者都把 PG 写成 `LIKE CONCAT(…)` 的包含 / 开头 / 结尾改成 STRPOS（值不转义）、条件当值写 CASE；Kingbase 另有 CONCAT 两两嵌套、日期加减 `CONCAT(n, ' day')::INTERVAL`、日期相差 `timestampdiff`、树查询起点层级 `0+0`（`SqlDialect.TreeDeepStart`）。`UseKingbase` / `UseGaussDb`，SqlOnly 登记 kingbase / gauss。testDoubleConcat、testKingbaseCte、ForUpdate 冒烟的 Kingbase / GaussDB 两行移植；其余差异在 `Extras/PgFamilyDialectTest` 按 Java 模板核对。
   - MyKingbaseESTest 名字是 Kingbase，实际连开发者本机 MySQL 的现成数据，测的是多对多带出：导航带排序时一条查完、IN 按分组大小拆成 OR、子数据按查询结果的顺序。C# 原来按中间表顺序挂子数据、还按分组分批，顺序是错的，已修（对齐 Java）；两个用例在 SQLite 内存库里造同规模数据移植，记偏离。
-  - 待做：实库冒烟与 `TestDatabases` 登记。openGauss 有 profile（`--profile opengauss`），要先选定 .NET 驱动并确认能连上（openGauss 默认的 sha256 认证普通 Npgsql 是否支持待验证）；Kingbase 没有可用的容器镜像。Java 的两个模块里多表 DELETE 没覆盖 PG 的 `DELETE … USING`（退回 MySQL 式的 `DELETE t FROM … JOIN`），C# 沿用 PG 的写法，没有 Java 用例覆盖。
+  - [x] openGauss 实库冒烟（openGauss 7.0.0-RC3，2026-11-07）：`TestDatabases` 登记 `opengauss`，驱动用普通的 Npgsql（不引新依赖）。Npgsql 只能走 md5 认证：openGauss 的 sha256 认证与 PG 的 SASL 共用消息号，实测报 "AuthenticationSASL message with 0 mechanisms"；官方镜像默认 `password_encryption_type=0`、远程连接 md5，所以能连，要用 sha256 时换 openGauss 版驱动（OpenGauss.NET）。连接要加 `No Reset On Close=true`（openGauss 没有 Npgsql 归还连接时发的 `DISCARD ALL`），登记在 `TestDatabase.DriverSettings`。`OpenGaussLiveSuite` 在按 `DBCOMPATIBILITY 'PG'` 建的库 `eqs_live` / `eqs_live_ds1` 里跑（默认的 A 模式把空字符串当 NULL），126 个用例除 `Sql.Json`（与 PG 一样，模型的 JSON 列是 VARCHAR）外全部通过，CI 有 opengauss 任务。修的方言问题（Java 照 PG 写，openGauss 上执行不了；与 TS 版的实测结论一致）：自增列 `GENERATED BY DEFAULT AS IDENTITY` 改成 `SERIAL` / `BIGSERIAL`；upsert 的 `ON CONFLICT` 改成 `ON DUPLICATE KEY UPDATE "c" = EXCLUDED."c"` / `ON DUPLICATE KEY UPDATE NOTHING`（冲突由表上的约束决定，不写冲突列）；`LOG10` 改成单参数 `LOG`。多表 UPDATE / DELETE 沿用 PG 的 `UPDATE … FROM` / `DELETE … USING`，实库通过。
+  - [!] Kingbase 实库冒烟：没有可用的容器镜像，`TestDatabases` 不登记，只比对 SQL。有了能用的实例后照 openGauss 的做法登记、加 `KingbaseLiveSuite`。
 - [~] 3.5 ClickHouse（ClickHouseTest）、TDengine、Db2：Java 用例很少或没有，主要靠裁剪后的 L3 套件验证。方言类在核心里只渲染 SQL，`options.UseClickHouse / UseDb2 / UseTDengine(..)`，`SqlOnly` 里登记。
   - ClickHouse：反引号、`LIMIT … OFFSET`；更新、删除是 mutation `ALTER TABLE … UPDATE / DELETE WHERE …`（与 Java 一致；不能带别名、不能走导航，没有条件时补 `WHERE 1 = 1`）；没有 upsert、自增列、行锁，用到时抛 NotSupportedException（Java 照搬了 MySQL 的 `INSERT IGNORE` / `ON DUPLICATE KEY`，ClickHouse 执行不了）；函数用 `substringUTF8` / `positionUTF8`、`toYear` / `addDays` / `dateDiff`、`formatDateTime`（分钟是 `%i`）、`JSONExtract*`、`arrayStringConcat(groupArray(..))`；建表 `ENGINE = MergeTree ORDER BY (主键)`。
   - Db2：`OFFSET … ROWS FETCH NEXT … ROWS ONLY` / `FETCH FIRST`（与 Java 一致，跳过行数而没有排序时按分组键或第一个主键排序）；行锁 `FOR UPDATE WITH RS`（CS 隔离级别下游标离开的行就解锁）、`SKIP LOCKED DATA`，没有 NOWAIT；冲突处理写成 `MERGE … USING (VALUES …)`；插入后取 `IDENTITY_VAL_LOCAL()`；字符串函数按 `CODEUNITS32`，日期用带单位的时长、`TRUNC_TIMESTAMP`、`VARCHAR_FORMAT`，`LISTAGG` 的分隔符写成字面量，`ATAN2` 是 (x, y)。Java 的 DB2CastSQLFunction、多参数 CONCAT、`AT TIME ZONE` 的 UtcNow、`USING (SELECT ? AS …)` 的 MERGE 在 Db2 上执行不了，按 Db2 改写。
