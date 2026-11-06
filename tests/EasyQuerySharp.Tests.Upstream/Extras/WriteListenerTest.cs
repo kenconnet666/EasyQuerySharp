@@ -28,10 +28,10 @@ public sealed class WriteListenerTest : IAsyncLifetime
     {
         await _keepAlive.OpenAsync(Ct);
         await _db.CodeFirst.CreateTablesAsync([typeof(WlItem), typeof(WlLine), typeof(WlSoft), typeof(WlCode)], Ct);
-        await _db.ExecuteSqlAsync("CREATE TABLE wl_item_2 AS SELECT * FROM wl_item WHERE 0", cancellationToken: Ct);
-        await _db.ExecuteSqlAsync("CREATE UNIQUE INDEX wl_item_name ON wl_item (name)", cancellationToken: Ct);
-        await _db.ExecuteSqlAsync("INSERT INTO wl_item (id, name, qty) VALUES ('a', 'A', 1), ('b', 'B', 2), ('c', 'C', 3)", cancellationToken: Ct);
-        await _db.ExecuteSqlAsync("INSERT INTO wl_soft (id, name, deleted) VALUES (1, 'one', 0), (2, 'two', 0)", cancellationToken: Ct);
+        await _db.ExecuteSqlRawAsync("CREATE TABLE wl_item_2 AS SELECT * FROM wl_item WHERE 0", cancellationToken: Ct);
+        await _db.ExecuteSqlRawAsync("CREATE UNIQUE INDEX wl_item_name ON wl_item (name)", cancellationToken: Ct);
+        await _db.ExecuteSqlRawAsync("INSERT INTO wl_item (id, name, qty) VALUES ('a', 'A', 1), ('b', 'B', 2), ('c', 'C', 3)", cancellationToken: Ct);
+        await _db.ExecuteSqlRawAsync("INSERT INTO wl_soft (id, name, deleted) VALUES (1, 'one', 0), (2, 'two', 0)", cancellationToken: Ct);
         _listener.Events.Clear();
     }
 
@@ -196,7 +196,7 @@ public sealed class WriteListenerTest : IAsyncLifetime
     [Fact]
     public async Task RawSqlIsNotNotified()
     {
-        await _db.ExecuteSqlAsync("UPDATE wl_item SET qty = 0", cancellationToken: Ct);
+        await _db.ExecuteSqlRawAsync("UPDATE wl_item SET qty = 0", cancellationToken: Ct);
         Assert.Empty(_listener.Events);
     }
 

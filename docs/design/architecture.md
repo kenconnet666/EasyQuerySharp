@@ -152,6 +152,6 @@ db.Query<User>().Where(..).Select(..).ToListAsync()
 
 ## 命名
 
-- 入口方法：`db.Query<T>()`，不叫 `Queryable`，避免和 `System.Linq.Queryable` 混淆。写入用 `db.Insert(...)` / `db.Update<T>()` / `db.Delete<T>()` / `db.Save(...)`；原生 SQL 用 `db.FromSql<T>(..)`（可以继续组合的查询）、`db.SqlQueryAsync<T>(..)`、`db.ExecuteSqlAsync(..)`。
+- 入口方法：`db.Query<T>()`，不叫 `Queryable`，避免和 `System.Linq.Queryable` 混淆。写入用 `db.Insert(...)` / `db.Update<T>()` / `db.Delete<T>()` / `db.Save(...)`；原生 SQL 用 `db.FromSql<T>($"…")`（可以继续组合的查询）、`db.SqlQueryAsync<T>($"…")`、`db.ExecuteSqlAsync($"…")`，只收插值字符串、插值处参数化；收普通字符串与 `?` 位置参数的是名字带 `Raw` 的另一组（`FromSqlRaw` / `SqlQueryRawAsync` / `ExecuteSqlRawAsync`，与 EF Core 相同），插值字符串不会因为重载决议落到拼文本的一组。
 - 终结方法：`ToListAsync` / `FirstAsync` / `FirstOrDefaultAsync` / `SingleAsync` / `FindAsync` / `FindOrThrowAsync` / `AnyAsync` / `EnsureAnyAsync` / `CountAsync` / `ToPageAsync` / `AsAsyncEnumerable` / `ExecuteAsync`（写入，返回受影响的行数）。
 - 写入一律以 `ExecuteAsync` 结束（TS 的决定），读代码时一眼看出哪里真正执行。

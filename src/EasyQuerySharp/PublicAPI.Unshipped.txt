@@ -330,8 +330,9 @@ EasyQuerySharp.EasyDb.Delete<T>(params System.Collections.Generic.IEnumerable<T!
 EasyQuerySharp.EasyDb.EasyDb(EasyQuerySharp.EasyDbOptions! options) -> void
 EasyQuerySharp.EasyDb.EasyDb(System.Action<EasyQuerySharp.EasyDbOptions!>! configure) -> void
 EasyQuerySharp.EasyDb.ExecuteSqlAsync(System.FormattableString! sql, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<long>!
-EasyQuerySharp.EasyDb.ExecuteSqlAsync(string! sql, System.Collections.Generic.IReadOnlyList<object?>? parameters = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<long>!
-EasyQuerySharp.EasyDb.FromSql<T>(string! sql, params System.Collections.Generic.IReadOnlyList<object?>! parameters) -> EasyQuerySharp.Querying.Query<T>!
+EasyQuerySharp.EasyDb.ExecuteSqlRawAsync(string! sql, System.Collections.Generic.IReadOnlyList<object?>? parameters = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<long>!
+EasyQuerySharp.EasyDb.FromSql<T>(System.FormattableString! sql) -> EasyQuerySharp.Querying.Query<T>!
+EasyQuerySharp.EasyDb.FromSqlRaw<T>(string! sql, params System.Collections.Generic.IReadOnlyList<object?>! parameters) -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.EasyDb.GetShardRule(System.Type! entityType) -> EasyQuerySharp.Sharding.IShardRule?
 EasyQuerySharp.EasyDb.GetShardRule<T>() -> EasyQuerySharp.Sharding.IShardRule?
 EasyQuerySharp.EasyDb.GetTrackedChanges(object! entity) -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -348,7 +349,7 @@ EasyQuerySharp.EasyDb.Query<T>() -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.EasyDb.RemoveTracking(object! entity) -> bool
 EasyQuerySharp.EasyDb.Save<T>(params System.Collections.Generic.IEnumerable<T!>! roots) -> EasyQuerySharp.Commands.SaveCommand<T!>!
 EasyQuerySharp.EasyDb.SqlQueryAsync<T>(System.FormattableString! sql, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.List<T>!>!
-EasyQuerySharp.EasyDb.SqlQueryAsync<T>(string! sql, System.Collections.Generic.IReadOnlyList<object?>? parameters = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.List<T>!>!
+EasyQuerySharp.EasyDb.SqlQueryRawAsync<T>(string! sql, System.Collections.Generic.IReadOnlyList<object?>? parameters = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.List<T>!>!
 EasyQuerySharp.EasyDb.Table(string! tableName) -> EasyQuerySharp.Querying.Query<EasyQuerySharp.DynamicRow!>!
 EasyQuerySharp.EasyDb.TransactionAsync(System.Func<System.Threading.Tasks.Task!>! work, System.Data.IsolationLevel isolation = System.Data.IsolationLevel.Unspecified, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 EasyQuerySharp.EasyDb.Update<T>() -> EasyQuerySharp.Commands.UpdateCommand<T!>!
@@ -789,10 +790,11 @@ EasyQuerySharp.Metadata.NavigationMetadata.Target.get -> EasyQuerySharp.Metadata
 EasyQuerySharp.Metadata.NavigationMetadata.TargetColumns.get -> System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Metadata.ColumnMetadata!>!
 EasyQuerySharp.Metadata.NavigationMetadata.TargetMappingColumns.get -> System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Metadata.ColumnMetadata!>!
 EasyQuerySharp.Metadata.PartitionOrder
-EasyQuerySharp.Metadata.PartitionOrder.Key = 0 -> EasyQuerySharp.Metadata.PartitionOrder
-EasyQuerySharp.Metadata.PartitionOrder.KeyDescending = 3 -> EasyQuerySharp.Metadata.PartitionOrder
-EasyQuerySharp.Metadata.PartitionOrder.Navigation = 2 -> EasyQuerySharp.Metadata.PartitionOrder
-EasyQuerySharp.Metadata.PartitionOrder.None = 1 -> EasyQuerySharp.Metadata.PartitionOrder
+EasyQuerySharp.Metadata.PartitionOrder.Default = 0 -> EasyQuerySharp.Metadata.PartitionOrder
+EasyQuerySharp.Metadata.PartitionOrder.Key = 1 -> EasyQuerySharp.Metadata.PartitionOrder
+EasyQuerySharp.Metadata.PartitionOrder.KeyDescending = 4 -> EasyQuerySharp.Metadata.PartitionOrder
+EasyQuerySharp.Metadata.PartitionOrder.Navigation = 3 -> EasyQuerySharp.Metadata.PartitionOrder
+EasyQuerySharp.Metadata.PartitionOrder.None = 2 -> EasyQuerySharp.Metadata.PartitionOrder
 EasyQuerySharp.Metadata.RelationType
 EasyQuerySharp.Metadata.RelationType.ManyToMany = 3 -> EasyQuerySharp.Metadata.RelationType
 EasyQuerySharp.Metadata.RelationType.ManyToOne = 1 -> EasyQuerySharp.Metadata.RelationType
@@ -1780,7 +1782,6 @@ EasyQuerySharp.SqlAst.ParameterExpr.ParameterExpr(object? value, System.Type! cl
 EasyQuerySharp.SqlAst.ParameterExpr.Value.get -> object?
 EasyQuerySharp.SqlAst.RawTableSource
 EasyQuerySharp.SqlAst.RawTableSource.Parameters.get -> System.Collections.Generic.IReadOnlyList<object?>!
-EasyQuerySharp.SqlAst.RawTableSource.RawTableSource(string! sql, System.Collections.Generic.IReadOnlyList<object?>? parameters = null) -> void
 EasyQuerySharp.SqlAst.RawTableSource.Sql.get -> string!
 EasyQuerySharp.SqlAst.RowLock
 EasyQuerySharp.SqlAst.RowLock.ForUpdate = 1 -> EasyQuerySharp.SqlAst.RowLock
@@ -2056,7 +2057,9 @@ override EasyQuerySharp.Dialects.HanaDialect.WriteLike(EasyQuerySharp.Rendering.
 override EasyQuerySharp.Dialects.HanaDialect.WriteLock(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.RowLock rowLock) -> void
 override EasyQuerySharp.Dialects.HanaDialect.WriteModulo(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SqlExpr! left, EasyQuerySharp.SqlAst.SqlExpr! right) -> void
 override EasyQuerySharp.Dialects.HanaDialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
-override EasyQuerySharp.Dialects.HanaDialect.WritePaging(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
+override EasyQuerySharp.Dialects.HanaDialect.OffsetOnlyLimit.get -> string!
+override EasyQuerySharp.Dialects.MySqlDialect.OffsetOnlyLimit.get -> string!
+override EasyQuerySharp.Dialects.SqliteDialect.OffsetOnlyLimit.get -> string!
 override EasyQuerySharp.Dialects.KingbaseDialect.Name.get -> string!
 override EasyQuerySharp.Dialects.KingbaseDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
 override EasyQuerySharp.Dialects.KingbaseDialect.TreeDeepStart.get -> string!
@@ -2133,7 +2136,8 @@ override EasyQuerySharp.Dialects.SqliteDialect.CreateTableSql(EasyQuerySharp.Met
 override EasyQuerySharp.Dialects.SqliteDialect.InlinePrimaryKey(EasyQuerySharp.Metadata.ColumnMetadata! key) -> bool
 override EasyQuerySharp.Dialects.SqliteDialect.LastInsertIdQuery.get -> string?
 override EasyQuerySharp.Dialects.SqliteDialect.Name.get -> string!
-override EasyQuerySharp.Dialects.SqliteDialect.ParenthesizeCompoundParts.get -> bool
+override EasyQuerySharp.Dialects.SqliteDialect.WriteCompoundPart(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! part) -> void
+override EasyQuerySharp.Dialects.SqlServerDialect.WriteCompoundPart(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! part) -> void
 override EasyQuerySharp.Dialects.SqliteDialect.QualifySetColumns.get -> bool
 override EasyQuerySharp.Dialects.SqliteDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
 override EasyQuerySharp.Dialects.SqliteDialect.SupportsWriteReturning.get -> bool
@@ -2518,7 +2522,8 @@ virtual EasyQuerySharp.Dialects.SqlDialect.NativeNullsOrder.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.ParameterName(int index) -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.ParameterPlaceholder(int index) -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.ParameterWrap(string? columnDbType) -> (string! Before, string! After)?
-virtual EasyQuerySharp.Dialects.SqlDialect.ParenthesizeCompoundParts.get -> bool
+virtual EasyQuerySharp.Dialects.SqlDialect.WriteCompoundPart(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! part) -> void
+static EasyQuerySharp.Dialects.SqlDialect.IsOrderedOrPaged(EasyQuerySharp.SqlAst.SelectQuery! part) -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.QualifySetColumns.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.QuoteIdentifier(string! identifier) -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.RecursiveCteColumnList.get -> bool
@@ -2541,6 +2546,7 @@ virtual EasyQuerySharp.Dialects.SqlDialect.WriteOrderByItem(EasyQuerySharp.Rende
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WritePagedSelect(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query, System.Action! writeUnpaged) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WritePaging(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
+virtual EasyQuerySharp.Dialects.SqlDialect.OffsetOnlyLimit.get -> string?
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteSelectHead(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteTargetAliasSeparator.get -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void

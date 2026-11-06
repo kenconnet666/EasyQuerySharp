@@ -44,12 +44,18 @@ public abstract partial class SqlDialect
     {
     }
 
-    /// <summary>写分页子句（追加在 ORDER BY 之后）。默认 <c>LIMIT n OFFSET m</c>。</summary>
+    /// <summary>写分页子句（追加在 ORDER BY 之后）。默认 <c>LIMIT n OFFSET m</c>；只跳过行数时 LIMIT 写 <see cref="OffsetOnlyLimit"/>（为 null 时不写）。</summary>
     public virtual void WritePaging(SqlRenderer renderer, SelectQuery query)
     {
         if (query.Limit is { } limit) renderer.Append(" LIMIT ").Append(limit.ToString(CultureInfo.InvariantCulture));
+        else if (query.Offset is > 0 && OffsetOnlyLimit is { } all) renderer.Append(" LIMIT ").Append(all);
         if (query.Offset is > 0) renderer.Append(" OFFSET ").Append(query.Offset.Value.ToString(CultureInfo.InvariantCulture));
     }
+
+    /// <summary>
+    /// OFFSET 前必须有 LIMIT 的方言（MySQL、SQLite、HANA）在只跳过行数（<c>Skip(n)</c> 不带 <c>Take</c>）时写的"不限条数"；默认 null，只写 OFFSET。
+    /// </summary>
+    public virtual string? OffsetOnlyLimit => null;
 
     /// <summary>
     /// 写一条带分页的查询：<paramref name="writeUnpaged"/> 输出不含分页的完整 SELECT。
@@ -64,8 +70,11 @@ public abstract partial class SqlDialect
     /// <summary>EXISTS 子查询是否保留只取前几行的 LIMIT（集合导航的 Any 带 <c>LIMIT 1</c>，与 Java 一致）；HANA 的关联子查询不支持 LIMIT，覆盖成 false。</summary>
     public virtual bool LimitInExists => true;
 
-    /// <summary>UNION 的各分支是否加括号 <c>( (q1)  UNION  (q2) )</c>；SQLite 不允许，覆盖成 false。</summary>
-    public virtual bool ParenthesizeCompoundParts => true;
+    /// <summary>写 UNION 的一个分支：默认加括号 <c>(q)</c>（与 Java 一致，分支可以自带 ORDER BY 与分页）。</summary>
+    public virtual void WriteCompoundPart(SqlRenderer renderer, SelectQuery part) => renderer.Append("(").WriteSelect(part).Append(")");
+
+    /// <summary>分支自带排序或分页（如带出按父对象取段的 UNION ALL 模式）：不允许这样写的方言把它包成派生表。</summary>
+    protected static bool IsOrderedOrPaged(SelectQuery part) => part.OrderBy.Count > 0 || part.Limit is not null || part.Offset is not null;
 
     /// <summary>递归 CTE 是否要在名字后写列名清单 <c>"cte" ("a","b") AS (…)</c>（Oracle 必须写）；默认不写。</summary>
     public virtual bool RecursiveCteColumnList => false;

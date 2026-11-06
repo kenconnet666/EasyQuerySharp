@@ -53,6 +53,10 @@ internal static partial class IncludeRunner
                 if (state.Offset is null && nav.Offset is { } navOffset) state = state with { Offset = navOffset };
             }
             if (plan.ChildSelector is not null) state = state with { Selector = plan.ChildSelector, ImplicitSelector = flat };
+            // 经过中间导航时一个父对象对应多个目标键，按目标键取段不对：一条查完（保持排序），再按父对象在内存里取段
+            var (pagedOffset, pagedLimit) = (state.Offset, state.Limit);
+            var pagedVia = plan.Via.Count > 0 && (pagedOffset is not null || pagedLimit is not null);
+            if (pagedVia) state = state with { Offset = null, Limit = null };
 
             var childrenByKey = new Dictionary<CompositeKey, List<object?>>();
             var nested = new List<IReadOnlyList<IncludePlan>>();
@@ -60,7 +64,9 @@ internal static partial class IncludeRunner
             // 按目标键分批时一个父对象的子数据会落在几批里、各批分别排序，所以一条查完（Java 的 ignoreGroupSize）
             var orderedManyToMany = nav.Mapping is not null && !state.OrderBys.IsEmpty;
             var targetKeys = links.Select(l => l.Target).Distinct().ToArray();
-            IEnumerable<CompositeKey[]> chunks = orderedManyToMany ? [targetKeys] : targetKeys.Chunk(groupSize);
+            IEnumerable<CompositeKey[]> chunks = orderedManyToMany || pagedVia ? [targetKeys] : targetKeys.Chunk(groupSize);
+            var rowIndex = new Dictionary<CompositeKey, List<int>>();
+            var rowCount = 0;
             var firstRow = new Dictionary<CompositeKey, int>();
             foreach (var targets in chunks)
             {
@@ -72,6 +78,8 @@ internal static partial class IncludeRunner
                     if (key is null) continue;
                     if (!childrenByKey.TryGetValue(key.Value, out var list)) childrenByKey[key.Value] = list = [];
                     list.Add(child);
+                    if (!rowIndex.TryGetValue(key.Value, out var indexes)) rowIndex[key.Value] = indexes = [];
+                    indexes.Add(rowCount++);
                     firstRow.TryAdd(key.Value, firstRow.Count);
                 }
                 nested.Add(compiled.Query.Includes);
@@ -83,17 +91,38 @@ internal static partial class IncludeRunner
                     for (var i = 0; i < children.Count; i++)
                         if (children[i] is { } child) children[i] = db.Tracker.AttachQueried(child);
             if (orderedManyToMany) links = [.. links.OrderBy(l => firstRow.GetValueOrDefault(l.Target, int.MaxValue))];
-            foreach (var (parent, target) in links)
-            {
-                if (!plan.Pending.TryGetValue(parent, out var sinks) || !childrenByKey.TryGetValue(target, out var children)) continue;
-                foreach (var child in children)
-                foreach (var sink in sinks)
-                    sink(child);
-            }
+            if (pagedVia) DistributePaged(plan, links, childrenByKey, rowIndex, pagedOffset ?? 0, pagedLimit);
+            else
+                foreach (var (parent, target) in links)
+                {
+                    if (!plan.Pending.TryGetValue(parent, out var sinks) || !childrenByKey.TryGetValue(target, out var children)) continue;
+                    foreach (var child in children)
+                    foreach (var sink in sinks)
+                        sink(child);
+                }
             if (track && plan.Via.Count == 0) RecordLoaded(db, plan, links, childrenByKey);
             plan.Pending.Clear();
             plan.Owners.Clear();
             foreach (var includes in nested) await RunAsync(db, includes, context, ct).ConfigureAwait(false);
+        }
+    }
+
+    // 每个父对象：它的各个目标键下的子数据按查询结果的顺序合在一起，再跳过 offset 条、取 limit 条
+    private static void DistributePaged(IncludePlan plan, List<(CompositeKey Parent, CompositeKey Target)> links,
+        Dictionary<CompositeKey, List<object?>> childrenByKey, Dictionary<CompositeKey, List<int>> rowIndex, long offset, long? limit)
+    {
+        foreach (var group in links.GroupBy(l => l.Parent))
+        {
+            if (!plan.Pending.TryGetValue(group.Key, out var sinks)) continue;
+            var children = group.Select(l => l.Target).Distinct()
+                .Where(childrenByKey.ContainsKey)
+                .SelectMany(t => childrenByKey[t].Select((child, i) => (Index: rowIndex[t][i], Child: child)))
+                .OrderBy(c => c.Index)
+                .Skip((int)offset)
+                .Take(limit is { } n ? (int)n : int.MaxValue);
+            foreach (var (_, child) in children)
+            foreach (var sink in sinks)
+                sink(child);
         }
     }
 
@@ -122,7 +151,11 @@ internal static partial class IncludeRunner
             var columns = target.Columns.Where(c => c.AutoSelect).ToDictionary(c => c.PropertyName, c => c.Name, StringComparer.Ordinal);
             var binding = new DerivedBinding(source, columns, target, aliased ? columns.Keys.ToHashSet(StringComparer.Ordinal) : null);
             var outer = QueryCompiler.Compile<object?>(
-                new QueryState(db, [new BoundSource(binding, target.Type)]) { Selector = state.Selector, ForceAlias = state.ForceAlias, ImplicitSelector = state.ImplicitSelector, Interceptors = context.Interceptors },
+                new QueryState(db, [new BoundSource(binding, target.Type)])
+                {
+                    Selector = state.Selector, ForceAlias = state.ForceAlias, ImplicitSelector = state.ImplicitSelector, Interceptors = context.Interceptors,
+                    Includes = state.Includes, ConfigureArgument = state.ConfigureArgument, Tables = state.Tables,
+                },
                 relationKeys: nav.TargetColumns);
             return (outer, outer.Sql);
         }

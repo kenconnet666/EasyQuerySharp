@@ -16,6 +16,10 @@ public class Company
 
     [Navigate(RelationType.OneToMany, TargetProperties = [nameof(User.CompanyId)])]
     public List<User>? Users { get; set; }
+
+    /// <summary>直达的对多导航：经员工到他们的帖子（TS 的 path 桥）。</summary>
+    [Navigate(RelationType.OneToMany, DirectMapping = [nameof(Users), nameof(User.Posts)])]
+    public List<Post>? Posts { get; set; }
 }
 
 /// <summary>用户；<see cref="Attrs"/> 是 JSON 列。</summary>
@@ -51,8 +55,8 @@ public class User
     [Navigate(RelationType.OneToMany, TargetProperties = [nameof(Post.UserId)], ExtraFilter = nameof(BigPostFilter))]
     public List<Post>? BigPosts { get; set; }
 
-    /// <summary>每个用户最新的一篇帖子（对应 TS 的 oneOfMany）：一对一导航按 id 倒序取 1 条。</summary>
-    [Navigate(RelationType.OneToOne, TargetProperties = [nameof(Post.UserId)], PartitionOrder = PartitionOrder.KeyDescending, OrderBy = "Id desc", Limit = 1)]
+    /// <summary>每个用户最新的一篇帖子（对应 TS 的 oneOfMany）：一对一导航按 id 倒序取 1 条（取那一行按声明的 OrderBy，不用写 PartitionOrder）。</summary>
+    [Navigate(RelationType.OneToOne, TargetProperties = [nameof(Post.UserId)], OrderBy = "Id desc", Limit = 1)]
     public Post? LatestPost { get; set; }
 
     private static Expression<Func<Post, bool>> BigPostFilter => p => p.Amount > 100;

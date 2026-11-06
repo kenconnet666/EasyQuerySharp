@@ -15,7 +15,7 @@ public sealed class InsertTest1(MySqlFixture fixture) : MySqlTest(fixture)
     [Fact, Upstream("InsertTest1.java#testInsert")]
     public async Task TestInsert()
     {
-        await Db.ExecuteSqlAsync("CREATE TABLE IF NOT EXISTS `t_test_insert` (`id` VARCHAR(32) NOT NULL PRIMARY KEY, `column1` VARCHAR(255) NULL, `column2` VARCHAR(255) NULL)", cancellationToken: Ct);
+        await Db.ExecuteSqlRawAsync("CREATE TABLE IF NOT EXISTS `t_test_insert` (`id` VARCHAR(32) NOT NULL PRIMARY KEY, `column1` VARCHAR(255) NULL, `column2` VARCHAR(255) NULL)", cancellationToken: Ct);
         await Db.Delete<TestInsert>().DisableLogicDelete().AllowDeleteStatement(true).Where(t => t.Id != null).ExecuteAsync(Ct);
         var rows = Enumerable.Range(0, 9).Select(i => new TestInsert
         {

@@ -67,6 +67,10 @@ SELECT t."name",t."level" FROM "t_user" t WHERE t."id" <= ? ORDER BY t."id" ASC;
 SELECT t2."name",t2."kind" AS "kind" FROM ( (SELECT t."name",? AS "kind" FROM "t_user" t WHERE t."age" < ?)  UNION ALL  (SELECT t1."name",? AS "kind" FROM "t_company" t1 WHERE t1."city" = ?) ) t2 ORDER BY t2."name" ASC LIMIT 3;
 -- params: ['用户', 25, '公司', '北京']
 
+-- UnionValues：合并单列：按值本身排序
+SELECT t2."name" FROM ( (SELECT t."name" FROM "t_user" t WHERE t."age" < ?)  UNION ALL  (SELECT t1."name" FROM "t_company" t1 WHERE t1."city" = ?) ) t2 ORDER BY t2."name" ASC;
+-- params: [25, '北京']
+
 -- Cte：CTE：AsCte 之后接着查
 WITH "hot_posts" AS (SELECT t."id",t."author_id",t."category_id",t."title",t."status",t."views",t."published_at" FROM "t_post" t WHERE t."views" >= ?) SELECT t2."author_id" AS "author_id",t2."hot" AS "hot" FROM (SELECT t1."author_id" AS "author_id",COUNT(*) AS "hot" FROM "hot_posts" t1 GROUP BY t1."author_id") t2 ORDER BY t2."author_id" ASC;
 -- params: [1000]

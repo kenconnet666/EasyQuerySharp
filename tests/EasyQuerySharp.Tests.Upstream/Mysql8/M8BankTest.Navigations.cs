@@ -59,20 +59,20 @@ public sealed partial class M8BankTest
         listen.AssertParams("1(Integer),工商银行(String)");
     }
 
-    // 用户最早开户的两张卡的类型：ORDER BY / LIMIT 留在字符串聚合的子查询里
-    [Fact, Upstream("mysql8/M8BankTest.java#test7")]
+    // 用户最早开户的两张卡的类型：先取这两张（派生表），再按开户时间拼接
+    [Fact, Upstream("mysql8/M8BankTest.java#test7", Deviation = "取段之后再聚合：Java 把 ORDER BY / LIMIT 写在聚合子查询末尾，LIMIT 作用在聚合出的一行上、拼的是全部行（PG 上还会因 ORDER BY 报错）；C# 先把这段行包成派生表再聚合，拼接按集合上的排序")]
     public async Task Test7()
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<SysUser>().Where(u => u.Name!.Contains("小明"))
             .Select(u => new Draft<string?, string>(u.Name, string.Join(",", u.BankCards!.OrderBy(c => c.OpenTime).Take(2).Select(c => c.Type))))
             .ToListAsync(Ct);
-        listen.AssertSql("SELECT t.`name` AS `value1`,(SELECT GROUP_CONCAT(t1.`type` SEPARATOR ?) FROM `t_bank_card` t1 WHERE t1.`uid` = t.`id` ORDER BY t1.`open_time` ASC LIMIT 2) AS `value2` FROM `t_sys_user` t WHERE t.`name` LIKE ?");
+        listen.AssertSql("SELECT t.`name` AS `value1`,(SELECT GROUP_CONCAT(t2.`type` ORDER BY t2.`open_time` ASC SEPARATOR ?) FROM (SELECT t1.`id`,t1.`uid`,t1.`code`,t1.`type`,t1.`bank_id`,t1.`open_time` FROM `t_bank_card` t1 WHERE t1.`uid` = t.`id` ORDER BY t1.`open_time` ASC LIMIT 2) t2) AS `value2` FROM `t_sys_user` t WHERE t.`name` LIKE ?");
         listen.AssertParams(",(String),%小明%(String)");
     }
 
     // 取了两张之后再按银行过滤：先把这两张包成派生表
-    [Fact, Upstream("mysql8/M8BankTest.java#test7_1")]
+    [Fact, Upstream("mysql8/M8BankTest.java#test7_1", Deviation = "取段之后再聚合：Java 把 ORDER BY / LIMIT 写在聚合子查询末尾，LIMIT 作用在聚合出的一行上、拼的是全部行（PG 上还会因 ORDER BY 报错）；C# 先把这段行包成派生表再聚合，拼接按集合上的排序")]
     public async Task Test7_1()
     {
         using var listen = SqlCapture.Listen();
@@ -80,23 +80,23 @@ public sealed partial class M8BankTest
             .Select(u => new Draft<string?, string>(u.Name,
                 string.Join(",", u.BankCards!.Where(c => c.Type == "储蓄卡").OrderBy(c => c.OpenTime).Take(2).Where(c => c.Bank!.Name == "建设银行").Select(c => c.Type))))
             .ToListAsync(Ct);
-        listen.AssertSql("SELECT t.`name` AS `value1`,(SELECT GROUP_CONCAT(t2.`type` SEPARATOR ?) FROM (SELECT t1.`id`,t1.`uid`,t1.`code`,t1.`type`,t1.`bank_id`,t1.`open_time` FROM `t_bank_card` t1 WHERE t1.`uid` = t.`id` AND t1.`type` = ? ORDER BY t1.`open_time` ASC LIMIT 2) t2 INNER JOIN `t_bank` t3 ON t3.`id` = t2.`bank_id` WHERE t3.`name` = ?) AS `value2` FROM `t_sys_user` t WHERE t.`name` LIKE ?");
+        listen.AssertSql("SELECT t.`name` AS `value1`,(SELECT GROUP_CONCAT(t2.`type` ORDER BY t2.`open_time` ASC SEPARATOR ?) FROM (SELECT t1.`id`,t1.`uid`,t1.`code`,t1.`type`,t1.`bank_id`,t1.`open_time` FROM `t_bank_card` t1 WHERE t1.`uid` = t.`id` AND t1.`type` = ? ORDER BY t1.`open_time` ASC LIMIT 2) t2 INNER JOIN `t_bank` t3 ON t3.`id` = t2.`bank_id` WHERE t3.`name` = ?) AS `value2` FROM `t_sys_user` t WHERE t.`name` LIKE ?");
         listen.AssertParams(",(String),储蓄卡(String),建设银行(String),%小明%(String)");
     }
 
-    [Fact, Upstream("mysql8/M8BankTest.java#test7_2")]
+    [Fact, Upstream("mysql8/M8BankTest.java#test7_2", Deviation = "取段之后再聚合：Java 把 ORDER BY / LIMIT 写在聚合子查询末尾，LIMIT 作用在聚合出的一行上、拼的是全部行（PG 上还会因 ORDER BY 报错）；C# 先把这段行包成派生表再聚合，拼接按集合上的排序")]
     public async Task Test7_2()
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<SysUser>().Where(u => u.Name!.Contains("小明"))
             .Select(u => new Draft<string?, string>(u.Name, string.Join(",", u.BankCards!.Where(c => c.Type == "储蓄卡").OrderBy(c => c.OpenTime).Take(2).Select(c => c.Type))))
             .ToListAsync(Ct);
-        listen.AssertSql("SELECT t.`name` AS `value1`,(SELECT GROUP_CONCAT(t1.`type` SEPARATOR ?) FROM `t_bank_card` t1 WHERE t1.`uid` = t.`id` AND t1.`type` = ? ORDER BY t1.`open_time` ASC LIMIT 2) AS `value2` FROM `t_sys_user` t WHERE t.`name` LIKE ?");
+        listen.AssertSql("SELECT t.`name` AS `value1`,(SELECT GROUP_CONCAT(t2.`type` ORDER BY t2.`open_time` ASC SEPARATOR ?) FROM (SELECT t1.`id`,t1.`uid`,t1.`code`,t1.`type`,t1.`bank_id`,t1.`open_time` FROM `t_bank_card` t1 WHERE t1.`uid` = t.`id` AND t1.`type` = ? ORDER BY t1.`open_time` ASC LIMIT 2) t2) AS `value2` FROM `t_sys_user` t WHERE t.`name` LIKE ?");
         listen.AssertParams(",(String),储蓄卡(String),%小明%(String)");
     }
 
     // 最早开户的两张卡里没有杭州银行的：EXISTS 作用在包好的派生表上
-    [Fact, Upstream("mysql8/M8BankTest.java#test8")]
+    [Fact, Upstream("mysql8/M8BankTest.java#test8", Deviation = "取段之后再聚合：Java 把 ORDER BY / LIMIT 写在聚合子查询末尾，LIMIT 作用在聚合出的一行上、拼的是全部行（PG 上还会因 ORDER BY 报错）；C# 先把这段行包成派生表再聚合，拼接按集合上的排序")]
     public async Task Test8()
     {
         using var listen = SqlCapture.Listen();
@@ -104,7 +104,7 @@ public sealed partial class M8BankTest
             .Where(u => u.Name!.Contains("小明") && !u.BankCards!.OrderBy(c => c.OpenTime).Take(2).Any(c => c.Bank!.Name == "杭州银行"))
             .Select(u => new Draft<string?, string>(u.Name, string.Join(",", u.BankCards!.OrderBy(c => c.OpenTime).Take(2).Select(c => c.Type))))
             .ToListAsync(Ct);
-        listen.AssertSql("SELECT t.`name` AS `value1`,(SELECT GROUP_CONCAT(t4.`type` SEPARATOR ?) FROM `t_bank_card` t4 WHERE t4.`uid` = t.`id` ORDER BY t4.`open_time` ASC LIMIT 2) AS `value2` FROM `t_sys_user` t WHERE t.`name` LIKE ? AND NOT (EXISTS(SELECT 1 FROM (SELECT t1.`id`,t1.`uid`,t1.`code`,t1.`type`,t1.`bank_id`,t1.`open_time` FROM `t_bank_card` t1 WHERE t1.`uid` = t.`id` ORDER BY t1.`open_time` ASC LIMIT 2) t2 INNER JOIN `t_bank` t3 ON t3.`id` = t2.`bank_id` WHERE t3.`name` = ? LIMIT 1))");
+        listen.AssertSql("SELECT t.`name` AS `value1`,(SELECT GROUP_CONCAT(t5.`type` ORDER BY t5.`open_time` ASC SEPARATOR ?) FROM (SELECT t4.`id`,t4.`uid`,t4.`code`,t4.`type`,t4.`bank_id`,t4.`open_time` FROM `t_bank_card` t4 WHERE t4.`uid` = t.`id` ORDER BY t4.`open_time` ASC LIMIT 2) t5) AS `value2` FROM `t_sys_user` t WHERE t.`name` LIKE ? AND NOT (EXISTS(SELECT 1 FROM (SELECT t1.`id`,t1.`uid`,t1.`code`,t1.`type`,t1.`bank_id`,t1.`open_time` FROM `t_bank_card` t1 WHERE t1.`uid` = t.`id` ORDER BY t1.`open_time` ASC LIMIT 2) t2 INNER JOIN `t_bank` t3 ON t3.`id` = t2.`bank_id` WHERE t3.`name` = ? LIMIT 1))");
         listen.AssertParams(",(String),%小明%(String),杭州银行(String)");
     }
 

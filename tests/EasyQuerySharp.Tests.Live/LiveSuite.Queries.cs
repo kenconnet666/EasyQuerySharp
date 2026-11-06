@@ -153,6 +153,14 @@ public abstract partial class LiveSuite
         Assert.Equal(4, page.Total);
     }
 
+    // 只跳过、不限条数：MySQL、SQLite、HANA 的 OFFSET 前必须有 LIMIT
+    [Fact]
+    public async Task SkipsRowsWithoutTakingACount()
+    {
+        var db = await SeededAsync();
+        Assert.Equal([3L, 4L], await db.Query<Post>().OrderBy(p => p.Id).Skip(2).Select(p => p.Id).ToListAsync(Ct));
+    }
+
     // 查询对象不可变：在同一个查询上再加条件不影响原查询
     [Fact]
     public async Task ReusesQueriesWithoutLeakingState()

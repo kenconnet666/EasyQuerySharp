@@ -112,32 +112,50 @@ public sealed class EasyDb
         return new(new QueryState(this, [new EntitySource(typeof(DynamicRow)) { TableName = tableName }]));
     }
 
+    // 原生 SQL 的方法成对出现（与 EF Core 的 FromSql / FromSqlRaw 一致）：不带 Raw 的只收插值字符串，插值处全部参数化；
+    // 带 Raw 的收普通字符串与 ? 位置参数。两组名字不同，插值字符串不会因为重载决议悄悄落到拼接文本的那一组
+
     /// <summary>
     /// 以原生 SQL 为来源开始一条查询（对应 Java 的 queryable(sql, Class, params)）：它作为派生表 <c>(sql) t</c>，
-    /// 列按 <typeparamref name="T"/> 的列名访问，之后可以照常 Where / Select / 分页；<c>?</c> 依次对应 <paramref name="parameters"/>。
+    /// 列按 <typeparamref name="T"/> 的列名访问，之后可以照常 Where / Select / 分页。插值处全部参数化，
+    /// 集合展开成 <c>?,?,?</c>，<see cref="Sql.Identifier"/> 按方言加引号。
     /// <typeparamref name="T"/> 也可以是标量（取第一列）或 <c>Dictionary&lt;string, object?&gt;</c>（整行）。
     /// </summary>
-    public Query<T> FromSql<T>(string sql, params IReadOnlyList<object?> parameters) =>
-        new(new QueryState(this, [new RawSqlSource(sql, typeof(T), parameters)]));
-
-    /// <summary>执行原生写入 SQL，<c>?</c> 依次对应参数（对应 Java 的 sqlExecute），返回受影响的行数。</summary>
-    public Task<long> ExecuteSqlAsync(string sql, IReadOnlyList<object?>? parameters = null, CancellationToken cancellationToken = default) =>
-        Executor.ExecuteAsync(RawSql.FromPositional(Options.Dialect, sql, parameters ?? []), cancellationToken);
-
-    /// <summary>执行原生写入 SQL，插值处全部参数化：<c>$"update t set a = {a} where id = {id}"</c>。</summary>
-    public Task<long> ExecuteSqlAsync(FormattableString sql, CancellationToken cancellationToken = default) =>
-        Executor.ExecuteAsync(RawSql.FromInterpolated(Options.Dialect, sql), cancellationToken);
+    /// <example><code>db.FromSql&lt;User&gt;($"SELECT * FROM t_user WHERE age &gt;= {minAge}").Where(u =&gt; u.CompanyId == 1)</code></example>
+    public Query<T> FromSql<T>(FormattableString sql) =>
+        new(new QueryState(this, [new RawSqlSource(RawSql.Interpolated(Options.Dialect, sql), typeof(T))]));
 
     /// <summary>
-    /// 执行原生查询 SQL（对应 Java 的 sqlQuery / sqlQueryMap）：<typeparamref name="T"/> 是实体或 DTO 时按列名映射，
+    /// 同 <see cref="FromSql{T}"/>，SQL 是普通字符串：<c>?</c> 依次对应 <paramref name="parameters"/>（引号里的 <c>?</c> 不算）。
+    /// 文本原样使用，不要把用户输入拼进 <paramref name="sql"/>。
+    /// </summary>
+    public Query<T> FromSqlRaw<T>(string sql, params IReadOnlyList<object?> parameters) =>
+        new(new QueryState(this, [new RawSqlSource(RawSql.Positional(sql, parameters), typeof(T))]));
+
+    /// <summary>执行原生写入 SQL（对应 Java 的 sqlExecute），插值处全部参数化：<c>$"update t set a = {a} where id = {id}"</c>；返回受影响的行数。</summary>
+    public Task<long> ExecuteSqlAsync(FormattableString sql, CancellationToken cancellationToken = default) =>
+        Executor.ExecuteAsync(RawSql.ToStatement(Options.Dialect, RawSql.Interpolated(Options.Dialect, sql)), cancellationToken);
+
+    /// <summary>
+    /// 同 <see cref="ExecuteSqlAsync"/>，SQL 是普通字符串：<c>?</c> 依次对应 <paramref name="parameters"/>。
+    /// 文本原样使用，不要把用户输入拼进 <paramref name="sql"/>。
+    /// </summary>
+    public Task<long> ExecuteSqlRawAsync(string sql, IReadOnlyList<object?>? parameters = null, CancellationToken cancellationToken = default) =>
+        Executor.ExecuteAsync(RawSql.ToStatement(Options.Dialect, RawSql.Positional(sql, parameters ?? [])), cancellationToken);
+
+    /// <summary>
+    /// 执行原生查询 SQL（对应 Java 的 sqlQuery / sqlQueryMap），插值处全部参数化：<typeparamref name="T"/> 是实体或 DTO 时按列名映射，
     /// 是标量时取第一列，是 <c>Dictionary&lt;string, object?&gt;</c> 时整行读成字典。
     /// </summary>
-    public Task<List<T>> SqlQueryAsync<T>(string sql, IReadOnlyList<object?>? parameters = null, CancellationToken cancellationToken = default) =>
-        Executor.QueryAsync(RawSql.FromPositional(Options.Dialect, sql, parameters ?? []), RowReader<T>(), cancellationToken);
-
-    /// <summary>执行原生查询 SQL，插值处全部参数化。</summary>
     public Task<List<T>> SqlQueryAsync<T>(FormattableString sql, CancellationToken cancellationToken = default) =>
-        Executor.QueryAsync(RawSql.FromInterpolated(Options.Dialect, sql), RowReader<T>(), cancellationToken);
+        Executor.QueryAsync(RawSql.ToStatement(Options.Dialect, RawSql.Interpolated(Options.Dialect, sql)), RowReader<T>(), cancellationToken);
+
+    /// <summary>
+    /// 同 <see cref="SqlQueryAsync{T}"/>，SQL 是普通字符串：<c>?</c> 依次对应 <paramref name="parameters"/>。
+    /// 文本原样使用，不要把用户输入拼进 <paramref name="sql"/>。
+    /// </summary>
+    public Task<List<T>> SqlQueryRawAsync<T>(string sql, IReadOnlyList<object?>? parameters = null, CancellationToken cancellationToken = default) =>
+        Executor.QueryAsync(RawSql.ToStatement(Options.Dialect, RawSql.Positional(sql, parameters ?? [])), RowReader<T>(), cancellationToken);
 
     // 标量取第一列；字典整行；实体 / DTO 按列名映射
     private Func<DbDataReader, T> RowReader<T>()

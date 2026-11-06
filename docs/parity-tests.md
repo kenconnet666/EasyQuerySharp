@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 2062、偏离 197、不适用 142、骨架 3、待做 0。
+合计：已移植 2056、偏离 203、不适用 142、骨架 3、待做 0。
 
 ## 按能力
 
@@ -23,7 +23,7 @@
 | 字符串聚合（joining） | `func.joining` | M2 | 29 | 27 | 2 | 0 | 0 | 0 |
 | JSON 函数 | `func.json` | M2 | 12 | 12 | 0 | 0 | 0 | 0 |
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
-| 字符串函数 | `func.string` | M2 | 131 | 123 | 4 | 4 | 0 | 0 |
+| 字符串函数 | `func.string` | M2 | 131 | 121 | 6 | 4 | 0 | 0 |
 | 行锁 | `lock` | M2 | 28 | 25 | 1 | 2 | 0 | 0 |
 | 窗口函数 | `window` | M2 | 44 | 43 | 1 | 0 | 0 | 0 |
 | CTE | `query.cte` | M3 | 11 | 8 | 3 | 0 | 0 | 0 |
@@ -35,7 +35,7 @@
 | union / union all | `query.union` | M3 | 18 | 14 | 4 | 0 | 0 | 0 |
 | 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 34 | 2 | 0 | 0 | 0 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
-| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 51 | 2 | 3 | 0 | 0 |
+| 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 47 | 6 | 3 | 0 | 0 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 64 | 1 | 2 | 0 | 0 |
 | include 带出导航 | `nav.include` | M4 | 37 | 36 | 1 | 0 | 0 | 0 |
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 138 | 3 | 1 | 0 | 0 |
@@ -964,11 +964,11 @@
 | QueryTest19.java#testaaa | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:167 |  |
 | QueryTest22.java#testSelectAnyElement2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest22.Part2.cs:209：Java 第二个子查询的别名跳过了 t2（写成 t3），C# 按顺序编号为 t2 | `SELECT (SELECT GROUP_CONCAT(t1.'code' SEPARATOR ?) FROM 'doc_bank_card' t1 WHERE t1.'uid' = t.'id' A…` |
 | QueryTest26.java#joiningTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:131 |  |
-| StringFunctionsTest.java#joining2MySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:109 | `SELECT t.'code' AS 'value1',GROUP_CONCAT(DISTINCT (CASE WHEN t.'type' = ? THEN t1.'name' ELSE NULL E…` |
-| StringFunctionsTest.java#joiningMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:98 | `SELECT t.[code] AS [value1],STRING_AGG(DISTINCT (CASE WHEN t.[type] = ? THEN t1.[name] ELSE NULL END…` |
-| StringFunctionsTest.java#joiningMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:98 | `SELECT t.'code' AS 'value1',GROUP_CONCAT(DISTINCT (CASE WHEN t.'type' = ? THEN t1.'name' ELSE NULL E…` |
-| StringFunctionsTest.java#joiningORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:98 | `SELECT t."code" AS "value1",LISTAGG(DISTINCT TO_CHAR((CASE WHEN t."type" = ? THEN t1."name" ELSE NUL…` |
-| StringFunctionsTest.java#joiningPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:98 | `SELECT t."code" AS "value1",STRING_AGG(DISTINCT ((CASE WHEN t."type" = ? THEN t1."name" ELSE NULL EN…` |
+| StringFunctionsTest.java#joining2MySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:110 | `SELECT t.'code' AS 'value1',GROUP_CONCAT(DISTINCT (CASE WHEN t.'type' = ? THEN t1.'name' ELSE NULL E…` |
+| StringFunctionsTest.java#joiningMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:99 | `SELECT t.[code] AS [value1],STRING_AGG(DISTINCT (CASE WHEN t.[type] = ? THEN t1.[name] ELSE NULL END…` |
+| StringFunctionsTest.java#joiningMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:99 | `SELECT t.'code' AS 'value1',GROUP_CONCAT(DISTINCT (CASE WHEN t.'type' = ? THEN t1.'name' ELSE NULL E…` |
+| StringFunctionsTest.java#joiningORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:99 | `SELECT t."code" AS "value1",LISTAGG(DISTINCT TO_CHAR((CASE WHEN t."type" = ? THEN t1."name" ELSE NUL…` |
+| StringFunctionsTest.java#joiningPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:99 | `SELECT t."code" AS "value1",STRING_AGG(DISTINCT ((CASE WHEN t."type" = ? THEN t1."name" ELSE NULL EN…` |
 | mysql8/MySQL8Test2.java#testGroupConcat1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:266 | `SELECT t.'id' AS 'value1',GROUP_CONCAT(DISTINCT t.'title' SEPARATOR ?) AS 'value2',GROUP_CONCAT(DIST…` |
 | mysql8/MySQL8Test5.java#testJoining1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:68 | `SELECT t.'id',t.'name',t.'create_time',t2.'__joining2__' AS '__part__column1' FROM 't_bank' t LEFT J…` |
 | mysql8/MySQL8Test5.java#testJoining2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:79 | `SELECT t.'id',t.'name',t.'create_time',t2.'__joining2__' AS '__part__column1' FROM 't_bank' t LEFT J…` |
@@ -1119,30 +1119,30 @@
 | StringFunctionsTest.java#concatMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:20 | `SELECT CONCAT(?,t.'code',?,t.'type') FROM 'doc_bank_card' t WHERE CONCAT(t.'code',?) = ? AND CONCAT(…` |
 | StringFunctionsTest.java#concatORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:20 | `SELECT ? \|\| t."code" \|\| ? \|\| t."type" FROM "doc_bank_card" t WHERE t."code" \|\| ? = ? AND t."code" \|\|…` |
 | StringFunctionsTest.java#concatPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:20 | `SELECT CONCAT(?,t."code",?,t."type") FROM "doc_bank_card" t WHERE CONCAT(t."code",?) = ? AND CONCAT(…` |
-| StringFunctionsTest.java#leftRightPadMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:31 | `SELECT [id],[uid],[code],[type],[bank_id] FROM [doc_bank_card] WHERE LPAD([code], 4) = ? AND LPAD([c…` |
-| StringFunctionsTest.java#leftRightPadMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:31 | `SELECT 'id','uid','code','type','bank_id' FROM 'doc_bank_card' WHERE LPAD('code', 4) = ? AND LPAD('c…` |
-| StringFunctionsTest.java#leftRightPadORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:31 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE LPAD("code", 4, ' ') = ? AND LP…` |
-| StringFunctionsTest.java#leftRightPadPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:31 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE LPAD("code", 4) = ? AND LPAD("c…` |
-| StringFunctionsTest.java#lengthMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:42 | `SELECT LEN(t.[code]) FROM [doc_bank_card] t WHERE LEN(t.[code]) = ?` |
-| StringFunctionsTest.java#lengthMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:42 | `SELECT CHAR_LENGTH(t.'code') FROM 'doc_bank_card' t WHERE CHAR_LENGTH(t.'code') = ?` |
-| StringFunctionsTest.java#lengthORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:42 | `SELECT LENGTH(t."code") FROM "doc_bank_card" t WHERE LENGTH(t."code") = ?` |
-| StringFunctionsTest.java#lengthPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:42 | `SELECT CHAR_LENGTH(t."code") FROM "doc_bank_card" t WHERE CHAR_LENGTH(t."code") = ?` |
-| StringFunctionsTest.java#lowerUpperMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:53 | `SELECT LOWER(t.[id]) AS [value1],UPPER(t.[id]) AS [value2] FROM [doc_bank_card] t` |
-| StringFunctionsTest.java#lowerUpperMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:53 | `SELECT LOWER(t.'id') AS 'value1',UPPER(t.'id') AS 'value2' FROM 'doc_bank_card' t` |
-| StringFunctionsTest.java#lowerUpperORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:53 | `SELECT LOWER(t."id") AS "value1",UPPER(t."id") AS "value2" FROM "doc_bank_card" t` |
-| StringFunctionsTest.java#lowerUpperPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:53 | `SELECT LOWER(t."id") AS "value1",UPPER(t."id") AS "value2" FROM "doc_bank_card" t` |
-| StringFunctionsTest.java#replaceMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:64 | `SELECT REPLACE(t.[id],?,?) AS [value1] FROM [doc_bank_card] t WHERE REPLACE(t.[code],?,?) = ?` |
-| StringFunctionsTest.java#replaceMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:64 | `SELECT REPLACE(t.'id',?,?) AS 'value1' FROM 'doc_bank_card' t WHERE REPLACE(t.'code',?,?) = ?` |
-| StringFunctionsTest.java#replaceORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:64 | `SELECT REPLACE(t."id",?,?) AS "value1" FROM "doc_bank_card" t WHERE REPLACE(t."code",?,?) = ?` |
-| StringFunctionsTest.java#replacePGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:64 | `SELECT REPLACE(t."id",?,?) AS "value1" FROM "doc_bank_card" t WHERE REPLACE(t."code",?,?) = ?` |
-| StringFunctionsTest.java#subStringMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:75 | `SELECT SUBSTRING(t.[id],1,2) AS [value1],SUBSTRING(t.[id],1,t.[stars]) AS [value2] FROM [t_topic] t` |
-| StringFunctionsTest.java#subStringMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:75 | `SELECT SUBSTR(t.'id',1,2) AS 'value1',SUBSTR(t.'id',1,t.'stars') AS 'value2' FROM 't_topic' t` |
-| StringFunctionsTest.java#subStringORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:75 | `SELECT SUBSTR(t."id",1,2) AS "value1",SUBSTR(t."id",1,t."stars") AS "value2" FROM "t_topic" t` |
-| StringFunctionsTest.java#subStringPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:75 | `SELECT SUBSTR(t."id",1,2) AS "value1",SUBSTR(t."id",1,t."stars") AS "value2" FROM "t_topic" t` |
-| StringFunctionsTest.java#trimMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:86 | `SELECT LTRIM(RTRIM(t.[id])) AS [value1] FROM [doc_bank_card] t WHERE LTRIM(RTRIM(t.[code])) = ? AND …` |
-| StringFunctionsTest.java#trimMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:86 | `SELECT TRIM(t.'id') AS 'value1' FROM 'doc_bank_card' t WHERE TRIM(t.'code') = ? AND LTRIM(t.'code') …` |
-| StringFunctionsTest.java#trimORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:86 | `SELECT TRIM(t."id") AS "value1" FROM "doc_bank_card" t WHERE TRIM(t."code") = ? AND LTRIM(t."code") …` |
-| StringFunctionsTest.java#trimPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:86 | `SELECT TRIM(t."id") AS "value1" FROM "doc_bank_card" t WHERE TRIM(t."code") = ? AND LTRIM(t."code") …` |
+| StringFunctionsTest.java#leftRightPadMSSQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:32：SQL Server 没有 LPAD / RPAD（Java 照写，执行不了）；C# 用 REPLICATE 拼出填充再用 RIGHT / LEFT 截取 | `SELECT [id],[uid],[code],[type],[bank_id] FROM [doc_bank_card] WHERE LPAD([code], 4) = ? AND LPAD([c…` |
+| StringFunctionsTest.java#leftRightPadMySQL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:31：MySQL 的 LPAD / RPAD 必须给填充字符，Java 不给时写两个参数执行不了；C# 补上 ' ' | `SELECT 'id','uid','code','type','bank_id' FROM 'doc_bank_card' WHERE LPAD('code', 4) = ? AND LPAD('c…` |
+| StringFunctionsTest.java#leftRightPadORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:32 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE LPAD("code", 4, ' ') = ? AND LP…` |
+| StringFunctionsTest.java#leftRightPadPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:32 | `SELECT "id","uid","code","type","bank_id" FROM "doc_bank_card" WHERE LPAD("code", 4) = ? AND LPAD("c…` |
+| StringFunctionsTest.java#lengthMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:43 | `SELECT LEN(t.[code]) FROM [doc_bank_card] t WHERE LEN(t.[code]) = ?` |
+| StringFunctionsTest.java#lengthMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:43 | `SELECT CHAR_LENGTH(t.'code') FROM 'doc_bank_card' t WHERE CHAR_LENGTH(t.'code') = ?` |
+| StringFunctionsTest.java#lengthORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:43 | `SELECT LENGTH(t."code") FROM "doc_bank_card" t WHERE LENGTH(t."code") = ?` |
+| StringFunctionsTest.java#lengthPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:43 | `SELECT CHAR_LENGTH(t."code") FROM "doc_bank_card" t WHERE CHAR_LENGTH(t."code") = ?` |
+| StringFunctionsTest.java#lowerUpperMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:54 | `SELECT LOWER(t.[id]) AS [value1],UPPER(t.[id]) AS [value2] FROM [doc_bank_card] t` |
+| StringFunctionsTest.java#lowerUpperMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:54 | `SELECT LOWER(t.'id') AS 'value1',UPPER(t.'id') AS 'value2' FROM 'doc_bank_card' t` |
+| StringFunctionsTest.java#lowerUpperORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:54 | `SELECT LOWER(t."id") AS "value1",UPPER(t."id") AS "value2" FROM "doc_bank_card" t` |
+| StringFunctionsTest.java#lowerUpperPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:54 | `SELECT LOWER(t."id") AS "value1",UPPER(t."id") AS "value2" FROM "doc_bank_card" t` |
+| StringFunctionsTest.java#replaceMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:65 | `SELECT REPLACE(t.[id],?,?) AS [value1] FROM [doc_bank_card] t WHERE REPLACE(t.[code],?,?) = ?` |
+| StringFunctionsTest.java#replaceMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:65 | `SELECT REPLACE(t.'id',?,?) AS 'value1' FROM 'doc_bank_card' t WHERE REPLACE(t.'code',?,?) = ?` |
+| StringFunctionsTest.java#replaceORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:65 | `SELECT REPLACE(t."id",?,?) AS "value1" FROM "doc_bank_card" t WHERE REPLACE(t."code",?,?) = ?` |
+| StringFunctionsTest.java#replacePGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:65 | `SELECT REPLACE(t."id",?,?) AS "value1" FROM "doc_bank_card" t WHERE REPLACE(t."code",?,?) = ?` |
+| StringFunctionsTest.java#subStringMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:76 | `SELECT SUBSTRING(t.[id],1,2) AS [value1],SUBSTRING(t.[id],1,t.[stars]) AS [value2] FROM [t_topic] t` |
+| StringFunctionsTest.java#subStringMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:76 | `SELECT SUBSTR(t.'id',1,2) AS 'value1',SUBSTR(t.'id',1,t.'stars') AS 'value2' FROM 't_topic' t` |
+| StringFunctionsTest.java#subStringORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:76 | `SELECT SUBSTR(t."id",1,2) AS "value1",SUBSTR(t."id",1,t."stars") AS "value2" FROM "t_topic" t` |
+| StringFunctionsTest.java#subStringPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:76 | `SELECT SUBSTR(t."id",1,2) AS "value1",SUBSTR(t."id",1,t."stars") AS "value2" FROM "t_topic" t` |
+| StringFunctionsTest.java#trimMSSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:87 | `SELECT LTRIM(RTRIM(t.[id])) AS [value1] FROM [doc_bank_card] t WHERE LTRIM(RTRIM(t.[code])) = ? AND …` |
+| StringFunctionsTest.java#trimMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:87 | `SELECT TRIM(t.'id') AS 'value1' FROM 'doc_bank_card' t WHERE TRIM(t.'code') = ? AND LTRIM(t.'code') …` |
+| StringFunctionsTest.java#trimORACLE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:87 | `SELECT TRIM(t."id") AS "value1" FROM "doc_bank_card" t WHERE TRIM(t."code") = ? AND LTRIM(t."code") …` |
+| StringFunctionsTest.java#trimPGSQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Functions/StringFunctionsTest.cs:87 | `SELECT TRIM(t."id") AS "value1" FROM "doc_bank_card" t WHERE TRIM(t."code") = ? AND LTRIM(t."code") …` |
 | mysql8/ExampleTest.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ExampleTest.cs:25 |  |
 
 ### 行锁（`lock`，M2）
@@ -1566,10 +1566,10 @@
 | mysql8/M8BankTest.java#test15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.GroupJoinWindows.cs:58 | `SELECT t.'name' AS 'value1',t4.'__joining3__' AS 'value2' FROM 't_sys_user' t LEFT JOIN (SELECT t3.'…` |
 | mysql8/M8BankTest.java#test16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.GroupJoinWindows.cs:71 | `SELECT t.'name' AS 'value1',t4.'__joining3__' AS 'value2' FROM 't_sys_user' t LEFT JOIN (SELECT t3.'…` |
 | mysql8/M8BankTest.java#test17 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.GroupJoinWindows.cs:84 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t3.'u…` |
-| mysql8/M8BankTest.java#test7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:63 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t1.'type' SEPARATOR ?) FROM 't_bank_card' t1 WHERE …` |
-| mysql8/M8BankTest.java#test7_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:75 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t2.'type' SEPARATOR ?) FROM (SELECT t1.'id',t1.'uid…` |
-| mysql8/M8BankTest.java#test7_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:87 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t1.'type' SEPARATOR ?) FROM 't_bank_card' t1 WHERE …` |
-| mysql8/M8BankTest.java#test8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:99 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t4.'type' SEPARATOR ?) FROM 't_bank_card' t4 WHERE …` |
+| mysql8/M8BankTest.java#test7 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:63：取段之后再聚合：Java 把 ORDER BY / LIMIT 写在聚合子查询末尾，LIMIT 作用在聚合出的一行上、拼的是全部行（PG 上还会因 ORDER BY 报错）；C# 先把这段行包成派生表再聚合，拼接按集合上的排序 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t1.'type' SEPARATOR ?) FROM 't_bank_card' t1 WHERE …` |
+| mysql8/M8BankTest.java#test7_1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:75：取段之后再聚合：Java 把 ORDER BY / LIMIT 写在聚合子查询末尾，LIMIT 作用在聚合出的一行上、拼的是全部行（PG 上还会因 ORDER BY 报错）；C# 先把这段行包成派生表再聚合，拼接按集合上的排序 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t2.'type' SEPARATOR ?) FROM (SELECT t1.'id',t1.'uid…` |
+| mysql8/M8BankTest.java#test7_2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:87：取段之后再聚合：Java 把 ORDER BY / LIMIT 写在聚合子查询末尾，LIMIT 作用在聚合出的一行上、拼的是全部行（PG 上还会因 ORDER BY 报错）；C# 先把这段行包成派生表再聚合，拼接按集合上的排序 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t1.'type' SEPARATOR ?) FROM 't_bank_card' t1 WHERE …` |
+| mysql8/M8BankTest.java#test8 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Navigations.cs:99：取段之后再聚合：Java 把 ORDER BY / LIMIT 写在聚合子查询末尾，LIMIT 作用在聚合出的一行上、拼的是全部行（PG 上还会因 ORDER BY 报错）；C# 先把这段行包成派生表再聚合，拼接按集合上的排序 | `SELECT t.'name' AS 'value1',(SELECT GROUP_CONCAT(t4.'type' SEPARATOR ?) FROM 't_bank_card' t4 WHERE …` |
 | mysql8/M8BankTest.java#testFlatTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:77 | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t LEFT JOIN (SELECT t1.'bank_id' AS '__group_ke…` |
 | mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:93 | `SELECT t.'id',t.'name',t.'create_time',(NOT (EXISTS(SELECT 1 FROM (SELECT t1.'id',t1.'uid',t1.'code'…` |
 | mysql8/M8BankTest.java#testQueryBankAndCardImplicitCountTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:104 | `SELECT t.'id',t.'name',t.'create_time',IFNULL(t4.'__none2__',?) AS '__part__column1' FROM 't_bank' t…` |

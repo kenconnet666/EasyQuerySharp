@@ -8,7 +8,7 @@ public sealed class QueryTest8(MySqlFixture fixture) : MySqlTest(fixture)
 {
     // Java 用例没有断言：原生 SQL 读成字典
     [Fact, Upstream("QueryTest8.java#test4x")]
-    public async Task Test4x() => Assert.NotEmpty(await Db.SqlQueryAsync<Dictionary<string, object?>>("SHOW TABLES", cancellationToken: Ct));
+    public async Task Test4x() => Assert.NotEmpty(await Db.SqlQueryRawAsync<Dictionary<string, object?>>("SHOW TABLES", cancellationToken: Ct));
 
     // Java 用例没有断言：分页后投影再联表、再投影再联表、最后投影到实体
     [Fact, Upstream("QueryTest8.java#test1")]

@@ -25,9 +25,10 @@ public abstract partial class LiveSuite
         SkipUnless(Options.PadFunctions, "LPAD / RPAD");
         var db = await SeededAsync();
         var row = await db.Query<User>().Where(u => u.Name == "alice")
-            .Select(u => new Draft<string, string>(u.Name.PadLeft(7, '*'), u.Name.PadRight(7, '-')))
+            .Select(u => new Draft<string, string, string, string>(u.Name.PadLeft(7, '*'), u.Name.PadRight(7, '-'), u.Name.PadLeft(6), u.Name.PadRight(3)))
             .SingleAsync(Ct);
-        Assert.Equal(("**alice", "alice--"), (row.Value1, row.Value2));
+        // 够长时与 LPAD / RPAD 一样截成前 n 个字符（.NET 的 PadLeft 不截断）
+        Assert.Equal(("**alice", "alice--", " alice", "ali"), (row.Value1, row.Value2, row.Value3, row.Value4));
     }
 
     // 第 1 篇帖子金额 10.50

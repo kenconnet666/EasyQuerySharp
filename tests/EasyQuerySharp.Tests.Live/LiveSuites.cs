@@ -16,7 +16,7 @@ public sealed class SqliteLiveSuite : LiveSuite
     protected override LiveSuiteOptions Options { get; } = new()
     {
         RowLocks = false, Rollup = false, Cube = false, GroupingFunction = false,
-        PadFunctions = false, TruncateWithScale = false, ExtremesIgnoreNull = false,
+        TruncateWithScale = false, ExtremesIgnoreNull = false,
     };
     protected override Task<string> ConnectionStringAsync() => Task.FromResult($"Data Source={File};Pooling=False");
     protected internal override Task<string> ShardConnectionStringAsync() => Task.FromResult($"Data Source={Path.ChangeExtension(File, null)}_ds1.db;Pooling=False");
@@ -71,7 +71,7 @@ public sealed class SqlServerLiveSuite : LiveSuite
     protected override TestDatabase Database => TestDatabases.SqlServer;
     protected override SqlDialect Dialect => SqlServerDialect.Instance;
     // SQL Server 没有 FOR UPDATE（要用表提示），与 Java 一样直接报错；也没有 NTH_VALUE
-    protected override LiveSuiteOptions Options { get; } = new() { RowLocks = false, NthValue = false, PadFunctions = false, JsonFunctions = false };
+    protected override LiveSuiteOptions Options { get; } = new() { RowLocks = false, NthValue = false, JsonFunctions = false };
     protected override Task<string> ConnectionStringAsync() =>
         LiveDatabase.EnsureAsync(Database, "IF DB_ID('eqs_live') IS NULL CREATE DATABASE eqs_live");
     protected internal override Task<string> ShardConnectionStringAsync() =>

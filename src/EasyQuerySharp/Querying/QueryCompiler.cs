@@ -327,7 +327,7 @@ internal static class QueryCompiler
             case RawSqlSource r:
             {
                 var entity = db.Metadata.Get(r.EntityType);
-                var table = new RawTableSource(r.Sql, r.Parameters) { ExplicitAlias = r.Alias };
+                var table = new RawTableSource(r.Text.Segments, r.Text.Parameters) { ExplicitAlias = r.Alias };
                 return new DerivedBinding(table, entity.Columns.ToDictionary(c => c.PropertyName, c => c.Name), entity);
             }
             default:

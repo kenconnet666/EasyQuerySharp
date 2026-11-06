@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Runtime.CompilerServices;
 using EasyQuerySharp.Metadata;
 
 namespace EasyQuerySharp.Commands;
@@ -212,7 +213,7 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
         SaveChildren(child, tracked, depth + 1);
     }
 
-    // 子对象的外键已指向别的父对象：默认报错，AllowOwnershipChange 时允许改写
+    // 子对象的外键已指向别的父对象：默认报错，AllowOwnershipChange 时允许改写；外键还没设的子对象是新挂上的
     private void CheckOwnership(object parent, NavigationMetadata nav, object child)
     {
         if (Has(SaveBehavior.AllowOwnershipChange)) return;
@@ -220,10 +221,18 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
         {
             var current = nav.TargetColumns[i].Property.GetValue(child);
             var should = nav.SelfColumns[i].Property.GetValue(parent);
-            if (current is not null && should is not null && !Equals(current, should))
+            if (!IsUnset(nav.TargetColumns[i], current) && should is not null && !Equals(current, should))
                 throw new InvalidOperationException(
                     $"{child.GetType().Name}.{nav.TargetColumns[i].PropertyName} 的值 {current} 不等于 {nav}，应为 {should}：要把子对象挂到别的父对象，请加 SaveBehavior.AllowOwnershipChange");
         }
+    }
+
+    // 外键没设：null，或非空值类型属性的默认值（long 的 0、Guid.Empty）。Java 的外键是包装类型，没设就是 null
+    private static bool IsUnset(ColumnMetadata column, object? value)
+    {
+        if (value is null) return true;
+        var type = column.Property.PropertyType;
+        return type.IsValueType && Nullable.GetUnderlyingType(type) is null && value.Equals(RuntimeHelpers.GetUninitializedObject(type));
     }
 
     // 多对多：目标是别的聚合根，只维护中间表行；目标要已经存在

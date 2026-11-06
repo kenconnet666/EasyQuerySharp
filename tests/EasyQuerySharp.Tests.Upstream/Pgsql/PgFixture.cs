@@ -48,7 +48,7 @@ public sealed class PgFixture : IAsyncLifetime
         _db = new EasyDb(o => o.UsePostgreSql(NpgsqlDataSource.Create(TestDatabases.PostgreSql.TryConnectionString(Database)!)).AddListener(SqlCapture.Instance)
             .AddInterceptor(new MyCategoryInterceptor()));
         // SysUser 的表在 easy-query-test schema 下（Java 的 code-first 一并建 schema）
-        await _db.ExecuteSqlAsync("CREATE SCHEMA IF NOT EXISTS \"easy-query-test\"");
+        await _db.ExecuteSqlRawAsync("CREATE SCHEMA IF NOT EXISTS \"easy-query-test\"");
         await _db.CodeFirst.CreateTablesAsync(Tables);
         await SeedAsync(_db);
     }

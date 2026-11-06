@@ -121,7 +121,7 @@ await using var tx = db.BeginTransaction();
 var order = await db.Query<SalesOrder>().Include(o => o.Lines, q => q.OrderBy(l => l.ProductId)).WhereById(1L).SingleAsync();
 order.Lines![0].Quantity = 2;                                                  // 年度会员改成 2 份
 order.Lines.RemoveAt(1);                                                        // 不要贴纸礼包了
-order.Lines.Add(new SalesOrderLine { OrderId = order.Id, ProductId = 3, Quantity = 1, Price = 199.00m }); // 加一门课
+order.Lines.Add(new SalesOrderLine { ProductId = 3, Quantity = 1, Price = 199.00m });  // 加一门课，OrderId 保存时回填
 await db.Save(order).ExecuteAsync();
 await tx.CommitAsync();
 return await db.Query<OrderItem>().Where(i => i.OrderId == 1).OrderBy(i => i.ProductId)
@@ -182,7 +182,7 @@ SELECT COUNT(*) FROM `t_order_item` WHERE `order_id` = ?;
 |---|---|
 | `IgnoreRoot` | 根不增不改，只处理子对象 |
 | `IgnoreRootUpdate` | 新根照常插入，已追踪的根不更新 |
-| `AllowOwnershipChange` | 允许把子对象挂到别的父对象（改写外键）；默认报错 |
+| `AllowOwnershipChange` | 允许把子对象挂到别的父对象（改写外键）；默认报错。外键没设（null，或 `long` 等非空类型的默认值 0）的子对象是新挂上的，不算挂到别处 |
 | `IgnoreNull` | 已追踪父对象上为 null 的对一导航跳过，不当孤儿 |
 | `IgnoreEmpty` | 空集合跳过，不当成"全部拿掉" |
 | `PhysicalDelete` | 孤儿物理删除（默认有逻辑删除的按逻辑删除） |
@@ -195,7 +195,6 @@ SELECT COUNT(*) FROM `t_order_item` WHERE `order_id` = ?;
 
 - 必须在 `BeginTracking()` 作用域和事务里，否则抛异常。
 - 只保存追踪查询里 `Include` 过的导航；已追踪的父对象上没 Include 过、却有值的导航报错（`SavePath` 时不检查）。
-- 给已有的父对象新增子对象时，子对象的外键要么留空（可空类型）、要么先设成父对象的键：非空外键的默认值 0 会被当成"挂在别的父对象上"而报错（要求 `AllowOwnershipChange`）。
 - 直达导航（`DirectMapping`）不参与保存。
 - 不做"查库对比"模式（Java 的 `QueryCompareSaveProvider` 没有完成）。
 - 一个子对象只能属于一个父对象：同一实例既留在原父对象上又挂到别处时报错。

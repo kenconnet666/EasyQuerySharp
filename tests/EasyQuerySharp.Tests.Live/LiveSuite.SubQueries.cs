@@ -62,6 +62,11 @@ public abstract partial class LiveSuite
         var rows = await db.Query<User>().OrderBy(u => u.Id).Select(u => new Draft<string, string?>(u.Name, u.LatestPost!.Title)).ToListAsync(Ct);
         Assert.Equal([("alice", "sql 100%"), ("bob", "hello"), ("carol", null)], rows.Select(r => (r.Value1, r.Value2)));
         Assert.Equal(["bob"], await db.Query<User>().Where(u => u.LatestPost!.Title == "hello").Select(u => u.Name).ToListAsync(Ct));
+
+        // 与 null 比较：条件、投影、隐式子查询
+        Assert.Equal(["carol"], await db.Query<User>().Where(u => u.LatestPost == null).Select(u => u.Name).ToListAsync(Ct));
+        Assert.Equal([true, true, false], await db.Query<User>().OrderBy(u => u.Id).Select(u => u.LatestPost != null).ToListAsync(Ct));
+        Assert.Equal(["acme"], await db.Query<Company>().Where(c => c.Users!.Any(u => u.LatestPost != null)).Select(c => c.Name).ToListAsync(Ct));
     }
 
     // IN / NOT IN 一个子查询，以及标量子查询（金额高于平均值 503.6875 的只有 2000.00 那篇）
@@ -115,6 +120,33 @@ public abstract partial class LiveSuite
         var three = adults.UnionAll(minors).UnionAll(adults);
         var names = await three.OrderBy(r => r.Value1).Skip(1).Take(2).ToListAsync(Ct);
         Assert.Equal(["alice", "carol"], names.Select(r => r.Value1));
+    }
+
+    // 投影成一个值的查询合并、分组之后，按值本身过滤、排序、取段
+    [Fact]
+    public async Task OrdersScalarResultsByTheValueItself()
+    {
+        var db = await SeededAsync();
+        var names = db.Query<User>().Select(u => u.Name);
+        var titles = db.Query<Post>().Where(p => p.UserId == 2).Select(p => p.Title);
+        Assert.Equal(["alice", "bob", "carol", "hello", "orm_v2"], await names.UnionAll(titles).OrderBy(n => n).ToListAsync(Ct));
+        Assert.Equal([2L, 1L], await db.Query<Post>().GroupBy(p => p.UserId).Keys().Where(k => k > 0).OrderByDescending(k => k).Take(2).ToListAsync(Ct));
+    }
+
+    // 分支自己排序、取段（SQLite 不允许分支带 ORDER BY / LIMIT，包一层再合并）
+    [Fact]
+    public async Task UnionsBranchesThatAreOrderedAndLimited()
+    {
+        var db = await SeededAsync();
+        var oldest = db.Query<User>().Where(u => u.Age != null).OrderByDescending(u => u.Age).Take(1).Select(u => new Draft<string>(u.Name));
+        var first = db.Query<User>().OrderBy(u => u.Id).Take(1).Select(u => new Draft<string>(u.Name));
+        Assert.Equal(["alice", "alice"], (await oldest.UnionAll(first).ToListAsync(Ct)).Select(r => r.Value1));
+
+        // 带出按父对象取段的 UNION ALL 模式（Java 的 includeLimitMode）：每个父对象一个分支
+        var unionAll = await SeededAsync(o => o.IncludeLimitMode = IncludeLimitMode.UnionAll);
+        var users = await unionAll.Query<User>().OrderBy(u => u.Id)
+            .Include(u => u.Posts, q => q.OrderByDescending(p => p.Amount).Take(1)).ToListAsync(Ct);
+        Assert.Equal([["sql 100%"], ["hello"], []], users.Select(u => u.Posts!.Select(p => p.Title).ToArray()));
     }
 
     // CTE 和真实的表连接，第二个 CTE 建立在第一个之上

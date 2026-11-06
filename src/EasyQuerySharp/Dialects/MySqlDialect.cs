@@ -21,6 +21,9 @@ public class MySqlDialect : SqlDialect
     /// <inheritdoc />
     public override string? LastInsertIdQuery => "SELECT LAST_INSERT_ID()";
 
+    /// <summary>OFFSET 前必须有 LIMIT：只跳过行数时写 MySQL 文档给出的最大值 <c>LIMIT 18446744073709551615 OFFSET m</c>。</summary>
+    public override string OffsetOnlyLimit => "18446744073709551615";
+
     /// <inheritdoc />
     public override void WriteOrderedStringJoin(SqlRenderer renderer, OrderedStringJoinExpr join)
     {
@@ -180,6 +183,9 @@ public class MySqlDialect : SqlDialect
     {
         base.RegisterFunctions(f);
         f[SqlFunctionNames.NullOrDefault] = Call("IFNULL");
+        // MySQL 的 LPAD / RPAD 必须给填充字符（Java 不给时写两个参数，执行不了）
+        f[SqlFunctionNames.PadLeft] = Pad("LPAD", "' '");
+        f[SqlFunctionNames.PadRight] = Pad("RPAD", "' '");
         f[SqlFunctionNames.MaxColumns] = Call("GREATEST");
         f[SqlFunctionNames.MinColumns] = Call("LEAST");
         f[SqlFunctionNames.NullSafeEquals] = Template("({0} <=> {1})");

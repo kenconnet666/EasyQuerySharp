@@ -2,6 +2,10 @@
 SELECT UPPER(t.[title]) AS [upper],LEN(t.[title]) AS [length],SUBSTRING(t.[title],1,2) AS [first],REPLACE(t.[title],?,?) AS [replaced],LTRIM(RTRIM(CONCAT(?,t.[title],?))) AS [trimmed],(CHARINDEX(?,t.[title]) - 1) AS [position] FROM [t_post] t WHERE t.[id] <= ? ORDER BY t.[id] ASC;
 -- params: ['查询', 'query', ' ', ' ', 'join', 2]
 
+-- Pad：补齐：PadLeft / PadRight（SQLite 没有 LPAD，拼出填充字符）
+SELECT RIGHT(REPLICATE(?, 6) + LEFT(t.[name], 6), 6) FROM [t_user] t WHERE t.[id] <= ? ORDER BY t.[id] ASC;
+-- params: ['*', 3]
+
 -- Concat：拼接：+、string.Concat、插值字符串
 SELECT TOP 3 CONCAT(t.[name],?,t.[age],?) FROM [t_user] t WHERE t.[age] IS NOT NULL ORDER BY t.[id] ASC;
 -- params: ['（', ' 岁）']
@@ -39,6 +43,10 @@ SELECT TOP 5 t.[title],(CASE WHEN t.[views] >= ? THEN ? WHEN t.[views] >= ? THEN
 -- Casts：类型转换：ToString() 写成 CAST
 SELECT CONCAT(t.[title],?,cast(t.[views] as nvarchar(max))) FROM [t_post] t WHERE cast(t.[views] as nvarchar(max)) LIKE ? ORDER BY t.[id] ASC;
 -- params: ['：', '8%']
+
+-- ConvertTo：Convert.ToXxx：各类型的重载都写成 CAST
+SELECT cast(t.[views] as nvarchar(max)) FROM [t_post] t WHERE (cast(t.[views] as decimal(36,18)) / ?) >= ? ORDER BY t.[id] ASC;
+-- params: [1000, 2]
 
 -- Json：JSON：Sql.Json(列) 取长度、取元素
 -- error: mssql 方言还不支持 Sql.Json 的 JsonLength

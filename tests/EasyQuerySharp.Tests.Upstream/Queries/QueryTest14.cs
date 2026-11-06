@@ -112,7 +112,7 @@ public sealed class QueryTest14(MySqlFixture fixture) : MySqlTest(fixture)
     [Fact, Upstream("QueryTest14.java#testClose")]
     public async Task TestClose()
     {
-        Assert.NotEmpty(await Db.SqlQueryAsync<Dictionary<string, object?>>("select * from t_topic", cancellationToken: Ct));
+        Assert.NotEmpty(await Db.SqlQueryRawAsync<Dictionary<string, object?>>("select * from t_topic", cancellationToken: Ct));
         SqlOnly.AssertStatement(BlogWithTopic.Select((b1, _) => new BlogEntityVO1 { Top = (bool?)(object)b1.Order! }).ToStatement(), "SELECT t.`order` AS `top` FROM `t_blog` t LEFT JOIN `t_topic` t1 ON t.`id` = t1.`id` WHERE t.`deleted` = ?", "false(Boolean)");
     }
 

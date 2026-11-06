@@ -2,6 +2,10 @@
 SELECT UPPER(t."title") AS "upper",LENGTH(t."title") AS "length",SUBSTR(t."title",1,2) AS "first",REPLACE(t."title",?,?) AS "replaced",TRIM(CONCAT(?,t."title",?)) AS "trimmed",(INSTR(t."title",?) - 1) AS "position" FROM "t_post" t WHERE t."id" <= ? ORDER BY t."id" ASC;
 -- params: ['查询', 'query', ' ', ' ', 'join', 2]
 
+-- Pad：补齐：PadLeft / PadRight（SQLite 没有 LPAD，拼出填充字符）
+SELECT substr(substr(replace(hex(zeroblob(6)), '00', ?), 1, 6 - length(t."name")) || t."name", 1, 6) FROM "t_user" t WHERE t."id" <= ? ORDER BY t."id" ASC;
+-- params: ['*', 3]
+
 -- Concat：拼接：+、string.Concat、插值字符串
 SELECT CONCAT(t."name",?,t."age",?) FROM "t_user" t WHERE t."age" IS NOT NULL ORDER BY t."id" ASC LIMIT 3;
 -- params: ['（', ' 岁）']
@@ -39,6 +43,10 @@ SELECT t."title",(CASE WHEN t."views" >= ? THEN ? WHEN t."views" >= ? THEN ? ELS
 -- Casts：类型转换：ToString() 写成 CAST
 SELECT CONCAT(t."title",?,cast(t."views" as character)) FROM "t_post" t WHERE cast(t."views" as character) LIKE ? ORDER BY t."id" ASC;
 -- params: ['：', '8%']
+
+-- ConvertTo：Convert.ToXxx：各类型的重载都写成 CAST
+SELECT cast(t."views" as character) FROM "t_post" t WHERE (cast(t."views" as decimal(36,18)) / ?) >= ? ORDER BY t."id" ASC;
+-- params: [1000, 2]
 
 -- Json：JSON：Sql.Json(列) 取长度、取元素
 SELECT t."user_id",json_array_length(t."skills") AS "count",json_extract(t."skills",'$[0]') AS "first" FROM "t_profile" t WHERE json_array_length(t."skills") >= ? ORDER BY t."user_id" ASC;

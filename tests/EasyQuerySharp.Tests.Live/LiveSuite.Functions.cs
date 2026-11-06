@@ -61,6 +61,17 @@ public abstract partial class LiveSuite
 
     private sealed record CastParts(string Text, double Double, decimal Decimal, int? Nulled, int? Kept);
 
+    // Convert.ToXxx 的各个类型重载（不只 object / string）都是 CAST
+    [Fact]
+    public async Task ConvertsWithTypedConvertOverloads()
+    {
+        var db = await SeededAsync();
+        var row = await db.Query<Post>().Where(p => Convert.ToInt32(p.UserId) == 1 && p.Title == "orm tips")
+            .Select(p => new Draft<string, double, long>(Convert.ToString(p.Id), Convert.ToDouble(p.Amount), Convert.ToInt64(p.Title.Length)))
+            .SingleAsync(Ct);
+        Assert.Equal(("1", 10.5d, 8L), (row.Value1, row.Value2, row.Value3));
+    }
+
     // bob 的年龄是 NULL，比较结果是 NULL，落到 ELSE
     [Fact]
     public async Task BuildsCaseWhenWithLiteralAndExpressionBranches()

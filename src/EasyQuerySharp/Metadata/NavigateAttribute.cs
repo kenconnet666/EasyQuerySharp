@@ -29,10 +29,19 @@ public enum KeyMatch
     SelfCsv,
 }
 
-/// <summary>集合导航取第几个元素、取一段行时，链上没写排序的话组内按什么排（对应 Java 的 PartitionOrderEnum）。</summary>
+/// <summary>
+/// 集合导航取第几个元素（<c>First()</c> / <c>ElementAt(n)</c>）、声明了条数的对一导航取那一行时，链上没写排序的话组内按什么排
+/// （对应 Java 的 PartitionOrderEnum）。
+/// </summary>
 public enum PartitionOrder
 {
-    /// <summary>按目标表主键升序（默认，对应 Java 的 KEY）。</summary>
+    /// <summary>
+    /// 默认：导航上声明了 <see cref="NavigateAttribute.OrderBy"/> 时按它排（同 <see cref="Navigation"/>），否则按目标表主键升序（同 <see cref="Key"/>）。
+    /// Java 的默认 THROW 在这种情况下报错、要求写明；C# 取声明里明确的意图。
+    /// </summary>
+    Default,
+
+    /// <summary>按目标表主键升序（对应 Java 的 KEY_ASC），导航上声明的 OrderBy 只用于带出。</summary>
     Key,
 
     /// <summary>不排序（对应 Java 的 IGNORE）：<c>ROW_NUMBER() OVER (PARTITION BY 外键)</c>。</summary>
@@ -108,11 +117,12 @@ public sealed class NavigateAttribute(RelationType relation) : Attribute
 
     /// <summary>
     /// 集合导航的默认排序（对应 Java 的 orderByProps）：逗号分隔的"属性 [asc|desc] [nulls first|nulls last]"，
-    /// 如 <c>"OpenTime, Code desc nulls first"</c>。<see cref="PartitionOrder"/> 为 <see cref="Metadata.PartitionOrder.Navigation"/> 时取元素按它排。
+    /// 如 <c>"OpenTime, Code desc nulls first"</c>。带出时总按它排；取元素、声明了条数的对一导航取那一行时，<see cref="PartitionOrder"/>
+    /// 为默认或 <see cref="Metadata.PartitionOrder.Navigation"/> 时按它排。
     /// </summary>
     public string? OrderBy { get; init; }
 
-    /// <summary>取第几个元素、取一段行而链上没写排序时组内按什么排，默认按主键。</summary>
+    /// <summary>取第几个元素、取一段行而链上没写排序时组内按什么排：默认按声明的 <see cref="OrderBy"/>，没有声明时按主键。</summary>
     public PartitionOrder PartitionOrder { get; init; }
 
     /// <summary>

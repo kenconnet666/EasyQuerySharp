@@ -79,7 +79,7 @@ public static class SaveExamples
         var order = await db.Query<SalesOrder>().Include(o => o.Lines, q => q.OrderBy(l => l.ProductId)).WhereById(1L).SingleAsync();
         order.Lines![0].Quantity = 2;                                                  // 年度会员改成 2 份
         order.Lines.RemoveAt(1);                                                        // 不要贴纸礼包了
-        order.Lines.Add(new SalesOrderLine { OrderId = order.Id, ProductId = 3, Quantity = 1, Price = 199.00m }); // 加一门课
+        order.Lines.Add(new SalesOrderLine { ProductId = 3, Quantity = 1, Price = 199.00m });  // 加一门课，OrderId 保存时回填
         await db.Save(order).ExecuteAsync();
         await tx.CommitAsync();
         return await db.Query<OrderItem>().Where(i => i.OrderId == 1).OrderBy(i => i.ProductId)

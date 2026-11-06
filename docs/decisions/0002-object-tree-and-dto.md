@@ -1,6 +1,6 @@
 # 0002 对象树与 DTO 导航
 
-状态：已定（2026-11-04；2026-11-06 按实现修订：DTO 的映射在运行时构造、带出配置的写法、树的 API，级联保存改由 [0004](0004-aggregate-save.md) 规定）
+状态：已定（2026-11-04；2026-11-06 按实现修订：DTO 的映射在运行时构造、带出配置的写法、树的 API，级联保存改由 [0004](0004-aggregate-save.md) 规定；平铺只认 `[MapPath]`，不按名字自动拆分，与 Java 一致）
 
 ## 背景
 
@@ -38,7 +38,7 @@ u.Company!.Project(CompanyVo.Map)        // 对一
 自动映射的约定：
 
 - 同名属性直接对应，忽略大小写。
-- 平铺：`CompanyName` 对应 `Company.Name`（`@NavigateFlat`）；`List<string> PostTitles` 对应 `Posts.Select(p => p.Title)`。路径有歧义时用 `[MapPath("Company.Name")]` 指定。全是对一导航的路径默认走带出查询（同一导航上的几个平铺属性共用一条，单表不写别名，与 Java 的 `@NavigateFlat` 一致）；`[MapPath(.., Join = true)]` 改为主查询里隐式 JOIN（Java 的 `@NavigateJoin`）。带出查询每次最多按 `IncludeGroupSize`（默认 512，可按查询覆盖）个父键查；`WithConfigureArgument(arg)` 把参数传给各层带出配置。
+- 平铺：导航路径上的值用 `[MapPath("Company.Name")]` 写明（Java 的 `@NavigateFlat`），经过集合的路径映射成列表，如 `[MapPath("Posts.Title")] List<string> PostTitles`。不按名字猜路径：`CompanyName` 不会自动对应 `Company.Name`——Java 的 `selectAutoInclude` 只认 `@NavigateFlat`、TS 的投影也要写明路径；按名字拆分有歧义（`CompanyName` 也可能是 `CompanyNa.Me`），实体上加一个同名列还会悄悄改变映射。全是对一导航的路径默认走带出查询（同一导航上的几个平铺属性共用一条，单表不写别名，与 Java 的 `@NavigateFlat` 一致）；`[MapPath(.., Join = true)]` 改为主查询里隐式 JOIN（Java 的 `@NavigateJoin`）。带出查询每次最多按 `IncludeGroupSize`（默认 512，可按查询覆盖）个父键查；`WithConfigureArgument(arg)` 把参数传给各层带出配置。
 - 嵌套 DTO：与导航同名的属性，类型是 DTO（或 `List<>` 里装着 DTO）时，沿着导航递归映射；类型就是实体本身时整个对象带出。
 - 嵌套 DTO 的带出要加过滤、排序、条数限制（对应 `EXTRA_AUTO_INCLUDE_CONFIGURE`）时，DTO 实现 `IAutoIncludeConfigure<TEntity>`；根 DTO 实现时配置的是这条查询本身：
 

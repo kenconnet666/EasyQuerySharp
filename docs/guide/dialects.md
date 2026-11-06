@@ -132,7 +132,7 @@ MERGE INTO "t_order_item" t1 USING (SELECT ? AS "order_id",? AS "product_id",? A
 
 ## 各方言的要点
 
-- **SQLite**：没有行锁、ROLLUP / CUBE、`LPAD` / `RPAD`；日期函数写成 `strftime`；`Sql.MaxColumns` 写多参数 `MAX`。
+- **SQLite**：没有行锁、ROLLUP / CUBE；`PadLeft` / `PadRight` 用 `zeroblob` 拼出填充字符（没有 `LPAD` / `RPAD`）；日期函数写成 `strftime`；`Sql.MaxColumns` 写多参数 `MAX`。
 - **MySQL**：`ON DUPLICATE KEY UPDATE` 用 `VALUES(col)`（8.0.18 能用的写法）；忽略冲突可以改成 `ON DUPLICATE KEY UPDATE 主键 = VALUES(主键)`：`options.Use(new MySqlDialect { IgnoreConflictAsKeyUpdate = true }, 数据源)`。
 - **PostgreSQL**：`Sql.Pg.Jsonb` / `Array` / `FullText` 专属函数；条件里的 `IndexOf` 用 `STRPOS`。
 - **SQL Server**：日期格式化按 Java 写成 `CONVERT` / `SUBSTRING` 段；拼接式 LIKE 先 `CAST(.. AS NVARCHAR(MAX))`；条件当值写成 `CASE WHEN`；`MERGE` 一次一行。
