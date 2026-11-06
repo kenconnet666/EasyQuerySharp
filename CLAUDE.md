@@ -14,12 +14,12 @@ easy-query（Java，`C:\Users\Administrator\IdeaProjects\easy-query`，软 fork�
 
 ## 每个工作项的流程
 
-1. 在 ROADMAP 里认领一项，开分支，名字用 `feat/…`、`fix/…`、`chore/…`、`docs/…`。
+1. 在 ROADMAP 里认领一项。直接在 master 的工作区里改，不开分支、不走 PR，改动随时能在 IDE 里一起看。
 2. 先看 Java 用例和 TS 实现：用 `tools/ParityTests` 列出这一项对应的 Java 用例，读 TS 的同名能力和它的 ROADMAP 记录。
 3. 先写测试：用 `--scaffold` 生成骨架，期望 SQL 用 Java 原文，再补上 C# 查询。
 4. 实现。
 5. 写文档：能力页加示例卡片，然后重新生成 SQL 快照。
-6. 重新生成 `docs/parity-tests.md`；推送并开 PR；CI 全部通过后 squash 合并，更新 ROADMAP 的状态。
+6. 重新生成 `docs/parity-tests.md`，更新 ROADMAP 的状态；一项做完提交到 master 并推送，CI 在 master 上跑。
 
 本地只跑和改动相关的测试，全量交给 CI。推送后不用等，下次提交前先用 `gh run list --limit 1` 看上一次的结果，有失败先修。
 
