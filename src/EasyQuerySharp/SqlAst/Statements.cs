@@ -165,6 +165,9 @@ public sealed class UpdateStatement(EntityTableSource table)
 
     /// <summary>WHERE 条件，按 AND 连接。</summary>
     public List<SqlExpr> Where { get; } = [];
+
+    /// <summary>执行后返回的列（<c>RETURNING …</c>）：null 不返回，空表示整行（<c>RETURNING *</c>）。</summary>
+    public IReadOnlyList<ColumnExpr>? Returning { get; set; }
 }
 
 /// <summary>DELETE 语句。</summary>
@@ -178,6 +181,9 @@ public sealed class DeleteStatement(EntityTableSource table)
 
     /// <summary>WHERE 条件，按 AND 连接。</summary>
     public List<SqlExpr> Where { get; } = [];
+
+    /// <summary>执行后返回的列（<c>RETURNING …</c>）：null 不返回，空表示整行（<c>RETURNING *</c>）。</summary>
+    public IReadOnlyList<ColumnExpr>? Returning { get; set; }
 }
 
 /// <summary>GROUP BY 的汇总方式（对应 Java fork 的 GroupingEnum）。</summary>

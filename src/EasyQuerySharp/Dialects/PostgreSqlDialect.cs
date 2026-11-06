@@ -14,6 +14,9 @@ public class PostgreSqlDialect : SqlDialect
     /// <inheritdoc />
     public override string Name => "pgsql";
 
+    /// <inheritdoc />
+    public override bool SupportsWriteReturning => true;
+
     /// <summary>PostgreSQL 的 SET 列不能带表别名（<c>SET t."a"</c> 会被当成复合列）。</summary>
     public override bool QualifySetColumns => false;
 

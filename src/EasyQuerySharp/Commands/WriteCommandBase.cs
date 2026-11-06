@@ -87,6 +87,24 @@ public abstract class WriteCommandBase<TSelf, T> : EntityCommandBase<TSelf, T>
     public abstract Task<long> ExecuteAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// 执行后返回受影响的整行：<c>UPDATE / DELETE … RETURNING *</c>（见 <see cref="ReturningCommand{T,TResult}"/>）。
+    /// 只能用在按条件写入上，不能走导航连接。
+    /// </summary>
+    /// <example><code>var removed = await db.Delete&lt;Post&gt;().Where(p => p.UserId == id).Returning().ExecuteAsync();</code></example>
+    public ReturningCommand<T, T> Returning() => Returning(t => t);
+
+    /// <summary>同 <see cref="Returning()"/>，只取 <paramref name="selector"/> 用到的列，读回后按它投影：<c>.Returning(p => new { p.Id, p.Title })</c>。</summary>
+    public ReturningCommand<T, TResult> Returning<TResult>(Expression<Func<T, TResult>> selector)
+    {
+        ArgumentNullException.ThrowIfNull(selector);
+        if (Entities is not null) throw new InvalidOperationException("Returning 只能用在按条件更新 / 删除上：按实体写入时实体本身就是结果");
+        return new ReturningCommand<T, TResult>(Db, Entity, RenderReturning, selector);
+    }
+
+    /// <summary>渲染按条件写入的语句，带 RETURNING 这些列（为空时整行）。</summary>
+    private protected abstract SqlStatement RenderReturning(IReadOnlyList<ColumnMetadata> columns);
+
+    /// <summary>
     /// 这次写入的版本列与当前版本：实体没有版本列或调用了 <see cref="IgnoreVersion"/> 时为 null。
     /// 按实体写入取实体上的值，按条件写入取 <see cref="WithVersion(object)"/>，后者没给时报错（与 Java 一致）。
     /// </summary>

@@ -25,6 +25,24 @@ public abstract partial class LiveSuite
         Assert.Equal(0, await db.Query<Note>().CountAsync(Ct));
     }
 
+    // UPDATE / DELETE … RETURNING：返回更新后的值与删掉的行；没有 RETURNING 的库渲染时报不支持
+    [Fact, Upstream("fork/live/ReturningLiveTest.java#deleteAndUpdateReturnRows")]
+    public async Task UpdatesAndDeletesReturnRows()
+    {
+        var db = await SeededAsync();
+        var update = db.Update<Post>().Set(p => new Post { Amount = p.Amount * 2m }).Where(p => p.Title.StartsWith("orm")).Returning(p => new { p.Title, p.Amount });
+        if (!Dialect.SupportsWriteReturning)
+        {
+            Assert.Throws<NotSupportedException>(() => update.ToSql());
+            return;
+        }
+        var updated = await update.ExecuteAsync(Ct);
+        Assert.Equal([("orm tips", 21.00m), ("orm_v2", 2.50m)], updated.Select(r => (r.Title, r.Amount)).OrderBy(r => r.Title, StringComparer.Ordinal));
+        var deleted = await db.Delete<Post>().Where(p => p.Amount > 1000).Returning().ExecuteAsync(Ct);
+        Assert.Equal(("sql 100%", 2000.00m), (Assert.Single(deleted).Title, deleted[0].Amount));
+        Assert.Equal(3, await db.Query<Post>().CountAsync(Ct));
+    }
+
     // 不在事务里时一批在自己的事务里执行：其中一条失败，整批都不生效
     [Fact]
     public async Task FailedBatchWritesNothing()

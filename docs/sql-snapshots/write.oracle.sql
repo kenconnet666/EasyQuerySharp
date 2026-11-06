@@ -34,6 +34,9 @@ SELECT "id","name","price","stock" FROM "t_product" WHERE "id" = ?;
 UPDATE "t_product" SET "stock" = ? WHERE "id" = ?;
 -- params: [199, 6]
 
+-- UpdateReturning：更新并返回受影响的行：UPDATE … RETURNING（PostgreSQL、SQLite）
+-- error: oracle 不支持 UPDATE / DELETE … RETURNING
+
 -- Delete：删除
 DELETE FROM "t_comment" WHERE "likes" < ?;
 -- params: [3]

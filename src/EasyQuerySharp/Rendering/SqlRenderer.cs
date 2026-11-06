@@ -97,8 +97,12 @@ public sealed class SqlRenderer
     {
         AliasAllocator.Allocate(update.Table, update.Joins, update.Sets.Select(s => s.Value).Concat(update.Where));
         var r = new SqlRenderer(dialect);
-        if (update.Joins.Count > 0 || (dialect.AliasedWriteUsesFrom && update.Table.Alias is not null)) dialect.WriteJoinedUpdate(r, update);
-        else r.Append("UPDATE ").WriteWriteTarget(update.Table).Append(" SET ").WriteSets(update.Sets).WriteWhere(update.Where);
+        if (update.Joins.Count > 0 || (dialect.AliasedWriteUsesFrom && update.Table.Alias is not null))
+        {
+            RejectJoinedReturning(update.Returning);
+            dialect.WriteJoinedUpdate(r, update);
+        }
+        else r.Append("UPDATE ").WriteWriteTarget(update.Table).Append(" SET ").WriteSets(update.Sets).WriteWhere(update.Where).WriteReturning(update.Returning);
         return r.Build();
     }
 
@@ -107,9 +111,28 @@ public sealed class SqlRenderer
     {
         AliasAllocator.Allocate(delete.Table, delete.Joins, delete.Where);
         var r = new SqlRenderer(dialect);
-        if (delete.Joins.Count > 0 || (dialect.AliasedWriteUsesFrom && delete.Table.Alias is not null)) dialect.WriteJoinedDelete(r, delete);
-        else r.Append("DELETE FROM ").WriteWriteTarget(delete.Table).WriteWhere(delete.Where);
+        if (delete.Joins.Count > 0 || (dialect.AliasedWriteUsesFrom && delete.Table.Alias is not null))
+        {
+            RejectJoinedReturning(delete.Returning);
+            dialect.WriteJoinedDelete(r, delete);
+        }
+        else r.Append("DELETE FROM ").WriteWriteTarget(delete.Table).WriteWhere(delete.Where).WriteReturning(delete.Returning);
         return r.Build();
+    }
+
+    // 带连接的写法里目标表会再出现一次（自连接），RETURNING 的列名重名（与 TS 版一致）
+    private static void RejectJoinedReturning(IReadOnlyList<ColumnExpr>? returning)
+    {
+        if (returning is not null) throw new NotSupportedException("Returning 不能用在走导航（需要连接）或带别名的更新 / 删除上");
+    }
+
+    // UPDATE / DELETE 末尾的 RETURNING：列清单为空时是整行
+    private SqlRenderer WriteReturning(IReadOnlyList<ColumnExpr>? returning)
+    {
+        if (returning is null) return this;
+        if (!Dialect.SupportsWriteReturning) throw new NotSupportedException($"{Dialect.Name} 不支持 UPDATE / DELETE … RETURNING");
+        Append(" RETURNING ");
+        return returning.Count == 0 ? Append("*") : WriteList(returning, ",");
     }
 
     /// <summary>输出 SET 列表 <c>a = ?,b = ?</c>；列是否带表别名由 <see cref="SqlDialect.QualifySetColumns"/> 决定。</summary>

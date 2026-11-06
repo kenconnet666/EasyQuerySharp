@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1811、偏离 140、不适用 137、骨架 6、待做 310。
+合计：已移植 1814、偏离 140、不适用 137、骨架 6、待做 307。
 
 ## 按能力
 
@@ -59,7 +59,7 @@
 | 人大金仓方言 | `dialect.kingbase` | M6 | 2 | 0 | 0 | 0 | 0 | 2 |
 | SQL Server 方言 | `dialect.mssql` | M6 | 38 | 0 | 0 | 0 | 0 | 38 |
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | M6 | 13 | 0 | 0 | 13 | 0 | 0 |
-| UPDATE / DELETE … RETURNING | `write.returning` | M6 | 3 | 0 | 0 | 0 | 0 | 3 |
+| UPDATE / DELETE … RETURNING | `write.returning` | M6 | 3 | 3 | 0 | 0 | 0 | 0 |
 | 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 3 | 0 | 0 | 0 | 14 |
 | 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 92 | 3 | 0 | 0 | 6 |
 | search 扩展 | `search` | M7 | 45 | 0 | 0 | 45 | 0 | 0 |
@@ -2419,9 +2419,9 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| fork/dialect/ReturningSqlTest.java#deleteAndUpdateReturning | 待做 |  | `DELETE FROM "t_fork_post" WHERE "user_id" = ? RETURNING *` |
-| fork/dialect/ReturningSqlTest.java#otherDialectsAreRejected | 待做 |  |  |
-| fork/live/ReturningLiveTest.java#deleteAndUpdateReturnRows | 待做 |  | `DROP TABLE "t_fork_post"` |
+| fork/dialect/ReturningSqlTest.java#deleteAndUpdateReturning | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/ReturningSqlTest.cs:6 | `DELETE FROM "t_fork_post" WHERE "user_id" = ? RETURNING *` |
+| fork/dialect/ReturningSqlTest.java#otherDialectsAreRejected | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/ReturningSqlTest.cs:19 |  |
+| fork/live/ReturningLiveTest.java#deleteAndUpdateReturnRows | 已移植 | tests/EasyQuerySharp.Tests.Live/LiveSuite.Writes.cs:29 | `DROP TABLE "t_fork_post"` |
 
 ### 建表与迁移（code-first）（`codeFirst`，M7）
 

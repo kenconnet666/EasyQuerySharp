@@ -111,6 +111,9 @@ public abstract partial class SqlDialect
     /// </summary>
     public virtual (string Before, string After)? ParameterWrap(string? columnDbType) => null;
 
+    /// <summary>UPDATE / DELETE 能否带 <c>RETURNING</c> 返回受影响的行（PostgreSQL、SQLite）；默认不能，用到时渲染报不支持。</summary>
+    public virtual bool SupportsWriteReturning => false;
+
     /// <summary>插入后读回生成列：写在列清单与 VALUES 之间的部分（SQL Server 的 <c>OUTPUT INSERTED.[id]</c>）；默认不写。</summary>
     public virtual void WriteInsertOutput(SqlRenderer renderer, IReadOnlyList<SqlExpr> returning)
     {

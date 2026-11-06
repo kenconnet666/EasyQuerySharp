@@ -227,8 +227,10 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
             if (Render(entity) is { } rendered) yield return rendered;
     }
 
-    // 按实体更新时，追踪的实体没有变化返回 null（不发语句）
-    private RenderedUpdate? Render(T? entity)
+    private protected override SqlStatement RenderReturning(IReadOnlyList<ColumnMetadata> columns) => Render(null, columns)!.Statement;
+
+    // 按实体更新时，追踪的实体没有变化返回 null（不发语句）；returning 不为 null 时带 RETURNING
+    private RenderedUpdate? Render(T? entity, IReadOnlyList<ColumnMetadata>? returning = null)
     {
         var scope = NewScope();
         var table = scope.Table;
@@ -246,6 +248,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         var newVersion = AddVersionSet(update, table, entity);
         update.Where.AddRange(BuildWhere(scope, entity, applyLogicDelete: true));
         update.Joins.AddRange(scope.Joins);
+        update.Returning = returning?.Select(table.Column).ToList();
         return new RenderedUpdate(SqlRenderer.Render(Db.Options.Dialect, update), tracked, entity, newVersion);
     }
 

@@ -112,7 +112,7 @@
 | rollup / cube / grouping | fork 3.5 | 并入 `query.group` | 完成 |
 | NULLIF、null-safe 等值 | fork 3.6 | 并入 `func.general` | 完成 |
 | 日期截断 dateTrunc | fork 3.7 | `x.DateTrunc(DateTruncUnit.Month)` | 完成 |
-| UPDATE / DELETE … RETURNING | fork 3.8 | `.Returning()`；方言不支持时渲染期报错（计划） | 阶段 1 |
+| UPDATE / DELETE … RETURNING | fork 3.8 | `.Where(..).Returning()` / `.Returning(p => new { p.Id, p.Title })` 返回受影响的行（整行时 `RETURNING *`，带选择器只取用到的列）；PostgreSQL、SQLite 支持，其他库渲染时报不支持 | 完成 |
 | forUpdate NoWait / SkipLocked | fork 3.9 | 并入 `lock` | 完成 |
 | 查询级表名映射 | fork 3.1、decisions/0003 | 并入 `table.rename` | 阶段 4 |
 | 类型化 INSERT … SELECT | fork 3.2 | 并入 `write.insert` | 完成 |

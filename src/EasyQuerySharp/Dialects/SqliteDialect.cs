@@ -16,6 +16,9 @@ public class SqliteDialect : SqlDialect
     /// <inheritdoc />
     public override string? LastInsertIdQuery => "SELECT last_insert_rowid()";
 
+    /// <summary>UPDATE / DELETE … RETURNING 需要 SQLite 3.35 起（Microsoft.Data.Sqlite 自带的版本满足）。</summary>
+    public override bool SupportsWriteReturning => true;
+
     /// <summary>SQLite 的 SET 列不能带表别名。</summary>
     public override bool QualifySetColumns => false;
 
