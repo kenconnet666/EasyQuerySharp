@@ -7,7 +7,7 @@ namespace EasyQuerySharp.Tests.Upstream.Mssql;
 /// 对应 Java：mssql/MsSQLQueryTest.java（SQL Server 上的主题查询：分页、字符串比较、分组拼接、更新、BigDecimal 运算、批量插入、表提示）。
 /// Java 的 MsSQLMyTopic1 与 MsSQLMyTopic 是同一张表，只是属性名首字母大写，C# 的属性本来就是大写开头，共用一个实体。
 /// </summary>
-public sealed class MsSQLQueryTest(MsSqlFixture fixture) : MsSqlTest(fixture)
+public sealed partial class MsSQLQueryTest(MsSqlFixture fixture) : MsSqlTest(fixture)
 {
     private const string TopicSql = "SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic]";
 

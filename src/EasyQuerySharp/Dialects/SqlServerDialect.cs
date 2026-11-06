@@ -108,9 +108,21 @@ public class SqlServerDialect : SqlDialect
         renderer.WriteWhere(statement.Where);
     }
 
-    /// <summary>值里含 % 或 _ 时转义后写 <c>ESCAPE '\'</c>，按字面匹配（SQL Server 的 LIKE 还把 <c>[</c> 当通配符，一并转义）。</summary>
+    /// <summary>
+    /// 模式在 SQL 里拼（<c>Sql.LikeContains</c> 等）时值先转成 NVARCHAR(MAX) 再拼 %：<c>LIKE ('%'+CAST(? AS NVARCHAR(MAX))+'%')</c>（与 Java 的 MsSQLLikeSQLFunction 一致）；
+    /// 值里含 % 或 _ 时转义后写 <c>ESCAPE '\'</c>，按字面匹配（SQL Server 的 LIKE 还把 <c>[</c> 当通配符，一并转义）。
+    /// </summary>
     public override void WriteLike(SqlRenderer renderer, LikeExpr predicate)
     {
+        if (!predicate.HasWildcardValue && predicate is { Pattern: FunctionExpr { Name: SqlFunctionNames.Concat }, Value: not null })
+        {
+            renderer.Write(predicate.Operand).Append(predicate.Negated ? " NOT LIKE (" : " LIKE (");
+            if (predicate.Mode != LikeMode.StartsWith) renderer.Append("'%'+");
+            renderer.Append("CAST(").Write(predicate.Value).Append(" AS NVARCHAR(MAX))");
+            if (predicate.Mode != LikeMode.EndsWith) renderer.Append("+'%'");
+            renderer.Append(")");
+            return;
+        }
         if (!predicate.HasWildcardValue || predicate.Value is not ParameterExpr { Value: string text })
         {
             base.WriteLike(renderer, predicate);
