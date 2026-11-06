@@ -23,6 +23,15 @@ public sealed record LiveSuiteOptions
     /// <summary>窗口函数 NTH_VALUE：SQL Server 没有。</summary>
     public bool NthValue { get; init; } = true;
 
+    /// <summary>LPAD / RPAD：SQLite 没有这两个函数，SQL Server 也没有；方言没有给出替代写法。</summary>
+    public bool PadFunctions { get; init; } = true;
+
+    /// <summary>TRUNC(x, n) 截断小数：SQLite 的 trunc 只有一个参数。</summary>
+    public bool TruncateWithScale { get; init; } = true;
+
+    /// <summary>MaxColumns / MinColumns 忽略 NULL：SQLite 的 MAX(a, b) 与 MySQL 系的 GREATEST 碰到 NULL 就返回 NULL。</summary>
+    public bool ExtremesIgnoreNull { get; init; } = true;
+
     /// <summary>MariaDB 11.4 的 bug：ROW_NUMBER()（倒序）、COUNT(*) OVER () 与 LAG() 在同一条语句里时 LAG 算错。</summary>
     public bool MixedWindowLag { get; init; } = true;
 }

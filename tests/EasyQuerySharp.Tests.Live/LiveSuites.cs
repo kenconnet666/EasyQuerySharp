@@ -13,7 +13,11 @@ public sealed class SqliteLiveSuite : LiveSuite
 
     protected override TestDatabase Database => TestDatabases.Sqlite;
     protected override SqlDialect Dialect => SqliteDialect.Instance;
-    protected override LiveSuiteOptions Options { get; } = new() { RowLocks = false, Rollup = false, Cube = false, GroupingFunction = false };
+    protected override LiveSuiteOptions Options { get; } = new()
+    {
+        RowLocks = false, Rollup = false, Cube = false, GroupingFunction = false,
+        PadFunctions = false, TruncateWithScale = false, ExtremesIgnoreNull = false,
+    };
     protected override Task<string> ConnectionStringAsync() => Task.FromResult($"Data Source={File};Pooling=False");
 }
 
@@ -21,8 +25,8 @@ public sealed class SqliteLiveSuite : LiveSuite
 public abstract class MySqlFamilyLiveSuite : LiveSuite
 {
     protected override SqlDialect Dialect => MySqlDialect.Instance;
-    // MySQL 系只有 WITH ROLLUP，没有 CUBE
-    protected override LiveSuiteOptions Options { get; } = new() { Cube = false };
+    // MySQL 系只有 WITH ROLLUP，没有 CUBE；GREATEST / LEAST 碰到 NULL 返回 NULL
+    protected override LiveSuiteOptions Options { get; } = new() { Cube = false, ExtremesIgnoreNull = false };
     protected override Task<string> ConnectionStringAsync() =>
         LiveDatabase.EnsureAsync(Database, "CREATE DATABASE IF NOT EXISTS `eqs_live` CHARACTER SET utf8mb4");
 }
@@ -43,7 +47,7 @@ public sealed class MySql8018LiveSuite : MySqlFamilyLiveSuite
 public sealed class MariaDbLiveSuite : MySqlFamilyLiveSuite
 {
     protected override TestDatabase Database => TestDatabases.MariaDb;
-    protected override LiveSuiteOptions Options { get; } = new() { Cube = false, GroupingFunction = false, MixedWindowLag = false };
+    protected override LiveSuiteOptions Options { get; } = new() { Cube = false, GroupingFunction = false, MixedWindowLag = false, ExtremesIgnoreNull = false };
 }
 
 /// <summary>PostgreSQL 17：独立的库 <c>eqs_live</c>（PG 没有 CREATE DATABASE IF NOT EXISTS，先查 pg_database）。</summary>
@@ -61,7 +65,7 @@ public sealed class SqlServerLiveSuite : LiveSuite
     protected override TestDatabase Database => TestDatabases.SqlServer;
     protected override SqlDialect Dialect => SqlServerDialect.Instance;
     // SQL Server 没有 FOR UPDATE（要用表提示），与 Java 一样直接报错；也没有 NTH_VALUE
-    protected override LiveSuiteOptions Options { get; } = new() { RowLocks = false, NthValue = false };
+    protected override LiveSuiteOptions Options { get; } = new() { RowLocks = false, NthValue = false, PadFunctions = false };
     protected override Task<string> ConnectionStringAsync() =>
         LiveDatabase.EnsureAsync(Database, "IF DB_ID('eqs_live') IS NULL CREATE DATABASE eqs_live");
 }
