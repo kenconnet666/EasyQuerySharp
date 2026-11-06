@@ -1,6 +1,6 @@
 # 0001 查询 API 路线：POCO 实体 + 表达式树
 
-状态：提议（2026-11-04）
+状态：已定（2026-11-04；2026-11-06 按实现修订：Source Generator 的范围、性能对策、方言入口的写法）
 
 ## 背景
 
@@ -15,7 +15,7 @@ C# 编译器能把 lambda 直接编译成表达式树（`Expression<Func<...>>`�
 
 1. **实体就是 POCO**，导航属性就是关系；查询 lambda 直接写在实体上：`u => u.Company!.Name.StartsWith("Acme")`。
 2. **不复刻 Java Proxy**，不生成 `UserProxy`。用户只面对一套类型。
-3. **Source Generator 只做三件事**：实体元数据（列、键、关系）、`DbDataReader` 物化器（不靠反射，支持 AOT 和裁剪）、`[Projection]` 方法与 `[MapFrom<T>]` DTO 对应的表达式（见 [0002](0002-object-tree-and-dto.md)）。
+3. **Source Generator 只做一件事**：把 `[Projection]` 方法的方法体产出成表达式（见 [0002](0002-object-tree-and-dto.md)）。实体元数据在运行时反射读取，`DbDataReader` 物化器在运行时编译并按形状缓存，`[MapFrom<T>]` DTO 的映射也在运行时构造、由分析器在编译期校验。1.0 不支持 AOT 和裁剪，理由见 BACKLOG。
 4. **自己定义流式接口，不实现 `IQueryable<T>`**。`IQueryable` 会把调用链交给 `System.Linq.Queryable`，`WhereIf`、`ToPageAsync`、带过滤的 `Include` 这类专有方法接不进去，不支持的写法也只能等到运行时才报。以后需要时再提供 `AsQueryable()` 适配。
 5. 查询对象只要有 `Where` / `Select` / `SelectMany` / `Join` / `GroupBy` / `OrderBy`，LINQ 查询语法（`from u in db.Query<User>() where … select …`）就能用，这是附带的好处，不额外维护。
 
@@ -79,12 +79,13 @@ u => u.Name.Like("ali") && (u.Age == null || u.Age >= 18)
 
 ## 性能对策
 
-1. **形状缓存**：参考 EF Core 的查询缓存，表达式按结构算哈希（闭包里的常量当作参数，不进哈希），命中缓存后只提取参数值，不再翻译。
-2. **参数提取不走 `Compile()`**：常量对象的字段和属性直接反射读取；复杂表达式退回到编译后缓存的委托。
-3. **以后再做**：Source Generator 加 interceptors，在编译期把固定形状的查询预翻译成 SQL（参考 EF Core 预编译查询和 Dapper.AOT）。interceptors 在官方文档里仍标为实验性，先不依赖。
+1. **读取委托按形状缓存**（`ShaperCache`）：实测一条查询的开销大头是编译读取委托（约 1 ms），翻译加渲染只要十几 µs。所以按读取树的结构做键缓存委托，引用类型常量（带出计划、换算委托）提成参数，同形状只编译一次。读 100 行实体从 2.2 ms 降到 1.2 ms（手写 ADO.NET 0.95 ms）。
+2. **参数提取不走 `Compile()`**：常量对象的字段和属性直接反射读取；翻译路径上禁止 `Compile()`。
+3. **翻译结果暂不缓存**：等阶段 5 的基准对比显示有必要再做（参考 EF Core 的查询缓存，表达式按结构算哈希，闭包里的常量当作参数）。
+4. **以后再做**：Source Generator 加 interceptors，在编译期把固定形状的查询预翻译成 SQL（参考 EF Core 预编译查询和 Dapper.AOT），与 AOT 一起记在 BACKLOG。
 
 ## 后果
 
-- 每个能力都要回答一个问题："它在表达式树里怎么写"。SQL 函数是扩展方法加 `[SqlFunction]` 标记，方言专属函数放在静态入口下，比如 `MySql.JsonContains(u.Attrs, "$.a")`，对应 Java fork 的 decisions/0001。
-- 不支持的写法默认在运行时报 `NotSupportedException`，消息里要带上原始表达式和位置；分析器做好之后改成编译期报错。
-- 表达式缓存和参数提取是核心基础设施，第一期就要做，不能等到优化阶段。
+- 每个能力都要回答一个问题："它在表达式树里怎么写"。SQL 函数是扩展方法，用户自定义的加 `[SqlFunction]` 标记；方言专属函数放在 `Sql` 下的静态入口，比如 `Sql.MySql.Json(u.Attrs).Contains(..)`，对应 Java fork 的 decisions/0001。
+- 不支持的写法在运行时报 `NotSupportedException`，消息里带上原始表达式；能在编译期判断的由分析器报出（EQ0001、EQ0002、EQ0007 等，见 [analyzers.md](../design/analyzers.md)）。
+- 读取委托缓存和参数提取是核心基础设施，已经在第一期做好。

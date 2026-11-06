@@ -1,6 +1,6 @@
 # 0002 对象树与 DTO 导航
 
-状态：提议（2026-11-04）
+状态：已定（2026-11-04；2026-11-06 按实现修订：DTO 的映射在运行时构造、带出配置的写法、树的 API，级联保存改由 [0004](0004-aggregate-save.md) 规定）
 
 ## 背景
 
@@ -25,7 +25,7 @@ easy-query 里"带出关联数据"有好几条路：
 |---|---|---|
 | 内联 | `Select(u => new { u.Id, Posts = u.Posts.Select(p => new { p.Title }).ToList() })` | 一次性查询 |
 | 可复用投影（主推） | `[Projection] public static PostVo ToVo(this Post p) => new(p.Id, p.Title, p.Author.Name);`，查询里写 `u.Posts.Select(p => p.ToVo())` | 多处共用的 VO。它就是普通 C# 方法，内存里的对象也能调，能写单元测试；生成器产出对应的表达式 |
-| 按结构自动映射 | `[MapFrom<User>] public partial record UserVo(long Id, string Name, string? CompanyName, List<PostVo> Posts);`，查询用 `Select<UserVo>()` | 对应 `selectAutoInclude`。映射表达式**编译期**生成，字段对不上直接报编译错误 |
+| 按结构自动映射 | `public sealed class UserVo { long Id; string Name; List<PostVo> Posts; … }`，查询用 `Select<UserVo>()`；加 `[MapFrom<User>]` 时分析器在编译期校验成员 | 对应 `select(Dto.class)` 与 `selectAutoInclude`。映射表达式在运行时按 DTO 结构构造，与手写投影走同一条管线 |
 
 底层机制是"表达式字段加标记方法"，不依赖生成器：
 
@@ -39,19 +39,23 @@ u.Company!.Project(CompanyVo.Map)        // 对一
 
 - 同名属性直接对应，忽略大小写。
 - 平铺：`CompanyName` 对应 `Company.Name`（`@NavigateFlat`）；`List<string> PostTitles` 对应 `Posts.Select(p => p.Title)`。路径有歧义时用 `[MapPath("Company.Name")]` 指定。全是对一导航的路径默认走带出查询（同一导航上的几个平铺属性共用一条，单表不写别名，与 Java 的 `@NavigateFlat` 一致）；`[MapPath(.., Join = true)]` 改为主查询里隐式 JOIN（Java 的 `@NavigateJoin`）。带出查询每次最多按 `IncludeGroupSize`（默认 512，可按查询覆盖）个父键查；`WithConfigureArgument(arg)` 把参数传给各层带出配置。
-- 嵌套 DTO：属性类型是 `[MapFrom<Post>]` 的 DTO，或者 `List<>` 里装着这样的 DTO，就沿着导航递归映射。
-- 个别成员要加过滤、排序、条数限制（对应 `EXTRA_AUTO_INCLUDE_CONFIGURE`），用 partial 配置方法只覆盖这一个成员：
+- 嵌套 DTO：与导航同名的属性，类型是 DTO（或 `List<>` 里装着 DTO）时，沿着导航递归映射；类型就是实体本身时整个对象带出。
+- 嵌套 DTO 的带出要加过滤、排序、条数限制（对应 `EXTRA_AUTO_INCLUDE_CONFIGURE`）时，DTO 实现 `IAutoIncludeConfigure<TEntity>`；根 DTO 实现时配置的是这条查询本身：
 
 ```csharp
-static partial void Configure(MapConfig<User, UserVo> m)
-    => m.For(x => x.Posts, posts => posts.Where(p => p.Published).OrderByDescending(p => p.CreatedAt).Take(3));
+public sealed class PostVo : IAutoIncludeConfigure<Post>
+{
+    public string? Title { get; set; }
+    public static Query<Post> Configure(Query<Post> query) => query.Where(p => p.Published).OrderByDescending(p => p.CreatedAt).Take(3);
+}
 ```
+- 额外的计算列用 `[MapExpression(nameof(静态表达式))]`。
 
 ### 3. 执行策略：对一用 JOIN，对多分层批量查询
 
 | 出现在投影里 | SQL |
 |---|---|
-| 对一导航的列 `u.Company.Name` | 主查询 JOIN。可空引用类型决定 JOIN 方式：`Company?` 用 LEFT；非空且外键非空用 INNER |
+| 对一导航的列 `u.Company.Name` | 主查询 JOIN：默认 LEFT JOIN，导航标了 `[Navigate(Required = true)]`（Java 的 required）时用 INNER JOIN |
 | 对一导航整个对象 `CompanyVo?` | 同上；以主键列是否为 NULL 判断这个对象是不是 null |
 | 对多集合 `.Select(..).ToList()` | 每层一次查询，`WHERE fk IN (父键)` |
 | 对多集合加 `OrderBy` + `Take(n)` | `ROW_NUMBER() OVER (PARTITION BY fk ORDER BY …)` 派生表（对应 `partitionOrder` / `limit`） |
@@ -72,10 +76,10 @@ static partial void Configure(MapConfig<User, UserVo> m)
 ### 4. 实现上必须做到的细节
 
 1. **隐藏的键列**：拼装要用父主键和子表外键，DTO 没选这些列时，规划器自动补上，物化完再丢掉。
-2. **从叶子往根构造**：record 是不可变的，所以先把根行读进缓冲，再跑子查询，最后从叶子往根构造。由生成器产出构造代码。
-3. **IN 列表的参数上限**：键先去重，再按方言上限分批（SQL Server 2100 个参数、Oracle 的 `IN` 最多 1000 项）；PG 用 `= ANY(@arr)`，只占一个参数。
-4. **流式读取**：`AsAsyncEnumerable(batchSize: 500)` 按批读根行，每批跑一次子查询。不能一次一行，否则就是 N+1。
-5. **一致性**：多次查询之间数据可能被改。`.AsSnapshot()` 把整组查询放进同一个事务或快照里执行。
+2. **从叶子往根构造**：record 是不可变的，所以先把根行读进缓冲，再跑子查询，最后从叶子往根构造。构造代码在运行时编译，按形状缓存。
+3. **IN 列表的参数上限**：键先去重，每条带出查询最多带 `IncludeGroupSize`（默认 512）个父键，超出时分成几条；`MaxInClauseSize` 再把单个 IN 拆成 OR（Oracle 的 `IN` 最多 1000 项）。
+4. **流式读取**：投影里有带出时不能 `AsAsyncEnumerable()`（会报错，要用 `ToListAsync`）。按批流式读取对象树（每批跑一次子查询）记在 BACKLOG。
+5. **一致性**：多次查询之间数据可能被改；需要时把整组查询放进同一个事务。`.AsSnapshot()` 记在 BACKLOG。
 6. **分页**：只作用在根查询上，所以 `ToPageAsync` 的分页数和总数天然正确，计数查询不带子查询。
 
 ### 5. 实体对象树（Include）
@@ -91,7 +95,7 @@ await db.Query<Order>()
 
 内部当作"全列的实体投影"，走同一个规划器。
 
-导航上的固定条件（`@Navigate(extraFilter)`）：C# 的特性参数里放不了 lambda，所以用 `nameof` 引用一个静态表达式，由生成器校验类型：
+导航上的固定条件（`@Navigate(extraFilter)`）：C# 的特性参数里放不了 lambda，所以用 `nameof` 引用一个静态表达式，由分析器 EQ0004 校验类型：
 
 ```csharp
 [Navigate(RelationType.OneToMany, ExtraFilter = nameof(PublishedOnly))]
@@ -101,22 +105,15 @@ static Expression<Func<Post, bool>> PublishedOnly => p => p.Published;
 
 ### 6. 级联保存（savable）
 
-```csharp
-await db.Save(order).Cascade(o => o.Lines).Cascade(o => o.Lines, l => l.Attachments).ExecuteAsync(ct);
-```
-
-- 级联路径必须**显式声明**，没声明的导航一律不碰，防止误删子表。
-- 按主键比较差异：比较的基准是已追踪的快照，没有追踪时先查出现有子表的键；据此决定新增、修改还是删除。不在集合里的子行，按导航上配置的 `OrphanPolicy`（`Delete` / `Detach` / `Ignore`）处理。
-- 父表生成的主键回填到子表外键；能用 `RETURNING` / `OUTPUT` 的方言批量回填。
-- 必须在事务里执行，不在事务里直接报错（对齐 Java）。
+见 [0004](0004-aggregate-save.md)：`db.Save(root).ExecuteAsync()` 按追踪快照的差异写出整个聚合，级联方式声明在导航上（`[Navigate(Cascade = …)]`），必须在追踪作用域与事务里执行。
 
 ### 7. 自关联树
 
-- 整棵树：`db.Query<Menu>().Where(...).ToTreeAsync(m => m.Id, m => m.ParentId)`，查平铺的行，在内存里拼成树（`toTreeList`）。
-- 某节点的下级或上级：`DescendantsOf(id)` / `AncestorsOf(id)`，用递归 CTE（`asTreeCTE`）。
-- 自动映射遇到 `MenuVo(List<MenuVo> Children)` 这种递归结构时，生成器报诊断，要求指定 `[MapTree(MaxDepth = n)]` 或改用 `ToTreeAsync`，不能无限展开。
+- 整棵树：`db.Query<Menu>().Where(...).ToTreeAsync()`，查平铺的行，按实体上指向自身的集合导航在内存里拼成树（`toTreeList`）。
+- 某节点的下级或上级：`AsTreeCte(o => { o.Up = true; o.LimitDeep = 2; }, childFilter: …)`，用递归 CTE（`asTreeCTE`）；节点键不是导航时写 `AsTreeCte(m => m.Id, m => m.ParentId)`（`asTreeCTECustom`）。之后照常 Where / Select，或 `ToTreeAsync()`。
+- 自动映射遇到 `MenuVo(List<MenuVo> Children)` 这种引用自身的结构时不展开，交给 `ToTreeAsync()` 拼树。
 
 ## 后果
 
-- 内联器、规划器、物化器是一条公共管线，Include、DTO、VO、树、保存都依赖它，要排在第二期最前面。
+- 内联器、规划器、物化器是一条公共管线，Include、DTO、VO、树、保存都依赖它。
 - Java 的 `selectAutoInclude`（35 个用例）、`@NavigateFlat` / `flatElement`（56 个）在对照表里标"写法不同"，但每个用例都要有对应的 C# 测试。

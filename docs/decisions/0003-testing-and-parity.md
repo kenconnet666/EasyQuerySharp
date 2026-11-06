@@ -1,6 +1,6 @@
 # 0003 测试对标：逐条移植 Java 用例，SQL 文本与 Java 对齐
 
-状态：提议（2026-11-04）
+状态：已定（2026-11-04；2026-11-06 按实现修订：测试项目的实际布局、对标基准冻结、按方言分档的本地与 CI 分工、工具链）
 
 ## 背景
 
@@ -65,16 +65,17 @@ C# 的渲染规则对齐 Java：
 
 | 层 | 项目 | 数据库 | 规模（目标） | 何时跑 |
 |---|---|---|---|---|
-| L1 SQL 文本 | `tests/EasyQuerySharp.Tests` | 不连库，`SqlOnly` 会话（对应 `EmptyDataSource`） | Java 不连库的约 180 个用例、fork 的方言与函数用例、所有 C# 特有的翻译用例 | 每次构建，CI |
+| L1 SQL 文本 | 放在 `tests/EasyQuerySharp.Tests.Upstream` 里，与 L2 同一个项目 | 不连库，`SqlOnly` 会话（对应 `EmptyDataSource`，在 TestKit 里） | Java 不连库的约 180 个用例、fork 的方言与函数用例、C# 特有的翻译用例 | 每次构建，CI |
 | L2 上游移植 | `tests/EasyQuerySharp.Tests.Upstream` | MySQL 8.4 实库，库名 `easy-query-test`，表结构和种子数据对齐 Java `BaseTest`；PG、SQL Server、达梦等按 Java 子目录分别连 | 约 2150 个，按 Java 文件一一对应 | 本地和 CI `core` 任务跑 MySQL 和 PG 部分；其他方言在各自的 CI 任务里跑 |
 | L3 跨方言共用套件 | `tests/EasyQuerySharp.Tests.Live` | 每个方言一个薄子类，环境变量启用 | 照 TS 的 `liveSuite`（23 组、138 个用例），乘以方言数 | 本地跑 SQLite、MySQL、PG；CI 每种数据库一个任务 |
 | L4 生成器与分析器 | `tests/EasyQuerySharp.Tests.Generator` | 无 | 生成代码快照、每条诊断的正例和反例 | 每次构建 |
 
-另外，文档站的每张示例卡片在构建时实跑一次，见 [docs-site.md](../design/docs-site.md)。
+另外，`docs/examples` 的每张示例卡片在 CI 里实跑一次并比对各方言的 SQL 快照，见 [docs-site.md](../design/docs-site.md)。
 
 L2 的组织方式：
 
-- 目录和类名照搬 Java。`sql-test/.../QueryTest.java` 对应 `Upstream/QueryTest.cs`，`mysql8/M8BankTest.java` 对应 `Upstream/Mysql8/M8BankTest.cs`。
+- 类名照搬 Java，目录只有一层、按主题分：`Queries/`、`Write/`、`Functions/`、`Features/`、`Dialects/`、`Fork/`、`Mysql8/`、`Pgsql/`，C# 独有 API 的用例放 `Extras/`（不计入对标）。例如 `sql-test/.../QueryTest.java` 对应 `Queries/QueryTest.cs`，`mysql8/M8BankTest.java` 对应 `Mysql8/M8BankTest.cs`。实体在 `Entities/`、DTO 在 `Dto/`，夹具与测试用的策略、拦截器在 `Support/`。
+- 1.0 范围之外的 Java 用例在 `OutOfScope.cs` 里用程序集级的 `[Upstream(NotApplicable = …)]` 列出。
 - 实体模型照搬 Java：约 277 个 `@Table` 类，按 Java 的包放进对应命名空间。同名的 `SysUser` 有 6 份，分属不同命名空间，不合并。
 - Java 测试基类对应 C# 的测试基类（xUnit fixture）。`BaseTest` 对应 `MySqlFixture`：负责建表（code-first 完成之前先执行 Java 的 SQL 脚本）和种子数据（`initData` 的 100 条 `BlogEntity` 等）。`PgSQLBaseTest`、`MsSQLBaseTest` 等依次对应。
 - 捕获 SQL：`Listen()` 返回一个作用域对象，订阅执行事件，对应 Java 的 `ListenerContext`；`ListenAll()` 用于一次调用发出多条 SQL 的情况。
@@ -113,9 +114,9 @@ L2 的组织方式：
 | SQLite（进程内） | 必测 | `core` 任务 |
 | MySQL 8.4 | 必测，`infra/dev` 默认启动 | `core` 任务 |
 | PostgreSQL 17 | 必测，`infra/dev` 默认启动 | `core` 任务 |
-| MySQL 8.0.18（PolarDB 基线）、MariaDB 11.4、SQL Server 2022、Oracle 23ai | 按需：`--profile polardb / mariadb / mssql / oracle` | 各自一个任务，只跑实库项目 |
-| 达梦、openGauss、ClickHouse、Db2、TDengine | 按需：对应 profile | M6 方言包落地时加任务 |
-| HANA | 按需：`--profile hana`，要 12 GB 内存 | 不跑，GitHub 托管 runner 的内存不够 |
+| MySQL 8.0.18（PolarDB 基线）、MariaDB 11.4、SQL Server 2022、Oracle 23ai（第一档其余的库） | 按需：`--profile polardb / mariadb / mssql / oracle` | 各自一个任务；阶段 2 起跑全部实库用例 |
+| 达梦、openGauss、Kingbase、DuckDB、ClickHouse、Db2、TDengine（第二档） | 按需：对应 profile（DuckDB 进程内） | 比对 SQL 文本随 `core` 任务；容器起得来的再加一个冒烟任务 |
+| HANA（第二档） | 按需：`--profile hana`，要 12 GB 内存 | 先试 HANA Express 压低内存进 CI，跑不起来就只在本地验证 |
 
 - 本地容器：仓库自带 `infra/dev/compose.yaml`，compose 项目名是 `easy-query-sharp-dev`，端口统一用 4xxxx，和 `easy-query-ts-dev`（3xxxx）、`vue-tsx-pro-dev`（2xxxx）错开，几个项目可以同时运行。
   - 镜像版本和 digest 跟 TS 仓库一致，两边的实库结果可以直接对比。
@@ -127,9 +128,8 @@ L2 的组织方式：
 
 ### 6. 工具链
 
-- 测试框架用 **xUnit v3**：跑在 Microsoft Testing Platform 上，有动态跳过（`Assert.Skip`），按类并行。
-- 快照测试用 **Verify**：负责生成器输出、文档站 SQL、跨方言快照。逐条移植的用例不用快照，用内联字符串，因为期望值就是 Java 的原文，放在代码里更好对照。
-- 覆盖率用 `coverlet`，只作参考，不设门槛。
+- 测试框架用 **xUnit v3**：跑在 Microsoft Testing Platform 上，有动态跳过（`Assert.Skip`）。Upstream 项目的用例共用同一个库，集合之间不并行（`xunit.runner.json`）；改了种子数据的用例结束前要还原。
+- 逐条移植的用例用内联字符串断言，期望值就是 Java 的原文，放在代码里更好对照。文档 SQL 的跨方言快照由 `tools/DocsExamples` 生成并在 CI 里校验；生成器与分析器的测试也用内联断言。不引入额外的快照库。
 
 ## 后果
 
