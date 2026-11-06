@@ -117,6 +117,10 @@ EasyQuerySharp.DateTruncUnit.Second = 7 -> EasyQuerySharp.DateTruncUnit
 EasyQuerySharp.DateTruncUnit.Week = 3 -> EasyQuerySharp.DateTruncUnit
 EasyQuerySharp.DateTruncUnit.Year = 0 -> EasyQuerySharp.DateTruncUnit
 EasyQuerySharp.Dialects.FunctionWriter
+EasyQuerySharp.Dialects.GaussDbDialect
+EasyQuerySharp.Dialects.GaussDbDialect.GaussDbDialect() -> void
+EasyQuerySharp.Dialects.KingbaseDialect
+EasyQuerySharp.Dialects.KingbaseDialect.KingbaseDialect() -> void
 EasyQuerySharp.Dialects.MySqlDialect
 EasyQuerySharp.Dialects.MySqlDialect.IgnoreConflictAsKeyUpdate.get -> bool
 EasyQuerySharp.Dialects.MySqlDialect.IgnoreConflictAsKeyUpdate.init -> void
@@ -365,6 +369,8 @@ EasyQuerySharp.EasyDbOptions.ReverseOffsetThreshold.set -> void
 EasyQuerySharp.EasyDbOptions.UpdateStrategy.get -> EasyQuerySharp.Commands.ColumnStrategy
 EasyQuerySharp.EasyDbOptions.UpdateStrategy.set -> void
 EasyQuerySharp.EasyDbOptions.Use(EasyQuerySharp.Dialects.SqlDialect! dialect, System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
+EasyQuerySharp.EasyDbOptions.UseGaussDb(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
+EasyQuerySharp.EasyDbOptions.UseKingbase(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseMySql(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseOracle(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UsePostgreSql(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
@@ -1720,6 +1726,13 @@ override EasyQuerySharp.Commands.MapValue.Equals(object? obj) -> bool
 override EasyQuerySharp.Commands.MapValue.GetHashCode() -> int
 override EasyQuerySharp.Commands.MapValue.ToString() -> string!
 override EasyQuerySharp.Commands.UpdateCommand<T>.ExecuteAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<long>!
+override EasyQuerySharp.Dialects.GaussDbDialect.Name.get -> string!
+override EasyQuerySharp.Dialects.GaussDbDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
+override EasyQuerySharp.Dialects.GaussDbDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
+override EasyQuerySharp.Dialects.KingbaseDialect.Name.get -> string!
+override EasyQuerySharp.Dialects.KingbaseDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
+override EasyQuerySharp.Dialects.KingbaseDialect.TreeDeepStart.get -> string!
+override EasyQuerySharp.Dialects.KingbaseDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
 override EasyQuerySharp.Dialects.MySqlDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
 override EasyQuerySharp.Dialects.MySqlDialect.CreateTableSql(EasyQuerySharp.Metadata.EntityMetadata! entity) -> string!
 override EasyQuerySharp.Dialects.MySqlDialect.InsertKeyword(EasyQuerySharp.SqlAst.InsertStatement! insert) -> string!
@@ -1869,6 +1882,8 @@ override EasyQuerySharp.SqlStatement.ToString() -> string!
 override EasyQuerySharp.WindowBound.GetHashCode() -> int
 static EasyQuerySharp.Commands.MapValue.operator !=(EasyQuerySharp.Commands.MapValue? left, EasyQuerySharp.Commands.MapValue? right) -> bool
 static EasyQuerySharp.Commands.MapValue.operator ==(EasyQuerySharp.Commands.MapValue? left, EasyQuerySharp.Commands.MapValue? right) -> bool
+static EasyQuerySharp.Dialects.GaussDbDialect.Instance.get -> EasyQuerySharp.Dialects.GaussDbDialect!
+static EasyQuerySharp.Dialects.KingbaseDialect.Instance.get -> EasyQuerySharp.Dialects.KingbaseDialect!
 static EasyQuerySharp.Dialects.MySqlDialect.Instance.get -> EasyQuerySharp.Dialects.MySqlDialect!
 static EasyQuerySharp.Dialects.OracleDialect.Instance.get -> EasyQuerySharp.Dialects.OracleDialect!
 static EasyQuerySharp.Dialects.PostgreSqlDialect.Instance.get -> EasyQuerySharp.Dialects.PostgreSqlDialect!
@@ -2099,6 +2114,7 @@ virtual EasyQuerySharp.Dialects.SqlDialect.RecursiveCteColumnList.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.RecursiveWith.get -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.SupportsWriteReturning.get -> bool
+virtual EasyQuerySharp.Dialects.SqlDialect.TreeDeepStart.get -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteGroupBy(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! keys, EasyQuerySharp.SqlAst.GroupByMode mode) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteInsertConflict(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.InsertStatement! insert) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.WriteInsertOutput(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! returning) -> void

@@ -70,6 +70,9 @@ public abstract partial class SqlDialect
     /// <summary>递归 CTE 的开头（树查询 AsTreeCte）：默认 <c>WITH RECURSIVE </c>；SQL Server、Oracle 不写 RECURSIVE。</summary>
     public virtual string RecursiveWith => "WITH RECURSIVE ";
 
+    /// <summary>树查询（AsTreeCte）起点行的层级值：默认 <c>0</c>；Kingbase 写 <c>0+0</c>（与 Java 的 KingbaseESCTERecursiveProvider 一致）。</summary>
+    public virtual string TreeDeepStart => "0";
+
     /// <summary>UPDATE 的 SET 列是否带表别名（<c>t.`a` = ?</c>）；PostgreSQL 不允许，覆盖成 false。</summary>
     public virtual bool QualifySetColumns => true;
 

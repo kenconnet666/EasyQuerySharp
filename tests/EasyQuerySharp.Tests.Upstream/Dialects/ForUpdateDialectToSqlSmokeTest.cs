@@ -17,8 +17,8 @@ public sealed class ForUpdateDialectToSqlSmokeTest
     [Theory]
     [InlineData("mysql"), Upstream("ForUpdateDialectToSQLSmokeTest.java#mysqlForUpdateToSQLSmoke")]
     [InlineData("pgsql"), Upstream("ForUpdateDialectToSQLSmokeTest.java#pgsqlForUpdateToSQLSmoke")]
-    // 人大金仓（PG 模式）在 C# 里用 PostgreSQL 方言
-    [Upstream("ForUpdateDialectToSQLSmokeTest.java#kingbaseESForUpdateToSQLSmoke")]
+    [InlineData("kingbase"), Upstream("ForUpdateDialectToSQLSmokeTest.java#kingbaseESForUpdateToSQLSmoke")]
+    [InlineData("gauss"), Upstream("ForUpdateDialectToSQLSmokeTest.java#gaussDBForUpdateToSQLSmoke")]
     public void ForUpdateAppendsAtEnd(string dialect) => RowLockAssert.EndsWithSingleForUpdate(LockedPageSql(dialect));
 
     [Fact, Upstream("ForUpdateDialectToSQLSmokeTest.java#oracleForUpdateToSQLSmoke")]

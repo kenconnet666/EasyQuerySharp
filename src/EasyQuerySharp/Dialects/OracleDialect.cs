@@ -129,8 +129,10 @@ public class OracleDialect : SqlDialect
         WriteInstrComparison(renderer, predicate);
     }
 
-    /// <summary>INSTR 结果的比较：包含 &gt; 0、开头 = 1、结尾 = 长度差 + 1；取反时用 = 0 / &lt;&gt;。</summary>
-    internal static void WriteInstrComparison(SqlRenderer renderer, LikeExpr predicate)
+    /// <summary>
+    /// INSTR / STRPOS 结果的比较：包含 &gt; 0、开头 = 1、结尾 = 长度差 + 1（长度函数是 <paramref name="length"/>）；取反时用 = 0 / &lt;&gt;。
+    /// </summary>
+    internal static void WriteInstrComparison(SqlRenderer renderer, LikeExpr predicate, string length = "LENGTH")
     {
         switch (predicate.Mode)
         {
@@ -141,7 +143,8 @@ public class OracleDialect : SqlDialect
                 renderer.Append(predicate.Negated ? " <> 1" : " = 1");
                 break;
             default:
-                renderer.Append(predicate.Negated ? " <> (LENGTH(" : " = (LENGTH(").Write(predicate.Operand).Append(") - LENGTH(").Write(predicate.Value!).Append(") + 1)");
+                renderer.Append(predicate.Negated ? " <> (" : " = (").Append(length).Append("(").Write(predicate.Operand)
+                    .Append(") - ").Append(length).Append("(").Write(predicate.Value!).Append(") + 1)");
                 break;
         }
     }

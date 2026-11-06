@@ -143,6 +143,12 @@ public sealed class EasyDbOptions
     /// <summary>使用 Oracle 方言（驱动 Oracle.ManagedDataAccess.Core）。</summary>
     public EasyDbOptions UseOracle(DbDataSource? dataSource = null) => Use(OracleDialect.Instance, dataSource);
 
+    /// <summary>使用人大金仓 KingbaseES 方言。</summary>
+    public EasyDbOptions UseKingbase(DbDataSource? dataSource = null) => Use(KingbaseDialect.Instance, dataSource);
+
+    /// <summary>使用华为 GaussDB / openGauss 方言。</summary>
+    public EasyDbOptions UseGaussDb(DbDataSource? dataSource = null) => Use(GaussDbDialect.Instance, dataSource);
+
     /// <summary>使用任意方言。</summary>
     public EasyDbOptions Use(SqlDialect dialect, DbDataSource? dataSource = null)
     {

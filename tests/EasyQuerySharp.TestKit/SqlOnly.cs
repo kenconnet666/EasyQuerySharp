@@ -15,6 +15,8 @@ public static class SqlOnly
         ["mssql"] = SqlServerDialect.Instance,
         ["oracle"] = OracleDialect.Instance,
         ["sqlite"] = SqliteDialect.Instance,
+        ["kingbase"] = KingbaseDialect.Instance,
+        ["gauss"] = GaussDbDialect.Instance,
     };
 
     private static readonly Dictionary<string, EasyDb> Cache = new(StringComparer.OrdinalIgnoreCase);

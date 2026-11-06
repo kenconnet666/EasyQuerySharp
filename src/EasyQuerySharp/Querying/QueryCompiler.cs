@@ -143,7 +143,7 @@ internal static class QueryCompiler
         var options = tree.Options;
         var entity = db.Metadata.Get(tree.Base.ElementType);
         var (start, _) = CompileSelect(tree.Base with { ForceAlias = true });
-        start.Columns.Insert(0, new SelectColumn(new LiteralExpr("0"), options.DeepColumnName));
+        start.Columns.Insert(0, new SelectColumn(new LiteralExpr(db.Options.Dialect.TreeDeepStart), options.DeepColumnName));
 
         var walked = new CteTableSource(options.CteTableName, start);
         // 子节点来源：基础查询是实体（含视图实体）时连它的表，投影过的查询连它的投影（不带基础查询的条件）
