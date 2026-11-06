@@ -224,10 +224,14 @@ internal sealed partial class ExpressionTranslator
             LikeMode.StartsWith => ("", "%"),
             _ => ("%", ""),
         };
+        // 支持 LIKE 的加密列：值先按同样的分段规则加密（与 Java 的 LikeFunctionTemplateGenerator 一致）
+        var encryption = column is ColumnExpr { Column.Converter: Encryption.EncryptionConverter { SupportQueryLike: true } converter } ? converter : null;
         if (concat || ClientEvaluator.MustTranslate(valueExpr))
         {
-            // 模式本身是列（或要求在 SQL 里拼）：CONCAT('%',col,'%')
-            var value = Translate(valueExpr);
+            // 模式本身是列（或要求在 SQL 里拼）：CONCAT('%',col,'%')；常量值照样先加密
+            var value = encryption is not null && !ClientEvaluator.MustTranslate(valueExpr) && ClientEvaluator.Evaluate(valueExpr)?.ToString() is { } plain
+                ? new ParameterExpr(encryption.ToProvider(plain), typeof(string))
+                : Translate(valueExpr);
             var parts = new List<SqlExpr>();
             if (prefix.Length > 0) parts.Add(new LiteralExpr("'%'"));
             parts.Add(value);
@@ -235,9 +239,7 @@ internal sealed partial class ExpressionTranslator
             return new LikeExpr(column, new FunctionExpr(SqlFunctionNames.Concat, parts), false, mode, value);
         }
         var text = ClientEvaluator.Evaluate(valueExpr)?.ToString();
-        // 支持 LIKE 的加密列：值先按同样的分段规则加密，再加 %（与 Java 的 LikeFunctionTemplateGenerator 一致）
-        if (column is ColumnExpr { Column.Converter: Encryption.EncryptionConverter { SupportQueryLike: true } encryption } && text is not null)
-            text = (string?)encryption.ToProvider(text);
+        if (encryption is not null && text is not null) text = (string?)encryption.ToProvider(text);
         return new LikeExpr(column, new ParameterExpr(prefix + text + suffix, typeof(string)), false, mode, new ParameterExpr(text, typeof(string)));
     }
 

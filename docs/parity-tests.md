@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1697、偏离 209、不适用 78、骨架 6、待做 414。
+合计：已移植 1698、偏离 209、不适用 78、骨架 6、待做 413。
 
 ## 按能力
 
@@ -40,7 +40,7 @@
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 137 | 3 | 1 | 0 | 1 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 23 | 2 | 0 | 0 | 0 |
 | 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 5 | 2 | 1 | 0 | 1 |
-| 列加密 | `column.encryption` | M5 | 8 | 7 | 0 | 0 | 0 | 1 |
+| 列加密 | `column.encryption` | M5 | 8 | 8 | 0 | 0 | 0 | 0 |
 | 拦截器 | `interceptor` | M5 | 3 | 3 | 0 | 0 | 0 | 0 |
 | 逻辑删除 | `logicDelete` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
 | 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 0 | 0 | 0 | 0 | 39 |
@@ -1910,7 +1910,7 @@
 | EncryptionTest.java#phoneTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/EncryptionTest.cs:25 |  |
 | EncryptionTest.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/EncryptionTest.cs:43 |  |
 | EncryptionTest.java#test6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/EncryptionTest.cs:57 |  |
-| Sm4EncryptionTest.java#sm4Test | 待做 |  |  |
+| Sm4EncryptionTest.java#sm4Test | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/Sm4EncryptionTest.cs:37 |  |
 
 ### 拦截器（`interceptor`，M5）
 
