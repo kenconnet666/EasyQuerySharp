@@ -102,7 +102,7 @@ R → 1 → 2 → 3 → 4 → 5。
   - `AsTableSegment` 联表后可用（`Query<T1, T2..>`），导航上用 `Sql.AsTableSegment(x.User, ..)` / `x.Cards.AsTableSegment(..)`（`WITH(NOLOCK)` 一类表提示）；
   - `Sql.MaxColumns` / `Sql.MinColumns`：MySQL、PG 写 GREATEST / LEAST，SQLite 写多参数 MAX / MIN（Java 在 SQLite 上写 GREATEST，SQLite 没有），SQL Server 写 VALUES 派生表，Oracle 写 UNION ALL … FROM DUAL（达梦沿用）；
   - CI 的 mssql 任务拆成 live / upstream 两片，后者跑 Upstream 的 Mssql 命名空间。
-- [ ] 2.2 Oracle：实库验证。已做：条件当值用（投影、比较的一侧、分组合并的 any / none 列）在 SQL Server、Oracle 上写成 `(CASE WHEN 条件 THEN ? ELSE ? END)`（Java 的 booleanSQLFunction），NumberFunctionsTest subQueryORACLE 移植。
+- [x] 2.2 Oracle：实库验证——CI 的 Oracle 23ai Free 任务跑完整的 LiveSuite（分库用例除外：测试用户没有建第二个 schema 的权限，`ShardDataSources = false`），全部通过；Java 的 Oracle 用例只比对 SQL，不需要 Oracle 夹具。已做：条件当值用（投影、比较的一侧、分组合并的 any / none 列）在 SQL Server、Oracle 上写成 `(CASE WHEN 条件 THEN ? ELSE ? END)`（Java 的 booleanSQLFunction），NumberFunctionsTest subQueryORACLE 移植。
 - [x] 2.3 UPDATE / DELETE 里用对一导航（`write.join`）：SQL Server 原本已有；SQLite 写成 `UPDATE … AS t … FROM` / `DELETE … AS t WHERE EXISTS(…)`，Oracle 写成按 ROWID 对上的 `MERGE` / `DELETE … WHERE ROWID IN (…)`；`DateTrunc` 补上 SQLite（strftime）、SQL Server（DATETRUNC）、Oracle（TRUNC）。LiveSuite 加了两组用例，各库按同样的结果校验（SQL Server、Oracle 在 CI 上跑）。
 - [~] 2.4 L3 `LiveSuite` 从现在的 4 组扩到 TS 的 23 组，`LiveSuiteOptions` 按方言裁剪能力；在第一档的每个库上全部通过（MySQL 8.0.18、MariaDB 各算一个库）。已移植 18 组（`LiveSuite.*.cs`，视图、列规则、code-first 与分表留到阶段 4），本地 SQLite / MySQL / PG / DuckDB 通过，其余库看 CI。顺手修了套件发现的问题：取消改为原样抛出、集合上排序后的 `string.Join` 把 ORDER BY 写进聚合、PG 的 DateDiff 截断、`Math.Log(x, b)` 的参数顺序、`Sql.Over` 等嵌套类不在客户端求值、`Take` 之后的聚合先包派生表、声明了条数的对一导航在查询里按分区取行、根上的自关联导航随聚合保存。
   - [!] 集合导航取段之后聚合（`string.Join(",", u.Cards.OrderBy(..).Take(2).Select(..))`，M8BankTest test7 / test7_2 / test8）：Java 写成 `(SELECT GROUP_CONCAT(..) FROM .. ORDER BY .. LIMIT 2)`，LIMIT 作用在聚合出的一行上，拼的是全部行（怀疑是 Java 的 bug，PG 上还会因 ORDER BY 报错）。现在照 Java 写；要不要改成先取段再聚合（这 3 个用例改记偏离）待定。
@@ -120,7 +120,7 @@ R → 1 → 2 → 3 → 4 → 5。
   - [x] 方言：位置参数 `?`、`LIMIT … OFFSET`（只跳过时补 `LIMIT 2147483647`）、拼接逐对写 `((a || b) || c)`、`TO_NVARCHAR` 日期格式（格式串里的文字单独拼接）、条件当值写三值 CASE、`MERGE … FROM DUMMY` upsert、带导航的更新写按主键对上的 MERGE、删除写 EXISTS、EXISTS 子查询不带 LIMIT（`SqlDialect.LimitInExists`）、`CURRENT_IDENTITY_VALUE()` 取自增键、`FOR UPDATE IGNORE LOCKED`、`CREATE COLUMN TABLE` 与匿名块代替 IF [NOT] EXISTS、DateTrunc；
   - [x] `Sql.Hana.Text(..).Contains / Fuzzy / Score`（CONTAINS、FUZZY、SCORE）；
   - [x] fork 的 HanaSqlTest 6 个、HanaTextSqlTest 2 个、InsertSelectSqlTest#hanaUsesQuotedNames 移植；三个 live 文件与 JsonValueConverterLiveTest#hanaNclobColumn 共 14 个，其中 12 个按 SQL 文本移植、记偏离（实库验证留到冒烟），两个 LocalDateTime 往返用例要实库，留作骨架；
-  - [ ] 实库冒烟：驱动 Sap.Data.Hana 随 HANA 客户端安装、不在 nuget.org，TestDatabases 还没登记 HANA；起 infra/dev 的 hana profile 后补夹具，跑上面的 live 用例与 LiveSuite。HANA Express 要 12 GB 内存，进不了 GitHub 托管的 CI，只在本地验证。
+  - [!] 实库冒烟（2026-11-06 查过：本机没有 HANA 客户端，也没有构建过 hana 镜像；客户端要从 SAP 下载并接受许可协议，需要用户自己装）：驱动 Sap.Data.Hana 随 HANA 客户端安装、不在 nuget.org，TestDatabases 还没登记 HANA；起 infra/dev 的 hana profile 后补夹具，跑上面的 live 用例与 LiveSuite。HANA Express 要 12 GB 内存，进不了 GitHub 托管的 CI，只在本地验证。
 - [x] 3.3 DuckDB（进程内运行，CI 直接跑）：`DuckDbDialect` 继承 PostgreSQL 方言只覆盖差异，`options.UseDuckDb(..)`；驱动 DuckDB.NET.Data.Full 只在 TestKit 里引用，核心仍零依赖。
   - 方言：参数写 `$p0`（DuckDB.NET 不认 `@`）；含 `%` / `_` 的 LIKE 值用 `STRPOS`；日期格式 `strftime`、加减 `date_add`、相差 `DATEDIFF`；`TRUNC` 不带位数；JSON 用 `json_array_length` / `json_exists`；没有行锁（`FOR UPDATE` 抛 NotSupportedException）；DuckDB 没有 IDENTITY，自增列建表时先 `CREATE SEQUENCE`、列默认 `nextval`，删表时一并删序列。
   - 顺手：PostgreSQL 的 `IndexOf` 原来写 `INSTR`（PG 没有这个函数），改成 `STRPOS`；`SqlDialect.ColumnDefinition` 多传所属实体。
