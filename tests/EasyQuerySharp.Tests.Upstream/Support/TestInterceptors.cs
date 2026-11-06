@@ -91,3 +91,13 @@ public sealed class TestInterceptor2 : QueryFilter<Interceptor2Entity>
 
     public override Expression<Func<Interceptor2Entity, bool>>? Filter() => _ => Sql.Raw<bool>("2=2");
 }
+
+/// <summary>对应 Java：cache/BlogPredicateInterceptor。默认关闭，EnableInterceptor("blog-cache") 时博客查询追加 <c>`content` = '123'</c>（二级缓存的条件键用例）。</summary>
+public sealed class BlogPredicateInterceptor : QueryFilter<BlogEntity>
+{
+    public override string Name => "blog-cache";
+
+    public override bool EnabledByDefault => false;
+
+    public override Expression<Func<BlogEntity, bool>>? Filter() => b => b.Content == "123";
+}

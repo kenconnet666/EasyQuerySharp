@@ -23,6 +23,20 @@ public class Topic
     public List<Topic>? Children { get; set; }
 }
 
+/// <summary>对应 Java：entity/TopicInteger（同表 t_topic，主键是 Long；二级缓存的 all 用例）。</summary>
+[Table("t_topic", NotFoundMessage = "未找到主题信息")]
+public class TopicInteger
+{
+    [Column(PrimaryKey = true)]
+    public long? Id { get; set; }
+
+    public int? Stars { get; set; }
+
+    public string? Title { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+}
+
 /// <summary>对应 Java：entity/TopicUpdate（映射到 t_topic，配合 TopicUpdateInterceptor 测试更新拦截）。</summary>
 [Table("t_topic")]
 public class TopicUpdate
