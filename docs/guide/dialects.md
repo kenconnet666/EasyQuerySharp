@@ -18,9 +18,9 @@
 | SAP HANA | `UseHana` | `HanaDialect` | Sap.Data.Hana（随 HANA 客户端安装） | 第二档 | 只比对 SQL 文本 |
 | 人大金仓 Kingbase | `UseKingbase` | `KingbaseDialect`（继承 PG） | 金仓的 ADO.NET 驱动 | 第二档 | 只比对 SQL 文本 |
 | GaussDB / openGauss | `UseGaussDb` | `GaussDbDialect`（继承 PG） | 兼容 PG 协议的驱动 | 第二档 | 只比对 SQL 文本 |
-| ClickHouse | `UseClickHouse` | `ClickHouseDialect` | ClickHouse.Client | 第二档 | 只比对 SQL 文本 |
-| IBM Db2 | `UseDb2` | `Db2Dialect` | Net.IBM.Data.Db2 | 第二档 | 只比对 SQL 文本 |
-| TDengine | `UseTDengine` | `TDengineDialect` | TDengine.Connector | 第二档 | 只比对 SQL 文本 |
+| ClickHouse 25.8 | `UseClickHouse` | `ClickHouseDialect` | ClickHouse.Driver（官方，HTTP） | 第二档 | 本地与 CI 跑分析型冒烟（`ClickHouseLiveSuite`） |
+| IBM Db2 12.1 | `UseDb2` | `Db2Dialect` | Net.IBM.Data.Db2（Linux 用 Net.IBM.Data.Db2-lnx） | 第二档 | 本地与 CI 跑实库套件（不支持的能力跳过） |
+| TDengine 3.3 | `UseTDengine` | `TDengineDialect` | TDengine.Connector（WebSocket） | 第二档 | 本地与 CI 跑时序冒烟（`TDengineLiveSuite`） |
 
 - **第一档**：CI 跑全部实库用例（`tests/EasyQuerySharp.Tests.Live` 的跨方言套件，以及对应的 Java 移植用例）。
 - **第二档**：SQL 文本与 Java 用例（有的话）逐字比对，再加实库冒烟；容器起得来的进 CI，起不来的在本地验证。标"只比对 SQL 文本"的还没有实库冒烟，参数占位符、函数写法可能还要按实库修正。
@@ -41,7 +41,7 @@
 | HANA | `LIMIT … OFFSET` | `MERGE … FROM DUMMY` | `CURRENT_IDENTITY_VALUE()` | 不支持 | 有（`IGNORE LOCKED`） | 按主键 `MERGE` / `EXISTS` | 不支持 | 不支持 | 有 |
 | Kingbase、GaussDB | 同 PG | 同 PG | 同 PG | 同 PG | 同 PG | 同 PG | 同 PG | 同 PG | 同 PG |
 | ClickHouse | `LIMIT … OFFSET` | 不支持 | 没有自增列 | 不支持 | 不支持 | 不支持（更新删除是 `ALTER TABLE` mutation） | 有 | — | — |
-| Db2 | `OFFSET … FETCH` | `MERGE … USING (VALUES …)` | `IDENTITY_VAL_LOCAL()` | 不支持 | `WITH RS`，没有 NOWAIT | 不支持 | 有 | 有 | 有 |
+| Db2 | `OFFSET … FETCH` | `MERGE … USING (VALUES …)` | `IDENTITY_VAL_LOCAL()` | 不支持 | `WITH RS`，没有 NOWAIT | 按主键 `MERGE` / `EXISTS` | 有（没有数组长度） | 有 | 有 |
 | TDengine | `LIMIT … OFFSET` | 不支持 | 没有自增列 | 不支持 | 不支持 | 不支持（没有 UPDATE） | 不支持 | — | — |
 
 不支持的能力在渲染时抛 `NotSupportedException`，消息说明替代写法（如 SQL Server 的行锁改用 `WITH (UPDLOCK, ROWLOCK)`，ClickHouse 的 upsert 改用 ReplacingMergeTree）。各页的"方言差异"一节有更细的差异：[函数](functions.md#方言支持)、[写入](writes.md#方言差异)、[联表与导航](joins-and-navigations.md#方言差异)、[事务与行锁](transactions.md#行锁)。
@@ -140,9 +140,9 @@ MERGE INTO "t_order_item" t1 USING (SELECT ? AS "order_id",? AS "product_id",? A
 - **DuckDB**：进程内数据库，最后一个连接关闭时关库，应用里留一个连接不关能快很多；没有 `IDENTITY`，自增列建表时建序列；没有行锁。
 - **HANA**：位置参数 `?`；没有递归 CTE；`STRING_AGG` 不能去重；`Sql.Hana.Text(..)` 全文检索。驱动不在 nuget.org。
 - **Kingbase / GaussDB**：继承 PG，只覆盖 Java 两个模块与 PG 不同的写法（`STRPOS` 式 LIKE、条件当值写 CASE；Kingbase 的 `CONCAT` 两两嵌套、日期加减与相差）。
-- **ClickHouse**：分析型，没有自增列、upsert、行锁；更新删除是 `ALTER TABLE … UPDATE / DELETE`，不能带别名、不能走导航；建表 `ENGINE = MergeTree`。
-- **Db2**：字符串函数按 `CODEUNITS32`；`LISTAGG` 的分隔符写成字面量；没有 `NOWAIT`。
-- **TDengine**：时序库，没有 UPDATE、upsert、自增列、行锁、字符串聚合；删除只能按本表的列过滤；日期加减只能写字面量时长；表要有一个 `DateTime` 主键（行的时间戳）。
+- **ClickHouse**：分析型，没有自增列、upsert、行锁、事务（一批写入逐条生效，`BeginTransaction` 里执行语句报不支持）；更新删除是 `ALTER TABLE … UPDATE / DELETE`，不能带别名、不能走导航；建表 `ENGINE = MergeTree`。驱动用官方的 ClickHouse.Driver，连接串要带三个会话设置：`set_join_use_nulls=1`（LEFT JOIN 没匹配上的列是 NULL）、`set_mutations_sync=2`（更新删除做完再返回）、`set_session_timezone=UTC`（驱动按会话时区解析 DateTime 参数、按 UTC 读回，时区不是 UTC 时差几个小时）。DateTime 参数写成 `{p0:DateTime64(7)}`（驱动推断的类型只到秒）。
+- **Db2**：参数写成 `CAST(@p0 AS 类型)`（CASE 的结果、函数参数、带单位的时长里不能有无类型的参数标记）；字符串函数按 `CODEUNITS32`；`LISTAGG` 的分隔符写成字面量；日期格式化的格式串里只能有格式符与分隔符，其余文字单独拼接；树查询的递归部分写成逗号连接；带导航的更新、删除写成按主键的 `MERGE` / `EXISTS`；没有 `NOWAIT`，`Sql.Json` 没有数组长度。中文 Windows 上要设环境变量 `DB2CODEPAGE=1208`（否则连接失败，只报 "no error information available"）；Linux 引用 Net.IBM.Data.Db2-lnx，`LD_LIBRARY_PATH` 指向输出目录的 `clidriver/lib`。
+- **TDengine**：时序库，没有 UPDATE、upsert、自增列、行锁、事务、字符串聚合；删除只能按本表的列过滤；日期加减只能写字面量时长；表要有一个 `DateTime` 主键（行的时间戳）。驱动用 TDengine.Connector 的 WebSocket 连接（`protocol=WebSocket;host=…;port=6041;username=…;password=…;db=库;timezone=UTC`），不用装客户端；值直接写成字面量、不绑定参数（驱动的参数化语句走 stmt 接口，带参数的 DELETE 会让 taosAdapter 崩溃），`DateTime` 按连接的时区解析，连接串带 `timezone=UTC` 时写入与读回都是同样的钟点。
 
 ## 自定义方言
 
@@ -160,7 +160,7 @@ var db = new EasyDb(o => o.Use(new MyDialect(), dataSource));
 ## 限制
 
 - 不在列表里的库：H2 没有 .NET 驱动，不支持（Java 的 H2 用例改在 SQLite 上移植）；SQL Server 2008 的 `ROW_NUMBER` 分页不做（已停止支持）；Doris、Neon、PGlite 等 TS 版支持的库没有专门的方言（Neon 用 PostgreSQL 方言即可）。
-- 第二档里标"只比对 SQL 文本"的方言还没有实库冒烟（ROADMAP 3.1–3.5）。
+- 第二档里标"只比对 SQL 文本"的方言还没有实库冒烟（ROADMAP 3.1–3.4）。
 - 方言专属函数（`Sql.MySql`、`Sql.Pg`、`Sql.Hana`）用错方言时在渲染期报错，不在编译期。
 
 ## 对应 Java

@@ -112,7 +112,7 @@ SELECT "id","title","status","priority" FROM "t_draft" WHERE ROWNUM < 2;
 <!-- /card -->
 
 - 只影响建表与加列：插入时默认只写不为 null 的列，所以为 null 的列由库填上；要一直不写用 `[InsertIgnore]`。
-- MySQL、PostgreSQL、SQLite、DuckDB 写在 `NULL` / `NOT NULL` 后面（与 Java 一致）；Oracle、达梦、SQL Server、HANA、Db2 写在前面（Oracle 系要求 `DEFAULT` 在约束前）；ClickHouse 写在后面；TDengine 没有默认值，声明了会报错。
+- MySQL、PostgreSQL、SQLite、DuckDB 写在 `NULL` / `NOT NULL` 后面（与 Java 一致）；Oracle、达梦、SQL Server、HANA 写在前面（Oracle 系要求 `DEFAULT` 在约束前）；ClickHouse、Db2 写在后面（Db2 不认 `DEFAULT … NULL`）；TDengine 没有默认值，声明了会报错。
 - 不能与 `Generated` 一起用（自增列的值已经由库生成）。
 - 给有数据的表加 `NOT NULL` 列时，SQLite 等库要求有默认值；SQLite 加列时默认值还不能是 `CURRENT_TIMESTAMP` 这类非常量。
 

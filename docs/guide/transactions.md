@@ -100,6 +100,7 @@ catch (InvalidOperationException ex)
 
 - 每个 `EasyDb`（每个库）各有一个环境事务，多个库之间不是分布式事务。
 - 批量写入（`.Batch()`）、聚合保存不在事务里时：批量每组自己开一个事务，聚合保存直接报错（要求外面开事务）。
+- ClickHouse、TDengine 没有事务：批量写入逐条生效（中途失败不回滚），`BeginTransaction()` 里执行语句报 `NotSupportedException`。
 - `EasyDb` 是单例，事务跟随异步流程，不同请求互不影响。
 
 ## 行锁

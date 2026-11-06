@@ -507,7 +507,7 @@ DELETE FROM "t_comment" WHERE "likes" <= ? RETURNING *;
 | 能力 | 差异 |
 |---|---|
 | 回填自增键 | PG / DuckDB `RETURNING`，SQLite `last_insert_rowid()`，SQL Server `OUTPUT INSERTED`，Oracle / 达梦 `RETURNING … INTO`，MySQL 每条插入后 `SELECT LAST_INSERT_ID()`，HANA `CURRENT_IDENTITY_VALUE()`，Db2 `IDENTITY_VAL_LOCAL()`；ClickHouse、TDengine 没有自增列 |
-| UPDATE / DELETE 里的对一导航 | MySQL `UPDATE t INNER JOIN … SET` / `DELETE t FROM … JOIN`；PG `UPDATE … FROM` / `DELETE … USING`；SQL Server `UPDATE t SET … FROM … JOIN`；SQLite `UPDATE … FROM` / `DELETE … WHERE EXISTS`；Oracle 按 ROWID 的 `MERGE` / `DELETE … WHERE ROWID IN`；达梦 `UPDATE t INNER JOIN … SET`、删除同 Oracle；HANA 按主键 MERGE / EXISTS；ClickHouse、TDengine 不支持 |
+| UPDATE / DELETE 里的对一导航 | MySQL `UPDATE t INNER JOIN … SET` / `DELETE t FROM … JOIN`；PG `UPDATE … FROM` / `DELETE … USING`；SQL Server `UPDATE t SET … FROM … JOIN`；SQLite `UPDATE … FROM` / `DELETE … WHERE EXISTS`；Oracle 按 ROWID 的 `MERGE` / `DELETE … WHERE ROWID IN`；达梦 `UPDATE t INNER JOIN … SET`、删除同 Oracle；HANA、Db2 按主键 MERGE / EXISTS；ClickHouse、TDengine 不支持 |
 | 更新、删除本身 | ClickHouse 写成 `ALTER TABLE … UPDATE / DELETE`（不能带别名、不能用导航）；TDengine 没有 UPDATE，删除只能按本表的列过滤 |
 | `RETURNING` | PostgreSQL 及继承它的 DuckDB、Kingbase、GaussDB，SQLite |
 | 批量 `.Batch()` | Npgsql 一组一个往返；MySqlConnector 的 `DbBatch` 不省往返，但整批一个事务，比逐条提交快得多；SQLite 同连接逐条执行 |
