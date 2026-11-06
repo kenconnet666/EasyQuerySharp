@@ -16,6 +16,7 @@
 - [0001 查询 API 路线](decisions/0001-query-api-route.md)：POCO 实体加表达式树，不复刻 Java Proxy；表达式树里不能写的语法和对策；性能对策。
 - [0002 对象树与 DTO](decisions/0002-object-tree-and-dto.md)：所有写法归一成投影表达式；对一用 JOIN、对多分层批量查询；三种 DTO 写法；Include、级联保存、树。
 - [0003 测试对标](decisions/0003-testing-and-parity.md)：逐条移植 Java 用例；SQL 文本与 Java 对齐；测试分四层；本地与 CI 的分工。
+- [0004 聚合根保存](decisions/0004-aggregate-save.md)：按追踪快照的差异保存整个聚合；级联声明、导航分类、差异与语句顺序。
 
 ## 设计
 
