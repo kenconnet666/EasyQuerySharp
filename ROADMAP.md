@@ -120,8 +120,15 @@ R → 1 → 2 → 3 → 4 → 5。
 ## 阶段 4 平台能力
 
 - [ ] 4.1 code-first：建表（注释、索引、外键）、只增不删的同步、`RenamedFrom`、`ToSql()`、读取库结构（MigrationTest 等 15 个）。
-- [ ] 4.2 表名映射：查询级 `MapTable`（导航、隐式 join、include 跟着一起变；fork TableNameMapping 的 7 个用例）、`AsTable` 剩余的用例、`InSchema`、`WithTableLink`。
-- [ ] 4.3 `FilterBy` / `SortBy` 剩余的 6 个用例，以及 `Table(request)`。
+- [x] 4.2 表名映射：
+  - 查询级 `MapTable<T>("表名")` / `MapTable<T>(name => …)`、`InSchema("schema")`（所有查询类型都有）：这条查询翻译出的实体表——主表、联表、隐式 JOIN、集合导航的子查询与分组合并、取第几行、多对多中间表、Include 与 DTO 自动带出、嵌在里面的子查询——都按它换，子查询自己的映射优先，显式的 `AsTable` / `Sql.AsTable` 优先；
+  - `WithTableLink`：Java 的 asTableLink，改写最近一张表前面的连接符（`LEFT JOIN` → `LEFT JOIN lateral`），写入时写在目标表名前面，查询、联表、写入都能用（走导航的更新 / 删除明确报不支持）；
+  - fork TableNameMapping 7 个（mappedTableNameIsReadable 偏离：C# 的映射是查询上的不可变状态，没有作用域可读）、asTable 2 个、asSchema 1 个、asTableLink 4 个移植；QueryTest14 test2 / test3 是 Oracle / SQLite 的整段冒烟，偏离在 SQLite 的冲突写法、MERGE 约束列的顺序与列模式的 LIKE；
+  - 顺手修了 MERGE（SQL Server、Oracle）没有约束列时拿自增主键作约束、引用 USING 里没有的列，改为与 Java 一样报错。
+- [x] 4.3 `FilterBy` / `SortBy` 剩余的 6 个用例，以及 `Table(request)`：
+  - `FilterOp.Contains` / `StartsWith` / `EndsWith` 改成与 `Sql.LikeContains` 等相同（Java 的 CONTAINS 等：`LIKE CONCAT(…)`，值里的通配符按字面），whereObject2 / 4 / 6、DocTest test1、ExampleTest sampleTest1 移植；
+  - 声明了条数的对一导航（Java 的 OneToOne + limit + orderByProps，如"第一张卡"）在条件、投影、隐式子查询里按排序取那一行（原来是普通 LEFT JOIN，会匹配全部行），`FilterNavigation` 的条件写进它的 ON，MySQL8Test4 testFilter 移植；
+  - `Table(request)` 写成 `ToPageAsync(TableRequest)`（C# 的终结方法命名）：`TableRequest.Parse` 读地址栏参数（与 TS 的 parseTableRequest 同一约定），`filter.列` IN、`search.列` 包含、`sort` 只认结果里的列，带了 `total` 不再计数；条件树与整天区间（TS 11b.3a）记进 BACKLOG。
 - [ ] 4.4 分库分表（ShardingTest 48 个），先写决策文档 0006：
   - 分表：按取模或按时间路由、按条件裁剪、库内 UNION ALL、写入路由；
   - 分库：路由，在内存里做归并排序和分页，跨库合并 `count` / `sum` / `min` / `max`。

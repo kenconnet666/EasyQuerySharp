@@ -21,3 +21,5 @@
 - SQL Server 的 `Sql.LikeContains` / `LikeStartsWith` / `LikeEndsWith` 遇到含 `%` 或 `_` 的常量值：Java 的 MsSQLLikeSQLFunction 写成 `CHARINDEX(值,列) > 0` 一类，C# 沿用 `LIKE ? ESCAPE '\'`（语义相同、SQL 不同，没有 Java 用例覆盖）；要逐字对齐时再改。
 - Java 的带出与 DTO 结构校验：一对一带出时关联值重复报错、`@NavigateFlat` 同一路径既取对象又取它的属性报错、自动带出的关联属性要同时出现在 `@Navigate` 与 `@NavigateFlat` 里（RelationTest#testOneToOne 的三段 Skip）。C# 里这些写法各自独立带出、结果正确，有用户被误用坑到时再加校验。
 - 联表查询上投影到 DTO（`Query<T1, T2>.Select<TDto>()`，Java 的 `selectAutoInclude(X.class, (s, t2) -> Select.of(t2.xx().as(..)))`）：现在联表后只能手写投影；RelationTest#testOneToOne 一段 Skip，有真实需求时再做。
+- 列表页请求的条件树与整天区间（TS 11b.3a：FilterBar 高级筛选的 `condition` JSON，日期时间列上只写日期的区间按整天、按时区算）以及 `filterable` / `sortable` 白名单选项：`ToPageAsync(TableRequest)` 现在只做表头筛选、关键字、排序，白名单就是结果里的列；有前端用到时再做。
+- 数据库级的换表（TS 的 `db.mapTables(..)` / `db.inSchema(..)`，一个 `EasyDb` 上所有查询与写入都换）：现在是查询级的 `MapTable` / `InSchema`，写入用 `AsTable` / `AsSchema`；多租户分库要整库切换时再做。

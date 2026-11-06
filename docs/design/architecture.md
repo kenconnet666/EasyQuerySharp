@@ -47,7 +47,7 @@ docs/
 | `SqlAst/` `Rendering/` | SQL 语法树与渲染（别名分配、方言回调） |
 | `Dialects/` | `SqlDialect` 与各库的 `XxxDialect`（MySQL、PostgreSQL、SQLite、SQL Server、Oracle） |
 | `Commands/` | 插入、更新、删除、聚合保存：`EntityCommandBase` → `WriteCommandBase`，`WriteScope` 是一条写入语句的翻译作用域，`SavePlan` 是一次聚合保存的计划 |
-| `Execution/` `Tracking/` `Interceptors/` `Filtering/` `Encryption/` `Materialization/` `Schema/` | 执行与环境事务、追踪、拦截器、按对象筛选、列加密（AES、SM4）、读取结果、code-first |
+| `Execution/` `Tracking/` `Interceptors/` `Filtering/` `Encryption/` `Materialization/` `Schema/` | 执行与环境事务、追踪、拦截器、按对象筛选与列表页请求、列加密（AES、SM4）、读取结果、code-first |
 
 模块边界的规则：
 
@@ -64,6 +64,7 @@ db.Query<User>().Where(..).Select(..).ToListAsync()
    ├─ 3. 翻译       ExpressionTranslator：表达式 → SQL AST
    │                  导航 → 隐式 JOIN；集合导航 → EXISTS / 标量子查询 / 分组 join
    │                  拦截器注入的条件（租户、逻辑删除）在这里合并
+   │                  实体表按查询级的换表（MapTable / InSchema，TableMapping）取表名与 schema，子查询、带出查询沿用
    ├─ 4. 规划       ProjectionCompiler：投影里的对多集合、带出拆成按键批量的子查询（见 0002）
    ├─ 5. 渲染       SqlRenderer + SqlDialect → SqlStatement { Text, Parameters }
    │                  标识符引用、分页、upsert、函数表；参数到这一步才绑定
