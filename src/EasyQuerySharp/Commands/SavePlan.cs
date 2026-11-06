@@ -145,8 +145,9 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
             if (db.Tracker.TrackKeyOf(child) is { } key) originalByKey[key] = child;
         var matched = new HashSet<object>(ReferenceEqualityComparer.Instance);
 
-        foreach (var child in current)
+        foreach (var item in current)
         {
+            var child = Canonical(item);
             var existing = Match(child, original, originalByKey);
             if (existing is not null)
             {
@@ -269,11 +270,24 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
         };
     }
 
-    // 新建的对象（同主键）的列值合并到已追踪的实例上
+    // 新建的对象沿用了已追踪实体的主键（可能来自聚合里的任何位置）：换成那个已追踪的实例，
+    // 于是它按快照差异更新、挂到了别处时改外键，而不是再插入一次（与 Java 按主键认对象一致）
+    private object Canonical(object child)
+    {
+        if (db.Tracker.Find(child) is not null || db.Tracker.TrackKeyOf(child) is not { } key || db.Tracker.FindByKey(key) is not { } entry)
+            return child;
+        Merge(child, entry.Current);
+        return entry.Current;
+    }
+
+    // 新建的对象（同主键或同业务键）的列值与导航合并到已追踪的实例上：新对象代表这个实体现在的完整状态
     private void Merge(object from, object into)
     {
-        foreach (var column in db.Metadata.Get(into.GetType()).Columns)
+        var meta = db.Metadata.Get(into.GetType());
+        foreach (var column in meta.Columns)
             if (!column.IsPrimaryKey) column.Property.SetValue(into, column.Property.GetValue(from));
+        foreach (var (property, _) in meta.NavigationProperties.Values)
+            property.SetValue(into, property.GetValue(from));
     }
 
     private NavigationWork Work(int depth, NavigationMetadata nav)

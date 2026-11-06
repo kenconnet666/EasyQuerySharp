@@ -24,7 +24,7 @@ public sealed class Mysql8Fixture : IAsyncLifetime
         typeof(M8User), typeof(M8Role), typeof(M8UserRole), typeof(M8User2), typeof(M8Role2), typeof(M8UserRole2),
         typeof(M8UserBook), typeof(M8RoleMenu), typeof(M8Menu), typeof(M8Province), typeof(M8City), typeof(M8Area),
         typeof(M8AreaBuild), typeof(M8AreaBuildLicense), typeof(M8Parent), typeof(M8Child), typeof(M8ParentChild), typeof(BatchInsert),
-        typeof(TableNoKey), typeof(OffsetChunkTest), typeof(M8UserTest), typeof(Comment), typeof(M8SaveA), typeof(MyConfigLogicDelete), typeof(M8IncludeLimitTopic), typeof(M8IncludeLimitChild), typeof(TreeA), typeof(TreeB), typeof(M8Comment), typeof(SysDept), typeof(M8SaveRoot), typeof(M8SaveRootOne), typeof(M8SaveRootOne2), typeof(M8SaveRootMany), typeof(M8SaveRootManyOne), typeof(M8SaveRoot2Many), typeof(M8SaveRootMiddleMany), typeof(M8SaveB), typeof(M8SaveC), typeof(M8SaveD), typeof(M8User3), typeof(M8Role3), typeof(M8UserRole3),
+        typeof(TableNoKey), typeof(OffsetChunkTest), typeof(M8UserTest), typeof(Comment), typeof(M8SaveA), typeof(MyConfigLogicDelete), typeof(M8IncludeLimitTopic), typeof(M8IncludeLimitChild), typeof(TreeA), typeof(TreeB), typeof(M8Comment), typeof(SysDept), typeof(M8SaveRoot), typeof(M8SaveRootOne), typeof(M8SaveRootOne2), typeof(M8SaveRootMany), typeof(M8SaveRootManyOne), typeof(M8SaveRoot2Many), typeof(M8SaveRootMiddleMany), typeof(M8SaveB), typeof(M8SaveC), typeof(M8SaveD), typeof(M8User3), typeof(M8Role3), typeof(M8UserRole3), typeof(M8ToMany1), typeof(M8ToMany2), typeof(M8ToMany3),
     ];
 
     private EasyDb? _db;

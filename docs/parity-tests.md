@@ -3,14 +3,14 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1723、偏离 219、不适用 78、骨架 6、待做 378。
+合计：已移植 1726、偏离 224、不适用 78、骨架 6、待做 370。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
-| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 354 | 43 | 35 | 0 | 3 |
+| 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 354 | 44 | 35 | 0 | 2 |
 | 分页结果 | `query.page` | M1 | 22 | 18 | 3 | 0 | 0 | 1 |
 | 原生 SQL | `sql.native` | M1 | 50 | 40 | 9 | 1 | 0 | 0 |
 | 删除 | `write.delete` | M1 | 25 | 13 | 1 | 10 | 0 | 1 |
@@ -43,7 +43,7 @@
 | 列加密 | `column.encryption` | M5 | 8 | 8 | 0 | 0 | 0 | 0 |
 | 拦截器 | `interceptor` | M5 | 3 | 3 | 0 | 0 | 0 | 0 |
 | 逻辑删除 | `logicDelete` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
-| 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 22 | 10 | 0 | 0 | 7 |
+| 聚合根保存（savable） | `save.aggregate` | M5 | 39 | 25 | 14 | 0 | 0 | 0 |
 | 追踪与差异更新 | `tracking` | M5 | 62 | 44 | 17 | 0 | 0 | 1 |
 | 乐观锁版本 | `version` | M5 | 13 | 13 | 0 | 0 | 0 | 0 |
 | UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
@@ -470,7 +470,7 @@
 | mysql8/M8BankTest.java#whereSubQuery6_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:196 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (SELECT COUNT(*) …` |
 | mysql8/M8BankTest.java#whereSubQuery7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.SubQueries.cs:206 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE ? = (SELECT COUNT…` |
 | mysql8/M8Save2Test.java#testInsert | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save2Test.cs:55 |  |
-| mysql8/M8Save3Test.java#testForeach | 待做 |  | `SELECT 'id','name' FROM 'm8_save_a' WHERE 'id' = ?` |
+| mysql8/M8Save3Test.java#testForeach | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:177：Java 的 include2 写成嵌套 Include(a => a.M8SaveB, b => b.Include(...)) | `SELECT 'id','name' FROM 'm8_save_a' WHERE 'id' = ?` |
 | mysql8/M8SaveTest.java#testInsert | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:92 |  |
 | mysql8/M8Test1.java#testQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Test1.cs:9 | `SELECT t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time',t1.'name' AS '__part__column1' FROM 't_ba…` |
 | mysql8/M8Test1.java#testQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Test1.cs:19 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time',t1.'name' AS '__part__column1' FRO…` |
@@ -1948,13 +1948,13 @@
 | mysql8/M8Save2Test.java#testOne2OneChange | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save2Test.cs:171 | `SELECT 'id','name','code' FROM 'm8_save_root'` |
 | mysql8/M8Save2Test.java#testOne2OneChange2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save2Test.cs:197 | `SELECT 'id','name','code' FROM 'm8_save_root'` |
 | mysql8/M8Save2Test.java#testOne2OneChange3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save2Test.cs:221：异常信息用中文，说明哪个子对象的外键已指向别的父对象 |  |
-| mysql8/M8Save3Test.java#many2manySetNullInsert | 待做 |  | `INSERT INTO 'm8_role3' ('role_id','role_name') VALUES (?,?)` |
-| mysql8/M8Save3Test.java#testOwnershipChange1 | 待做 |  | `UPDATE 'm8_save_b' SET 'pid' = ? WHERE 'id' = ?` |
-| mysql8/M8Save3Test.java#testOwnershipChange1_1 | 待做 |  | `UPDATE 'm8_save_b' SET 'pid' = ? WHERE 'id' = ?` |
-| mysql8/M8Save3Test.java#testOwnershipChange2 | 待做 |  | `DELETE FROM 'm8_save_d' WHERE 'id' = ?` |
-| mysql8/M8Save3Test.java#testOwnershipChange3 | 待做 |  | `DELETE FROM 'm8_save_d' WHERE 'id' = ?` |
-| mysql8/M8Save4Test.java#testToManyToMany1 | 待做 |  |  |
-| mysql8/M8Save4Test.java#testToManyToMany2 | 待做 |  | `SELECT 'a','b','c' FROM 'm8_many1' WHERE 'a' = ?` |
+| mysql8/M8Save3Test.java#many2manySetNullInsert | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:152 | `INSERT INTO 'm8_role3' ('role_id','role_name') VALUES (?,?)` |
+| mysql8/M8Save3Test.java#testOwnershipChange1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:92：Java 的 include2 写成嵌套 Include(a => a.M8SaveB, b => b.Include(...)) | `UPDATE 'm8_save_b' SET 'pid' = ? WHERE 'id' = ?` |
+| mysql8/M8Save3Test.java#testOwnershipChange1_1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:95：Java 的 include2 写成嵌套 Include(a => a.M8SaveB, b => b.Include(...)) | `UPDATE 'm8_save_b' SET 'pid' = ? WHERE 'id' = ?` |
+| mysql8/M8Save3Test.java#testOwnershipChange2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:99：Java 的 include2 写成嵌套 Include(a => a.M8SaveB, b => b.Include(...)) | `DELETE FROM 'm8_save_d' WHERE 'id' = ?` |
+| mysql8/M8Save3Test.java#testOwnershipChange3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save3Test.cs:120：Java 的 include2 写成嵌套 Include(a => a.M8SaveB, b => b.Include(...)) | `DELETE FROM 'm8_save_d' WHERE 'id' = ?` |
+| mysql8/M8Save4Test.java#testToManyToMany1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save4Test.cs:37 |  |
+| mysql8/M8Save4Test.java#testToManyToMany2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Save4Test.cs:57 | `SELECT 'a','b','c' FROM 'm8_many1' WHERE 'a' = ?` |
 | mysql8/M8SaveTest.java#test2One1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:96 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
 | mysql8/M8SaveTest.java#test2One2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:126：异常信息用中文，说明导航没有被追踪、该怎样改 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |
 | mysql8/M8SaveTest.java#test2One3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8SaveTest.cs:151 | `SELECT 'id','name','code' FROM 'm8_save_root' WHERE 'id' = ?` |

@@ -204,3 +204,47 @@ public class M8UserRole3
 
     public string? RoleId { get; set; }
 }
+
+/// <summary>对应 Java：mysql8/entity/save/M8ToMany1（一对多再一对多，全部级联 Delete）。</summary>
+[Table("m8_many1")]
+public class M8ToMany1
+{
+    [Column(PrimaryKey = true)]
+    public string? A { get; set; }
+
+    public string? B { get; set; }
+
+    public string? C { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(A)], TargetProperties = [nameof(M8ToMany2.A)], Cascade = Cascade.Delete)]
+    public List<M8ToMany2>? M8ToMany2List { get; set; }
+}
+
+[Table("m8_many2")]
+public class M8ToMany2
+{
+    [Column(PrimaryKey = true)]
+    public string? D { get; set; }
+
+    public string? A { get; set; }
+
+    public string? E { get; set; }
+
+    public string? F { get; set; }
+
+    [Navigate(RelationType.OneToMany, SelfProperties = [nameof(D)], TargetProperties = [nameof(M8ToMany3.D)], Cascade = Cascade.Delete)]
+    public List<M8ToMany3>? M8ToMany3List { get; set; }
+}
+
+[Table("m8_many3")]
+public class M8ToMany3
+{
+    [Column(PrimaryKey = true)]
+    public string? G { get; set; }
+
+    public string? D { get; set; }
+
+    public string? H { get; set; }
+
+    public string? I { get; set; }
+}
