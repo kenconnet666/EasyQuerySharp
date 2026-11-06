@@ -1,6 +1,6 @@
 # 0006 分库分表
 
-状态：草案（2026-11-06），对应 ROADMAP 4.4。末尾“待定”一节的几点确认后改为已定。
+状态：已定（2026-11-06），对应 ROADMAP 4.4。
 
 ## 背景
 
@@ -129,10 +129,10 @@ H2OrderTest 的 2 个与 H2QueryTest#allTypeTestSharding1 复用同一套实现�
 - 分布式事务；分片键变化后的行迁移；按时间自动建下一期的表（只提供建表 API）。
 - 季度、周分表，`LIKE` / `<>` 路由，运行时增删实际表；读写分离。
 
-## 待定
+## 已定的取舍
 
-1. 同库多表默认在库内 `UNION ALL`（`MaxUnionTables` 默认 64），Java 默认的“每表一条语句、内存归并”靠 `MaxUnionTables = 1`。
-2. 声明方式：集中登记在 `EasyDbOptions.Shard<T>(..)`，不加 Java 那样的 `@ShardingTableKey` 特性。
-3. 事务：按数据源各开各的、提交非原子（与 Java 一致）；或者先保守，事务里碰到第二个数据源就报错（48 个用例都不用事务）。
-4. 取模默认用 Java 的字符串哈希（与 Java 已写入的数据互通，但对纯 C# 用户不直观）。
+1. 同库多表默认在库内 `UNION ALL`（`MaxUnionTables` 默认 64）；Java 默认的“每表一条语句、内存归并”靠 `MaxUnionTables = 1`。
+2. 声明集中登记在 `EasyDbOptions.Shard<T>(..)`，不加 Java 那样的 `@ShardingTableKey` 特性。
+3. 事务按数据源各开各的、依次提交，不是原子的（与 Java 一致），文档写明。
+4. 取模默认用 Java 的字符串哈希，与 Java 已写入的数据互通。
 5. sharding40–42 记为偏离，期望值用正确语义（30 / 58 / 484）。

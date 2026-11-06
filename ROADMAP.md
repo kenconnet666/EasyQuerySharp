@@ -153,7 +153,7 @@ R → 1 → 2 → 3 → 4 → 5。
   - `FilterOp.Contains` / `StartsWith` / `EndsWith` 改成与 `Sql.LikeContains` 等相同（Java 的 CONTAINS 等：`LIKE CONCAT(…)`，值里的通配符按字面），whereObject2 / 4 / 6、DocTest test1、ExampleTest sampleTest1 移植；
   - 声明了条数的对一导航（Java 的 OneToOne + limit + orderByProps，如"第一张卡"）在条件、投影、隐式子查询里按排序取那一行（原来是普通 LEFT JOIN，会匹配全部行），`FilterNavigation` 的条件写进它的 ON，MySQL8Test4 testFilter 移植；
   - `Table(request)` 写成 `ToPageAsync(TableRequest)`（C# 的终结方法命名）：`TableRequest.Parse` 读地址栏参数（与 TS 的 parseTableRequest 同一约定），`filter.列` IN、`search.列` 包含、`sort` 只认结果里的列，带了 `total` 不再计数；条件树与整天区间（TS 11b.3a）记进 BACKLOG。
-- [ ] 4.4 分库分表（ShardingTest 48 个，另有 H2 的 3 个骨架：H2OrderTest ×2、H2QueryTest allTypeTestSharding1），先写决策文档 0006：草案已写（[0006](docs/decisions/0006-sharding.md)），末尾“待定”的 5 点确认后开工：
+- [ ] 4.4 分库分表（ShardingTest 48 个，另有 H2 的 3 个骨架：H2OrderTest ×2、H2QueryTest allTypeTestSharding1），先写决策文档 0006：[0006](docs/decisions/0006-sharding.md) 已定（2026-11-06，按草案的推荐），实现中：
   - 分表：按取模或按时间路由、按条件裁剪、库内 UNION ALL、写入路由；
   - 分库：路由，在内存里做归并排序和分页，跨库合并 `count` / `sum` / `min` / `max`。
 - [ ] 4.5 二级缓存 `EasyQuerySharp.Caching`，先写决策文档 0007（用例在 QueryTest25：test11a、test11a1、topicIntegerTest、xxx）：草案已写（[0007](docs/decisions/0007-second-level-cache.md)），末尾“待定”确认后开工；
