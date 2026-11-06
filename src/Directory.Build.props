@@ -1,0 +1,44 @@
+<Project>
+    <!-- 先继承仓库根的公共设置，再加发布相关的部分：src 下是随 NuGet 包发布的程序集（生成器打进核心包，见 EasyQuerySharp.csproj） -->
+    <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+    <!--
+      版本只在这里改。1.0（API 冻结、对标完成）之前发预览版：NuGet 默认不选预览版，不会被当成稳定版装上；0.x 在 NuGet 上仍算稳定版。
+      CI 打包时传 -p:CiBuildNumber=N，版本成为 1.0.0-preview.1.ci.N（排在 preview.1 之后、preview.2 之前）。
+    -->
+    <PropertyGroup>
+        <VersionPrefix>1.0.0</VersionPrefix>
+        <VersionSuffix>preview.1</VersionSuffix>
+        <VersionSuffix Condition="'$(CiBuildNumber)' != ''">$(VersionSuffix).ci.$(CiBuildNumber)</VersionSuffix>
+    </PropertyGroup>
+
+    <!-- NuGet 元数据；包名、说明与专属标签写在各项目里。许可证待定（仓库还没有 LICENSE），定了再加 PackageLicenseExpression -->
+    <PropertyGroup>
+        <Authors>kenconnet666</Authors>
+        <Company>kenconnet666</Company>
+        <PackageProjectUrl>https://github.com/kenconnet666/EasyQuerySharp</PackageProjectUrl>
+        <RepositoryUrl>$(PackageProjectUrl).git</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageReleaseNotes>$(PackageProjectUrl)/releases</PackageReleaseNotes>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageTags>orm;sql;linq;expression-tree;easy-query</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" Visible="false" />
+    </ItemGroup>
+
+    <!--
+      符号与可复现构建。.NET 8 起 SDK 自带 GitHub 的 Source Link，Deterministic、EmbedUntrackedSources 也默认开启，这里只补默认关着的：
+      nuspec 写入仓库地址与提交号，pdb 单独打成 .snupkg；CI 上按正式构建处理（源码路径规范成 /_/），本地不开，调试器才能找到本机源文件。
+    -->
+    <PropertyGroup>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+        <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    </PropertyGroup>
+</Project>

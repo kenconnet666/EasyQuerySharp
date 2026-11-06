@@ -1,7 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <PackageId>EasyQuerySharp</PackageId>
         <Description>easy-query 的 C# 实现：基于表达式树的强类型 ORM，支持隐式 join、隐式子查询与 DTO 对象树。</Description>
+        <PackageTags>$(PackageTags);mysql;postgresql;sqlite;sqlserver;oracle</PackageTags>
     </PropertyGroup>
 
     <!--
