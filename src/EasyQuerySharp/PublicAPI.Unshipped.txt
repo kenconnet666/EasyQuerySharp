@@ -449,6 +449,33 @@ EasyQuerySharp.Filtering.SortBuilder
 EasyQuerySharp.Filtering.SortBuilder.Allow(params string![]! properties) -> EasyQuerySharp.Filtering.SortBuilder!
 EasyQuerySharp.Filtering.SortBuilder.OrderBy(string! property, bool ascending = true, int table = 0, EasyQuerySharp.SqlAst.NullsOrder? nulls = null) -> EasyQuerySharp.Filtering.SortBuilder!
 EasyQuerySharp.Filtering.SortBuilder.SortBuilder() -> void
+EasyQuerySharp.Filtering.TableRequest
+EasyQuerySharp.Filtering.TableRequest.<Clone>$() -> EasyQuerySharp.Filtering.TableRequest!
+EasyQuerySharp.Filtering.TableRequest.Equals(EasyQuerySharp.Filtering.TableRequest? other) -> bool
+EasyQuerySharp.Filtering.TableRequest.Filters.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!
+EasyQuerySharp.Filtering.TableRequest.Filters.init -> void
+EasyQuerySharp.Filtering.TableRequest.Page.get -> long
+EasyQuerySharp.Filtering.TableRequest.Page.init -> void
+EasyQuerySharp.Filtering.TableRequest.PageSize.get -> long
+EasyQuerySharp.Filtering.TableRequest.PageSize.init -> void
+EasyQuerySharp.Filtering.TableRequest.Params.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!
+EasyQuerySharp.Filtering.TableRequest.Params.init -> void
+EasyQuerySharp.Filtering.TableRequest.Searches.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+EasyQuerySharp.Filtering.TableRequest.Searches.init -> void
+EasyQuerySharp.Filtering.TableRequest.Sorts.get -> System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Filtering.TableSort>!
+EasyQuerySharp.Filtering.TableRequest.Sorts.init -> void
+EasyQuerySharp.Filtering.TableRequest.TableRequest() -> void
+EasyQuerySharp.Filtering.TableRequest.Total.get -> long?
+EasyQuerySharp.Filtering.TableRequest.Total.init -> void
+EasyQuerySharp.Filtering.TableSort
+EasyQuerySharp.Filtering.TableSort.Deconstruct(out string! Key, out bool Descending) -> void
+EasyQuerySharp.Filtering.TableSort.Descending.get -> bool
+EasyQuerySharp.Filtering.TableSort.Descending.init -> void
+EasyQuerySharp.Filtering.TableSort.Equals(EasyQuerySharp.Filtering.TableSort other) -> bool
+EasyQuerySharp.Filtering.TableSort.Key.get -> string!
+EasyQuerySharp.Filtering.TableSort.Key.init -> void
+EasyQuerySharp.Filtering.TableSort.TableSort() -> void
+EasyQuerySharp.Filtering.TableSort.TableSort(string! Key, bool Descending) -> void
 EasyQuerySharp.Filtering.ValueFilter
 EasyQuerySharp.Filtering.ValueFilter.All = 0 -> EasyQuerySharp.Filtering.ValueFilter
 EasyQuerySharp.Filtering.ValueFilter.NotNull = 1 -> EasyQuerySharp.Filtering.ValueFilter
@@ -1289,6 +1316,7 @@ EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.Take(long count) -> TSelf!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToChunksAsync(int size, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<System.Collections.Generic.List<TElement>!>!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToCountStatement() -> EasyQuerySharp.SqlStatement!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToListAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.List<TElement>!>!
+EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToPageAsync(EasyQuerySharp.Filtering.TableRequest! request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<EasyQuerySharp.Querying.Page<TElement>!>!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToPageAsync(long page, long size, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<EasyQuerySharp.Querying.Page<TElement>!>!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToRowsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.List<EasyQuerySharp.DynamicRow!>!>!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToSql() -> string!
@@ -1688,6 +1716,7 @@ abstract EasyQuerySharp.Metadata.ColumnSqlConversion.Write.get -> string!
 abstract EasyQuerySharp.Metadata.NameConversion.Convert(string! name) -> string!
 abstract EasyQuerySharp.Metadata.ValueConverter<TModel, TProvider>.FromProvider(TProvider value) -> TModel
 abstract EasyQuerySharp.Metadata.ValueConverter<TModel, TProvider>.ToProvider(TModel value) -> TProvider
+const EasyQuerySharp.Filtering.TableRequest.MaxPageSize = 2000 -> int
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Abs = "ABS" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Atan2 = "ATAN2" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Avg = "AVG" -> string!
@@ -1858,6 +1887,10 @@ override EasyQuerySharp.Encryption.Sm4HexEncryptionStrategy.DecryptSegment(strin
 override EasyQuerySharp.Encryption.Sm4HexEncryptionStrategy.EncryptSegment(string! segment) -> string!
 override EasyQuerySharp.Encryption.Sm4HexEncryptionStrategy.SegmentCipherLength.get -> int
 override EasyQuerySharp.Encryption.Sm4HexEncryptionStrategy.SupportEmoji.get -> bool
+override EasyQuerySharp.Filtering.TableRequest.Equals(object? obj) -> bool
+override EasyQuerySharp.Filtering.TableRequest.GetHashCode() -> int
+override EasyQuerySharp.Filtering.TableRequest.ToString() -> string!
+override EasyQuerySharp.Filtering.TableSort.GetHashCode() -> int
 override EasyQuerySharp.Interceptors.InterceptorSelection.Equals(object? obj) -> bool
 override EasyQuerySharp.Interceptors.InterceptorSelection.GetHashCode() -> int
 override EasyQuerySharp.Interceptors.InterceptorSelection.ToString() -> string!
@@ -1942,6 +1975,12 @@ static EasyQuerySharp.Encryption.Sm4.DecryptBlock(System.ReadOnlySpan<byte> bloc
 static EasyQuerySharp.Encryption.Sm4.DecryptFromHex(string! ciphertext, System.ReadOnlySpan<byte> key) -> string!
 static EasyQuerySharp.Encryption.Sm4.EncryptBlock(System.ReadOnlySpan<byte> block, System.ReadOnlySpan<byte> key) -> byte[]!
 static EasyQuerySharp.Encryption.Sm4.EncryptToHex(string! plaintext, System.ReadOnlySpan<byte> key) -> string!
+static EasyQuerySharp.Filtering.TableRequest.Parse(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, string?>>! parameters) -> EasyQuerySharp.Filtering.TableRequest!
+static EasyQuerySharp.Filtering.TableRequest.Parse(string? queryString) -> EasyQuerySharp.Filtering.TableRequest!
+static EasyQuerySharp.Filtering.TableRequest.operator !=(EasyQuerySharp.Filtering.TableRequest? left, EasyQuerySharp.Filtering.TableRequest? right) -> bool
+static EasyQuerySharp.Filtering.TableRequest.operator ==(EasyQuerySharp.Filtering.TableRequest? left, EasyQuerySharp.Filtering.TableRequest? right) -> bool
+static EasyQuerySharp.Filtering.TableSort.operator !=(EasyQuerySharp.Filtering.TableSort left, EasyQuerySharp.Filtering.TableSort right) -> bool
+static EasyQuerySharp.Filtering.TableSort.operator ==(EasyQuerySharp.Filtering.TableSort left, EasyQuerySharp.Filtering.TableSort right) -> bool
 static EasyQuerySharp.Interceptors.InterceptorSelection.Default.get -> EasyQuerySharp.Interceptors.InterceptorSelection!
 static EasyQuerySharp.Interceptors.InterceptorSelection.operator !=(EasyQuerySharp.Interceptors.InterceptorSelection? left, EasyQuerySharp.Interceptors.InterceptorSelection? right) -> bool
 static EasyQuerySharp.Interceptors.InterceptorSelection.operator ==(EasyQuerySharp.Interceptors.InterceptorSelection? left, EasyQuerySharp.Interceptors.InterceptorSelection? right) -> bool
@@ -2158,5 +2197,7 @@ virtual EasyQuerySharp.Interceptors.QueryFilter<TEntity>.Name.get -> string!
 virtual EasyQuerySharp.Metadata.ColumnSqlConversion.Arguments.get -> System.Collections.Generic.IReadOnlyList<object?>!
 virtual EasyQuerySharp.Metadata.ColumnSqlConversion.Column.get -> string?
 virtual EasyQuerySharp.Metadata.ColumnSqlConversion.CompareValue.get -> string?
+~override EasyQuerySharp.Filtering.TableSort.Equals(object obj) -> bool
+~override EasyQuerySharp.Filtering.TableSort.ToString() -> string
 ~override EasyQuerySharp.WindowBound.Equals(object obj) -> bool
 ~override EasyQuerySharp.WindowBound.ToString() -> string
