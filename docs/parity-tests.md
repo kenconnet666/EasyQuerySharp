@@ -3,7 +3,7 @@
 由 `tools/ParityTests` 生成，不要手改。状态来自 C# 测试上的 `[Upstream]` 标注，见 [0003](decisions/0003-testing-and-parity.md)。
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 
-合计：已移植 1692、偏离 207、不适用 77、骨架 6、待做 422。
+合计：已移植 1697、偏离 209、不适用 78、骨架 6、待做 414。
 
 ## 按能力
 
@@ -39,7 +39,7 @@
 | include 带出导航 | `nav.include` | M4 | 37 | 34 | 2 | 0 | 0 | 1 |
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 137 | 3 | 1 | 0 | 1 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 23 | 2 | 0 | 0 | 0 |
-| 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 0 | 0 | 0 | 0 | 9 |
+| 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 5 | 2 | 1 | 0 | 1 |
 | 列加密 | `column.encryption` | M5 | 8 | 7 | 0 | 0 | 0 | 1 |
 | 拦截器 | `interceptor` | M5 | 3 | 3 | 0 | 0 | 0 | 0 |
 | 逻辑删除 | `logicDelete` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
@@ -1889,15 +1889,15 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| fork/json/JsonValueConverterTest.java#columnIsBoundToTheConverter | 待做 |  |  |
-| fork/json/JsonValueConverterTest.java#decodesWithTheDeclaredGenericType | 待做 |  |  |
-| fork/json/JsonValueConverterTest.java#nullAndBlankStayNull | 待做 |  |  |
+| fork/json/JsonValueConverterTest.java#columnIsBoundToTheConverter | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/JsonValueConverterTest.cs:34 |  |
+| fork/json/JsonValueConverterTest.java#decodesWithTheDeclaredGenericType | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Fork/JsonValueConverterTest.cs:13：Java 另外验证 JDBC 的 Clob；.NET 的驱动把文本列读成 string、二进制列读成 byte[]，这两种都验证 |  |
+| fork/json/JsonValueConverterTest.java#nullAndBlankStayNull | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/JsonValueConverterTest.cs:26 |  |
 | fork/live/JsonValueConverterLiveTest.java#hanaNclobColumn | 待做 |  | `DROP TABLE "t_fork_profile"` |
-| fork/live/JsonValueConverterLiveTest.java#mysql8018JsonColumn | 待做 |  | `DROP TABLE IF EXISTS t_fork_profile` |
-| fork/types/ZonedTimeColumnSqlTest.java#compareAndDateArithmetic | 待做 |  | `SELECT 'id','kind','created_at','completed_at','due_at','seen_at' FROM 't_fork_event' WHERE 'created…` |
-| fork/types/ZonedTimeColumnSqlTest.java#durationAggregateInGroupSelect | 待做 |  | `SELECT t.'kind' AS 'value1',AVG(` |
-| fork/types/ZonedTimeColumnSqlTest.java#proxyColumnsAreDateTimeColumns | 待做 |  |  |
-| fork/types/ZonedTimeColumnSqlTest.java#selectSingleZonedColumn | 待做 |  | `SELECT t.'created_at' FROM 't_fork_event' t ORDER BY t.'created_at' ASC` |
+| fork/live/JsonValueConverterLiveTest.java#mysql8018JsonColumn | 偏离 | tests/EasyQuerySharp.Tests.Live/LiveSuite.Json.cs:10：C# 的实库套件在每个库上跑同一份往返（MySQL 系的列改成 JSON 类型）；Dictionary<string, object?> 的值按 System.Text.Json 读成 JsonElement | `DROP TABLE IF EXISTS t_fork_profile` |
+| fork/types/ZonedTimeColumnSqlTest.java#compareAndDateArithmetic | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/ZonedTimeColumnSqlTest.cs:15 | `SELECT 'id','kind','created_at','completed_at','due_at','seen_at' FROM 't_fork_event' WHERE 'created…` |
+| fork/types/ZonedTimeColumnSqlTest.java#durationAggregateInGroupSelect | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/ZonedTimeColumnSqlTest.cs:33 | `SELECT t.'kind' AS 'value1',AVG(` |
+| fork/types/ZonedTimeColumnSqlTest.java#proxyColumnsAreDateTimeColumns | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Fork/ZonedTimeColumnSqlTest.cs:8：测的是 Java 代理列的类型（SQLInstantTypeColumn 等）；C# 的 DateTimeOffset 属性直接用日期的成员和扩展方法，见本类其余用例 |  |
+| fork/types/ZonedTimeColumnSqlTest.java#selectSingleZonedColumn | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/ZonedTimeColumnSqlTest.cs:24 | `SELECT t.'created_at' FROM 't_fork_event' t ORDER BY t.'created_at' ASC` |
 
 ### 列加密（`column.encryption`，M5）
 

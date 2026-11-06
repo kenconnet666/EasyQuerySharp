@@ -90,3 +90,25 @@ public class Setting
 
     public string? Value { get; set; }
 }
+
+/// <summary>JSON 列：地址列表与扩展字段（对应 Java fork 的 ForkProfile）。</summary>
+[Table("t_live_profile")]
+public class Profile
+{
+    [Column(PrimaryKey = true)]
+    public string Id { get; set; } = "";
+
+    [Column(Converter = typeof(JsonValueConverter<List<ProfileAddress>>))]
+    public List<ProfileAddress>? Addresses { get; set; }
+
+    [Column(Converter = typeof(JsonValueConverter<Dictionary<string, object?>>))]
+    public Dictionary<string, object?>? Extra { get; set; }
+}
+
+/// <summary>地址。</summary>
+public sealed class ProfileAddress
+{
+    public string? City { get; set; }
+
+    public int? Zip { get; set; }
+}

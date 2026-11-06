@@ -36,3 +36,43 @@ public class ForkUser
     [Navigate(RelationType.OneToMany, TargetProperties = [nameof(ForkPost.UserId)])]
     public List<ForkPost>? Posts { get; set; }
 }
+
+/// <summary>对应 Java fork：entity/ForkProfile（地址列表与扩展字段存成 JSON 列）。</summary>
+[Table("t_fork_profile")]
+public class ForkProfile
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    [Column(Converter = typeof(JsonValueConverter<List<Address>>))]
+    public List<Address>? Addresses { get; set; }
+
+    [Column(Converter = typeof(JsonValueConverter<Dictionary<string, object?>>))]
+    public Dictionary<string, object?>? Extra { get; set; }
+
+    /// <summary>地址。</summary>
+    public sealed class Address
+    {
+        public string? City { get; set; }
+
+        public int? Zip { get; set; }
+    }
+}
+
+/// <summary>对应 Java fork：entity/ForkEvent（Instant 对应 DateTime，OffsetDateTime / ZonedDateTime 对应 DateTimeOffset）。</summary>
+[Table("t_fork_event")]
+public class ForkEvent
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Kind { get; set; }
+
+    public DateTime? CreatedAt { get; set; }
+
+    public DateTime? CompletedAt { get; set; }
+
+    public DateTimeOffset? DueAt { get; set; }
+
+    public DateTimeOffset? SeenAt { get; set; }
+}
