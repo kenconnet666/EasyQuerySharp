@@ -34,3 +34,6 @@
 - code-first 读库结构与同步只看当前 schema（MySQL 是当前库）：实体声明了别的 schema 时按表名和当前 schema 里的表比较；要跨 schema 同步时再给各方言的系统表查询加 schema 条件。
 - code-first 同步不比较列类型（只比较列在不在、可空性）：各库读出的类型写法不同（`character varying(255)` 与 `VARCHAR(255)`、`int(11)` 与 `INT`），要比较得先按方言归一（TS 版的 `sameType`）；有需求时再做。
 - code-first 不建库（Java 的 `createDatabaseIfNotExists`）：库由连接串决定，建库属于部署，要从连接串拆出服务器与库名、各方言写法不同；有需求时再做。
+- 二级缓存的多实例本机层失效通知（TS 的 CacheTransport、Java 的 Redis 发布订阅）：1.0 靠 `LocalCacheExpiration` 兜底（0007 §8），要更及时时再做，或等带 backplane 的 HybridCache 实现。
+- 二级缓存同一实例里同时的未命中各查一次库：HybridCache 的工厂里不能查库（AsyncLocal 不流动，见 0007 末尾），要合并时自己按键做单飞；小表的 all 一般用不上。
+- 依赖注入包自动接上容器里的 `IWriteListener`（像 `IExecutionListener` 那样）：现在在配置函数里写 `o.UseCache(sp.GetRequiredService<EasyCache>())`；有第二种写入监听器的需求时再加。

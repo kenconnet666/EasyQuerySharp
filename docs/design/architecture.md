@@ -16,6 +16,7 @@
 EasyQuerySharp.slnx
 src/
   EasyQuerySharp/                    核心：元数据、查询模型、翻译、SQL AST、各方言、执行、追踪、拦截器、列加密、code-first
+  EasyQuerySharp.Caching/            二级缓存（0007）：kv / all 显式缓存，存储是 HybridCache，挂在核心的写入监听上失效
   EasyQuerySharp.DependencyInjection/  services.AddEasyQuery(..)：EasyDb 注册成单例，多个库按名字（keyed service）注入
   EasyQuerySharp.Generator/          [Projection] 生成器与分析器（netstandard2.0，随核心包分发）
 tests/
@@ -36,7 +37,7 @@ docs/
   decisions/  design/  examples/  guide/  sql-snapshots/
 ```
 
-以后按需新增的包：`EasyQuerySharp.Caching`（阶段 4），以及用到驱动专属 API（批量复制、PG 数组类型等）的方言包。扩展包只引用 Microsoft.Extensions 的抽象包，核心包不引用它们。
+以后按需新增的包：用到驱动专属 API（批量复制、PG 数组类型等）的方言包。扩展包只引用 Microsoft.Extensions 的包（依赖注入只引用抽象包，缓存引用 HybridCache），核心包不引用它们。
 
 核心包内部只有一层目录，命名空间与目录一致，同一目录里用文件名区分职责：
 
@@ -70,7 +71,7 @@ db.Query<User>().Where(..).Select(..).ToListAsync()
    ├─ 4. 规划       ProjectionCompiler：投影里的对多集合、带出拆成按键批量的子查询（见 0002）
    ├─ 5. 渲染       SqlRenderer + SqlDialect → SqlStatement { Text, Parameters }
    │                  标识符引用、分页、upsert、函数表；参数到这一步才绑定
-   ├─ 6. 执行       SqlExecutor → DbCommand / DbBatch（批量写入）；环境事务、执行监听（IExecutionListener）、ActivitySource
+   ├─ 6. 执行       SqlExecutor → DbCommand / DbBatch（批量写入）；环境事务、执行监听（IExecutionListener）、ActivitySource；写入成功后按表通知写入监听（IWriteListener）
    └─ 7. 物化       读取委托：按读取树的结构缓存（ShaperCache），同形状只编译一次；值转换器在这里生效
 ```
 
@@ -86,6 +87,7 @@ db.Query<User>().Where(..).Select(..).ToListAsync()
 | `SqlExpr` / `SelectQuery` / `InsertStatement` / `UpdateStatement` / `DeleteStatement` | SQL AST，与方言无关 | `SQLExpression` / `ast.ts` |
 | `SqlDialect` | AST 渲染成文本、函数表、标识符引用、分页、upsert、建表类型 | `ExpressionFactory` + `SQLFunc` / `Dialect` |
 | `SqlExecutor` / `EasyTransaction` | 执行 SQL、批量写入（按 SQL 分组，有 `DbBatch` 时交给它）、环境事务（每个库一个，不能嵌套）、取消 | `JdbcExecutor` / `session.ts` |
+| `IWriteListener` / `WriteEvent` | 写入成功后按表通知（事务里在提交后）：渲染器给写入语句盖上标记，会话记下成功执行的语句，结束时按表合并、从语句里取主键；二级缓存挂在这里失效 | `TriggerEvent` / 拦截器的 `afterWrite` |
 | `QueryFilter<T>` / `EntityInterceptor<T>` | 查询条件过滤、写入前改实体、按条件更新追加 SET | `EntityInterceptor` 等 / `interceptor.ts` |
 | `ValueConverter<TModel, TProvider>` | 属性值和数据库值互转 | `ValueConverter` |
 | `ColumnSqlConversion` | 在 SQL 侧包一层，例如库端加解密 | `ColumnValueSQLConverter` |
@@ -140,6 +142,7 @@ db.Query<User>().Where(..).Select(..).ToListAsync()
 5. 逻辑删除策略：实现 `ILogicDeleteStrategy`，`options.AddLogicDeleteStrategy("名字", 策略)` 注册。
 6. 方言：继承已有方言，覆盖差异，用 `options.Use(方言, 数据源)`。
 7. 依赖注入：`services.AddEasyQuery(..)` 注册 `EasyDb`，容器里登记的数据源、监听器、拦截器自动接上，见 [依赖注入指南](../guide/dependency-injection.md)。
+8. 写入监听：实现 `IWriteListener`，`options.AddWriteListener(..)` 注册，经本库的写入按表通知（事务里在提交后）；二级缓存 `options.UseCache(cache)` 就是一个写入监听器，见 [二级缓存指南](../guide/caching.md)。
 
 ## 命名
 

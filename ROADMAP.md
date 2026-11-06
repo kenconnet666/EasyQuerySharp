@@ -38,7 +38,7 @@
 - **生成器只保留 `[Projection]` 和分析器**。`[MapFrom<T>]` 的映射在运行时构造，编译期校验交给分析器。核心如实标注 `RequiresDynamicCode` / `RequiresUnreferencedCode`。
 - **嵌套事务对齐 Java**：已经在事务里时再开事务，直接抛异常。
 - **规划外的新公共概念先写决策文档**：关联键匹配策略、分库分表、二级缓存。
-- **新依赖只进各自的包**：生成器引用 Microsoft.CodeAnalysis，依赖注入和缓存引用 Microsoft.Extensions 的抽象包，核心仍然零依赖。
+- **新依赖只进各自的包**：生成器引用 Microsoft.CodeAnalysis，依赖注入引用 Microsoft.Extensions 的抽象包，缓存引用 HybridCache，核心仍然零依赖。
 
 **对标基准**
 
@@ -156,9 +156,10 @@ R → 1 → 2 → 3 → 4 → 5。
 - [ ] 4.4 分库分表（ShardingTest 48 个，另有 H2 的 3 个骨架：H2OrderTest ×2、H2QueryTest allTypeTestSharding1），先写决策文档 0006：[0006](docs/decisions/0006-sharding.md) 已定（2026-11-06，按草案的推荐），实现中：
   - 分表：按取模或按时间路由、按条件裁剪、库内 UNION ALL、写入路由；
   - 分库：路由，在内存里做归并排序和分页，跨库合并 `count` / `sum` / `min` / `max`。
-- [ ] 4.5 二级缓存 `EasyQuerySharp.Caching`，先写决策文档 0007（用例在 QueryTest25：test11a、test11a1、topicIntegerTest、xxx）：[0007](docs/decisions/0007-second-level-cache.md) 已定（2026-11-06，按草案的推荐），实现中；只做 kv、all 两种（Java 的 Multi 是注释掉的死代码）；
-  - 参照 Java 的 `sql-extension/sql-cache`：kv（按主键）与 all（索引 + 按主键）两种显式缓存查询；核心新增写入监听，写入（事务里在提交后）让缓存失效；
-  - 存储用 `HybridCache`，支持本机和分布式两级。
+- [x] 4.5 二级缓存 `EasyQuerySharp.Caching`（只引用 Microsoft.Extensions.Caching.Hybrid 10.11.0），设计见 [0007](docs/decisions/0007-second-level-cache.md)；只做 kv、all 两种（Java 的 Multi 是注释掉的死代码）：
+  - 核心新增写入监听：`IWriteListener` / `WriteEvent` / `WriteKind`、`EasyDbOptions.AddWriteListener`、`EasyDb.InTransaction`。渲染器给 INSERT / UPDATE / DELETE / INSERT … SELECT 盖上内部的写入标记，会话记下成功执行的语句，结束时按表合并通知一次，主键从语句里取（INSERT 的主键值，UPDATE / DELETE 顶层 AND 里主键的 `=` / `IN`，经转换器还原）；环境事务里推迟到提交之后，回滚丢弃；监听器的异常包成 `EasyQueryException`；没有监听器时什么也不记。各写入路径（按实体、按条件、批量、upsert、逻辑删除、`Returning()`、聚合保存、`InsertMap` / `UpdateMap`、`InsertInto`、事务）的用例在 `Extras/WriteListenerTest`。
+  - 缓存包：`new EasyCache(hybridCache, o => o.Cache<T>())` + `options.UseCache(cache)`；`cache.Of(db).Kv<T>()`（`FindAsync` / `FindOrThrowAsync` / `FindManyAsync` / `ExistsAsync`，`Where`、拦截器开关进缓存键，`Filter` 在内存里筛）、`All<T>()`（主键索引 + 按主键取行，排序、`ToListAsync`、`ToIdsAsync`、`CountAsync`、`AnyAsync`、`ToPageAsync`）、`InvalidateAsync<T>(id?)`。键是表纪元下的行桶与索引桶，写入按主键删行与索引、主键不明时整表换纪元，`LateEvictDelay` 延迟双删；事务里的读绕过缓存。HybridCache 的行为先用 `Extras/HybridCacheProbeTest` 探测，实现中的两处调整记在 0007 末尾。
+  - 用例：QueryTest25 的 test11a、test11a1 记偏离（Java 读 Caffeine 的存储布局换成行为断言；test11a1 的 IN 参数顺序），topicIntegerTest、xxx 移植，都要 MySQL 实库验证；C# 独有的 `Extras/CacheTest`（SQLite，两个实例经内存版 `IDistributedCache` 共享 L2）。用法见 [二级缓存指南](docs/guide/caching.md)；注册要在创建 `EasyDb` 时接上缓存、存储来自容器，DocsExamples 的卡片放不下，只写指南。
 - [x] 4.6 依赖注入 `EasyQuerySharp.DependencyInjection`（只引用 Microsoft.Extensions.DependencyInjection.Abstractions 10.0.14）：`services.AddEasyQuery(o => ..)` / `AddEasyQuery((sp, o) => ..)` 把 `EasyDb` 注册成单例（线程安全，环境事务与追踪作用域借 AsyncLocal 跟随异步流程，每个请求本就隔离）；`AddEasyQuery("name", ..)` 注册成 keyed 单例，用 `[FromKeyedServices("name")]` 注入。对应 Java starter 的自动装配：容器里的 `IExecutionListener`、`IInterceptor` 在配置函数之前加入，配置函数没有指定数据源时取容器里的 `DbDataSource`（Npgsql / MySqlConnector 的 `AddXxxDataSource` 会登记它）；默认的库只取不带键的服务，命名的库只取以库名为键的服务。测试在 `tests/EasyQuerySharp.Tests.DependencyInjection`（真实容器 + SQLite），用法见 [依赖注入指南](docs/guide/dependency-injection.md)。DocsExamples 的卡片按方言比对 SQL，注册代码没有 SQL 可比，所以只写指南。
 
 完成标准：2404 个用例的待做为 0。
@@ -171,7 +172,7 @@ R → 1 → 2 → 3 → 4 → 5。
 - [ ] 5.3 文档：在 `docs/guide/` 下按能力写 Markdown 指南（用法、方言支持矩阵、限制、对应的 Java 方法名），代码片段和 SQL 由 DocsExamples 生成；另写 README、入门教程，以及从 Java / TS 迁移的指南。
 - [!] 5.4 打包：NuGet 元数据、Source Link、确定性构建，生成器和分析器随核心包一起分发。是否发布到 nuget.org 在这一步决定。打包已就绪，发布等下面的决定。
   - 已做：`src/Directory.Build.props` 是唯一的版本来源（`1.0.0-preview.1`，CI 打包传 `CiBuildNumber` 追加成 `-preview.1.ci.N`），统一写包元数据（作者、项目与仓库地址、发布说明链接、README、标签）、`.snupkg` 符号包、`PublishRepositoryUrl`，GitHub Actions 上开 `ContinuousIntegrationBuild`；Source Link、`Deterministic`、`EmbedUntrackedSources` 用 .NET SDK 的默认值。
-  - 出两个包：`EasyQuerySharp`（`lib/net10.0`，生成器在 `analyzers/dotnet/cs`，没有包依赖）、`EasyQuerySharp.DependencyInjection`（依赖核心与 Microsoft.Extensions.DependencyInjection.Abstractions；核心的分析器随依赖传递，只装它也有生成器）。其余项目都不打包。CI 的 pack 任务打包、检查生成器在包里、上传 artifact，不推送。
+  - 出三个包：`EasyQuerySharp`（`lib/net10.0`，生成器在 `analyzers/dotnet/cs`，没有包依赖）、`EasyQuerySharp.DependencyInjection`（依赖核心与 Microsoft.Extensions.DependencyInjection.Abstractions）、`EasyQuerySharp.Caching`（依赖核心与 Microsoft.Extensions.Caching.Hybrid）；核心的分析器随依赖传递，只装扩展包也有生成器。其余项目都不打包。CI 的 pack 任务打包、检查生成器在包里、上传 artifact，不推送。
   - [!] 发布前待定：
     - 许可证：仓库还没有 LICENSE。Java 上游与 TS 版都是 Apache-2.0，本仓库搬了 Java 用例的 SQL 与建表脚本，选型要和它兼容。定了之后加 LICENSE 文件和 `PackageLicenseExpression`。
     - 包名与前缀：`EasyQuerySharp`、`EasyQuerySharp.DependencyInjection` 在 nuget.org 上还没人占用（2026-11-06 查过）。要不要用 nuget.org 账号申请保留 `EasyQuerySharp.*` 前缀；另外 nuget.org 上已有不相干的 `Korzh.EasyQuery.*`，名字相近。`Authors` 现在填的是 GitHub 账号 kenconnet666，要和发布用的 nuget.org 账号对上。

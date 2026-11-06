@@ -26,6 +26,7 @@
 按能力写的用法、限制与对应的 Java 写法（ROADMAP 5.3 补齐其余能力）。
 
 - [依赖注入](guide/dependency-injection.md)：`services.AddEasyQuery(..)`，多个库按名字注入，从容器取数据源、监听器、拦截器，生命周期。
+- [二级缓存](guide/caching.md)：`EasyQuerySharp.Caching` 的 kv / all 缓存、HybridCache 两级存储、写入后的自动失效与写入监听、一致性限制。
 
 ## 设计
 

@@ -84,6 +84,7 @@
 | 分库分表 | `sharding` | 48 | 分表路由（取模、时间）、条件裁剪、库内 UNION ALL、写入路由；分库时在内存里归并排序和分页（计划，先写决策文档 0006） | 阶段 4 |
 | 按对象筛选排序 | `dto.object` | 101 | `.FilterBy(request)`（属性上的 `[Filter]` 说明条件类型、多属性 OR、区间、导航路径、集合 EXISTS）/ `.SortBy(sort)`（允许排序的属性）；按路径动态取列 `Sql.Column<T>(c, "user.age")`（对应 anyColumn）；列表页请求 `ToPageAsync(TableRequest.Parse(queryString))`（TS 的 table(request)：`filter.列` IN、`search.列` 包含、`sort=-a,b`，只认结果里的列，带了 `total` 不再计数） | 完成 |
 | search 扩展 | `search` | 45 | — | 不做 |
+| 二级缓存（`sql-extension/sql-cache`） | 没有单独的 key（QueryTest25 的 test11a、test11a1、topicIntegerTest、xxx，按方法体归在 `query.basic` 等） | 4 | 包 `EasyQuerySharp.Caching`：`new EasyCache(hybridCache, o => o.Cache<T>())` + `options.UseCache(cache)`；`cache.Of(db).Kv<T>()`（kvStorage：`FindAsync` / `FindManyAsync` / `ExistsAsync`，`Where` 与拦截器开关进缓存键，`Filter` 在内存里筛）、`All<T>()`（allStorage：主键索引 + 按主键取行，`OrderBy`、`ToListAsync`、`ToIdsAsync`、`CountAsync`、`ToPageAsync`）；经本库的写入按表自动失效（事务里在提交后），核心的写入监听 `IWriteListener` / `AddWriteListener`；Multi 与 `toMap` 不做。见 [二级缓存指南](guide/caching.md) | 完成（4.5） |
 | 依赖注入（Spring Boot starter、Solon 插件） | 没有用例 | — | `services.AddEasyQuery(o => ..)`，多个库 `AddEasyQuery("name", ..)` 加 `[FromKeyedServices("name")]`；容器里的 `DbDataSource`、`IExecutionListener`、`IInterceptor` 自动接上，见 [依赖注入指南](guide/dependency-injection.md) | 完成 |
 
 ## 方言
