@@ -81,7 +81,7 @@ R → 1 → 2 → 3 → 4 → 5。
   - 0003：L1 项目 `EasyQuerySharp.Tests` 并不存在（`SqlOnly` 在 TestKit 里，L1 用例放在 Upstream 里）；本地与 CI 的分工改成按方言分档；
   - `parity.md`：开头的说明和"C# 写法"一列按实际 API 刷新；把旧 ROADMAP 里已完成项的限制和方言差异并进去；逐个核对旧 ROADMAP 里标 `[~]` 的项（2.4、4.4、4.5、4.7、4.9、4.10、7.5），还剩的内容并进下面的阶段。
 - [ ] R.6 复核偏离：把 224 条偏离按原因分类（C# 类型系统、API 形状、Java 的 bug、功能缺口），属于功能缺口的改回待做。重点看 nav.flat（26 条）、tracking（17 条）、save.aggregate（14 条）。
-- [ ] R.7 代码走查：找出重复代码、死代码和过长的文件（`QueryBase`、`SqlDialect`、`SqlRenderer`、`SavePlan`），整理单独提交。
+- [x] R.7 代码走查：`QueryBase` 拆出终结方法（`QueryBase.Execution.cs`）与 `Page<T>`，`SqlDialect` 拆成通用渲染、upsert、函数表、DDL 四个分部文件；IN 翻译复用 `MetadataRegistry.ElementType`；`EasyDb` 构造函数标注 `RequiresUnreferencedCode` / `RequiresDynamicCode`；没有被调用的公开方法（`DecrementIf`、`UpdateColumnsBuilder.IsIncluded`）补上用例。编译器的未使用成员与多余 using 检查没有报出问题。
 
 完成标准：文档与代码一致；对标表里的待做只剩各阶段计划内的项；CI 全绿。
 

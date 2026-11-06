@@ -85,17 +85,9 @@ internal sealed partial class ExpressionTranslator
     {
         var values = ClientEvaluator.Evaluate(source) as IEnumerable
                      ?? throw new NotSupportedException($"IN 的值必须是集合：{source}");
-        var elementType = ElementType(source.Type);
+        var elementType = Metadata.MetadataRegistry.ElementType(source.Type);
         var result = new List<SqlExpr>();
         foreach (var v in values) result.Add(ApplyConverter(Parameter(v, v?.GetType() ?? elementType), operand));
         return result;
-    }
-
-    private static Type ElementType(Type collection)
-    {
-        if (collection.IsArray) return collection.GetElementType()!;
-        var enumerable = collection.GetInterfaces().Append(collection)
-            .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-        return enumerable?.GetGenericArguments()[0] ?? typeof(object);
     }
 }
