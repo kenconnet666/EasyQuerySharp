@@ -15,9 +15,18 @@ public sealed class DateTruncSqlTest
         Assert.Equal("SELECT DATE_SUB(CAST(DATE_FORMAT(t.`created_at`,'%Y-%m-%d 00:00:00') AS DATETIME), INTERVAL WEEKDAY(t.`created_at`) DAY) AS `value1` FROM `t_fork_user` t",
             Sql("mysql", DateTruncUnit.Week));
 
-    [Fact, Upstream("fork/functions/DateTruncSqlTest.java#unsupportedDialectSaysSo")]
+    // 没有登记 DateTrunc 的方言在渲染期报错，消息里带上粒度
+    [Fact, Upstream("fork/functions/DateTruncSqlTest.java#unsupportedDialectSaysSo",
+         Deviation = "Java 用 SQL Server 演示；C# 的 SQL Server 用 2022 的 DATETRUNC，内置方言都支持，这里用一个没登记函数的方言演示")]
     public void UnsupportedDialectSaysSo() =>
-        Assert.Contains("DateTrunc(Day)", Assert.Throws<NotSupportedException>(() => Sql("mssql", DateTruncUnit.Day)).Message);
+        Assert.Contains("DateTrunc(Day)", Assert.Throws<NotSupportedException>(() =>
+            new EasyDb(o => o.Use(new BareDialect())).Query<ForkUser>().Select(u => new Draft<DateTime?>(u.CreatedAt.DateTrunc(DateTruncUnit.Day))).ToSql()).Message);
+
+    // 只用基类默认写法的方言
+    private sealed class BareDialect : EasyQuerySharp.Dialects.SqlDialect
+    {
+        public override string Name => "bare";
+    }
 }
 
 /// <summary>对应 Java fork：functions/NullSafeSqlTest.java（null 安全相等、NULLIF）。</summary>
