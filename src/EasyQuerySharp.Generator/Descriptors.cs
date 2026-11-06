@@ -66,4 +66,14 @@ internal static class Descriptors
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
         description: "生成器把 [Projection] 方法的方法体原样搬进一个表达式树 lambda：方法要是静态、非泛型，放在 partial 的非泛型类型里，方法体只有一个表达式（=> 表达式，或只有一句 return）。");
+
+    /// <summary>只能写在查询表达式里的方法在普通代码里被调用。</summary>
+    public static readonly DiagnosticDescriptor QueryOnlyMethod = new(
+        "EQ0007",
+        "只能在查询表达式里调用",
+        "{0} 只能写在查询表达式里（传给 Where、Select 等的 lambda），在这里执行会抛出 InvalidOperationException",
+        Category,
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Sql.* 与标了 [SqlFunction] 的方法只是给翻译器认的标记，没有可执行的实现；它们只能出现在会被翻译成 SQL 的表达式树里。");
 }
