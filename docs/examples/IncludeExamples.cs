@@ -80,6 +80,12 @@ public static class IncludeExamples
             .Select(u => new AuthorPosts(u.Name, u.Company!.Name, u.Posts!.Where(p => p.Status == PostStatus.Published).OrderByDescending(p => p.Views).Select(p => new PostItem(p.Title, p.Views)).ToList()))
             .ToListAsync();
 
+    [Example("include", "投影里的集合每个父对象取前几条：OrderBy + Take")]
+    public static Task<List<AuthorPosts>> ProjectionTake(EasyDb db) =>
+        db.Query<User>().Where(u => u.Id <= 3).OrderBy(u => u.Id)
+            .Select(u => new AuthorPosts(u.Name, u.Company!.Name, u.Posts!.OrderByDescending(p => p.Views).Take(2).Select(p => new PostItem(p.Title, p.Views)).ToList()))
+            .ToListAsync();
+
     /// <summary>公司 DTO。</summary>
     public sealed class CompanyVo
     {

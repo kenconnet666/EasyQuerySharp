@@ -77,7 +77,7 @@ internal sealed partial class ProjectionCompiler(ExpressionTranslator translator
         }
         _shaped = Shape(body, member: null, topLevel: true);
         if (!projected && includes.Count > 0)
-            _shaped = WithIncludes(_shaped, root as EntityBinding ?? throw new NotSupportedException("Include 只能用在实体查询上"), includes);
+            _shaped = WithIncludes(_shaped, root is { OwnerEntity: { } entity } ? (root, entity) : throw new NotSupportedException("Include 只能用在实体查询上"), includes);
         // 与 Java 一致：导航带出的父键先于关联键，平铺带出（@NavigateFlat：平铺值、经中间表的路径）的父键在关联键之后
         foreach (var (plan, owner) in _includes.Where(i => !i.Plan.IsFlat)) RegisterParentKeys(plan, owner);
         if (relationKeys is not null && root is not null)

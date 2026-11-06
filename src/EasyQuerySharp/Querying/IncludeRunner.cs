@@ -122,7 +122,11 @@ internal static partial class IncludeRunner
             var columns = target.Columns.Where(c => c.AutoSelect).ToDictionary(c => c.PropertyName, c => c.Name, StringComparer.Ordinal);
             var binding = new DerivedBinding(source, columns, target, aliased ? columns.Keys.ToHashSet(StringComparer.Ordinal) : null);
             var outer = QueryCompiler.Compile<object?>(
-                new QueryState(db, [new BoundSource(binding, target.Type)]) { Selector = state.Selector, ForceAlias = state.ForceAlias, ImplicitSelector = state.ImplicitSelector, Interceptors = context.Interceptors },
+                new QueryState(db, [new BoundSource(binding, target.Type)])
+                {
+                    Selector = state.Selector, ForceAlias = state.ForceAlias, ImplicitSelector = state.ImplicitSelector, Interceptors = context.Interceptors,
+                    Includes = state.Includes, ConfigureArgument = state.ConfigureArgument, Tables = state.Tables,
+                },
                 relationKeys: nav.TargetColumns);
             return (outer, outer.Sql);
         }
