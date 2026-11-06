@@ -6,12 +6,11 @@
 
     <!--
       公共 API 基线：改了公开成员就要同步 PublicAPI.Unshipped.txt（RS0016 / RS0017），发布时把 Unshipped 挪进 Shipped。
+      分析器包会自己把 PublicAPI.*.txt 加进 AdditionalFiles，不用再登记。
       RS0026 / RS0027 禁止多个带可选参数的重载，与本库"可选 CancellationToken"的约定冲突，关掉。
     -->
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
-        <AdditionalFiles Include="PublicAPI.Shipped.txt" />
-        <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
     </ItemGroup>
 
     <PropertyGroup>

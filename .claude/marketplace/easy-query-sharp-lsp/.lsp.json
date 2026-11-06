@@ -1,7 +1,7 @@
 {
   "csharp": {
     "command": "cmd",
-    "args": ["/d", "/c", "${CLAUDE_PLUGIN_ROOT}\\csharp-ls.cmd", "${CLAUDE_PROJECT_DIR}"],
+    "args": ["/d", "/c", "${CLAUDE_PROJECT_DIR}\\tools\\lsp\\csharp-ls.cmd", "${CLAUDE_PROJECT_DIR}"],
     "extensionToLanguage": {
       ".cs": "csharp"
     },
