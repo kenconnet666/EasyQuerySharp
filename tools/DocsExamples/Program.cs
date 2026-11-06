@@ -21,7 +21,6 @@ var snapshots = Path.Combine(root, "docs", "sql-snapshots");
     ("mysql", MySqlDialect.Instance),
     ("pgsql", PostgreSqlDialect.Instance),
     ("mssql", SqlServerDialect.Instance),
-    ("mssql2008", SqlServer2008Dialect.Instance),
     ("oracle", OracleDialect.Instance),
 ];
 

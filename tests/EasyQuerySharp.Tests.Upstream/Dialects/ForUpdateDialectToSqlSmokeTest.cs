@@ -29,12 +29,10 @@ public sealed class ForUpdateDialectToSqlSmokeTest
         RowLockAssert.EndsWithSingleForUpdate(sql);
     }
 
-    [Theory]
-    [InlineData("mssql"), Upstream("ForUpdateDialectToSQLSmokeTest.java#msSQLForUpdateThrowsUnsupported")]
-    [InlineData("mssql2008"), Upstream("ForUpdateDialectToSQLSmokeTest.java#msSQLRowNumberForUpdateThrowsUnsupported")]
-    public void SqlServerForUpdateThrowsUnsupported(string dialect)
+    [Fact, Upstream("ForUpdateDialectToSQLSmokeTest.java#msSQLForUpdateThrowsUnsupported")]
+    public void SqlServerForUpdateThrowsUnsupported()
     {
-        var ex = Assert.Throws<NotSupportedException>(() => LockedPageSql(dialect));
+        var ex = Assert.Throws<NotSupportedException>(() => LockedPageSql("mssql"));
         Assert.Contains("SQL Server 不支持 FOR UPDATE", ex.Message);
     }
 

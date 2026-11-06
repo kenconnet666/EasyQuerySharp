@@ -122,8 +122,6 @@ EasyQuerySharp.Dialects.SqlDialect.SqlDialect() -> void
 EasyQuerySharp.Dialects.SqlDialect.WriteFunction(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.FunctionExpr! functionCall) -> void
 EasyQuerySharp.Dialects.SqlDialect.WriteMerge(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.InsertStatement! insert) -> void
 EasyQuerySharp.Dialects.SqlDialect.WriteOrderBy(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.OrderByItem!>! orders) -> void
-EasyQuerySharp.Dialects.SqlServer2008Dialect
-EasyQuerySharp.Dialects.SqlServer2008Dialect.SqlServer2008Dialect() -> void
 EasyQuerySharp.Dialects.SqlServerDialect
 EasyQuerySharp.Dialects.SqlServerDialect.SqlServerDialect() -> void
 EasyQuerySharp.Dialects.SqliteDialect
@@ -1712,7 +1710,6 @@ override EasyQuerySharp.Dialects.PostgreSqlDialect.WriteJoinedDelete(EasyQuerySh
 override EasyQuerySharp.Dialects.PostgreSqlDialect.WriteJoinedUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
 override EasyQuerySharp.Dialects.PostgreSqlDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
 override EasyQuerySharp.Dialects.SqlDialect.ToString() -> string!
-override EasyQuerySharp.Dialects.SqlServer2008Dialect.Name.get -> string!
 override EasyQuerySharp.Dialects.SqlServerDialect.AliasedWriteUsesFrom.get -> bool
 override EasyQuerySharp.Dialects.SqlServerDialect.CastTemplate(System.Type! targetType) -> string!
 override EasyQuerySharp.Dialects.SqlServerDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
@@ -1836,7 +1833,6 @@ static EasyQuerySharp.Dialects.SqlDialect.Pad(string! name, string? defaultPad) 
 static EasyQuerySharp.Dialects.SqlDialect.Reordered(string! name, params int[]! order) -> EasyQuerySharp.Dialects.FunctionWriter!
 static EasyQuerySharp.Dialects.SqlDialect.Template(string! template) -> EasyQuerySharp.Dialects.FunctionWriter!
 static EasyQuerySharp.Dialects.SqlDialect.TruncateTo(string! name) -> EasyQuerySharp.Dialects.FunctionWriter!
-static EasyQuerySharp.Dialects.SqlServer2008Dialect.Instance.get -> EasyQuerySharp.Dialects.SqlServer2008Dialect!
 static EasyQuerySharp.Dialects.SqlServerDialect.Instance.get -> EasyQuerySharp.Dialects.SqlServerDialect!
 static EasyQuerySharp.Dialects.SqliteDialect.Instance.get -> EasyQuerySharp.Dialects.SqliteDialect!
 static EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.operator !=(EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>? left, EasyQuerySharp.Draft<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>? right) -> bool

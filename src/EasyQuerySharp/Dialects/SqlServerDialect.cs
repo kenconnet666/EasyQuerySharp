@@ -5,7 +5,7 @@ using EasyQuerySharp.SqlAst;
 namespace EasyQuerySharp.Dialects;
 
 /// <summary>
-/// SQL Server 方言（2012 起的 OFFSET … FETCH 分页；2008 及更早用 <see cref="SqlServer2008Dialect"/>）。标识符用方括号。
+/// SQL Server 方言（2012 起的 OFFSET … FETCH 分页；2008 及更早不支持）。标识符用方括号。
 /// 驱动用 Microsoft.Data.SqlClient：<c>o.Use(SqlServerDialect.Instance, SqlClientFactory.Instance.CreateDataSource(cs))</c>。
 /// </summary>
 public class SqlServerDialect : SqlDialect
@@ -191,14 +191,4 @@ public class SqlServerDialect : SqlDialect
             r.Append(",1)");
         };
     }
-}
-
-/// <summary>SQL Server 2008 及更早：没有 OFFSET … FETCH，分页用 ROW_NUMBER() 包一层（Java 的 MsSQLRowNumber 方言）。</summary>
-public class SqlServer2008Dialect : SqlServerDialect
-{
-    /// <summary>共享实例。</summary>
-    public static new SqlServer2008Dialect Instance { get; } = new();
-
-    /// <inheritdoc />
-    public override string Name => "mssql2008";
 }

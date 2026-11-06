@@ -46,6 +46,7 @@
 [assembly: Upstream("search/EasySearchBaseOpTests.java#testOperator_ro", NotApplicable = EasyQuerySharp.Tests.Upstream.OutOfScope.Search)]
 [assembly: Upstream("search/EasySearchBaseOpTests.java#testOperator_roc", NotApplicable = EasyQuerySharp.Tests.Upstream.OutOfScope.Search)]
 
+[assembly: Upstream("ForUpdateDialectToSQLSmokeTest.java#msSQLRowNumberForUpdateThrowsUnsupported", NotApplicable = EasyQuerySharp.Tests.Upstream.OutOfScope.SqlServer2008)]
 [assembly: Upstream("mssqlrownumber/MsSQLRowNumberQueryTest.java#query0", NotApplicable = EasyQuerySharp.Tests.Upstream.OutOfScope.SqlServer2008)]
 [assembly: Upstream("mssqlrownumber/MsSQLRowNumberQueryTest.java#query1", NotApplicable = EasyQuerySharp.Tests.Upstream.OutOfScope.SqlServer2008)]
 [assembly: Upstream("mssqlrownumber/MsSQLRowNumberQueryTest.java#query2", NotApplicable = EasyQuerySharp.Tests.Upstream.OutOfScope.SqlServer2008)]

@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1806、偏离 145、不适用 136、骨架 6、待做 311。
+合计：已移植 1805、偏离 145、不适用 137、骨架 6、待做 311。
 
 ## 按能力
 
@@ -24,7 +24,7 @@
 | JSON 函数 | `func.json` | M2 | 12 | 12 | 0 | 0 | 0 | 0 |
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
 | 字符串函数 | `func.string` | M2 | 131 | 122 | 4 | 4 | 1 | 0 |
-| 行锁 | `lock` | M2 | 28 | 21 | 1 | 0 | 0 | 6 |
+| 行锁 | `lock` | M2 | 28 | 20 | 1 | 1 | 0 | 6 |
 | 窗口函数 | `window` | M2 | 44 | 42 | 1 | 1 | 0 | 0 |
 | CTE | `query.cte` | M3 | 11 | 8 | 3 | 0 | 0 | 0 |
 | 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 75 | 6 | 2 | 0 | 0 |
@@ -1156,12 +1156,12 @@
 | ForUpdateDialectToSQLSmokeTest.java#gaussDBForUpdateToSQLSmoke | 待做 |  |  |
 | ForUpdateDialectToSQLSmokeTest.java#h2ForUpdateToSQLSmoke | 待做 |  |  |
 | ForUpdateDialectToSQLSmokeTest.java#kingbaseESForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:21 |  |
-| ForUpdateDialectToSQLSmokeTest.java#msSQLForUpdateThrowsUnsupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:33 |  |
-| ForUpdateDialectToSQLSmokeTest.java#msSQLRowNumberForUpdateThrowsUnsupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:34 |  |
+| ForUpdateDialectToSQLSmokeTest.java#msSQLForUpdateThrowsUnsupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:32 |  |
+| ForUpdateDialectToSQLSmokeTest.java#msSQLRowNumberForUpdateThrowsUnsupported | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:49：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
 | ForUpdateDialectToSQLSmokeTest.java#mysqlForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:18 |  |
 | ForUpdateDialectToSQLSmokeTest.java#oracleForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:24 |  |
 | ForUpdateDialectToSQLSmokeTest.java#pgsqlForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:19 |  |
-| ForUpdateDialectToSQLSmokeTest.java#sqliteForUpdateToSQLSmoke | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:41：SQLite 没有 FOR UPDATE 语法（写事务锁整个库），Java 照样拼出、执行时才报语法错误；C# 渲染时就抛出 NotSupportedException |  |
+| ForUpdateDialectToSQLSmokeTest.java#sqliteForUpdateToSQLSmoke | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:39：SQLite 没有 FOR UPDATE 语法（写事务锁整个库），Java 照样拼出、执行时才报语法错误；C# 渲染时就抛出 NotSupportedException |  |
 | fork/live/LockWaitLiveTest.java#noWaitFailsAndSkipLockedSkips | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/LockWaitLiveTest.cs:14 | `DROP TABLE {…}t_fork_post` |
 | mysql8/ForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ForUpdateTest.cs:46 |  |
 | mysql8/ForUpdateTest.java#testForUpdateBlocksConcurrentTransaction | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ForUpdateTest.cs:43 |  |
@@ -2401,19 +2401,19 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query0 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:49：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:50：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:51：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query3 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:52：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query4 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:53：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query4_1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:54：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query4_2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:55：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query5 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:56：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query5_1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:57：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query5_2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:58：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `WITH rt AS ( SELECT [Id],[Stars],[Title],[CreateTime], ROW_NUMBER() OVER( ORDER BY [Id] ASC ) AS __r…` |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query5_3 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:59：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `WITH rt AS ( SELECT [Id],[Stars],[Title],[CreateTime], ROW_NUMBER() OVER( ORDER BY [Id] ) AS __rownu…` |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#query6 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:60：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
-| mssqlrownumber/MsSQLRowNumberQueryTest.java#testDraft9 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:61：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query0 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:50：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:51：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:52：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query3 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:53：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query4 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:54：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query4_1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:55：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query4_2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:56：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query5 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:57：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query5_1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:58：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query5_2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:59：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `WITH rt AS ( SELECT [Id],[Stars],[Title],[CreateTime], ROW_NUMBER() OVER( ORDER BY [Id] ASC ) AS __r…` |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query5_3 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:60：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 | `WITH rt AS ( SELECT [Id],[Stars],[Title],[CreateTime], ROW_NUMBER() OVER( ORDER BY [Id] ) AS __rownu…` |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#query6 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:61：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
+| mssqlrownumber/MsSQLRowNumberQueryTest.java#testDraft9 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/OutOfScope.cs:62：SQL Server 2008 的 ROW_NUMBER 分页不做：2008 已于 2019 年停止支持，SQL Server 方言按 2012+ 的 OFFSET / FETCH 渲染 |  |
 
 ### UPDATE / DELETE … RETURNING（`write.returning`，M6）
 

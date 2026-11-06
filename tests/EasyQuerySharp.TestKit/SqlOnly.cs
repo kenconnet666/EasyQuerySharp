@@ -13,7 +13,6 @@ public static class SqlOnly
         ["mysql"] = MySqlDialect.Instance,
         ["pgsql"] = PostgreSqlDialect.Instance,
         ["mssql"] = SqlServerDialect.Instance,
-        ["mssql2008"] = SqlServer2008Dialect.Instance,
         ["oracle"] = OracleDialect.Instance,
         ["sqlite"] = SqliteDialect.Instance,
     };
@@ -21,7 +20,7 @@ public static class SqlOnly
     private static readonly Dictionary<string, EasyDb> Cache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Lock Gate = new();
 
-    /// <summary>按方言短名（mysql / pgsql / mssql / mssql2008 / oracle / sqlite）取 EasyDb。</summary>
+    /// <summary>按方言短名（mysql / pgsql / mssql / oracle / sqlite）取 EasyDb。</summary>
     public static EasyDb Db(string dialect)
     {
         lock (Gate)
