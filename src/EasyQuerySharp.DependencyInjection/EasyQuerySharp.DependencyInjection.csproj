@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Description>EasyQuerySharp 的依赖注入扩展：services.AddEasyQuery(..) 把 EasyDb 注册成单例，多个库按名字（keyed service）注入。</Description>
+    </PropertyGroup>
+
+    <!-- 只引用抽象包（见 ROADMAP "新依赖只进各自的包"）；公共 API 基线的规则与核心相同 -->
+    <ItemGroup>
+        <ProjectReference Include="..\EasyQuerySharp\EasyQuerySharp.csproj" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+        <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
+    </ItemGroup>
+
+</Project>

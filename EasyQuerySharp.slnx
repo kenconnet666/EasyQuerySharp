@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/EasyQuerySharp/EasyQuerySharp.csproj" />
+    <Project Path="src/EasyQuerySharp.DependencyInjection/EasyQuerySharp.DependencyInjection.csproj" />
     <Project Path="src/EasyQuerySharp.Generator/EasyQuerySharp.Generator.csproj" />
   </Folder>
   <Folder Name="/tests/">

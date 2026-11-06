@@ -25,6 +25,12 @@
         <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
     </ItemGroup>
 
+    <!-- 依赖注入：扩展包只引用抽象包，容器本身只在测试里引用 -->
+    <ItemGroup>
+        <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
+        <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
+    </ItemGroup>
+
     <!-- 数据库驱动 -->
     <ItemGroup>
         <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.14" />
