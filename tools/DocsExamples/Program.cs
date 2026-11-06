@@ -22,6 +22,7 @@ var snapshots = Path.Combine(root, "docs", "sql-snapshots");
     ("pgsql", PostgreSqlDialect.Instance),
     ("mssql", SqlServerDialect.Instance),
     ("oracle", OracleDialect.Instance),
+    ("dameng", DamengDialect.Instance),
 ];
 
 var cards = typeof(ExampleAttribute).Assembly.GetTypes()

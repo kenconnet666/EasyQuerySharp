@@ -41,7 +41,7 @@ public static class WriteExamples
         return await db.Update(product).SetColumns(p => new { p.Stock }).ExecuteAsync();
     }
 
-    [Example("write", "更新并返回受影响的行：UPDATE … RETURNING（PostgreSQL、SQLite）", Unsupported = "mysql,mssql,oracle")]
+    [Example("write", "更新并返回受影响的行：UPDATE … RETURNING（PostgreSQL、SQLite）", Unsupported = "mysql,mssql,oracle,dameng")]
     public static Task<List<int>> UpdateReturning(EasyDb db) =>
         db.Update<Product>().Set(p => new Product { Stock = p.Stock - 1 }).Where(p => p.Id == 5).Returning(p => p.Stock).ExecuteAsync();
 

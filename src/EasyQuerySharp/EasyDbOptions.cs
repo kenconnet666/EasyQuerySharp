@@ -143,6 +143,9 @@ public sealed class EasyDbOptions
     /// <summary>使用 Oracle 方言（驱动 Oracle.ManagedDataAccess.Core）。</summary>
     public EasyDbOptions UseOracle(DbDataSource? dataSource = null) => Use(OracleDialect.Instance, dataSource);
 
+    /// <summary>使用达梦 DM8 方言（驱动 DM.DmProvider）。</summary>
+    public EasyDbOptions UseDameng(DbDataSource? dataSource = null) => Use(DamengDialect.Instance, dataSource);
+
     /// <summary>使用任意方言。</summary>
     public EasyDbOptions Use(SqlDialect dialect, DbDataSource? dataSource = null)
     {
