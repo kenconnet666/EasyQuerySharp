@@ -67,6 +67,9 @@ SELECT t.`name`,t.`age`,t1.`name` AS `company` FROM `t_user` t LEFT JOIN `t_comp
 | `PredicateFilterInterceptor` / `EntityInterceptor` / `UpdateSetInterceptor` | `QueryFilter<T>` / `EntityInterceptor<T>` | [列规则](rules.md#拦截器) |
 | `NameConversion` | `EasyDbOptions.NameConversion` | [实体与映射](entities.md#命名约定) |
 | `JdbcExecutorListener` | `IExecutionListener` | [原生 SQL](raw-sql.md) |
+| `getDatabaseCodeFirst()`、`@Column(dbType, comment, dbDefault, oldName)`、`@TableIndex` | `db.CodeFirst`、`[Column(DbType, Comment, DbDefault)]`、`[RenamedFrom]`、`[TableIndex]` | [建表与同步](code-first.md) |
+| `@ShardingTableKey` / `@ShardingDataSourceKey` 与路由规则 | `options.Shard<T>(..)`、`IShardRule` | [分库分表](sharding.md) |
+| `sql-cache` 的 `kvStorage` / `allStorage` | `EasyCache` 的 `Kv<T>()` / `All<T>()` | [二级缓存](caching.md) |
 
 ### 查询
 
@@ -161,7 +164,6 @@ SELECT t.`name`,t.`age`,t1.`name` AS `company` FROM `t_user` t LEFT JOIN `t_comp
 | 同步 API | 只有异步 |
 | `cloneQueryable()` | 不需要：查询不可变 |
 | `@ValueObject`（已弃用） | `[ValueObject]`（TS 的 `embed()` 语义） |
-| 分库分表、二级缓存、建表与迁移 | 开发中（ROADMAP 4.4、4.5、4.1） |
 
 ## TS → C#
 

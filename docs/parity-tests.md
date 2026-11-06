@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 2060、偏离 198、不适用 142、骨架 4、待做 0。
+合计：已移植 2062、偏离 197、不适用 142、骨架 3、待做 0。
 
 ## 按能力
 
@@ -60,7 +60,7 @@
 | SQL Server 方言 | `dialect.mssql` | M6 | 38 | 37 | 1 | 0 | 0 | 0 |
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | M6 | 13 | 0 | 0 | 13 | 0 | 0 |
 | UPDATE / DELETE … RETURNING | `write.returning` | M6 | 3 | 3 | 0 | 0 | 0 | 0 |
-| 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 13 | 3 | 0 | 1 | 0 |
+| 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 15 | 2 | 0 | 0 | 0 |
 | 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 98 | 3 | 0 | 0 | 0 |
 | search 扩展 | `search` | M7 | 45 | 0 | 0 | 45 | 0 | 0 |
 | 分库分表 | `sharding` | M7 | 48 | 44 | 3 | 1 | 0 | 0 |
@@ -2434,12 +2434,12 @@
 | MigrationTest.java#createTableSQLTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Features/MigrationTest.cs:53 |  |
 | QueryTest22.java#testManyOrder | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest22.Part2.cs:91 |  |
 | QueryTest24.java#testx18 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:191 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest26.java#testGenerateKeys | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:195：建表用原生 DDL：C# 的 code-first 还不能声明列的库端默认值（Java 的 dbDefault，归 4.1）；插入、回填与读取同 Java |  |
+| QueryTest26.java#testGenerateKeys | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:195 |  |
 | QueryTest3.java#userBookTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.Part2.cs:127 |  |
 | migration/MigrationDamengTest.java#test | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Dameng/MigrationDamengTest.cs:9：达梦建表沿用 TS 版在 DM8 上实测的写法：一条语句一次执行，类型是 INT / BIT / VARCHAR2(255) / TIMESTAMP，列注释是单独的 COMMENT ON 语句； |  |
 | migration/MigrationPgTest.java#test | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgMigrationTest.cs:23 |  |
 | mysql8/M8Test1.java#testNoKeyCodeFirst | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Test1.cs:46 |  |
-| mysql8/MySQL8Test2.java#test | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.CodeFirst.cs:11 |  |
+| mysql8/MySQL8Test2.java#test | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.CodeFirst.cs:11 |  |
 | pgsql/MigrationTest.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgMigrationTest.cs:7 |  |
 | sqlite/SQLiteTest.java#testDDL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:47 | `CREATE TABLE IF NOT EXISTS "t_topic" ( "Id" VARCHAR(255) NOT NULL , "Stars" integer NULL , "Title" V…` |
 | sqlite/SQLiteTest.java#testDDL2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:62 | `CREATE TABLE IF NOT EXISTS "t_multi_primary" ( "Id1" VARCHAR(255) NOT NULL , "Id2" VARCHAR(255) NOT …` |

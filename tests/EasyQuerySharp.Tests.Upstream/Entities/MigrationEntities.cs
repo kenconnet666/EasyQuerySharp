@@ -91,7 +91,7 @@ public class NewTopic3
 }
 
 
-/// <summary>对应 Java：mysql8/entity/M8TestIndex（两个索引；Java 另有 dbDefault，见 MySQL8Test2 的 code-first 用例）。</summary>
+/// <summary>对应 Java：mysql8/entity/M8TestIndex（两个索引、两个库端默认值，见 MySQL8Test2 的 code-first 用例）。</summary>
 [Table("m8_test_index")]
 [TableIndex(nameof(Column1), nameof(Column2))]
 [TableIndex(nameof(Column2), Unique = true)]
@@ -104,7 +104,9 @@ public class M8TestIndex
 
     public string? Column3 { get; set; }
 
+    [Column(DbDefault = "''")]
     public string? Column4 { get; set; }
 
+    [Column(DbDefault = "CURRENT_TIMESTAMP(3)")]
     public DateTime CreateTime { get; set; }
 }

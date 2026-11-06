@@ -86,7 +86,7 @@ public class PostgreSqlDialect : SqlDialect
 
     /// <summary><c>ALTER TABLE "表" ADD "列" 类型 NULL;</c>，有注释时接着写列注释。</summary>
     internal override string AddColumnSql(Metadata.EntityMetadata entity, Metadata.ColumnMetadata column) =>
-        $"ALTER TABLE {QualifiedTable(entity)} ADD {QuoteIdentifier(column.Name)} {ColumnType(column)}{(IsNullable(column) ? " NULL" : " NOT NULL")};"
+        $"ALTER TABLE {QualifiedTable(entity)} ADD {QuoteIdentifier(column.Name)} {ColumnType(column)}{(IsNullable(column) ? " NULL" : " NOT NULL")}{DefaultClause(column)};"
         + ColumnCommentTail(entity, column);
 
     /// <summary>读库结构时判断自增列（pg_attribute 别名 a、pg_attrdef 别名 d）：IDENTITY 列或默认值取序列。</summary>

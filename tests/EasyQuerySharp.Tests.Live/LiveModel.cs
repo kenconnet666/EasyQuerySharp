@@ -265,6 +265,20 @@ public class PostArchive
     public decimal Amount { get; set; }
 }
 
+/// <summary>带库端默认值的工单，用例里单独建：插入时为 null 的列不写，由库填上（当前时间的写法各库不同，不放进来）。</summary>
+[Table("t_live_ticket")]
+public class Ticket
+{
+    [Column(PrimaryKey = true)]
+    public long Id { get; set; }
+
+    [Column(DbDefault = "'open'")]
+    public string? Status { get; set; }
+
+    [Column(DbDefault = "0")]
+    public int? Priority { get; set; }
+}
+
 /// <summary>自关联的树：部门的上级是另一个部门（对应 TS 的 Dept）。</summary>
 [Table("t_dept")]
 public class Dept

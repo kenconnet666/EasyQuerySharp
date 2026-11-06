@@ -100,7 +100,7 @@ public class SqliteDialect : SqlDialect
 
     /// <summary><c>ALTER TABLE "表" ADD COLUMN "列" 类型 NULL;</c></summary>
     internal override string AddColumnSql(Metadata.EntityMetadata entity, Metadata.ColumnMetadata column) =>
-        $"ALTER TABLE {QualifiedTable(entity)} ADD COLUMN {QuoteIdentifier(column.Name)} {ColumnType(column)}{(IsNullable(column) ? " NULL" : " NOT NULL")};";
+        $"ALTER TABLE {QualifiedTable(entity)} ADD COLUMN {QuoteIdentifier(column.Name)} {ColumnType(column)}{(IsNullable(column) ? " NULL" : " NOT NULL")}{DefaultClause(column)};";
 
     /// <summary>
     /// 读 sqlite_master 与 pragma_table_xinfo / index_list / index_info / foreign_key_list（表值函数，3.16 起）；SQLite 没有注释，

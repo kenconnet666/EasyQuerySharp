@@ -102,9 +102,14 @@ public class TDengineDialect : SqlDialect
         return CreateTableStatement(entity, string.Join(", ", columns));
     }
 
-    /// <summary>列只有名字与类型：TDengine 的列不能声明 NOT NULL（时间戳主键本身不能为空）。</summary>
+    /// <summary>列只有名字与类型：TDengine 的列不能声明 NOT NULL（时间戳主键本身不能为空），也没有默认值。</summary>
     protected override string ColumnDefinition(EntityMetadata entity, ColumnMetadata column) =>
-        column.IsGenerated ? throw NoIdentity() : $"{QuoteIdentifier(column.Name)} {ColumnType(column)}";
+        column switch
+        {
+            { IsGenerated: true } => throw NoIdentity(),
+            { DbDefault: not null } => throw new NotSupportedException($"TDengine 的列没有默认值：{column} 去掉 DbDefault"),
+            _ => $"{QuoteIdentifier(column.Name)} {ColumnType(column)}",
+        };
 
     // code-first：TDengine 的普通表没有注释、索引、外键，也不能改表名；同步只能加列（不支持读库结构，同步也就用不了）
 

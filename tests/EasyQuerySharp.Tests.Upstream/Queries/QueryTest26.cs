@@ -192,11 +192,11 @@ public sealed class QueryTest26(MySqlFixture fixture) : MySqlTest(fixture)
     }
 
     // 自增主键插入后回填；为 null 的列不写，由库端默认值补上（时间是库的当前时间，按库的 NOW 比较，库与测试进程的时区可以不同）
-    [Fact, Upstream("QueryTest26.java#testGenerateKeys", Deviation = "建表用原生 DDL：C# 的 code-first 还不能声明列的库端默认值（Java 的 dbDefault，归 4.1）；插入、回填与读取同 Java")]
+    [Fact, Upstream("QueryTest26.java#testGenerateKeys")]
     public async Task TestGenerateKeys()
     {
         await Db.CodeFirst.DropTablesIfExistsAsync([typeof(MySQLGenerateKey)], Ct);
-        await Db.ExecuteSqlAsync("CREATE TABLE `my_sql_generate_key` (`id` INT NOT NULL AUTO_INCREMENT, `name` VARCHAR(255) NULL DEFAULT '', `now` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), PRIMARY KEY (`id`))", cancellationToken: Ct);
+        await Db.CodeFirst.SyncTablesAsync([typeof(MySQLGenerateKey)], Ct);
 
         var key = new MySQLGenerateKey { Name = "test" };
         await Db.Insert(key).FillGeneratedKeys().ExecuteAsync(Ct);

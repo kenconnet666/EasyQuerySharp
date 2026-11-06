@@ -328,7 +328,9 @@ public class MySQLGenerateKey
     [Column(PrimaryKey = true, Generated = true)]
     public int? Id { get; set; }
 
+    [Column(DbDefault = "''")]
     public string? Name { get; set; }
 
+    [Column(DbDefault = "CURRENT_TIMESTAMP(3)")]
     public DateTime? Now { get; set; }
 }

@@ -39,6 +39,7 @@
 | [追踪与聚合保存](guide/save-and-tracking.md) | 追踪作用域、差异更新、`db.Save(根)` 的级联与行为开关 |
 | [事务与行锁](guide/transactions.md) | 环境事务、回调式事务、不能嵌套、`ForUpdate` 各方言写法 |
 | [原生 SQL](guide/raw-sql.md) | `SqlQueryAsync` / `ExecuteSqlAsync`（插值参数化）、`FromSql`、`Sql.Raw`、`ReadAsync` |
+| [建表与同步](guide/code-first.md) | code-first：建表（注释、索引、外键、库端默认值）、只增不删的同步、读库结构 |
 | [换表](guide/tables.md) | `AsTable`、`MapTable`、`InSchema`、`AsTableSegment`、`WithTableLink`，写入时换表 |
 | [动态筛选与列表页](guide/filter.md) | `FilterBy` / `SortBy`、`ToPageAsync(TableRequest)` |
 | [方言](guide/dialects.md) | 13 个方言的档位、实库验证情况、能力矩阵、自定义方言 |
@@ -46,8 +47,6 @@
 | [依赖注入](guide/dependency-injection.md) | `services.AddEasyQuery(..)`，多个库按名字注入，从容器取数据源、监听器、拦截器，生命周期 |
 | [分库分表](guide/sharding.md) | 登记规则与数据源、按条件裁剪、同库分表的 UNION ALL 与跨库归并、写入路由、事务、code-first、限制 |
 | [二级缓存](guide/caching.md) | `EasyQuerySharp.Caching` 的 kv / all 缓存、HybridCache 两级存储、写入后的自动失效与写入监听、一致性限制 |
-
-建表与迁移（code-first，ROADMAP 4.1）的用法见 [实体与映射](guide/entities.md) 与 [方言](guide/dialects.md)，单独的指南待补。
 
 ## 设计
 

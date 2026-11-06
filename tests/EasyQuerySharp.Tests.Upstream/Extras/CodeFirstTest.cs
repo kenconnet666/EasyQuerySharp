@@ -91,7 +91,7 @@ public sealed class CodeFirstTest(DuckDbFixture duck) : IAsyncLifetime
         + "ALTER TABLE `cf_post` ADD CONSTRAINT cf_post_cf_author_id_fk FOREIGN KEY (`author_id`) REFERENCES `cf_author` (`id`) ON DELETE CASCADE ;",
         SqlOnly.Db("mysql").CodeFirst.CreateTableSql(typeof(CfPost)));
 
-    // MySQL8Test2 的表：索引名（表名_列名_idx / _uidx）与写法与 Java 逐字一致（那个用例还差列默认值，留骨架）
+    // MySQL8Test2 的表：索引名（表名_列名_idx / _uidx）与写法与 Java 逐字一致（整段同步语句的 MD5 在那个用例里连库核对）
     [Fact]
     public void MySqlIndexesMatchJava() => Assert.Equal(
         ["CREATE INDEX m8_test_index_column1_column2_idx ON `m8_test_index` (`column1` ASC,`column2` ASC);", "CREATE UNIQUE INDEX m8_test_index_column2_uidx ON `m8_test_index` (`column2` ASC);"],
@@ -298,6 +298,109 @@ public sealed class CodeFirstTest(DuckDbFixture duck) : IAsyncLifetime
 
         Assert.Empty((await db.CodeFirst.PlanSyncAsync([typeof(CfAuthor), typeof(CfArticle)], Ct)).Statements);
         await db.CodeFirst.DropTablesIfExistsAsync([typeof(CfArticle), typeof(CfAuthor)], Ct);
+    }
+
+    [Table("cf_event")]
+    public class CfEvent
+    {
+        [Column(PrimaryKey = true)]
+        public string? Id { get; set; }
+
+        [Column(DbDefault = "''"), RenamedFrom("name")]
+        public string? Title { get; set; }
+
+        [Column(DbDefault = "0")]
+        public int Views { get; set; }
+
+        [Column(DbDefault = "CURRENT_TIMESTAMP")]
+        public DateTime CreatedAt { get; set; }
+    }
+
+    // 库端默认值：多行格式（MySQL、PG、SQLite、DuckDB）写在 NULL / NOT NULL 后面（与 Java 一致）；标准写法写在前面（Oracle 系要求 DEFAULT 在约束前），ClickHouse 写在后面
+    [Fact]
+    public void DbDefaults()
+    {
+        Assert.Equal("CREATE TABLE IF NOT EXISTS `cf_event` ( \n`id` VARCHAR(255) NOT NULL ,\n`title` VARCHAR(255) NULL  DEFAULT '',\n`views` INT(11) NOT NULL  DEFAULT 0,"
+                     + "\n`created_at` DATETIME(3) NOT NULL  DEFAULT CURRENT_TIMESTAMP, \n PRIMARY KEY (`id`)\n) Engine=InnoDB;",
+            SqlOnly.Db("mysql").CodeFirst.CreateTableSql(typeof(CfEvent)));
+        Assert.Equal("CREATE TABLE IF NOT EXISTS \"cf_event\" (\"id\" VARCHAR2(255) NOT NULL, \"title\" VARCHAR2(255) DEFAULT '' NULL, \"views\" NUMBER(10) DEFAULT 0 NOT NULL, "
+                     + "\"created_at\" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, PRIMARY KEY (\"id\"))",
+            SqlOnly.Db("oracle").CodeFirst.CreateTableSql(typeof(CfEvent)));
+        Assert.Equal("CREATE TABLE IF NOT EXISTS `cf_event` (`id` String NOT NULL, `title` String NULL DEFAULT '', `views` Int32 NOT NULL DEFAULT 0, "
+                     + "`created_at` DateTime64(3) NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE = MergeTree ORDER BY (`id`)",
+            SqlOnly.Db("clickhouse").CodeFirst.CreateTableSql(typeof(CfEvent)));
+        Assert.Contains("没有默认值", Assert.Throws<NotSupportedException>(() => SqlOnly.Db("tdengine").CodeFirst.CreateTableSql(typeof(CfTick))).Message);
+        Assert.Contains("不能同时声明 Generated 与 DbDefault", Assert.Throws<InvalidOperationException>(() => SqlOnly.Db("mysql").CodeFirst.CreateTableSql(typeof(CfBadDefault))).Message);
+    }
+
+    // 同步时加列带默认值；MySQL 的 CHANGE 是整列重定义，改名时也要带上默认值
+    [Theory]
+    [InlineData("mysql", "ALTER TABLE `cf_event` CHANGE `name` `title` VARCHAR(255) NULL DEFAULT '';", "ALTER TABLE `cf_event` ADD `views` INT(11) NOT NULL DEFAULT 0;")]
+    [InlineData("pgsql", "ALTER TABLE \"cf_event\" RENAME COLUMN \"name\" TO \"title\";", "ALTER TABLE \"cf_event\" ADD \"views\" INT4 NOT NULL DEFAULT 0;")]
+    [InlineData("sqlite", "ALTER TABLE \"cf_event\" RENAME COLUMN \"name\" TO \"title\";", "ALTER TABLE \"cf_event\" ADD COLUMN \"views\" integer NOT NULL DEFAULT 0;")]
+    [InlineData("oracle", "ALTER TABLE \"cf_event\" RENAME COLUMN \"name\" TO \"title\"", "ALTER TABLE \"cf_event\" ADD (\"views\" NUMBER(10) DEFAULT 0 NOT NULL)")]
+    public void DbDefaultsInSync(string dialect, params string[] expected)
+    {
+        DbTableInfo[] tables =
+        [
+            new("cf_event", null,
+            [
+                new("id", "varchar(255)", false, null, null, false), new("name", "varchar(255)", true, null, null, false),
+                new("created_at", "datetime", false, "CURRENT_TIMESTAMP", null, false),
+            ], ["id"], [], []),
+        ];
+        Assert.Equal(expected, SqlOnly.Db(dialect).CodeFirst.PlanSync([typeof(CfEvent)], tables).Statements);
+    }
+
+    [Table("cf_counter")]
+    public class CfCounter
+    {
+        [Column(PrimaryKey = true, Generated = true), RenamedFrom("counter_id")]
+        public int Id { get; set; }
+    }
+
+    // 自增列改名：CHANGE 要带上 AUTO_INCREMENT，否则自增被去掉
+    [Fact]
+    public void MySqlRenameKeepsAutoIncrement() => Assert.Equal(
+        ["ALTER TABLE `cf_counter` CHANGE `counter_id` `id` INT(11) NOT NULL AUTO_INCREMENT;"],
+        SqlOnly.Db("mysql").CodeFirst.PlanSync([typeof(CfCounter)], [new("cf_counter", null, [new("counter_id", "int", false, null, null, true)], ["counter_id"], [], [])]).Statements);
+
+    // SQLite 上实际建表与加列：插入时不写的列取库端默认值；给有数据的表加 NOT NULL 列要有默认值
+    [Fact]
+    public async Task SqliteDbDefaults()
+    {
+        var db = _sqlite;
+        await db.CodeFirst.DropTablesIfExistsAsync([typeof(CfEvent)], Ct);
+        await db.CodeFirst.CreateTablesAsync([typeof(CfEvent)], Ct);
+        await db.ExecuteSqlAsync("INSERT INTO cf_event (id) VALUES ('e1')", cancellationToken: Ct);
+        var e1 = Assert.Single(await db.Query<CfEvent>().ToListAsync(Ct));
+        Assert.Equal(("", 0), (e1.Title, e1.Views));
+        Assert.InRange((DateTime.UtcNow - e1.CreatedAt).Duration(), TimeSpan.Zero, TimeSpan.FromMinutes(5));
+        var columns = Assert.Single(await db.CodeFirst.ReadTablesAsync(Ct), t => t.Name == "cf_event").Columns;
+        Assert.Equal(["''", "0", "CURRENT_TIMESTAMP"], columns.Skip(1).Select(c => c.Default));
+
+        await db.ExecuteSqlAsync("ALTER TABLE cf_event DROP COLUMN views", cancellationToken: Ct);
+        var sync = await db.CodeFirst.SyncTablesAsync([typeof(CfEvent)], Ct);
+        Assert.Equal(["ALTER TABLE \"cf_event\" ADD COLUMN \"views\" integer NOT NULL DEFAULT 0;"], sync.Statements);
+        Assert.Equal(0, Assert.Single(await db.Query<CfEvent>().ToListAsync(Ct)).Views);
+        await db.CodeFirst.DropTablesIfExistsAsync([typeof(CfEvent)], Ct);
+    }
+
+    [Table("cf_tick")]
+    public class CfTick
+    {
+        [Column(PrimaryKey = true)]
+        public DateTime Ts { get; set; }
+
+        [Column(DbDefault = "0")]
+        public int Value { get; set; }
+    }
+
+    [Table("cf_bad_default")]
+    public class CfBadDefault
+    {
+        [Column(PrimaryKey = true, Generated = true, DbDefault = "0")]
+        public int Id { get; set; }
     }
 
     [Fact]

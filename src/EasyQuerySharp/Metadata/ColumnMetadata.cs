@@ -81,6 +81,9 @@ public sealed class ColumnMetadata
     /// <summary>列注释。</summary>
     public string? Comment { get; internal init; }
 
+    /// <summary>code-first 用的库端默认值（SQL 文本，见 <see cref="ColumnAttribute.DbDefault"/>）；没有时为 null。</summary>
+    public string? DbDefault { get; internal init; }
+
     /// <summary>改名前的列名（<see cref="RenamedFromAttribute"/>）；code-first 同步时用。</summary>
     internal string? RenamedFrom { get; init; }
 
@@ -102,7 +105,7 @@ public sealed class ColumnMetadata
     {
         IsPrimaryKey = IsPrimaryKey, IsGenerated = IsGenerated, KeyGenerator = KeyGenerator, GeneratedSql = GeneratedSql, AutoSelect = AutoSelect,
         Computed = Computed, InsertIgnore = InsertIgnore, UpdateIgnore = UpdateIgnore, UpdateWhenTrackedChanged = UpdateWhenTrackedChanged,
-        Converter = Converter, SqlConversion = SqlConversion, DbType = DbType, Comment = Comment, InNullableValueObject = InNullableValueObject,
+        Converter = Converter, SqlConversion = SqlConversion, DbType = DbType, Comment = Comment, DbDefault = DbDefault, InNullableValueObject = InNullableValueObject,
         RenamedFrom = RenamedFrom,
     };
 

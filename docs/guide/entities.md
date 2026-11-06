@@ -45,13 +45,13 @@ public sealed class GuidKey : IKeyGenerator
 |---|---|---|
 | `[Table("表名")]` | `Schema`、`Comment`、`IgnoreProperties`、`NotFoundMessage` | 不写时表名按命名约定由类名推出。`Schema` 渲染成 `schema.table`（MySQL 里是库名）；`IgnoreProperties` 列出基类里这张表没有的属性；`NotFoundMessage` 是 `FirstAsync` / `SingleAsync` / `FindOrThrowAsync` / `EnsureAnyAsync` 查不到时 `NotFoundException` 的默认消息 |
 | `[Column("列名")]` | `PrimaryKey` | 主键，可以多个（复合主键） |
-| | `Generated` | 值由数据库生成（自增、默认值）：插入时不写这一列，`FillGeneratedKeys()` 回填 |
+| | `Generated` | 自增列：插入时不写这一列，`FillGeneratedKeys()` 回填 |
 | | `GeneratedSql` | 插入时这一列写成这段 SQL，如 `"nextval('seq_user')"` |
 | | `KeyGenerator` | 实现 `IKeyGenerator` 的类型：插入时主键为 null 就生成一个（雪花 id、GUID 字符串等） |
 | | `Converter` | 值转换器，见下文 |
 | | `SqlConversion` | 列在 SQL 里的读写转换（如库端加解密），继承 `ColumnSqlConversion` |
 | | `AutoSelect` | 默认 `true`；`false` 时查实体不带这一列，显式选择才查（大字段） |
-| | `DbType`、`Comment` | 建表时用的类型和注释 |
+| | `DbType`、`Comment`、`DbDefault` | 建表时用的类型、注释和库端默认值（SQL 原文），见[建表与同步](code-first.md) |
 | `[ColumnIgnore]` | | 不是列（DTO 里也用它排除属性） |
 | `[InsertIgnore]` | | 插入时不写 |
 | `[UpdateIgnore]` | `WhenTrackedChanged` | 按实体更新时不写；`WhenTrackedChanged = true` 时追踪到它改了仍然写 |
@@ -379,7 +379,7 @@ public class User
 - 元数据靠反射读取，不支持 Native AOT 与裁剪。
 - 没有 Fluent API：映射只能写在特性上。不想改实体时，逻辑删除可以用 `options.ApplyLogicDelete(..)` 配置（见[列规则](rules.md)），其余映射暂不支持外部配置。
 - 不支持多态实体（TS 版的 `entity.union`），记在 BACKLOG。
-- `DbType`、`Comment` 等只在建表时使用；建表与迁移（code-first）还在开发中（ROADMAP 4.1）。
+- `DbType`、`Comment`、`DbDefault` 只在建表时使用，见[建表与同步](code-first.md)。
 - 值对象的类型要是类，不能是结构体或标量。
 
 ## 对应 Java

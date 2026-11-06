@@ -130,9 +130,11 @@ public class ClickHouseDialect : SqlDialect
         return CreateTableStatement(entity, columns) + " ENGINE = MergeTree ORDER BY " + order;
     }
 
-    /// <inheritdoc />
+    /// <summary><c>`列` 类型 NULL|NOT NULL[ DEFAULT 默认值]</c>：ClickHouse 的默认值表达式要写在可空性后面。</summary>
     protected override string ColumnDefinition(EntityMetadata entity, ColumnMetadata column) =>
-        column.IsGenerated ? throw NoIdentity() : base.ColumnDefinition(entity, column);
+        column.IsGenerated
+            ? throw NoIdentity()
+            : $"{QuoteIdentifier(column.Name)} {ColumnType(column)} {(IsNullable(column) ? "NULL" : "NOT NULL")}{DefaultClause(column)}";
 
     /// <summary>表注释：<c>ALTER TABLE 表 MODIFY COMMENT '…'</c>（没有 COMMENT ON）。</summary>
     internal override string? TableCommentSql(EntityMetadata entity) =>

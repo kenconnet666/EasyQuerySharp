@@ -15,8 +15,8 @@
 
 ## 现状（2026-11-06）
 
-- 对标：已移植 2060、偏离 198、不适用 142、骨架 4、待做 0。
-- 待做清零。骨架 4：要实库的 3（HANA 2、达梦行锁 1）、等列默认值的 MySQL8Test2 1。
+- 对标：已移植 2062、偏离 197、不适用 142、骨架 3、待做 0。
+- 待做清零。骨架 3 都要实库：HANA 2、达梦行锁 1。
 - 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17、DuckDB（进程内）；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
 
 ## 已定的取舍
@@ -28,6 +28,7 @@
   - SQL Server 2008 的 ROW_NUMBER 分页（13 个）：SQL Server 2008 已于 2019 年停止支持。
 - 要做：分库分表、二级缓存、ClickHouse / TDengine / Db2、关联键匹配策略（Java 的 `relationPropertyStrategy`）。
 - 暂不做，记进 [BACKLOG](docs/BACKLOG.md)：文档站、AOT 与元数据 / 物化器的 Source Generator、TS 版独有的能力（原 M9）。
+- 发布到 nuget.org 暂缓（2026-11-06 定）：5.4 的许可证、包名前缀、版本与发布流程先不定，其余各项照常推进。
 
 **架构**
 
@@ -39,6 +40,9 @@
 - **嵌套事务对齐 Java**：已经在事务里时再开事务，直接抛异常。
 - **规划外的新公共概念先写决策文档**：关联键匹配策略、分库分表、二级缓存。
 - **新依赖只进各自的包**：生成器引用 Microsoft.CodeAnalysis，依赖注入引用 Microsoft.Extensions 的抽象包，缓存引用 HybridCache，核心仍然零依赖。
+- **第二档方言的测试驱动只进 TestKit**（2026-11-06 定）：达梦 DM.DmProvider、ClickHouse、Db2、TDengine 的 .NET 驱动只在测试里引用，用于实库冒烟；nuget.org 上没有的（HANA 的 Sap.Data.Hana）不引用。
+- **集合导航取段之后聚合按 C# 语义**（2026-11-06 定）：`string.Join(",", u.Cards.OrderBy(..).Take(2).Select(..))` 先取段再聚合，不照 Java 把 LIMIT 写在聚合外面（Java 拼的是全部行，PG 上还会报错），M8BankTest test7 / test7_2 / test8 记偏离。
+- **分库分表实现时补的公开成员保留**（2026-11-06 定）：`MaxShardNodes`、`DataSources`、`Shard<T>(IShardRule)`、`SqlStatement.DataSource`、`SqlDialect.DefaultNullsOrder`、`ShardingPage<T>`，记在 0006 的“实现中的补充”。
 
 **对标基准**
 
@@ -135,15 +139,14 @@ R → 1 → 2 → 3 → 4 → 5。
   - 待做：实库冒烟。compose 已有 clickhouse / db2 / tdengine 三个 profile；要在 TestKit 里加测试用的驱动（ClickHouse.Client、Net.IBM.Data.Db2、TDengine.Connector，新依赖先说明）、`TestDatabases` 登记、LiveSuite 子类按能力裁剪（参照 TS 的 analyticSuite / tdengine live 测试），跑通后各方言的参数占位符、函数表再按实库修正。
 - [x] 3.6 H2 的 74 个用例：H2 没有 .NET 驱动，改在 SQLite 共享内存库上跑（`Upstream/H2/`，`H2Fixture` 对应 H2BaseTest）。Java 的 H2 用例把关键字服务换成不加引号的 DefaultSQLKeyword，C# 同样用标识符不加引号的 SQLite 方言，63 个 SQL 与 Java 逐字一致、记为已移植（H2DocTest 用到的 doc 表 Java 的 H2 库里没有，这里建好并核对结果）。偏离 4 个：testDDL / testDDL2 / testTableCommentDDL 的建表语句按 SQLite 方言（没有注释），tree8 的递归 CTE 按 SQLite 写法（分支不加括号、不写列名清单）。不适用 4 个：H2ForUpdateTest 里断言 FOR UPDATE 文本与行锁等待的用例（SQLite 没有行锁，MySQL、PG 上已有同样的用例）。分表的 3 个（H2OrderTest ×2、H2QueryTest allTypeTestSharding1）留骨架，随 4.4 做。顺手补齐：`sbyte` 列有了默认列类型（原来建表报不支持）；TestKit 的参数文本支持 sbyte（Byte）、TimeSpan（Time），DateOnly / TimeOnly 按 Java 的 LocalDate / LocalTime 格式输出。
 - [x] 3.7 跨方言的零散用例：ForUpdateDialectToSQLSmokeTest 剩下的 h2 一条记不适用（没有 H2 方言，SQLite 没有行锁），NullSafeSqlTest nullSafeEqualsPerDialect 按各方言移植（MySQL 一条与快照逐字一致，其余方言核对 C# 的写法）。同一批零散用例还移植了 QueryTest3 userBookTest、QueryTest22 testManyOrder、QueryTest26 testGenerateKeys、SQLiteTest testDDL / testDDL2、testmysql8 MyTest testaa；SQLite 在 SQL 里拼的 LIKE 改成 `('%'||v||'%')`（Java 的写法，`CONCAT` 要 SQLite 3.44）。
-  - [!] mysql8/MySQL8Test2#test：断言带 `@TableIndexes` 与列默认值的同步 DDL 的 MD5，等 4.1 的索引与列默认值。
 
 ## 阶段 4 平台能力
 
-- [~] 4.1 code-first：建表（注释、索引、外键）、只增不删的同步、`RenamedFrom`、`ToSql()`、读取库结构（MigrationTest 等 15 个，含 MigrationDamengTest）。
+- [x] 4.1 code-first：建表（注释、索引、外键）、只增不删的同步、`RenamedFrom`、`ToSql()`、读取库结构（MigrationTest 等 15 个，含 MigrationDamengTest）。
   - 已做：`[TableIndex]`（不写名字时 `表_列_idx` / `_uidx`，与 Java 一致）、对一导航上的 `[ForeignKey(Action = ..)]`（`本表_目标表_列_fk`），建表时外键排在全部建表之后（SQLite、DuckDB 写在建表语句里）；`[RenamedFrom]` 用在类与属性上；`db.CodeFirst.PlanSyncAsync(..)` 得出 `CodeFirstCommand`（`Statements`、`ToSql()`、`Differences`、`ExecuteAsync()`），`SyncTablesAsync(..)` 得出并执行，`PlanSync(types, tables)` 与保存下来的结构比较、不连库；`ReadTablesAsync()` / `TableExistsAsync(type)` 读当前 schema 的列、主键、索引、外键（各方言的系统表查询照 TS 版，TDengine 不支持）。同步只增不删：建缺的表，改表名列名，加缺的列（带注释），补缺的索引与外键；库里多出来的列、可空性不一致写进 `Differences`，不比较类型。
   - 方言：MySQL、PostgreSQL（Kingbase、GaussDB 沿用）、SQLite、DuckDB 的建表、加列、改名、索引、外键语句与 Java 逐字一致（MyMigrationBlog0 的 MySQL / PG 建表语句与 Java 断言的 MD5 相同），PG、SQLite、DuckDB 的列类型改成 Java 迁移解析器的（`INT4`、`BOOL`、`numeric(16,2)`；`integer`、`TEXT`）；Java 的几处错误按各库语法改正（PG 改列名后的注释漏了列名、SQLite 改列名多写类型、自增列写成 `NOT NULL AUTOINCREMENT`、PG / SQLite 新表名带 schema）。SQL Server 的注释是扩展属性（已有时不重复加）、改名用 `sp_rename`；Oracle、达梦、HANA 加列 `ADD (…)`；HANA、Db2、ClickHouse 改表名 `RENAME TABLE`；ClickHouse 的索引是跳数索引、没有外键。顺手修了计算列被当成真实列建进表里的问题。
   - 用例：MigrationTest ×4、pgsql/MigrationTest、migration/MigrationPgTest、SQLiteTest testDDL / testDDL2、QueryTest22 testManyOrder 已移植；migration/MigrationDamengTest（达梦沿用 TS 实测的写法，只核对 SQL）、QueryTest3 userBookTest（地址列没有 Java 端加密）、testmysql8/MyTest testaa（没有建库）记偏离；H2 的 testDDL2 随 SQLite 改成 Java 的格式改回已移植。另有 `Extras/CodeFirstTest` 核对各方言的写法，并在 SQLite、DuckDB 上实际建表、读结构、改名加列。MySQL、PG 上的用例要实库验证。
-  - [!] 列默认值（Java 的 `@Column(dbDefault = "…")`）：MySQL8Test2 test（建表语句与 Java 只差 `DEFAULT ''` / `DEFAULT CURRENT_TIMESTAMP(3)`，按 Java 的写法拼出的语句已核对过 MD5）、QueryTest26 testGenerateKeys（插入时不写、由库填当前时间）要它，留骨架。是规划外的公共 API（`[Column(DbDefault = ..)]`，SQLite 加 NOT NULL 列也要默认值），待定。
+  - 列默认值 `[Column(DbDefault = "…")]`（Java 的 dbDefault，SQL 原文）：建表、加列时写上 `DEFAULT`，多行格式的方言写在 NULL / NOT NULL 后面（与 Java 一致），标准写法写在前面（Oracle 系要求），ClickHouse 写在后面，TDengine 报不支持；与 `Generated` 同时声明时报错。MySQL 改列名的 `CHANGE` 带上默认值与自增（Java 没带，改名后会丢）。MySQL8Test2 test 与 Java 的 MD5 一致、QueryTest26 testGenerateKeys 改用 code-first 建表，都记为已移植；LiveSuite 在各实库上验证插入时为 null 的列取默认值。用法见[建表与同步](docs/guide/code-first.md)。
 - [x] 4.2 表名映射：
   - 查询级 `MapTable<T>("表名")` / `MapTable<T>(name => …)`、`InSchema("schema")`（所有查询类型都有）：这条查询翻译出的实体表——主表、联表、隐式 JOIN、集合导航的子查询与分组合并、取第几行、多对多中间表、Include 与 DTO 自动带出、嵌在里面的子查询——都按它换，子查询自己的映射优先，显式的 `AsTable` / `Sql.AsTable` 优先；
   - `WithTableLink`：Java 的 asTableLink，改写最近一张表前面的连接符（`LEFT JOIN` → `LEFT JOIN lateral`），写入时写在目标表名前面，查询、联表、写入都能用（走导航的更新 / 删除明确报不支持）；
@@ -174,7 +177,7 @@ R → 1 → 2 → 3 → 4 → 5。
 - [~] 5.3 文档：在 `docs/guide/` 下按能力写 Markdown 指南（用法、方言支持矩阵、限制、对应的 Java 方法名），代码片段和 SQL 由 DocsExamples 生成；另写 README、入门教程，以及从 Java / TS 迁移的指南。
   - [x] 已完成的能力都有指南（索引见 [docs/README.md](docs/README.md#指南)）：入门、实体与映射、列规则、查询、联表与导航、带出与对象树、函数、分组与聚合、写入、追踪与聚合保存、事务与行锁、原生 SQL、换表、动态筛选与列表页、方言、迁移，加上已有的依赖注入；根目录 README 重写。
   - [x] 指南与 README 里的代码不手写：`<!-- card: 页面/方法 sql=方言 -->` 区域由 DocsExamples 从卡片（Roslyn 截取方法体）和各方言的 SQL 重写，`<!-- snippet: 名字 -->` 区域取 `docs/examples` 或示例模型里标记的代码，`--check` 时过期或引用不存在都算失败。新增约 130 张卡片（`docs/examples` 下的新文件），卡片随生成器与分析器一起编译。
-  - [ ] code-first（4.1）、分库分表（4.4）、二级缓存（4.5）做完后补指南，索引里已留位置。
+  - [x] code-first、分库分表、二级缓存的指南：[建表与同步](docs/guide/code-first.md)、[分库分表](docs/guide/sharding.md)、[二级缓存](docs/guide/caching.md)。
   - [ ] 写文档时发现、待修的问题（正确性问题按 CLAUDE.md 直接修，修完从这里删掉，指南里对应的"限制"一并更新）：
     - `SqlQueryAsync<T>($"…")` / `ExecuteSqlAsync($"…")` 只传插值字符串时，C# 选的是 `string` 重载，值直接拼进 SQL（注入风险）；要带 `CancellationToken` 才走 `FormattableString` 重载。需要改 API（如 `[InterpolatedStringHandler]` 或给 `string` 重载换名字）。
     - 聚合保存：给已有的父对象新增子对象时，非空外键的默认值 0 被当成"已挂在别的父对象上"而报错（`SavePlan.CheckOwnership`），要求手动设外键或 `AllowOwnershipChange`。
@@ -185,11 +188,10 @@ R → 1 → 2 → 3 → 4 → 5。
     - `PadLeft` / `PadRight` 在 SQLite 上写成 `LPAD` / `RPAD`，SQLite 没有这两个函数。
     - `Convert.ToXxx` 只映射 `object` / `string` 参数的重载，`Convert.ToString(p.Views)`（`int` 重载）报不支持。
     - 0002 写的按名字拼接自动平铺（DTO 的 `CompanyName` 对应 `Company.Name`）没有实现，只认 `[MapPath]`；实现或改文档二选一。
-    - 没有公开的"当前是否在事务里"的判断（`EasyDb` 只有 `IsTracking`）。
-- [!] 5.4 打包：NuGet 元数据、Source Link、确定性构建，生成器和分析器随核心包一起分发。是否发布到 nuget.org 在这一步决定。打包已就绪，发布等下面的决定。
+- [~] 5.4 打包：NuGet 元数据、Source Link、确定性构建，生成器和分析器随核心包一起分发。是否发布到 nuget.org 在这一步决定。打包已就绪；发布到 nuget.org 暂缓，下面几项先不定。
   - 已做：`src/Directory.Build.props` 是唯一的版本来源（`1.0.0-preview.1`，CI 打包传 `CiBuildNumber` 追加成 `-preview.1.ci.N`），统一写包元数据（作者、项目与仓库地址、发布说明链接、README、标签）、`.snupkg` 符号包、`PublishRepositoryUrl`，GitHub Actions 上开 `ContinuousIntegrationBuild`；Source Link、`Deterministic`、`EmbedUntrackedSources` 用 .NET SDK 的默认值。
   - 出三个包：`EasyQuerySharp`（`lib/net10.0`，生成器在 `analyzers/dotnet/cs`，没有包依赖）、`EasyQuerySharp.DependencyInjection`（依赖核心与 Microsoft.Extensions.DependencyInjection.Abstractions）、`EasyQuerySharp.Caching`（依赖核心与 Microsoft.Extensions.Caching.Hybrid）；核心的分析器随依赖传递，只装扩展包也有生成器。其余项目都不打包。CI 的 pack 任务打包、检查生成器在包里、上传 artifact，不推送。
-  - [!] 发布前待定：
+  - 发布前待定（暂缓）：
     - 许可证：仓库还没有 LICENSE。Java 上游与 TS 版都是 Apache-2.0，本仓库搬了 Java 用例的 SQL 与建表脚本，选型要和它兼容。定了之后加 LICENSE 文件和 `PackageLicenseExpression`。
     - 包名与前缀：`EasyQuerySharp`、`EasyQuerySharp.DependencyInjection` 在 nuget.org 上还没人占用（2026-11-06 查过）。要不要用 nuget.org 账号申请保留 `EasyQuerySharp.*` 前缀；另外 nuget.org 上已有不相干的 `Korzh.EasyQuery.*`，名字相近。`Authors` 现在填的是 GitHub 账号 kenconnet666，要和发布用的 nuget.org 账号对上。
     - 版本与发布流程：首个公开版本是 `1.0.0-preview.1`，还是等 5.1 冻结 API 后直接发 1.0.0；发布由什么触发（例如打 tag），API key 放进仓库 secret，nupkg 与 snupkg 一起推送。

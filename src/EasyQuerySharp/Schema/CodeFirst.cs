@@ -4,7 +4,8 @@ namespace EasyQuerySharp.Schema;
 
 /// <summary>
 /// code-first（对应 Java 的 DatabaseCodeFirst）：按实体元数据建表、删表，读库结构，与库里的表比较后同步。DDL 写法由方言决定。
-/// 列类型取 <see cref="ColumnAttribute.DbType"/>，没写时按 CLR 类型映射；值类型非可空为 NOT NULL，其余 NULL（与 Java 版一致）。
+/// 列类型取 <see cref="ColumnAttribute.DbType"/>，没写时按 CLR 类型映射；值类型非可空为 NOT NULL，其余 NULL（与 Java 版一致）；
+/// 库端默认值取 <see cref="ColumnAttribute.DbDefault"/>。
 /// 注释取 <see cref="TableAttribute.Comment"/> / <see cref="ColumnAttribute.Comment"/>，索引取 <see cref="TableIndexAttribute"/>，
 /// 外键取对一导航上的 <see cref="ForeignKeyAttribute"/>，改名取 <see cref="RenamedFromAttribute"/>。
 /// 分库分表的实体（<see cref="EasyDbOptions.Shard{T}(Action{Sharding.ShardRuleBuilder{T}})"/>）按规则的每个节点在节点所在的数据源上建表、删表、同步；

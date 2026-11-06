@@ -187,6 +187,10 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
     {
         var attr = property.GetCustomAttribute<ColumnAttribute>();
         var computed = property.GetCustomAttribute<ComputedAttribute>() is { } c ? ComputedExpression(entityType, property, c.ExpressionMember) : null;
+        // 自增列的值已经由库生成，再写默认值是矛盾的声明（Java 建表时静默丢掉默认值）
+        if (attr is { Generated: true, DbDefault: not null })
+            throw new InvalidOperationException(
+                $"{entityType.Name}.{property.Name} 不能同时声明 Generated 与 DbDefault：Generated 是自增列；有默认值的列插入时为 null 就不写，要一直不写用 [InsertIgnore]");
         return new ColumnMetadata(ownerPath, property, attr?.Name ?? defaultName)
         {
             IsPrimaryKey = attr?.PrimaryKey ?? false,
@@ -202,6 +206,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
             SqlConversion = attr?.SqlConversion is { } conversion ? CreateSqlConversion(conversion, property) : null,
             DbType = attr?.DbType,
             Comment = attr?.Comment,
+            DbDefault = attr?.DbDefault,
             RenamedFrom = property.GetCustomAttribute<RenamedFromAttribute>()?.Name,
             InNullableValueObject = inNullableValueObject,
         };

@@ -611,6 +611,8 @@ EasyQuerySharp.Metadata.ColumnAttribute.Comment.get -> string?
 EasyQuerySharp.Metadata.ColumnAttribute.Comment.init -> void
 EasyQuerySharp.Metadata.ColumnAttribute.Converter.get -> System.Type?
 EasyQuerySharp.Metadata.ColumnAttribute.Converter.init -> void
+EasyQuerySharp.Metadata.ColumnAttribute.DbDefault.get -> string?
+EasyQuerySharp.Metadata.ColumnAttribute.DbDefault.init -> void
 EasyQuerySharp.Metadata.ColumnAttribute.DbType.get -> string?
 EasyQuerySharp.Metadata.ColumnAttribute.DbType.init -> void
 EasyQuerySharp.Metadata.ColumnAttribute.Generated.get -> bool
@@ -632,6 +634,7 @@ EasyQuerySharp.Metadata.ColumnMetadata.ClrType.get -> System.Type!
 EasyQuerySharp.Metadata.ColumnMetadata.Comment.get -> string?
 EasyQuerySharp.Metadata.ColumnMetadata.Computed.get -> System.Linq.Expressions.LambdaExpression?
 EasyQuerySharp.Metadata.ColumnMetadata.Converter.get -> EasyQuerySharp.Metadata.IValueConverter?
+EasyQuerySharp.Metadata.ColumnMetadata.DbDefault.get -> string?
 EasyQuerySharp.Metadata.ColumnMetadata.DbType.get -> string?
 EasyQuerySharp.Metadata.ColumnMetadata.GeneratedSql.get -> string?
 EasyQuerySharp.Metadata.ColumnMetadata.GetProviderValue(object! entity) -> object?

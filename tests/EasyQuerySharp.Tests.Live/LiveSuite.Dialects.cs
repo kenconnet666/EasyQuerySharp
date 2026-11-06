@@ -128,4 +128,16 @@ public abstract partial class LiveSuite
         Assert.Equal(4, await db.Query<Post>().CountAsync(Ct));
         Assert.Equal(["orm tips", "sql 100%"], await db.Query<Post>().AsTable("t_post_archive").OrderBy(p => p.Id).Select(p => p.Title).ToListAsync(Ct));
     }
+
+    // code-first 建表带上 [Column(DbDefault)]：插入时为 null 的列不写，由库端默认值填上
+    [Fact]
+    public async Task FillsOmittedColumnsWithDatabaseDefaults()
+    {
+        var db = await SeededAsync();
+        await db.CodeFirst.DropTablesIfExistsAsync([typeof(Ticket)], Ct);
+        await db.CodeFirst.CreateTablesAsync([typeof(Ticket)], Ct);
+        await db.Insert(new Ticket { Id = 1 }, new Ticket { Id = 2, Status = "closed", Priority = 3 }).ExecuteAsync(Ct);
+        var tickets = await db.Query<Ticket>().OrderBy(t => t.Id).ToListAsync(Ct);
+        Assert.Equal([("open", 0), ("closed", 3)], tickets.Select(t => (t.Status, t.Priority)));
+    }
 }

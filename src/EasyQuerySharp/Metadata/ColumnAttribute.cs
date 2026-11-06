@@ -39,6 +39,12 @@ public sealed class ColumnAttribute(string? name = null) : Attribute
 
     /// <summary>列注释，code-first 建表时使用。</summary>
     public string? Comment { get; init; }
+
+    /// <summary>
+    /// 列的库端默认值，code-first 建表、加列时原样写在 <c>DEFAULT</c> 后面（对应 Java 的 dbDefault），是 SQL 文本而不是值：
+    /// 字符串要自己带引号，如 <c>"''"</c>、<c>"CURRENT_TIMESTAMP(3)"</c>。只影响 DDL，插入时不会代替实体上的值；不能与 <see cref="Generated"/> 一起用。
+    /// </summary>
+    public string? DbDefault { get; init; }
 }
 
 /// <summary>属性不对应任何列（对应 Java 的 <c>@Column(exist = false)</c> / <c>@ColumnIgnore</c>）。</summary>

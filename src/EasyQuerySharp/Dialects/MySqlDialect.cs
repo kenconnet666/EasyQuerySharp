@@ -134,13 +134,17 @@ public class MySqlDialect : SqlDialect
     /// <summary><c>ALTER TABLE `旧表` RENAME TO `新表`;</c></summary>
     internal override string RenameTableSql(Metadata.EntityMetadata entity, string oldName) => base.RenameTableSql(entity, oldName) + ";";
 
-    /// <summary><c>ALTER TABLE `表` CHANGE `旧列` `新列` 类型 NULL[ COMMENT '…'];</c>（CHANGE 连同类型一起写，5.7 也能用）。</summary>
+    /// <summary>
+    /// <c>ALTER TABLE `表` CHANGE `旧列` `新列` 类型 NULL[ AUTO_INCREMENT | DEFAULT …][ COMMENT '…'];</c>（CHANGE 连同类型一起写，5.7 也能用）。
+    /// CHANGE 是整列重定义，不写自增与默认值就会丢掉（Java 没写）。
+    /// </summary>
     internal override string RenameColumnSql(Metadata.EntityMetadata entity, string oldName, Metadata.ColumnMetadata column) =>
-        $"ALTER TABLE {QualifiedTable(entity)} CHANGE {QuoteIdentifier(oldName)} {QuoteIdentifier(column.Name)} {ColumnType(column)}{(IsNullable(column) ? " NULL" : " NOT NULL")}{InlineComment(column.Comment)};";
+        $"ALTER TABLE {QualifiedTable(entity)} CHANGE {QuoteIdentifier(oldName)} {QuoteIdentifier(column.Name)} {ColumnType(column)}{(IsNullable(column) ? " NULL" : " NOT NULL")}"
+        + $"{(column.IsGenerated ? " AUTO_INCREMENT" : DefaultClause(column))}{InlineComment(column.Comment)};";
 
-    /// <summary><c>ALTER TABLE `表` ADD `列` 类型 NULL[ COMMENT '…'];</c></summary>
+    /// <summary><c>ALTER TABLE `表` ADD `列` 类型 NULL[ DEFAULT …][ COMMENT '…'];</c></summary>
     internal override string AddColumnSql(Metadata.EntityMetadata entity, Metadata.ColumnMetadata column) =>
-        $"ALTER TABLE {QualifiedTable(entity)} ADD {QuoteIdentifier(column.Name)} {ColumnType(column)}{(IsNullable(column) ? " NULL" : " NOT NULL")}{InlineComment(column.Comment)};";
+        $"ALTER TABLE {QualifiedTable(entity)} ADD {QuoteIdentifier(column.Name)} {ColumnType(column)}{(IsNullable(column) ? " NULL" : " NOT NULL")}{DefaultClause(column)}{InlineComment(column.Comment)};";
 
     /// <summary>读 information_schema（当前库）。</summary>
     internal override CatalogQueries CatalogQueries { get; } = new(
