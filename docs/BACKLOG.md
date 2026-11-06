@@ -34,3 +34,5 @@
 - code-first 读库结构与同步只看当前 schema（MySQL 是当前库）：实体声明了别的 schema 时按表名和当前 schema 里的表比较；要跨 schema 同步时再给各方言的系统表查询加 schema 条件。
 - code-first 同步不比较列类型（只比较列在不在、可空性）：各库读出的类型写法不同（`character varying(255)` 与 `VARCHAR(255)`、`int(11)` 与 `INT`），要比较得先按方言归一（TS 版的 `sameType`）；有需求时再做。
 - code-first 不建库（Java 的 `createDatabaseIfNotExists`）：库由连接串决定，建库属于部署，要从连接串拆出服务器与库名、各方言写法不同；有需求时再做。
+- 分片查询跨单元的平均值：可以改写成各单元的 `SUM` 与 `COUNT` 再合并（Java 的 GroupAvgBehaviorEnum），0006 没做，现在报 `NotSupportedException` 让调用方自己算；有需求时再做，跨单元的分组同理。
+- 分片查询的并发上限（Java 的 `maxShardingQueryLimit`）：不在事务里时每个单元各取一个连接并行执行，`ToShardingPageAsync` 按节点计数时一个节点一个连接；连接池吃紧时再加按数据源的并发上限。
