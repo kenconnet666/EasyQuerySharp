@@ -89,10 +89,20 @@ internal sealed partial class ProjectionCompiler
                 }
             var offset = through ? 1 : 0;
             var childSelector = (LambdaExpression?)((ConstantExpression)marker.Arguments[2 + offset]).Value;
-            var markerPlan = new IncludePlan(navigation, childSelector?.ReturnType ?? navigation.Target.Type, childSelector, [], navigation.IsCollection || via.Any(v => v.IsCollection))
+            var isCollection = navigation.IsCollection || via.Any(v => v.IsCollection);
+            // 直达导航（DirectMapping）展开成沿路径的各段，与 Include 一致；否则会拿本表的键去查目标表
+            var direct = !through && navigation.DirectPath.Count > 0;
+            if (direct)
+            {
+                var chain = IncludePlan.DirectChain(translator.Context!.Metadata, navigation);
+                via.AddRange(chain[..^1]);
+                navigation = chain[^1];
+            }
+            var markerPlan = new IncludePlan(navigation, childSelector?.ReturnType ?? navigation.Target.Type, childSelector, [], isCollection)
             {
                 Configure = (Func<QueryState, QueryState>?)((ConstantExpression)marker.Arguments[1 + offset]).Value,
                 Via = via,
+                DirectVia = direct,
             };
             _includes.Add((markerPlan, navOwner));
             return markerPlan;
@@ -130,6 +140,12 @@ internal sealed partial class ProjectionCompiler
         if (inner is not MemberExpression { Expression: { } ownerExpr } navMember || translator.BindingOf(ownerExpr) is not EntityBinding owner) return null;
         if (translator.FindNavigation(owner, navMember.Member.Name) is not { } nav) return null;
         if (!nav.IsCollection && (selector is not null || filters.Count > 0 || orders.Count > 0 || inner != value)) return null;
+        if (nav.DirectPath.Count > 0)
+        {
+            var direct = IncludePlan.ForNavigation(translator.Context!.Metadata, nav, null);
+            _includes.Add((direct, owner));
+            return direct;
+        }
 
         var plan = new IncludePlan(nav, selector?.ReturnType ?? nav.Target.Type, selector, filters, nav.IsCollection)
         {

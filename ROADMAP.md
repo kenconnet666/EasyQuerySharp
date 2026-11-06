@@ -15,8 +15,8 @@
 
 ## 现状（2026-11-06）
 
-- 对标：已移植 1822、偏离 139、不适用 136、骨架 2、待做 305。
-- 待做的分布：方言 206，平台能力 82（分库分表 48、code-first 14、表名 / schema / link 14、按对象筛选 6），其余零散 17。
+- 对标：已移植 1823、偏离 139、不适用 136、骨架 2、待做 304。
+- 待做的分布：方言 206，平台能力 82（分库分表 48、code-first 14、表名 / schema / link 14、按对象筛选 6），其余零散 16。
 - 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
 
 ## 已定的取舍
@@ -81,19 +81,18 @@ R → 1 → 2 → 3 → 4 → 5。
 - [x] 1.5 批量写入 `.Batch()`（实体与字典的插入、更新、删除）：按 SQL 分组，组按首次出现的顺序、每组最多 1000 条（与 Java 一致）；驱动支持 `DbBatch` 时交给它（Npgsql 一组一个往返；MySqlConnector 对 MySQL 不省往返），否则同连接逐条执行（SQLite）；监听器每组一次，`SqlExecutionEvent.Statements` 是整组。不在事务里时每组在自己的事务里执行，整组成败一致，MySQL 也免了逐条提交的刷盘（1.8 万行回填自增键从 2 分 40 秒降到 5 秒）。回填自增键：语句自带 RETURNING / OUTPUT 的直接读，MySQL 在每条插入后跟一条 `LAST_INSERT_ID()`。5 条批量偏离改回已移植，InsertTest1 testInsert 移植；insertBatch 仍是偏离（Java 返回 JDBC 的 -3）。
 - [x] 1.6 `Returning()`：按条件的更新 / 删除加 `.Returning()`（整行，`RETURNING *`）或 `.Returning(选择器)`（只取选择器用到的列，读回后在内存里投影），得到 `ReturningCommand`（`ToSql` / `ExecuteAsync`）；逻辑删除返回被标记的行。PostgreSQL、SQLite 支持，其余方言、走导航连接、按实体写入都拒绝。fork ReturningSqlTest ×2、ReturningLiveTest 移植。
 - [x] 1.7 窗口取值函数（Lag / Lead / FirstValue / LastValue / NthValue）不带窗口或窗口没写排序时，沿用所在查询的 ORDER BY（翻译时的快照，与 Java 的 `offset()` 一致），查询没有排序时报错；这类查询深分页时不反转排序。nextTest3 改回已移植，nextTest2 由不适用改为偏离（只差异常文本）。
-- [ ] 1.8 零散用例：
-  - RelationTest testOneToOne（include2 按路径带出多段、各段带条件，再 select 到 VO）；
-  - QueryTestRelationTest testRelation（Include 的配置并入平铺带出、分页后再按段取）；
-  - fork ProxySmokeTest；
-  - [x] 复核"功能缺口"：M8BankTest whereSubQuery3（Java 的显式 EXISTS 本来就不并进分组合并）、pgsql QueryTest19 tree7_2（层级列同名映射早已实现）都与 Java 一致，改回已移植；
-  - [x] 骨架：MySQLInsertIgnore2UpdateKey / 2（`new MySqlDialect { IgnoreConflictAsKeyUpdate = true }`，对应 Java 的 mysqlInsertIgnoreToUpdateKey）、NumberFunctionsTest subQueryMySQL；testDoubleConcat 用的是 Kingbase 方言，挪到 3.4。
-
+- [x] 1.8 零散用例：fork ProxySmokeTest（补 ForkCompany 与 ForkUser.Company）；whereSubQuery3、pgsql tree7_2 原本记的"功能缺口"复核后与 Java 一致，改回已移植；骨架 MySQLInsertIgnore2UpdateKey / 2（`new MySqlDialect { IgnoreConflictAsKeyUpdate = true }`，对应 Java 的 mysqlInsertIgnoreToUpdateKey）、NumberFunctionsTest subQueryMySQL；testDoubleConcat 用的是 Kingbase 方言，挪到 3.4。顺手修了 `Select<TDto>()` 遇到直达导航时拿本表键查目标表的错误（静默取错数据）。testOneToOne、testRelation 篇幅远超预计，拆到 1.9。
+- [ ] 1.9 带出与 DTO 自动带出补齐（RelationTest testOneToOne：一个方法约 80 段；QueryTestRelationTest testRelation：24 段）。按段移植，同一用例拆成多个测试，不能逐字对齐的段写偏离。已知缺口：
+  - G1 `Include(导航, 配置)` 再 `Select<TDto>()` 时配置被丢掉：按导航名并入 DTO 的同名带出；
+  - G2 先分页再投影到 DTO（Java 的 `toPageSelectResult`）：分页查询包成派生表，计数与取数共用条件；
+  - G4 DTO 属性上的 `[Navigate(OrderBy / Limit)]` 覆盖实体导航的默认值，`NavigateAttribute` 补 `Offset`；
+  - G5 `IncludeLimitMode.UnionAll` 的 SQL 与 Java 不一致（外层不写 AS、单键写 `= ?`、投影写在外层），根夹具按 Java 的 BaseTest 改用 UnionAll。
 ## 阶段 2 第一档方言
 
 - [ ] 2.1 SQL Server：
-  - Upstream 夹具改用 UpperCamelCase 命名；
-  - 移植 MsSQLQueryTest、MsSQLUpdateJoinTest、MSSQLTest1、MSSQLMathQueryTest 共 38 个用例；
-  - CI 的 mssql 任务加跑 Upstream 的 Mssql 命名空间。
+  - Upstream 加 Mssql 夹具（库 `mssql_eq`，UpperCamelCase 命名，银行种子与 Mysql8 夹具共用）；
+  - 移植 MsSQLQueryTest、MsSQLUpdateJoinTest、MSSQLTest1、MSSQLMathQueryTest 共 38 个用例：22 个只缺夹具；缺的功能有拼接式 LIKE（`LIKE ('%'+CAST(v AS NVARCHAR(MAX))+'%')`，8 个）、`DateFormat` 按 Java 写成 CONVERT / SUBSTRING 链（3 个）、`Math.Round(x)` / `Atan2` / `Truncate` 的写法、联表后与导航上的 `AsTableSegment`（`WITH(NOLOCK)`）、`Sql.MaxColumns` / `MinColumns`（2 个，达梦也用）；
+  - CI 的 mssql 任务改成 live / upstream 两片，后者跑 Upstream 的 Mssql 命名空间。
 - [ ] 2.2 Oracle：实库验证。已做：条件当值用（投影、比较的一侧、分组合并的 any / none 列）在 SQL Server、Oracle 上写成 `(CASE WHEN 条件 THEN ? ELSE ? END)`（Java 的 booleanSQLFunction），NumberFunctionsTest subQueryORACLE 移植。
 - [ ] 2.3 UPDATE / DELETE 里用对一导航（`write.join`），在 SQL Server、Oracle、SQLite 上补齐（现在抛 NotSupportedException）；`DateTrunc` 也在这三个方言上补齐。
 - [ ] 2.4 L3 `LiveSuite` 从现在的 4 组扩到 TS 的 23 组，`LiveSuiteOptions` 按方言裁剪能力；在第一档的每个库上全部通过（MySQL 8.0.18、MariaDB 各算一个库）。

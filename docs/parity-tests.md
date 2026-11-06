@@ -4,13 +4,13 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1822、偏离 139、不适用 136、骨架 2、待做 305。
+合计：已移植 1823、偏离 139、不适用 136、骨架 2、待做 304。
 
 ## 按能力
 
 | 能力 | key | 里程碑 | 用例 | 已移植 | 偏离 | 不适用 | 骨架 | 待做 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 0 | 0 | 0 | 0 | 1 |
+| 测试基础设施与 Java 专属（代理、注入、Bean 工具） | `misc.infra` | M0 | 1 | 1 | 0 | 0 | 0 | 0 |
 | 基本查询（条件、排序、选列、分页） | `query.basic` | M1 | 435 | 361 | 37 | 35 | 0 | 2 |
 | 分页结果 | `query.page` | M1 | 22 | 18 | 3 | 0 | 0 | 1 |
 | 原生 SQL | `sql.native` | M1 | 50 | 41 | 8 | 1 | 0 | 0 |
@@ -74,7 +74,7 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| fork/ProxySmokeTest.java#implicitJoinAndSubqueryRenderOnTestEntities | 待做 |  | `SELECT t.'id',t.'name',t.'age',t.'company_id',t.'attrs',t.'created_at' FROM 't_fork_user' t LEFT JOI…` |
+| fork/ProxySmokeTest.java#implicitJoinAndSubqueryRenderOnTestEntities | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/ProxySmokeTest.cs:7 | `SELECT t.'id',t.'name',t.'age',t.'company_id',t.'attrs',t.'created_at' FROM 't_fork_user' t LEFT JOI…` |
 
 ### 基本查询（条件、排序、选列、分页）（`query.basic`，M1）
 

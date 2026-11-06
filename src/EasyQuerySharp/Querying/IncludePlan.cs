@@ -56,6 +56,19 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     {
         if (navigation.DirectPath.Count == 0)
             return new IncludePlan(navigation, navigation.Target.Type, null, [], navigation.IsCollection) { Configure = configure, Unaliased = unaliased };
+        var chain = DirectChain(registry, navigation);
+        return new IncludePlan(chain[^1], chain[^1].Target.Type, null, [], navigation.IsCollection)
+        {
+            Configure = configure,
+            Unaliased = unaliased,
+            Via = chain[..^1],
+            DirectVia = true,
+        };
+    }
+
+    /// <summary>直达导航沿 <see cref="NavigationMetadata.DirectPath"/> 展开成的各段导航，最后一段到达目标。</summary>
+    public static List<NavigationMetadata> DirectChain(MetadataRegistry registry, NavigationMetadata navigation)
+    {
         var chain = new List<NavigationMetadata>();
         var entity = navigation.Self;
         foreach (var name in navigation.DirectPath)
@@ -64,13 +77,7 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
             chain.Add(step);
             entity = step.Target;
         }
-        return new IncludePlan(chain[^1], chain[^1].Target.Type, null, [], navigation.IsCollection)
-        {
-            Configure = configure,
-            Unaliased = unaliased,
-            Via = chain[..^1],
-            DirectVia = true,
-        };
+        return chain;
     }
 
     /// <summary>父对象上的关联列：经过中间导航时是第一段导航的自身列。</summary>
