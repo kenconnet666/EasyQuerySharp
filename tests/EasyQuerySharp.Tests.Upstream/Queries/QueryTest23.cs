@@ -203,7 +203,7 @@ public sealed class QueryTest23(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("false(Boolean),30%(String),-1(Integer)");
     }
 
-    [Fact, Upstream("QueryTest23.java#subquery", NotApplicable = "Java 取 JDBC 流式结果的 ResultSetMetaData；C# 的流式读取（ToAsyncEnumerable）不暴露驱动的元数据")]
+    [Fact, Upstream("QueryTest23.java#subquery", NotApplicable = "Java 取 JDBC 流式结果的 ResultSetMetaData；C# 的流式读取（AsAsyncEnumerable）不暴露驱动的元数据")]
     public void Subquery() { }
 
     // 子查询里引用外层的列做分组、HAVING、排序

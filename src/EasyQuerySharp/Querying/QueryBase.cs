@@ -31,9 +31,6 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     /// <summary>最多取 <paramref name="count"/> 行（LIMIT）。</summary>
     public TSelf Take(long count) => With(State with { Limit = count });
 
-    /// <summary>跳过 <paramref name="offset"/> 行后取 <paramref name="rows"/> 行（对应 Java 的 limit(offset, rows)）。</summary>
-    public TSelf Limit(long offset, long rows) => With(State with { Offset = offset, Limit = rows });
-
     /// <summary>DISTINCT。</summary>
     public TSelf Distinct() => With(State with { Distinct = true });
 
@@ -229,8 +226,8 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     /// 流式读取（对应 Java 的 toStreamResult）：边读边返回，适合大结果集，连接在枚举结束时释放。
     /// 投影里的导航带出（include）不适用于流式读取；追踪作用域里照常追踪。
     /// </summary>
-    /// <example><code>await foreach (var blog in db.Query&lt;Blog&gt;().OrderBy(b => b.Id).ToAsyncEnumerable(ct)) { … }</code></example>
-    public async IAsyncEnumerable<TElement> ToAsyncEnumerable([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    /// <example><code>await foreach (var blog in db.Query&lt;Blog&gt;().OrderBy(b => b.Id).AsAsyncEnumerable(ct)) { … }</code></example>
+    public async IAsyncEnumerable<TElement> AsAsyncEnumerable([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var compiled = QueryCompiler.Compile<TElement>(State);
         if (compiled.Includes.Count > 0) throw new NotSupportedException("投影里的导航带出不能流式读取，请用 ToListAsync");
@@ -250,7 +247,7 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
         for (long offset = 0; ; offset += size)
         {
-            var chunk = await Limit(offset, size).ToListAsync(cancellationToken).ConfigureAwait(false);
+            var chunk = await Skip(offset).Take(size).ToListAsync(cancellationToken).ConfigureAwait(false);
             if (chunk.Count > 0) yield return chunk;
             if (chunk.Count < size) yield break;
         }
@@ -279,13 +276,13 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
     }
 
     /// <summary>执行并把每行读成 列名 → 值 的 <see cref="DynamicRow"/>（对应 Java 的 toMaps）；列名忽略大小写，重复的列名抛出异常。</summary>
-    public Task<List<DynamicRow>> ToDictionariesAsync(CancellationToken cancellationToken = default) =>
+    public Task<List<DynamicRow>> ToRowsAsync(CancellationToken cancellationToken = default) =>
         Db.Executor.QueryAsync(ToStatement(), Materialization.EntityMaterializer.ReadDictionary, cancellationToken);
 
     /// <summary>第一行读成 <see cref="DynamicRow"/>（追加 LIMIT 1）；没有时返回 null（对应 Java 的 toMap）。</summary>
-    public async Task<DynamicRow?> FirstDictionaryOrDefaultAsync(CancellationToken cancellationToken = default)
+    public async Task<DynamicRow?> FirstRowOrDefaultAsync(CancellationToken cancellationToken = default)
     {
-        var list = await With(State with { Limit = 1 }).ToDictionariesAsync(cancellationToken).ConfigureAwait(false);
+        var list = await With(State with { Limit = 1 }).ToRowsAsync(cancellationToken).ConfigureAwait(false);
         return list.Count == 0 ? null : list[0];
     }
 
@@ -423,7 +420,7 @@ public abstract class QueryBase<TSelf, TElement> : IQueryStateAccessor
         long offset = 0, fetched = 0;
         while (fetched < maxFetchSize)
         {
-            var rows = await Limit(offset, Math.Min(size, maxFetchSize - fetched)).ToListAsync(cancellationToken).ConfigureAwait(false);
+            var rows = await Skip(offset).Take(Math.Min(size, maxFetchSize - fetched)).ToListAsync(cancellationToken).ConfigureAwait(false);
             if (rows.Count == 0) break;
             fetched += rows.Count;
             offset += handle(rows);

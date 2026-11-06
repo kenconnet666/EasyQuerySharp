@@ -185,7 +185,7 @@ internal static class QueryCompiler
     {
         if (RawSelect(state) is { } raw)
         {
-            // 标量（如 QuerySql<int>("select 1")）取第一列，其余按列名映射
+            // 标量（如 FromSql<int>("select 1")）取第一列，其余按列名映射
             if (ScalarTypes.IsScalar(typeof(T)))
                 return new CompiledQuery<T>(raw, r => Materialization.ValueReader.Read<T>(r, 0, null));
             if (typeof(T) == typeof(Dictionary<string, object?>) || typeof(T) == typeof(DynamicRow))

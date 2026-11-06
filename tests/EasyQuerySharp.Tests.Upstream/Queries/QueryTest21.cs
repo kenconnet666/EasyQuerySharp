@@ -59,7 +59,7 @@ public sealed class QueryTest21(MySqlFixture fixture) : MySqlTest(fixture)
         }
         using (var listen = SqlCapture.Listen())
         {
-            await Db.Query<Topic>().Where(t => t.Title!.Contains("123")).Limit(0, 10).ToListAsync(Ct);
+            await Db.Query<Topic>().Where(t => t.Title!.Contains("123")).Skip(0).Take(10).ToListAsync(Ct);
             listen.AssertSql("SELECT `id`,`stars`,`title`,`create_time` FROM `t_topic` WHERE `title` LIKE ? LIMIT 10");
         }
         // 偏移量超过总数一半：反过来排序，从另一头取，读出后再倒序（OFFSET = 总数 - 偏移 - 本页条数）
@@ -69,7 +69,7 @@ public sealed class QueryTest21(MySqlFixture fixture) : MySqlTest(fixture)
             var page = await Db.Query<Topic>().Where(t => t.Id != null).OrderBy(t => t.CreateTime).ToPageAsync(7, 10, Ct);
             listen.AssertSql(1, "SELECT COUNT(*) FROM `t_topic` WHERE `id` IS NOT NULL");
             listen.AssertSql($"SELECT `id`,`stars`,`title`,`create_time` FROM `t_topic` WHERE `id` IS NOT NULL ORDER BY `create_time` DESC LIMIT 10 OFFSET {total - 70}");
-            var expected = await Db.Query<Topic>().Where(t => t.Id != null).OrderBy(t => t.CreateTime).Limit(60, 10).ToListAsync(Ct);
+            var expected = await Db.Query<Topic>().Where(t => t.Id != null).OrderBy(t => t.CreateTime).Skip(60).Take(10).ToListAsync(Ct);
             Assert.Equal(expected.Select(t => t.CreateTime), page.Rows.Select(t => t.CreateTime));
         }
     }

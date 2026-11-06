@@ -11,7 +11,7 @@ public sealed class ForUpdateDialectToSqlSmokeTest
     {
         var db = SqlOnly.Db(dialect);
         using var tx = db.BeginTransaction();
-        return db.Query<DocBankCard>().Where(c => c.Id != null).OrderBy(c => c.Id).Limit(1, 2).ForUpdate().ToSql();
+        return db.Query<DocBankCard>().Where(c => c.Id != null).OrderBy(c => c.Id).Skip(1).Take(2).ForUpdate().ToSql();
     }
 
     [Theory]

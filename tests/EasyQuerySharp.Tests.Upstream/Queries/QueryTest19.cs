@@ -239,7 +239,7 @@ public sealed class QueryTest19(MySqlFixture fixture) : MySqlTest(fixture)
     {
         const string sql = "SELECT '未开始'AS task_status\nUNION ALL SELECT '进行中'\nUNION ALL SELECT '已完成'\nUNION ALL SELECT '审核中'\nUNION ALL SELECT '已关闭'\n"
                            + "UNION ALL SELECT '待修改（无需审核）'\nUNION ALL SELECT '待修改（需审核）'";
-        await Db.QuerySql<MyUnion>(sql).LeftJoin<Topic>((m, t2) => m.TaskStatus == (string)(object)t2.Stars! && t2.Id == "10")
+        await Db.FromSql<MyUnion>(sql).LeftJoin<Topic>((m, t2) => m.TaskStatus == (string)(object)t2.Stars! && t2.Id == "10")
             .GroupBy((m1, _) => m1.TaskStatus)
             .Select(g => new BlogEntity { Id = g.Key, Title = g.Count(e => e.Item2.Stars).ToString() }).ToListAsync(Ct);
     }

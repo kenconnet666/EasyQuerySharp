@@ -88,18 +88,8 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     }
 
     /// <summary>
-    /// 先分页、再投影（对应 Java 的 limitSelect）：分页后的查询作为派生表，投影里的子查询（如导航计数）只对这一页的行执行。
-    /// <c>q.LimitSelect(20, 10, u =&gt; new { u.Id, Blogs = u.Blogs!.Count() })</c>。
-    /// </summary>
-    public Query<TResult> LimitSelect<TResult>(long offset, long rows, Expression<Func<T, TResult>> selector)
-    {
-        var paged = Open with { Offset = offset, Limit = rows };
-        return new(paged.Wrap() with { Selector = selector });
-    }
-
-    /// <summary>
-    /// 分页后再投影（对应 Java 的 toPageSelectResult）：总数按投影前的查询计，当前页用 <see cref="LimitSelect{TResult}"/>，
-    /// 投影里的子查询只对这一页执行。
+    /// 分页后再投影（对应 Java 的 toPageSelectResult）：总数按投影前的查询计，当前页先分页、包成派生表再投影
+    /// （同 <c>Skip(..).Take(..).AsSubQuery().Select(..)</c>），投影里的子查询只对这一页执行。
     /// </summary>
     public async Task<Page<TResult>> ToPageAsync<TResult>(long page, long size, Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default)
     {

@@ -30,36 +30,36 @@ public sealed partial class QueryTest3(MySqlFixture fixture) : MySqlTest(fixture
     [Fact, Upstream("QueryTest3.java#query124")]
     public void Query124() =>
         Assert.Equal("SELECT " + TopicColumns + FourSql() + " WHERE t.`id` = ? LIMIT 2 OFFSET 1",
-            FourTables().UseValueFilter(ValueFilter.NotNullOrBlank).Where(o => o.Id == "3").Limit(1, 2).ToSql());
+            FourTables().UseValueFilter(ValueFilter.NotNullOrBlank).Where(o => o.Id == "3").Skip(1).Take(2).ToSql());
 
     [Fact, Upstream("QueryTest3.java#query124_5")]
     public void Query124_5() =>
         Assert.Equal("SELECT " + TopicColumns + FourSql() + " LIMIT 2 OFFSET 1",
-            FourTables().UseValueFilter(ValueFilter.NotNullOrBlank).Where(o => o.Id == "").UseValueFilter(ValueFilter.All).Limit(1, 2).ToSql());
+            FourTables().UseValueFilter(ValueFilter.NotNullOrBlank).Where(o => o.Id == "").UseValueFilter(ValueFilter.All).Skip(1).Take(2).ToSql());
 
     [Fact, Upstream("QueryTest3.java#query124_4")]
     public void Query124_4() =>
         Assert.Equal("SELECT " + TopicColumns + FourSql() + " LEFT JOIN `t_blog` t4 ON t4.`deleted` = ? AND t.`id` = t3.`id` LEFT JOIN `t_blog` t5 ON t5.`deleted` = ? AND t.`id` = t4.`id` WHERE t.`id` = ? LIMIT 2 OFFSET 1",
             FourTables().LeftJoin<BlogEntity>((t, t1, t2, t3, t4) => t.Id == t3.Id).LeftJoin<BlogEntity>((t, _, _, _, t4, _) => t.Id == t4.Id)
-                .Where(o => o.Id == "3").Limit(1, 2).ToSql());
+                .Where(o => o.Id == "3").Skip(1).Take(2).ToSql());
 
     [Fact, Upstream("QueryTest3.java#query124_2")]
     public void Query124_2() =>
         Assert.Equal("SELECT " + TopicColumns + FourSql() + " WHERE t.`id` = ? LIMIT 2 OFFSET 1",
             Db.Query<Topic>().LeftJoin<BlogEntity>((t, t1) => t.Id == t1.Id).LeftJoin<BlogEntity>((t, t1, t2) => t.Id == t2.Id)
-                .LeftJoin<BlogEntity>((t, t1, t2, t3) => t.Id == t3.Id).Where(o => o.Id == "3").Limit(1, 2).ToSql());
+                .LeftJoin<BlogEntity>((t, t1, t2, t3) => t.Id == t3.Id).Where(o => o.Id == "3").Skip(1).Take(2).ToSql());
 
     [Fact, Upstream("QueryTest3.java#query125")]
     public void Query125() =>
         Assert.Equal("SELECT t.`id`,t1.`title`,t2.`star`" + FourSql("INNER", "INNER") + " WHERE t.`id` = ? LIMIT 2 OFFSET 1",
-            FourTables("INNER", "INNER").Where(o => o.Id == "3").Select((t, t1, t2, t3) => new BlogEntity { Id = t.Id, Title = t1.Title, Star = t2.Star }).Limit(1, 2).ToSql());
+            FourTables("INNER", "INNER").Where(o => o.Id == "3").Select((t, t1, t2, t3) => new BlogEntity { Id = t.Id, Title = t1.Title, Star = t2.Star }).Skip(1).Take(2).ToSql());
 
     [Fact, Upstream("QueryTest3.java#query126")]
     public async Task Query126()
     {
         var empty = await Db.Query<Topic>().LeftJoin<BlogEntity>((t, t1) => t.Id == t1.Id && t1.Id == "3")
             .InnerJoin<BlogEntity>((t, t1, t2) => t.Id == t2.Id).RightJoin<BlogEntity>((t, t1, t2, t3) => t.Id == t3.Id)
-            .Where(o => o.Id == "3").Select((t, t1, t2, t3) => new BlogEntity { Id = t.Id, Title = t1.Title, Star = t2.Star }).Limit(1, 2).ToListAsync(Ct);
+            .Where(o => o.Id == "3").Select((t, t1, t2, t3) => new BlogEntity { Id = t.Id, Title = t1.Title, Star = t2.Star }).Skip(1).Take(2).ToListAsync(Ct);
         Assert.Empty(empty);
         Assert.Single(await FourTables("INNER").Where(o => o.Id == "3").Select((t, t1, t2, t3) => new BlogEntity { Id = t.Id, Title = t1.Title, Star = t2.Star }).Take(1).ToListAsync(Ct));
     }

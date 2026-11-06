@@ -92,10 +92,10 @@ public sealed class QueryTest16(MySqlFixture fixture) : MySqlTest(fixture)
             "SELECT t.`id`,t.`company_id`,t.`name`,t.`age`,t.`create_time` FROM `t_user` t WHERE EXISTS(SELECT 1 FROM `t_role` myRole WHERE EXISTS(SELECT 1 FROM `t_user_role` t2 WHERE t2.`role_id` = myRole.`id` AND t2.`user_id` = t.`id` LIMIT 1) AND myRole.`name` LIKE ? AND (myRole.`create_time` >= ? AND myRole.`create_time` <= ?) LIMIT 1)", "%查询的角色名%(String),2020-01-01T01:02(LocalDateTime),2026-01-01T01:02(LocalDateTime)");
     }
 
-    // Java 先 limit 再 select(com -> com) 包成派生表（C# 的 LimitSelect），外层投影里的集合聚合引用派生表的列
+    // Java 先 limit 再 select(com -> com) 包成派生表（C# 写 Skip / Take 后 AsSubQuery() 再 Select），外层投影里的集合聚合引用派生表的列
     [Fact, Upstream("QueryTest16.java#testSubSum")]
     public void TestSubSum() =>
-        AssertStatement(Db.Query<Company>().Where(com => com.Name!.Contains("xx公司")).LimitSelect(10, 20, com => new Draft<string?, int?>(com.Id, com.Users!.Sum(x => x.Age))).ToStatement(),
+        AssertStatement(Db.Query<Company>().Where(com => com.Name!.Contains("xx公司")).Skip(10).Take(20).AsSubQuery().Select(com => new Draft<string?, int?>(com.Id, com.Users!.Sum(x => x.Age))).ToStatement(),
             "SELECT t1.`id` AS `value1`,IFNULL((SELECT SUM(t2.`age`) FROM `t_user` t2 WHERE t2.`company_id` = t1.`id`),0) AS `value2` FROM (SELECT t.`id`,t.`name`,t.`create_time` FROM `t_company` t WHERE t.`name` LIKE ? LIMIT 20 OFFSET 10) t1", "%xx公司%(String)");
 
     // 子查询的表起别名（Java 的 configure(r -> r.asAlias("myRole"))）；时间区间两端都有值时都写上
@@ -136,7 +136,7 @@ public sealed class QueryTest16(MySqlFixture fixture) : MySqlTest(fixture)
     // Oracle：先按 ROWNUM 取段再在外层算子查询的合计（NVL 兜底）
     [Fact, Upstream("QueryTest16.java#testSubSumOracle")]
     public void TestSubSumOracle() =>
-        SqlOnly.AssertStatement(SqlOnly.Db("oracle").Query<Company>().Where(com => com.Name!.Contains("xx公司")).LimitSelect(10, 20, com => new Draft<string?, int?>(com.Id, com.Users!.Sum(x => x.Age))).ToStatement(),
+        SqlOnly.AssertStatement(SqlOnly.Db("oracle").Query<Company>().Where(com => com.Name!.Contains("xx公司")).Skip(10).Take(20).AsSubQuery().Select(com => new Draft<string?, int?>(com.Id, com.Users!.Sum(x => x.Age))).ToStatement(),
             "SELECT t1.\"id\" AS \"value1\",NVL((SELECT SUM(t2.\"age\") FROM \"t_user\" t2 WHERE t2.\"company_id\" = t1.\"id\"),0) AS \"value2\" FROM (SELECT rt.* FROM(SELECT t.\"id\",t.\"name\",t.\"create_time\", ROWNUM AS \"__rownum__\" FROM \"t_company\" t WHERE t.\"name\" LIKE ? AND ROWNUM < 31) rt WHERE rt.\"__rownum__\" > 10) t1", "%xx公司%(String)");
 
     /// <summary>对应 Java：vo/CompanyVO。</summary>
@@ -159,7 +159,7 @@ public sealed class QueryTest16(MySqlFixture fixture) : MySqlTest(fixture)
         const long pageIndex = 10, pageSize = 20;
         var query = db.Query<Company>().Where(com => com.Name!.Contains("xx公司"));
         AssertStatement(query.ToCountStatement(), "SELECT COUNT(*) FROM \"t_company\" WHERE \"name\" LIKE ?", "%xx公司%(String)");
-        AssertStatement(query.LimitSelect((pageIndex - 1) * pageSize, pageSize, com => new CompanyVO { Id = com.Id, Name = com.Name, CreateTime = com.CreateTime, UseTotalAge = com.Users!.Sum(u => u.Age) }).ToStatement(),
+        AssertStatement(query.Skip((pageIndex - 1) * pageSize).Take(pageSize).AsSubQuery().Select(com => new CompanyVO { Id = com.Id, Name = com.Name, CreateTime = com.CreateTime, UseTotalAge = com.Users!.Sum(u => u.Age) }).ToStatement(),
             "SELECT t1.\"id\",t1.\"name\",t1.\"create_time\",NVL((SELECT SUM(t2.\"age\") FROM \"t_user\" t2 WHERE t2.\"company_id\" = t1.\"id\"),0) AS \"use_total_age\" FROM (SELECT rt.* FROM(SELECT t.\"id\",t.\"name\",t.\"create_time\", ROWNUM AS \"__rownum__\" FROM \"t_company\" t WHERE t.\"name\" LIKE ? AND ROWNUM < 201) rt WHERE rt.\"__rownum__\" > 180) t1",
             "%xx公司%(String)");
     }

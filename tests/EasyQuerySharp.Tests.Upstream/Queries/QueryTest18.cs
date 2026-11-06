@@ -72,7 +72,7 @@ public sealed partial class QueryTest18(MySqlFixture fixture) : MySqlTest(fixtur
     {
         var query = Db.Query<Topic>().LeftJoin<BlogEntity>((t, b2) => t.Id == b2.Id);
         Assert.True(await query.Select((t, b2) => t.Id).Distinct().CountAsync(Ct) > 0);
-        Assert.NotEmpty(await query.Select((t, b2) => t).Distinct().Limit(1, 20).ToListAsync(Ct));
+        Assert.NotEmpty(await query.Select((t, b2) => t).Distinct().Skip(1).Take(20).ToListAsync(Ct));
     }
 
     [Fact, Upstream("QueryTest18.java#testMaxEnum")]
@@ -140,8 +140,8 @@ public sealed partial class QueryTest18(MySqlFixture fixture) : MySqlTest(fixtur
     [Fact, Upstream("QueryTest18.java#testxx")]
     public async Task Testxx()
     {
-        Assert.NotNull(await Db.QuerySql<Topic>("select * from t_topic where id != ? ", "123").Where(t => t.Id != "456").ToPageAsync(1, 2, Ct));
-        var joinTable = Db.QuerySql<Topic>("select * from t_topic where id != ? ", "123");
+        Assert.NotNull(await Db.FromSql<Topic>("select * from t_topic where id != ? ", "123").Where(t => t.Id != "456").ToPageAsync(1, 2, Ct));
+        var joinTable = Db.FromSql<Topic>("select * from t_topic where id != ? ", "123");
         Assert.NotNull(await Db.Query<BlogEntity>().LeftJoin(joinTable, (b, t2) => b.Id == t2.Id)
             .Where((b1, t2) => b1.CreateTime > DateTime.Now && t2.CreateTime!.Value.ToString("yyyy") == "2014")
             .Select((b1, t2) => new Draft<string?, string?>(b1.Id, t2.Id)).ToListAsync(Ct));
@@ -167,7 +167,7 @@ public sealed partial class QueryTest18(MySqlFixture fixture) : MySqlTest(fixtur
     public async Task TestStreamChunk1()
     {
         var ids = new HashSet<string>();
-        await foreach (var blogs in Db.Query<BlogEntity>().ToAsyncEnumerable(Ct).Chunk(20).WithCancellation(Ct))
+        await foreach (var blogs in Db.Query<BlogEntity>().AsAsyncEnumerable(Ct).Chunk(20).WithCancellation(Ct))
         {
             Assert.True(blogs.Length <= 20);
             foreach (var blog in blogs) Assert.True(ids.Add(blog.Id!));

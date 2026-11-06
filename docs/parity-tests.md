@@ -1457,7 +1457,7 @@
 | QueryTest18.java#testChunk3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.cs:151 |  |
 | QueryTest18.java#testChunk4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.cs:151 |  |
 | QueryTest18.java#testStreamChunk1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.cs:166 |  |
-| QueryTest23.java#subquery | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest23.cs:206：Java 取 JDBC 流式结果的 ResultSetMetaData；C# 的流式读取（ToAsyncEnumerable）不暴露驱动的元数据 | `select * from t_blog where id <> ?` |
+| QueryTest23.java#subquery | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest23.cs:206：Java 取 JDBC 流式结果的 ResultSetMetaData；C# 的流式读取（AsAsyncEnumerable）不暴露驱动的元数据 | `select * from t_blog where id <> ?` |
 | QueryTest25.java#test12 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:21：Java 按表名反查实体元数据（getEntityMetadataList）；C# 的元数据按类型取，这里核对表名 |  |
 | pgsql/QueryTest19.java#testChunk | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:107 |  |
 
