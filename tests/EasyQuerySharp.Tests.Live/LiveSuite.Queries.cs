@@ -39,6 +39,18 @@ public abstract partial class LiveSuite
         Assert.Equal(["sql 100%"], await db.Query<Post>().Where(p => p.Title.EndsWith("%")).Select(p => p.Title).ToListAsync(Ct));
     }
 
+    // 忽略大小写的 LIKE：C# 没有 ignoreCase 参数，两边转成同一种大小写再比（正则匹配没有对应的 API）
+    [Fact]
+    public async Task LikesIgnoringCase()
+    {
+        var db = await SeededAsync();
+        var users = db.Query<User>().OrderBy(u => u.Id);
+#pragma warning disable CA1862 // 要翻译成 SQL：StringComparison 重载没有对应的 SQL，只能先转大写
+        Assert.Equal(["alice"], await users.Where(u => u.Name.ToUpper().StartsWith("AL")).Select(u => u.Name).ToListAsync(Ct));
+        Assert.Equal(["bob", "carol"], await users.Where(u => u.Name.ToUpper().Contains("O")).Select(u => u.Name).ToListAsync(Ct));
+#pragma warning restore CA1862
+    }
+
     [Fact]
     public async Task FiltersThroughNavigationsAndImplicitSubqueries()
     {
