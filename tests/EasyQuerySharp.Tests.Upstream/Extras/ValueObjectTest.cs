@@ -57,8 +57,8 @@ public sealed class ValueObjectTest
     [Fact]
     public void ColumnsAreFlattenedWithPrefixes() =>
         Assert.Equal(
-            "CREATE TABLE IF NOT EXISTS \"t_vo_shop\" (\"id\" BIGINT NOT NULL, \"name\" VARCHAR(255) NULL, \"mall_id\" BIGINT NULL, \"address_city\" VARCHAR(255) NULL, \"address_street\" VARCHAR(255) NULL, "
-            + "\"geo_lat\" DOUBLE PRECISION NOT NULL, \"geo_lng\" DOUBLE PRECISION NOT NULL, \"tel\" VARCHAR(255) NULL, \"contact_level\" INTEGER NULL, PRIMARY KEY (\"id\"))",
+            "CREATE TABLE IF NOT EXISTS \"t_vo_shop\" ( \n\"id\" INT8 NOT NULL ,\n\"name\" VARCHAR(255) NULL ,\n\"mall_id\" INT8 NULL ,\n\"address_city\" VARCHAR(255) NULL ,\n\"address_street\" VARCHAR(255) NULL ,\n"
+            + "\"geo_lat\" FLOAT8 NOT NULL ,\n\"geo_lng\" FLOAT8 NOT NULL ,\n\"tel\" VARCHAR(255) NULL ,\n\"contact_level\" INT4 NULL , \n PRIMARY KEY (\"id\")\n);",
             Db.CodeFirst.CreateTableSql(typeof(VoShop)));
 
     [Fact]

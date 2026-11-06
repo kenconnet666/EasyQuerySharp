@@ -12,7 +12,7 @@ public sealed class H2QueryTest(H2Fixture fixture) : H2Test(fixture)
     private const string Join2 = " LEFT JOIN t_def_table_left2 t2 ON t.id = t2.def1_id";
     private const string Join3As2 = " LEFT JOIN t_def_table_left3 t2 ON t.id = t2.def2_id";
     private const string Join3 = " LEFT JOIN t_def_table_left3 t3 ON t.id = t3.def2_id";
-    private const string DdlDeviation = "建表语句由 SQLite 方言生成（单行、INTEGER / TIMESTAMP 等标准类型名）；Java 是 H2 的多行格式（INT、TIMESTAMP(3)）";
+    private const string DdlDeviation = "建表语句由 SQLite 方言生成，格式与 Java 的 H2 一致，类型是 SQLite 的（integer、TEXT）；Java 是 H2 的类型（INT、TIMESTAMP(3)）";
 
     // Java 先 toList 断言只有一行，再 toSQL 断言 SQL
     [Fact, Upstream("h2/H2QueryTest.java#leftJoin1")]
@@ -159,18 +159,19 @@ public sealed class H2QueryTest(H2Fixture fixture) : H2Test(fixture)
     public async Task TestDDL()
     {
         await Db.CodeFirst.DropTablesIfExistsAsync([typeof(Topic)], Ct);
-        using var listen = SqlCapture.Listen();
-        await Db.CodeFirst.CreateTablesAsync([typeof(Topic)], Ct);
-        listen.AssertSql("CREATE TABLE IF NOT EXISTS t_topic (id VARCHAR(255) NOT NULL, stars INTEGER NULL, title VARCHAR(255) NULL, create_time TIMESTAMP NULL, PRIMARY KEY (id))");
+        var sync = await Db.CodeFirst.SyncTablesAsync([typeof(Topic)], Ct);
+        Assert.Equal("CREATE TABLE IF NOT EXISTS t_topic ( \nid VARCHAR(255) NOT NULL ,\nstars integer NULL ,\ntitle VARCHAR(255) NULL ,\ncreate_time TEXT NULL , \n PRIMARY KEY (id)\n);", sync.ToSql());
     }
 
-    [Fact, Upstream("h2/H2QueryTest.java#testDDL2", Deviation = DdlDeviation)]
+    // 只有字符串列，SQLite 与 H2 的类型名一样，与 Java 逐字一致（Java 的 getSQL() 在每条语句前加一个换行）
+    [Fact, Upstream("h2/H2QueryTest.java#testDDL2")]
     public async Task TestDDL2()
     {
         await Db.CodeFirst.DropTablesIfExistsAsync([typeof(MultiPrimaryEntity)], Ct);
         using var listen = SqlCapture.Listen();
-        await Db.CodeFirst.CreateTablesAsync([typeof(MultiPrimaryEntity)], Ct);
-        listen.AssertSql("CREATE TABLE IF NOT EXISTS t_multi_primary (id1 VARCHAR(255) NOT NULL, id2 VARCHAR(255) NOT NULL, PRIMARY KEY (id1,id2))");
+        var sync = await Db.CodeFirst.SyncTablesAsync([typeof(MultiPrimaryEntity)], Ct);
+        Assert.Equal("CREATE TABLE IF NOT EXISTS t_multi_primary ( \nid1 VARCHAR(255) NOT NULL ,\nid2 VARCHAR(255) NOT NULL , \n PRIMARY KEY (id1, id2)\n);", sync.ToSql());
+        listen.AssertSql(sync.ToSql());
     }
 
     // Java 回归 H2 方言的注释写法（列注释内联、表注释写成独立的 COMMENT ON TABLE）；SQLite 没有表注释与列注释，建表语句不带注释
@@ -180,7 +181,7 @@ public sealed class H2QueryTest(H2Fixture fixture) : H2Test(fixture)
         await Db.CodeFirst.DropTablesIfExistsAsync([typeof(H2TableCommentEntity)], Ct);
         using var listen = SqlCapture.Listen();
         await Db.CodeFirst.CreateTablesAsync([typeof(H2TableCommentEntity)], Ct);
-        listen.AssertSql("CREATE TABLE IF NOT EXISTS t_h2_table_comment (id VARCHAR(255) NOT NULL, name VARCHAR(255) NULL, PRIMARY KEY (id))");
+        listen.AssertSql("CREATE TABLE IF NOT EXISTS t_h2_table_comment ( \nid VARCHAR(255) NOT NULL ,\nname VARCHAR(255) NULL , \n PRIMARY KEY (id)\n);");
         Assert.Equal(0, await Db.Query<H2TableCommentEntity>().CountAsync(Ct));
     }
 }

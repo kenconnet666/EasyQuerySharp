@@ -29,6 +29,42 @@ public class OracleDialect : SqlDialect
         _ => base.ClrColumnType(type, column),
     };
 
+    /// <summary>改表名：<c>ALTER TABLE 旧表 RENAME TO "新表"</c>（新表名不能带 schema）。</summary>
+    internal override string RenameTableSql(Metadata.EntityMetadata entity, string oldName) =>
+        $"ALTER TABLE {QualifiedName(entity.Schema, oldName)} RENAME TO {QuoteIdentifier(entity.TableName)}";
+
+    /// <summary>加列：<c>ALTER TABLE 表 ADD (列定义)</c>。</summary>
+    internal override string AddColumnSql(Metadata.EntityMetadata entity, Metadata.ColumnMetadata column) =>
+        $"ALTER TABLE {QualifiedTable(entity)} ADD ({ColumnDefinition(entity, column)})";
+
+    /// <summary>读库结构时列类型的写法（user_tab_columns 别名 c）。</summary>
+    private protected virtual string IntrospectedType =>
+        "LOWER(c.data_type) || CASE WHEN c.data_type IN ('VARCHAR2', 'NVARCHAR2', 'CHAR', 'NCHAR') THEN '(' || c.char_length || CASE c.char_used WHEN 'C' THEN ' char' ELSE '' END || ')' "
+        + "WHEN c.data_type = 'NUMBER' AND c.data_precision IS NOT NULL THEN '(' || c.data_precision || CASE WHEN c.data_scale > 0 THEN ', ' || c.data_scale ELSE '' END || ')' ELSE '' END";
+
+    /// <summary>读库结构时判断自增列（1 / 0）。</summary>
+    private protected virtual string IntrospectedIdentity => "CASE c.identity_column WHEN 'YES' THEN 1 ELSE 0 END";
+
+    /// <summary>读 USER_* 数据字典（当前用户的表，同 TS 版）；别名加引号，读出来是小写。</summary>
+    internal override CatalogQueries? CatalogQueries => new(
+        "SELECT t.table_name AS \"table_name\", c.comments AS \"comment\" FROM user_tables t LEFT JOIN user_tab_comments c ON c.table_name = t.table_name ORDER BY t.table_name",
+        $"SELECT c.table_name AS \"table_name\", c.column_name AS \"column_name\", {IntrospectedType} AS \"column_type\", "
+        + "CASE c.nullable WHEN 'Y' THEN 1 ELSE 0 END AS \"is_nullable\", c.data_default AS \"column_default\", m.comments AS \"comment\", "
+        + $"{IntrospectedIdentity} AS \"is_generated\", "
+        + "CASE WHEN EXISTS (SELECT 1 FROM user_constraints k JOIN user_cons_columns kc ON kc.constraint_name = k.constraint_name "
+        + "WHERE k.constraint_type = 'P' AND k.table_name = c.table_name AND kc.column_name = c.column_name) THEN 1 ELSE 0 END AS \"primary_key\" "
+        + "FROM user_tab_columns c LEFT JOIN user_col_comments m ON m.table_name = c.table_name AND m.column_name = c.column_name ORDER BY c.table_name, c.column_id",
+        "SELECT i.table_name AS \"table_name\", i.index_name AS \"index_name\", CASE i.uniqueness WHEN 'UNIQUE' THEN 1 ELSE 0 END AS \"is_unique\", "
+        + "ic.column_name AS \"column_name\" FROM user_indexes i JOIN user_ind_columns ic ON ic.index_name = i.index_name "
+        + "WHERE NOT EXISTS (SELECT 1 FROM user_constraints k WHERE k.index_name = i.index_name AND k.constraint_type = 'P') "
+        + "ORDER BY i.table_name, i.index_name, ic.column_position",
+        "SELECT k.table_name AS \"table_name\", k.constraint_name AS \"constraint_name\", kc.column_name AS \"column_name\", "
+        + "r.table_name AS \"referenced_table\", rc.column_name AS \"referenced_column\" "
+        + "FROM user_constraints k JOIN user_cons_columns kc ON kc.constraint_name = k.constraint_name "
+        + "JOIN user_constraints r ON r.constraint_name = k.r_constraint_name "
+        + "JOIN user_cons_columns rc ON rc.constraint_name = r.constraint_name AND rc.position = kc.position "
+        + "WHERE k.constraint_type = 'R' ORDER BY k.table_name, k.constraint_name, kc.position");
+
     /// <inheritdoc />
     public override string ParameterPlaceholder(int index) => ":p" + index;
 

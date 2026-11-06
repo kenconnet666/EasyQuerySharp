@@ -57,6 +57,67 @@ public class SqliteDialect : SqlDialect
     /// <inheritdoc />
     protected override bool InlinePrimaryKey(Metadata.ColumnMetadata key) => key is { IsGenerated: true, IsPrimaryKey: true };
 
+    /// <summary>类型名与 Java 的 SQLiteMigrationEntityParser 一致：integer、boolean、double、decimal(16,2)，日期时间都是 TEXT。</summary>
+    protected override string ClrColumnType(Type type, Metadata.ColumnMetadata column) => type switch
+    {
+        _ when type == typeof(int) || type == typeof(long) || type.IsEnum => "integer",
+        _ when type == typeof(short) => "smallint",
+        _ when type == typeof(byte) || type == typeof(sbyte) => "int2",
+        _ when type == typeof(bool) => "boolean",
+        _ when type == typeof(float) => "float",
+        _ when type == typeof(double) => "double",
+        _ when type == typeof(decimal) => "decimal(16,2)",
+        _ when type == typeof(DateTime) || type == typeof(DateTimeOffset) || type == typeof(DateOnly) || type == typeof(TimeOnly) || type == typeof(TimeSpan) => "TEXT",
+        _ when type == typeof(byte[]) => "blob",
+        _ => base.ClrColumnType(type, column),
+    };
+
+    // 下面的建表与同步语句与 Java 的 SQLiteDatabaseMigrationProvider 一致（Java 改列名时多写了类型、自增列的写法是错的，这里按 SQLite 的语法写）
+
+    /// <summary>多行建表（见 <see cref="SqlDialect.MultiLineCreateTable"/>），外键写在语句里，以 <c>);</c> 结尾；SQLite 没有注释。</summary>
+    public override string CreateTableSql(Metadata.EntityMetadata entity) => MultiLineCreateTable(entity, _ => "", ");");
+
+    /// <inheritdoc />
+    internal override string? TableCommentSql(Metadata.EntityMetadata entity) => null;
+
+    /// <inheritdoc />
+    internal override string? ColumnCommentSql(Metadata.EntityMetadata entity, Metadata.ColumnMetadata column) => null;
+
+    /// <summary>SQLite 不能给已有的表加外键，只能写在建表语句里。</summary>
+    internal override bool InlineForeignKeys => true;
+
+    /// <summary><c>CREATE [UNIQUE ]INDEX 名 ON "表" ("列" ASC,…);</c></summary>
+    internal override string CreateIndexSql(Metadata.EntityMetadata entity, Metadata.IndexMetadata index) =>
+        $"CREATE {(index.Unique ? "UNIQUE " : "")}INDEX {index.Name} ON {QualifiedTable(entity)} ({IndexColumns(index, ",")});";
+
+    /// <summary><c>ALTER TABLE "旧表" RENAME TO "新表";</c>（新表名不能带 schema）。</summary>
+    internal override string RenameTableSql(Metadata.EntityMetadata entity, string oldName) =>
+        $"ALTER TABLE {QualifiedName(entity.Schema, oldName)} RENAME TO {QuoteIdentifier(entity.TableName)};";
+
+    /// <summary><c>ALTER TABLE "表" RENAME COLUMN "旧列" TO "新列";</c>（3.25 起）。</summary>
+    internal override string RenameColumnSql(Metadata.EntityMetadata entity, string oldName, Metadata.ColumnMetadata column) =>
+        base.RenameColumnSql(entity, oldName, column) + ";";
+
+    /// <summary><c>ALTER TABLE "表" ADD COLUMN "列" 类型 NULL;</c></summary>
+    internal override string AddColumnSql(Metadata.EntityMetadata entity, Metadata.ColumnMetadata column) =>
+        $"ALTER TABLE {QualifiedTable(entity)} ADD COLUMN {QuoteIdentifier(column.Name)} {ColumnType(column)}{(IsNullable(column) ? " NULL" : " NOT NULL")};";
+
+    /// <summary>
+    /// 读 sqlite_master 与 pragma_table_xinfo / index_list / index_info / foreign_key_list（表值函数，3.16 起）；SQLite 没有注释，
+    /// 外键没有名字，按 <c>fk_表_序号</c> 命名（同步时按列比较）。
+    /// </summary>
+    internal override CatalogQueries CatalogQueries { get; } = new(
+        "SELECT name AS table_name, NULL AS comment FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
+        // 主键列可以不写 NOT NULL，按声明它不会是 NULL；建表语句带 AUTOINCREMENT 时整数主键是自增列
+        "SELECT m.name AS table_name, p.name AS column_name, p.type AS column_type, p.\"notnull\" = 0 AND p.pk = 0 AS is_nullable, p.dflt_value AS column_default, "
+        + "NULL AS comment, p.pk = 1 AND m.sql LIKE '%AUTOINCREMENT%' AS is_generated, p.pk > 0 AS primary_key "
+        + "FROM sqlite_master m JOIN pragma_table_xinfo(m.name) p WHERE m.type = 'table' AND m.name NOT LIKE 'sqlite_%' AND p.hidden <> 1 ORDER BY m.name, p.cid",
+        "SELECT m.name AS table_name, l.name AS index_name, l.\"unique\" AS is_unique, i.name AS column_name "
+        + "FROM sqlite_master m JOIN pragma_index_list(m.name) l JOIN pragma_index_info(l.name) i "
+        + "WHERE m.type = 'table' AND m.name NOT LIKE 'sqlite_%' AND l.origin <> 'pk' ORDER BY m.name, l.name, i.seqno",
+        "SELECT m.name AS table_name, 'fk_' || m.name || '_' || f.id AS constraint_name, f.\"from\" AS column_name, f.\"table\" AS referenced_table, f.\"to\" AS referenced_column "
+        + "FROM sqlite_master m JOIN pragma_foreign_key_list(m.name) f WHERE m.type = 'table' AND m.name NOT LIKE 'sqlite_%' ORDER BY m.name, f.id, f.seq");
+
     /// <summary>
     /// SQLite 没有行锁语法（写事务锁整个库），FOR UPDATE 会是语法错误，所以直接拒绝。
     /// Java 版照样拼出 FOR UPDATE，执行时才失败，这里提前报错。

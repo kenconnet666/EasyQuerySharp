@@ -159,6 +159,37 @@ public class HanaDialect : SqlDialect
     /// <summary>HANA 没有 DROP TABLE IF EXISTS：放进匿名块执行，表不存在（错误 259）时什么也不做。</summary>
     public override string DropTableIfExistsSql(EntityMetadata entity) => IgnoringError(259, $"DROP TABLE {QualifiedTable(entity)}");
 
+    /// <summary>改表名：<c>RENAME TABLE 旧表 TO "新表"</c>。</summary>
+    internal override string RenameTableSql(EntityMetadata entity, string oldName) =>
+        $"RENAME TABLE {QualifiedName(entity.Schema, oldName)} TO {QuoteIdentifier(entity.TableName)}";
+
+    /// <summary>改列名：<c>RENAME COLUMN 表."旧列" TO "新列"</c>。</summary>
+    internal override string RenameColumnSql(EntityMetadata entity, string oldName, ColumnMetadata column) =>
+        $"RENAME COLUMN {QualifiedTable(entity)}.{QuoteIdentifier(oldName)} TO {QuoteIdentifier(column.Name)}";
+
+    /// <summary>加列：<c>ALTER TABLE 表 ADD (列定义)</c>。</summary>
+    internal override string AddColumnSql(EntityMetadata entity, ColumnMetadata column) =>
+        $"ALTER TABLE {QualifiedTable(entity)} ADD ({ColumnDefinition(entity, column)})";
+
+    /// <summary>读 SYS 系统视图（CURRENT_SCHEMA，同 TS 版）。</summary>
+    internal override CatalogQueries CatalogQueries { get; } = new(
+        "SELECT TABLE_NAME AS \"table_name\", COMMENTS AS \"comment\" FROM SYS.TABLES WHERE SCHEMA_NAME = CURRENT_SCHEMA ORDER BY TABLE_NAME",
+        "SELECT c.TABLE_NAME AS \"table_name\", c.COLUMN_NAME AS \"column_name\", "
+        + "CASE WHEN c.DATA_TYPE_NAME IN ('VARCHAR', 'NVARCHAR', 'VARBINARY') THEN c.DATA_TYPE_NAME || '(' || c.LENGTH || ')' "
+        + "WHEN c.DATA_TYPE_NAME = 'DECIMAL' AND c.SCALE IS NOT NULL THEN 'DECIMAL(' || c.LENGTH || ', ' || c.SCALE || ')' ELSE c.DATA_TYPE_NAME END AS \"column_type\", "
+        + "c.IS_NULLABLE AS \"is_nullable\", c.DEFAULT_VALUE AS \"column_default\", c.COMMENTS AS \"comment\", "
+        + "CASE WHEN c.GENERATION_TYPE IS NULL THEN 0 ELSE 1 END AS \"is_generated\", "
+        + "CASE WHEN EXISTS (SELECT 1 FROM SYS.CONSTRAINTS k WHERE k.SCHEMA_NAME = c.SCHEMA_NAME AND k.TABLE_NAME = c.TABLE_NAME "
+        + "AND k.COLUMN_NAME = c.COLUMN_NAME AND k.IS_PRIMARY_KEY = 'TRUE') THEN 1 ELSE 0 END AS \"primary_key\" "
+        + "FROM SYS.TABLE_COLUMNS c WHERE c.SCHEMA_NAME = CURRENT_SCHEMA ORDER BY c.TABLE_NAME, c.POSITION",
+        "SELECT i.TABLE_NAME AS \"table_name\", i.INDEX_NAME AS \"index_name\", "
+        + "CASE WHEN i.CONSTRAINT IN ('UNIQUE', 'NOT NULL UNIQUE') THEN 1 ELSE 0 END AS \"is_unique\", i.COLUMN_NAME AS \"column_name\" "
+        + "FROM SYS.INDEX_COLUMNS i WHERE i.SCHEMA_NAME = CURRENT_SCHEMA AND (i.CONSTRAINT IS NULL OR i.CONSTRAINT <> 'PRIMARY KEY') "
+        + "ORDER BY i.TABLE_NAME, i.INDEX_NAME, i.POSITION",
+        "SELECT TABLE_NAME AS \"table_name\", CONSTRAINT_NAME AS \"constraint_name\", COLUMN_NAME AS \"column_name\", "
+        + "REFERENCED_TABLE_NAME AS \"referenced_table\", REFERENCED_COLUMN_NAME AS \"referenced_column\" "
+        + "FROM SYS.REFERENTIAL_CONSTRAINTS WHERE SCHEMA_NAME = CURRENT_SCHEMA ORDER BY TABLE_NAME, CONSTRAINT_NAME, POSITION");
+
     // 匿名块里动态执行一条 DDL，遇到指定的错误码直接结束（HANA 2.0 SPS 02 起支持 DO BEGIN … END）
     private static string IgnoringError(int errorCode, string ddl) =>
         $"DO BEGIN DECLARE EXIT HANDLER FOR SQL_ERROR_CODE {errorCode} BEGIN END; EXEC '{ddl.Replace("'", "''", StringComparison.Ordinal)}'; END";

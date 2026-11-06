@@ -21,9 +21,97 @@ public class PostgreSqlDialect : SqlDialect
     /// <summary>PostgreSQL 的 SET 列不能带表别名（<c>SET t."a"</c> 会被当成复合列）。</summary>
     public override bool QualifySetColumns => false;
 
-    /// <summary>二进制列用 BYTEA，其余同标准类型。</summary>
-    protected override string ClrColumnType(Type type, Metadata.ColumnMetadata column) =>
-        type == typeof(byte[]) ? "BYTEA" : base.ClrColumnType(type, column);
+    /// <summary>类型名与 Java 的 PgSQLMigrationEntityParser 一致：INT4 / INT8 / INT2、BOOL、FLOAT4 / FLOAT8、numeric(16,2)；二进制列用 BYTEA。</summary>
+    protected override string ClrColumnType(Type type, Metadata.ColumnMetadata column) => type switch
+    {
+        _ when type == typeof(int) || type.IsEnum => "INT4",
+        _ when type == typeof(long) => "INT8",
+        _ when type == typeof(short) || type == typeof(byte) || type == typeof(sbyte) => "INT2",
+        _ when type == typeof(bool) => "BOOL",
+        _ when type == typeof(float) => "FLOAT4",
+        _ when type == typeof(double) => "FLOAT8",
+        _ when type == typeof(decimal) => "numeric(16,2)",
+        _ when type == typeof(byte[]) => "BYTEA",
+        _ => base.ClrColumnType(type, column),
+    };
+
+    // 下面的建表与同步语句与 Java 的 PgSQLDatabaseMigrationProvider 逐字一致：多行建表，注释接在语句后面，索引名、外键名不加引号，以分号结尾
+
+    /// <summary>
+    /// 多行建表（见 <see cref="SqlDialect.MultiLineCreateTable"/>），以 <c>);</c> 结尾；有注释时空一行，接着表注释、各列注释的 <c>COMMENT ON …;</c>。
+    /// </summary>
+    public override string CreateTableSql(Metadata.EntityMetadata entity)
+    {
+        var table = QualifiedTable(entity);
+        var comments = string.Concat(TableColumns(entity).Where(c => c.Comment is not null)
+            .Select(c => $"\nCOMMENT ON COLUMN {table}.{QuoteIdentifier(c.Name)} IS {SqlString(c.Comment!)};")
+            .Prepend(entity.Comment is null ? "" : $"\nCOMMENT ON TABLE {table} IS {SqlString(entity.Comment)};"));
+        var sql = MultiLineCreateTable(entity, c => c.IsGenerated ? GeneratedColumnTail(entity, c) : "", ");");
+        return comments.Length > 0 ? sql + "\n" + comments : sql;
+    }
+
+    /// <summary>多行建表里自增列跟在 NULL / NOT NULL 后面的写法；DuckDB 改成取序列的默认值。</summary>
+    private protected virtual string GeneratedColumnTail(Metadata.EntityMetadata entity, Metadata.ColumnMetadata column) => " " + IdentityClause;
+
+    /// <inheritdoc />
+    internal override string? TableCommentSql(Metadata.EntityMetadata entity) => null;
+
+    /// <inheritdoc />
+    internal override string? ColumnCommentSql(Metadata.EntityMetadata entity, Metadata.ColumnMetadata column) => null;
+
+    // 加列、改列名之后的列注释：另起一行的 COMMENT ON COLUMN
+    private string ColumnCommentTail(Metadata.EntityMetadata entity, Metadata.ColumnMetadata column) => column.Comment is null ? ""
+        : $"\n COMMENT ON COLUMN {QualifiedTable(entity)}.{QuoteIdentifier(column.Name)} IS {SqlString(column.Comment)};";
+
+    /// <summary><c>CREATE [UNIQUE ]INDEX 名 ON "表" ("列" ASC,…);</c>，有注释时另起一行 <c>COMMENT ON INDEX "名" IS '…';</c></summary>
+    internal override string CreateIndexSql(Metadata.EntityMetadata entity, Metadata.IndexMetadata index) =>
+        $"CREATE {(index.Unique ? "UNIQUE " : "")}INDEX {index.Name} ON {QualifiedTable(entity)} ({IndexColumns(index, ",")});"
+        + (index.Comment is null ? "" : $"\nCOMMENT ON INDEX {QuoteIdentifier(index.Name)} IS {SqlString(index.Comment)};");
+
+    /// <summary><c>ALTER TABLE "表" ADD CONSTRAINT 名 FOREIGN KEY ("列") REFERENCES "目标" ("列")[ 动作 ];</c></summary>
+    internal override string AddForeignKeySql(Metadata.ForeignKeyMetadata foreignKey) =>
+        $"ALTER TABLE {QualifiedTable(foreignKey.Entity)} ADD CONSTRAINT {foreignKey.Name} FOREIGN KEY ({QuotedNames(foreignKey.Columns)}) "
+        + $"REFERENCES {QuoteIdentifier(foreignKey.Target.TableName)} ({QuotedNames(foreignKey.TargetColumns)}){(foreignKey.Action is null ? "" : " " + foreignKey.Action + " ")};";
+
+    /// <summary><c>ALTER TABLE "旧表" RENAME TO "新表";</c>（新表名不能带 schema）。</summary>
+    internal override string RenameTableSql(Metadata.EntityMetadata entity, string oldName) =>
+        $"ALTER TABLE {QualifiedName(entity.Schema, oldName)} RENAME TO {QuoteIdentifier(entity.TableName)};";
+
+    /// <summary><c>ALTER TABLE "表" RENAME COLUMN "旧列" TO "新列";</c>，有注释时接着写列注释。</summary>
+    internal override string RenameColumnSql(Metadata.EntityMetadata entity, string oldName, Metadata.ColumnMetadata column) =>
+        base.RenameColumnSql(entity, oldName, column) + ";" + ColumnCommentTail(entity, column);
+
+    /// <summary><c>ALTER TABLE "表" ADD "列" 类型 NULL;</c>，有注释时接着写列注释。</summary>
+    internal override string AddColumnSql(Metadata.EntityMetadata entity, Metadata.ColumnMetadata column) =>
+        $"ALTER TABLE {QualifiedTable(entity)} ADD {QuoteIdentifier(column.Name)} {ColumnType(column)}{(IsNullable(column) ? " NULL" : " NOT NULL")};"
+        + ColumnCommentTail(entity, column);
+
+    /// <summary>读库结构时判断自增列（pg_attribute 别名 a、pg_attrdef 别名 d）：IDENTITY 列或默认值取序列。</summary>
+    private protected virtual string IntrospectedIdentity => "a.attidentity <> '' OR coalesce(pg_get_expr(d.adbin, d.adrelid), '') LIKE 'nextval(%'";
+
+    /// <summary>读系统目录（<c>current_schema()</c> 里的普通表与分区表）。</summary>
+    internal override CatalogQueries? CatalogQueries => PgCatalogQueries(IntrospectedIdentity);
+
+    private protected static CatalogQueries PgCatalogQueries(string identity)
+    {
+        const string tables = "SELECT c.oid, c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = current_schema() AND c.relkind IN ('r', 'p')";
+        return new CatalogQueries(
+            $"SELECT t.relname AS table_name, obj_description(t.oid, 'pg_class') AS comment FROM ({tables}) t ORDER BY t.relname",
+            "SELECT t.relname AS table_name, a.attname AS column_name, format_type(a.atttypid, a.atttypmod) AS column_type, NOT a.attnotnull AS is_nullable, "
+            + $"pg_get_expr(d.adbin, d.adrelid) AS column_default, col_description(t.oid, a.attnum) AS comment, ({identity}) AS is_generated, "
+            + "EXISTS (SELECT 1 FROM pg_index i WHERE i.indrelid = t.oid AND i.indisprimary AND a.attnum = ANY (i.indkey)) AS primary_key "
+            + $"FROM ({tables}) t JOIN pg_attribute a ON a.attrelid = t.oid LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum "
+            + "WHERE a.attnum > 0 AND NOT a.attisdropped ORDER BY t.relname, a.attnum",
+            "SELECT t.relname AS table_name, ic.relname AS index_name, i.indisunique AS is_unique, "
+            + "coalesce(a.attname, pg_get_indexdef(i.indexrelid, k.ord::int, true)) AS column_name "
+            + $"FROM ({tables}) t JOIN pg_index i ON i.indrelid = t.oid AND NOT i.indisprimary JOIN pg_class ic ON ic.oid = i.indexrelid "
+            + "CROSS JOIN LATERAL unnest(i.indkey) WITH ORDINALITY k(attnum, ord) LEFT JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = k.attnum "
+            + "ORDER BY t.relname, ic.relname, k.ord",
+            "SELECT t.relname AS table_name, c.conname AS constraint_name, a.attname AS column_name, r.relname AS referenced_table, ra.attname AS referenced_column "
+            + $"FROM ({tables}) t JOIN pg_constraint c ON c.conrelid = t.oid AND c.contype = 'f' JOIN pg_class r ON r.oid = c.confrelid "
+            + "CROSS JOIN generate_series(1, array_length(c.conkey, 1)) k(ord) JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = c.conkey[k.ord] "
+            + "JOIN pg_attribute ra ON ra.attrelid = r.oid AND ra.attnum = c.confkey[k.ord] ORDER BY t.relname, c.conname, k.ord");
+    }
 
     /// <summary>
     /// <c>UPDATE "a" t SET "c" = t1."d" FROM "b" t1 , "e" t2 WHERE 各 ON 条件 AND 原条件</c>（与 Java 逐字一致）：

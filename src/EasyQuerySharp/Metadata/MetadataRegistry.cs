@@ -136,7 +136,8 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
                 ?? throw new InvalidOperationException($"{type.Name} 没有属性 {rule.Property}，无法作为逻辑删除列");
         }
 
-        return new EntityMetadata(type, table?.Name ?? NameConversion.Convert(type.Name), table?.Schema, table?.Comment, columns)
+        var tableName = table?.Name ?? NameConversion.Convert(type.Name);
+        var entity = new EntityMetadata(type, tableName, table?.Schema, table?.Comment, columns)
         {
             NotFoundMessage = table?.NotFoundMessage,
             LogicDelete = logicDelete,
@@ -145,7 +146,41 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
             VersionStrategy = version?.Strategy ?? VersionStrategy.Increment,
             NavigationProperties = navigations,
             ValueObjects = valueObjects,
+            RenamedFrom = type.GetCustomAttribute<RenamedFromAttribute>()?.Name,
+            Indexes = type.GetCustomAttributes<TableIndexAttribute>().Select(index => IndexOf(type, tableName, columns, index)).ToList(),
         };
+        entity._foreignKeys = new Lazy<IReadOnlyList<ForeignKeyMetadata>>(() => ForeignKeysOf(entity));
+        return entity;
+    }
+
+    // 不写名字时与 Java 一致：表名_列名…_idx，唯一索引 _uidx
+    private static IndexMetadata IndexOf(Type type, string tableName, List<ColumnMetadata> columns, TableIndexAttribute index)
+    {
+        if (index.Properties.Length == 0) throw new InvalidOperationException($"{type.Name} 的 [TableIndex] 没有列");
+        var parts = index.Properties.Select(p =>
+        {
+            var column = columns.FirstOrDefault(c => c.PropertyName == p)
+                         ?? throw new InvalidOperationException($"{type.Name} 的 [TableIndex] 引用了 {p}，它不是映射到列的属性");
+            return (column, index.Descending.Contains(p, StringComparer.Ordinal));
+        }).ToList();
+        var name = index.Name ?? $"{tableName}_{string.Join("_", parts.Select(p => p.column.Name))}_{(index.Unique ? "u" : "")}idx";
+        return new IndexMetadata(name, index.Unique, parts, index.Comment);
+    }
+
+    // 外键名与 Java 一致：本表_目标表_目标列…_fk
+    private IReadOnlyList<ForeignKeyMetadata> ForeignKeysOf(EntityMetadata entity)
+    {
+        var keys = new List<ForeignKeyMetadata>();
+        foreach (var (name, (property, _)) in entity.NavigationProperties)
+        {
+            if (property.GetCustomAttribute<ForeignKeyAttribute>() is not { } foreignKey) continue;
+            var nav = FindNavigation(entity, name)!;
+            if (nav.Relation is not (RelationType.ManyToOne or RelationType.OneToOne) || nav.Mapping is not null)
+                throw new InvalidOperationException($"{entity.Type.Name}.{name} 的 [ForeignKey] 只能用在对一导航上（本表的列引用目标表）");
+            keys.Add(new ForeignKeyMetadata($"{entity.TableName}_{nav.Target.TableName}_{string.Join("_", nav.TargetColumns.Select(c => c.Name))}_fk",
+                entity, nav.SelfColumns, nav.Target, nav.TargetColumns, foreignKey.Action));
+        }
+        return keys;
     }
 
     private static ColumnMetadata CreateColumn(Type entityType, IReadOnlyList<PropertyInfo> ownerPath, PropertyInfo property, string defaultName, bool inNullableValueObject)
@@ -167,6 +202,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
             SqlConversion = attr?.SqlConversion is { } conversion ? CreateSqlConversion(conversion, property) : null,
             DbType = attr?.DbType,
             Comment = attr?.Comment,
+            RenamedFrom = property.GetCustomAttribute<RenamedFromAttribute>()?.Name,
             InNullableValueObject = inNullableValueObject,
         };
     }

@@ -55,6 +55,69 @@ public class SqlServerDialect : SqlDialect
     /// <inheritdoc />
     protected override string IdentityClause => "IDENTITY(1,1)";
 
+    /// <summary>Unicode 字面量 <c>N'…'</c>（库的排序规则不是 UTF-8 时，不带 N 的中文注释会变成问号）。</summary>
+    private protected override string SqlString(string text) => "N" + base.SqlString(text);
+
+    /// <summary>
+    /// 表注释是扩展属性 MS_Description：<c>EXEC sp_addextendedproperty 'MS_Description', N'…', 'SCHEMA', N'dbo', 'TABLE', N'表'</c>，
+    /// 已经有时不加（重复加会报错，建表语句在表已存在时跳过，注释也要能重复执行）。
+    /// </summary>
+    internal override string? TableCommentSql(Metadata.EntityMetadata entity) => entity.Comment is null ? null : Description(entity, entity.Comment, null);
+
+    /// <summary>列注释同表注释，后面再加 <c>'COLUMN', N'列'</c>。</summary>
+    internal override string? ColumnCommentSql(Metadata.EntityMetadata entity, Metadata.ColumnMetadata column) =>
+        column.Comment is null ? null : Description(entity, column.Comment, column.Name);
+
+    // 扩展属性要给出 schema 名：没写时是 dbo（与 Java 一致）；"库.dbo" 取最后一级
+    private string Description(Metadata.EntityMetadata entity, string comment, string? column)
+    {
+        var level = $"'SCHEMA', {SqlString(entity.Schema?.Split('.')[^1] ?? "dbo")}, 'TABLE', {SqlString(entity.TableName)}";
+        return $"IF NOT EXISTS (SELECT 1 FROM sys.fn_listextendedproperty('MS_Description', {level}, {(column is null ? "NULL, NULL" : $"'COLUMN', {SqlString(column)}")})) "
+               + $"EXEC sp_addextendedproperty 'MS_Description', {SqlString(comment)}, {level}{(column is null ? "" : $", 'COLUMN', {SqlString(column)}")}";
+    }
+
+    /// <summary>改表名：<c>EXEC sp_rename N'[dbo].[旧表]', N'新表'</c>。</summary>
+    internal override string RenameTableSql(Metadata.EntityMetadata entity, string oldName) =>
+        $"EXEC sp_rename {SqlString(QualifiedName(entity.Schema, oldName))}, {SqlString(entity.TableName)}";
+
+    /// <summary>改列名：<c>EXEC sp_rename N'[表].[旧列]', N'新列', 'COLUMN'</c>。</summary>
+    internal override string RenameColumnSql(Metadata.EntityMetadata entity, string oldName, Metadata.ColumnMetadata column) =>
+        $"EXEC sp_rename {SqlString(QualifiedTable(entity) + "." + QuoteIdentifier(oldName))}, {SqlString(column.Name)}, 'COLUMN'";
+
+    /// <summary>加列：<c>ALTER TABLE 表 ADD 列定义</c>（没有 COLUMN 关键字）。</summary>
+    internal override string AddColumnSql(Metadata.EntityMetadata entity, Metadata.ColumnMetadata column) =>
+        $"ALTER TABLE {QualifiedTable(entity)} ADD {ColumnDefinition(entity, column)}";
+
+    /// <summary>读 sys 目录视图（当前库的默认 schema，同 TS 版）。</summary>
+    internal override CatalogQueries CatalogQueries { get; } = new(
+        "SELECT t.name AS table_name, CAST(p.value AS NVARCHAR(4000)) AS comment FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id "
+        + "LEFT JOIN sys.extended_properties p ON p.major_id = t.object_id AND p.minor_id = 0 AND p.class = 1 AND p.name = 'MS_Description' "
+        + "WHERE s.name = SCHEMA_NAME() ORDER BY t.name",
+        "SELECT t.name AS table_name, c.name AS column_name, LOWER(ty.name) + CASE "
+        + "WHEN ty.name IN ('nvarchar', 'nchar') THEN '(' + CASE WHEN c.max_length = -1 THEN 'max' ELSE CAST(c.max_length / 2 AS VARCHAR(10)) END + ')' "
+        + "WHEN ty.name IN ('varchar', 'char', 'varbinary', 'binary') THEN '(' + CASE WHEN c.max_length = -1 THEN 'max' ELSE CAST(c.max_length AS VARCHAR(10)) END + ')' "
+        + "WHEN ty.name IN ('decimal', 'numeric') THEN '(' + CAST(c.precision AS VARCHAR(10)) + ',' + CAST(c.scale AS VARCHAR(10)) + ')' "
+        + "WHEN ty.name IN ('datetime2', 'time', 'datetimeoffset') THEN '(' + CAST(c.scale AS VARCHAR(10)) + ')' ELSE '' END AS column_type, "
+        + "c.is_nullable AS is_nullable, OBJECT_DEFINITION(c.default_object_id) AS column_default, "
+        + "(SELECT CAST(p.value AS NVARCHAR(4000)) FROM sys.extended_properties p WHERE p.major_id = t.object_id AND p.minor_id = c.column_id AND p.class = 1 "
+        + "AND p.name = 'MS_Description') AS comment, c.is_identity AS is_generated, "
+        + "CASE WHEN EXISTS (SELECT 1 FROM sys.index_columns ic JOIN sys.indexes i ON i.object_id = ic.object_id AND i.index_id = ic.index_id "
+        + "WHERE i.is_primary_key = 1 AND ic.object_id = t.object_id AND ic.column_id = c.column_id) THEN 1 ELSE 0 END AS primary_key "
+        + "FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.columns c ON c.object_id = t.object_id "
+        + "JOIN sys.types ty ON ty.user_type_id = c.user_type_id WHERE s.name = SCHEMA_NAME() ORDER BY t.name, c.column_id",
+        "SELECT t.name AS table_name, i.name AS index_name, i.is_unique AS is_unique, c.name AS column_name "
+        + "FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id "
+        + "JOIN sys.indexes i ON i.object_id = t.object_id AND i.is_primary_key = 0 AND i.name IS NOT NULL "
+        + "JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id "
+        + "JOIN sys.columns c ON c.object_id = t.object_id AND c.column_id = ic.column_id WHERE s.name = SCHEMA_NAME() ORDER BY t.name, i.name, ic.key_ordinal",
+        "SELECT t.name AS table_name, fk.name AS constraint_name, c.name AS column_name, rt.name AS referenced_table, rc.name AS referenced_column "
+        + "FROM sys.foreign_keys fk JOIN sys.tables t ON t.object_id = fk.parent_object_id JOIN sys.schemas s ON s.schema_id = t.schema_id "
+        + "JOIN sys.foreign_key_columns fkc ON fkc.constraint_object_id = fk.object_id "
+        + "JOIN sys.columns c ON c.object_id = fkc.parent_object_id AND c.column_id = fkc.parent_column_id "
+        + "JOIN sys.tables rt ON rt.object_id = fkc.referenced_object_id "
+        + "JOIN sys.columns rc ON rc.object_id = fkc.referenced_object_id AND rc.column_id = fkc.referenced_column_id "
+        + "WHERE s.name = SCHEMA_NAME() ORDER BY t.name, fk.name, fkc.constraint_column_id");
+
     /// <summary>SQL Server 的类型名：BIT、DATETIME2、NVARCHAR、VARBINARY(MAX)（TIMESTAMP 在这里是行版本，不能用）。</summary>
     protected override string ClrColumnType(Type type, Metadata.ColumnMetadata column) => type switch
     {

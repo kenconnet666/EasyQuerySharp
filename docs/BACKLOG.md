@@ -30,3 +30,6 @@
 - TDengine：日期加减（时长只能写字面量）、字符串聚合、`InCsv`、截到周及以上的 `DateTrunc` 不支持；子查询、窗口函数能力有限，实库冒烟时再按能力裁剪。
 - 列表页请求的条件树与整天区间（TS 11b.3a：FilterBar 高级筛选的 `condition` JSON，日期时间列上只写日期的区间按整天、按时区算）以及 `filterable` / `sortable` 白名单选项：`ToPageAsync(TableRequest)` 现在只做表头筛选、关键字、排序，白名单就是结果里的列；有前端用到时再做。
 - 数据库级的换表（TS 的 `db.mapTables(..)` / `db.inSchema(..)`，一个 `EasyDb` 上所有查询与写入都换）：现在是查询级的 `MapTable` / `InSchema`，写入用 `AsTable` / `AsSchema`；多租户分库要整库切换时再做。
+- code-first 读库结构与同步只看当前 schema（MySQL 是当前库）：实体声明了别的 schema 时按表名和当前 schema 里的表比较；要跨 schema 同步时再给各方言的系统表查询加 schema 条件。
+- code-first 同步不比较列类型（只比较列在不在、可空性）：各库读出的类型写法不同（`character varying(255)` 与 `VARCHAR(255)`、`int(11)` 与 `INT`），要比较得先按方言归一（TS 版的 `sameType`）；有需求时再做。
+- code-first 不建库（Java 的 `createDatabaseIfNotExists`）：库由连接串决定，建库属于部署，要从连接串拆出服务器与库名、各方言写法不同；有需求时再做。

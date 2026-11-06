@@ -645,6 +645,10 @@ EasyQuerySharp.Metadata.EnumNameConverter<TEnum>.FromProvider(object? value) -> 
 EasyQuerySharp.Metadata.EnumNameConverter<TEnum>.ModelType.get -> System.Type!
 EasyQuerySharp.Metadata.EnumNameConverter<TEnum>.ProviderType.get -> System.Type!
 EasyQuerySharp.Metadata.EnumNameConverter<TEnum>.ToProvider(object? value) -> object?
+EasyQuerySharp.Metadata.ForeignKeyAttribute
+EasyQuerySharp.Metadata.ForeignKeyAttribute.Action.get -> string?
+EasyQuerySharp.Metadata.ForeignKeyAttribute.Action.init -> void
+EasyQuerySharp.Metadata.ForeignKeyAttribute.ForeignKeyAttribute() -> void
 EasyQuerySharp.Metadata.IKeyGenerator
 EasyQuerySharp.Metadata.IKeyGenerator.NewKey(EasyQuerySharp.Metadata.ColumnMetadata! column) -> object!
 EasyQuerySharp.Metadata.ILogicDeleteStrategy
@@ -762,6 +766,9 @@ EasyQuerySharp.Metadata.RelationType.ManyToMany = 3 -> EasyQuerySharp.Metadata.R
 EasyQuerySharp.Metadata.RelationType.ManyToOne = 1 -> EasyQuerySharp.Metadata.RelationType
 EasyQuerySharp.Metadata.RelationType.OneToMany = 2 -> EasyQuerySharp.Metadata.RelationType
 EasyQuerySharp.Metadata.RelationType.OneToOne = 0 -> EasyQuerySharp.Metadata.RelationType
+EasyQuerySharp.Metadata.RenamedFromAttribute
+EasyQuerySharp.Metadata.RenamedFromAttribute.Name.get -> string!
+EasyQuerySharp.Metadata.RenamedFromAttribute.RenamedFromAttribute(string! name) -> void
 EasyQuerySharp.Metadata.SaveKeyAttribute
 EasyQuerySharp.Metadata.SaveKeyAttribute.SaveKeyAttribute() -> void
 EasyQuerySharp.Metadata.StoreAsNameAttribute
@@ -777,6 +784,17 @@ EasyQuerySharp.Metadata.TableAttribute.NotFoundMessage.init -> void
 EasyQuerySharp.Metadata.TableAttribute.Schema.get -> string?
 EasyQuerySharp.Metadata.TableAttribute.Schema.init -> void
 EasyQuerySharp.Metadata.TableAttribute.TableAttribute(string? name = null) -> void
+EasyQuerySharp.Metadata.TableIndexAttribute
+EasyQuerySharp.Metadata.TableIndexAttribute.Comment.get -> string?
+EasyQuerySharp.Metadata.TableIndexAttribute.Comment.init -> void
+EasyQuerySharp.Metadata.TableIndexAttribute.Descending.get -> string![]!
+EasyQuerySharp.Metadata.TableIndexAttribute.Descending.init -> void
+EasyQuerySharp.Metadata.TableIndexAttribute.Name.get -> string?
+EasyQuerySharp.Metadata.TableIndexAttribute.Name.init -> void
+EasyQuerySharp.Metadata.TableIndexAttribute.Properties.get -> string![]!
+EasyQuerySharp.Metadata.TableIndexAttribute.TableIndexAttribute(params string![]! properties) -> void
+EasyQuerySharp.Metadata.TableIndexAttribute.Unique.get -> bool
+EasyQuerySharp.Metadata.TableIndexAttribute.Unique.init -> void
 EasyQuerySharp.Metadata.UpdateIgnoreAttribute
 EasyQuerySharp.Metadata.UpdateIgnoreAttribute.UpdateIgnoreAttribute() -> void
 EasyQuerySharp.Metadata.UpdateIgnoreAttribute.WhenTrackedChanged.get -> bool
@@ -1385,6 +1403,77 @@ EasyQuerySharp.Schema.CodeFirst.CreateTablesAsync(System.Collections.Generic.IEn
 EasyQuerySharp.Schema.CodeFirst.CreateTablesAsync(params System.Type![]! entityTypes) -> System.Threading.Tasks.Task!
 EasyQuerySharp.Schema.CodeFirst.DropTablesIfExistsAsync(System.Collections.Generic.IEnumerable<System.Type!>! entityTypes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 EasyQuerySharp.Schema.CodeFirst.DropTablesIfExistsAsync(params System.Type![]! entityTypes) -> System.Threading.Tasks.Task!
+EasyQuerySharp.Schema.CodeFirst.PlanSync(System.Collections.Generic.IEnumerable<System.Type!>! entityTypes, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Schema.DbTableInfo!>! tables) -> EasyQuerySharp.Schema.CodeFirstCommand!
+EasyQuerySharp.Schema.CodeFirst.PlanSyncAsync(System.Collections.Generic.IEnumerable<System.Type!>! entityTypes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<EasyQuerySharp.Schema.CodeFirstCommand!>!
+EasyQuerySharp.Schema.CodeFirst.PlanSyncAsync(params System.Type![]! entityTypes) -> System.Threading.Tasks.Task<EasyQuerySharp.Schema.CodeFirstCommand!>!
+EasyQuerySharp.Schema.CodeFirst.ReadTablesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Schema.DbTableInfo!>!>!
+EasyQuerySharp.Schema.CodeFirst.SyncTablesAsync(System.Collections.Generic.IEnumerable<System.Type!>! entityTypes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<EasyQuerySharp.Schema.CodeFirstCommand!>!
+EasyQuerySharp.Schema.CodeFirst.SyncTablesAsync(params System.Type![]! entityTypes) -> System.Threading.Tasks.Task<EasyQuerySharp.Schema.CodeFirstCommand!>!
+EasyQuerySharp.Schema.CodeFirst.TableExistsAsync(System.Type! entityType, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+EasyQuerySharp.Schema.CodeFirstCommand
+EasyQuerySharp.Schema.CodeFirstCommand.Differences.get -> System.Collections.Generic.IReadOnlyList<string!>!
+EasyQuerySharp.Schema.CodeFirstCommand.ExecuteAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+EasyQuerySharp.Schema.CodeFirstCommand.Statements.get -> System.Collections.Generic.IReadOnlyList<string!>!
+EasyQuerySharp.Schema.CodeFirstCommand.ToSql() -> string!
+EasyQuerySharp.Schema.DbColumnInfo
+EasyQuerySharp.Schema.DbColumnInfo.<Clone>$() -> EasyQuerySharp.Schema.DbColumnInfo!
+EasyQuerySharp.Schema.DbColumnInfo.Comment.get -> string?
+EasyQuerySharp.Schema.DbColumnInfo.Comment.init -> void
+EasyQuerySharp.Schema.DbColumnInfo.DbColumnInfo(string! Name, string! Type, bool Nullable, string? Default, string? Comment, bool Generated) -> void
+EasyQuerySharp.Schema.DbColumnInfo.Deconstruct(out string! Name, out string! Type, out bool Nullable, out string? Default, out string? Comment, out bool Generated) -> void
+EasyQuerySharp.Schema.DbColumnInfo.Default.get -> string?
+EasyQuerySharp.Schema.DbColumnInfo.Default.init -> void
+EasyQuerySharp.Schema.DbColumnInfo.Equals(EasyQuerySharp.Schema.DbColumnInfo? other) -> bool
+EasyQuerySharp.Schema.DbColumnInfo.Generated.get -> bool
+EasyQuerySharp.Schema.DbColumnInfo.Generated.init -> void
+EasyQuerySharp.Schema.DbColumnInfo.Name.get -> string!
+EasyQuerySharp.Schema.DbColumnInfo.Name.init -> void
+EasyQuerySharp.Schema.DbColumnInfo.Nullable.get -> bool
+EasyQuerySharp.Schema.DbColumnInfo.Nullable.init -> void
+EasyQuerySharp.Schema.DbColumnInfo.Type.get -> string!
+EasyQuerySharp.Schema.DbColumnInfo.Type.init -> void
+EasyQuerySharp.Schema.DbForeignKeyInfo
+EasyQuerySharp.Schema.DbForeignKeyInfo.<Clone>$() -> EasyQuerySharp.Schema.DbForeignKeyInfo!
+EasyQuerySharp.Schema.DbForeignKeyInfo.Columns.get -> System.Collections.Generic.IReadOnlyList<string!>!
+EasyQuerySharp.Schema.DbForeignKeyInfo.Columns.init -> void
+EasyQuerySharp.Schema.DbForeignKeyInfo.DbForeignKeyInfo(string! Name, System.Collections.Generic.IReadOnlyList<string!>! Columns, string! ReferencedTable, System.Collections.Generic.IReadOnlyList<string!>! ReferencedColumns) -> void
+EasyQuerySharp.Schema.DbForeignKeyInfo.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<string!>! Columns, out string! ReferencedTable, out System.Collections.Generic.IReadOnlyList<string!>! ReferencedColumns) -> void
+EasyQuerySharp.Schema.DbForeignKeyInfo.Equals(EasyQuerySharp.Schema.DbForeignKeyInfo? other) -> bool
+EasyQuerySharp.Schema.DbForeignKeyInfo.Name.get -> string!
+EasyQuerySharp.Schema.DbForeignKeyInfo.Name.init -> void
+EasyQuerySharp.Schema.DbForeignKeyInfo.ReferencedColumns.get -> System.Collections.Generic.IReadOnlyList<string!>!
+EasyQuerySharp.Schema.DbForeignKeyInfo.ReferencedColumns.init -> void
+EasyQuerySharp.Schema.DbForeignKeyInfo.ReferencedTable.get -> string!
+EasyQuerySharp.Schema.DbForeignKeyInfo.ReferencedTable.init -> void
+EasyQuerySharp.Schema.DbIndexInfo
+EasyQuerySharp.Schema.DbIndexInfo.<Clone>$() -> EasyQuerySharp.Schema.DbIndexInfo!
+EasyQuerySharp.Schema.DbIndexInfo.Columns.get -> System.Collections.Generic.IReadOnlyList<string!>!
+EasyQuerySharp.Schema.DbIndexInfo.Columns.init -> void
+EasyQuerySharp.Schema.DbIndexInfo.DbIndexInfo(string! Name, System.Collections.Generic.IReadOnlyList<string!>! Columns, bool Unique) -> void
+EasyQuerySharp.Schema.DbIndexInfo.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<string!>! Columns, out bool Unique) -> void
+EasyQuerySharp.Schema.DbIndexInfo.Equals(EasyQuerySharp.Schema.DbIndexInfo? other) -> bool
+EasyQuerySharp.Schema.DbIndexInfo.Name.get -> string!
+EasyQuerySharp.Schema.DbIndexInfo.Name.init -> void
+EasyQuerySharp.Schema.DbIndexInfo.Unique.get -> bool
+EasyQuerySharp.Schema.DbIndexInfo.Unique.init -> void
+EasyQuerySharp.Schema.DbTableInfo
+EasyQuerySharp.Schema.DbTableInfo.<Clone>$() -> EasyQuerySharp.Schema.DbTableInfo!
+EasyQuerySharp.Schema.DbTableInfo.Columns.get -> System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Schema.DbColumnInfo!>!
+EasyQuerySharp.Schema.DbTableInfo.Columns.init -> void
+EasyQuerySharp.Schema.DbTableInfo.Comment.get -> string?
+EasyQuerySharp.Schema.DbTableInfo.Comment.init -> void
+EasyQuerySharp.Schema.DbTableInfo.DbTableInfo(string! Name, string? Comment, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Schema.DbColumnInfo!>! Columns, System.Collections.Generic.IReadOnlyList<string!>! PrimaryKey, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Schema.DbIndexInfo!>! Indexes, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Schema.DbForeignKeyInfo!>! ForeignKeys) -> void
+EasyQuerySharp.Schema.DbTableInfo.Deconstruct(out string! Name, out string? Comment, out System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Schema.DbColumnInfo!>! Columns, out System.Collections.Generic.IReadOnlyList<string!>! PrimaryKey, out System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Schema.DbIndexInfo!>! Indexes, out System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Schema.DbForeignKeyInfo!>! ForeignKeys) -> void
+EasyQuerySharp.Schema.DbTableInfo.Equals(EasyQuerySharp.Schema.DbTableInfo? other) -> bool
+EasyQuerySharp.Schema.DbTableInfo.FindColumn(string! name) -> EasyQuerySharp.Schema.DbColumnInfo?
+EasyQuerySharp.Schema.DbTableInfo.ForeignKeys.get -> System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Schema.DbForeignKeyInfo!>!
+EasyQuerySharp.Schema.DbTableInfo.ForeignKeys.init -> void
+EasyQuerySharp.Schema.DbTableInfo.Indexes.get -> System.Collections.Generic.IReadOnlyList<EasyQuerySharp.Schema.DbIndexInfo!>!
+EasyQuerySharp.Schema.DbTableInfo.Indexes.init -> void
+EasyQuerySharp.Schema.DbTableInfo.Name.get -> string!
+EasyQuerySharp.Schema.DbTableInfo.Name.init -> void
+EasyQuerySharp.Schema.DbTableInfo.PrimaryKey.get -> System.Collections.Generic.IReadOnlyList<string!>!
+EasyQuerySharp.Schema.DbTableInfo.PrimaryKey.init -> void
 EasyQuerySharp.Sql
 EasyQuerySharp.Sql.Hana
 EasyQuerySharp.Sql.MySql
@@ -1845,7 +1934,6 @@ override EasyQuerySharp.Dialects.Db2Dialect.WriteMerge(EasyQuerySharp.Rendering.
 override EasyQuerySharp.Dialects.Db2Dialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
 override EasyQuerySharp.Dialects.Db2Dialect.WritePaging(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
 override EasyQuerySharp.Dialects.DuckDbDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
-override EasyQuerySharp.Dialects.DuckDbDialect.ColumnDefinition(EasyQuerySharp.Metadata.EntityMetadata! entity, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
 override EasyQuerySharp.Dialects.DuckDbDialect.CreateTableSql(EasyQuerySharp.Metadata.EntityMetadata! entity) -> string!
 override EasyQuerySharp.Dialects.DuckDbDialect.DropTableIfExistsSql(EasyQuerySharp.Metadata.EntityMetadata! entity) -> string!
 override EasyQuerySharp.Dialects.DuckDbDialect.Name.get -> string!
@@ -1914,6 +2002,7 @@ override EasyQuerySharp.Dialects.OracleDialect.WriteOrderedStringJoin(EasyQueryS
 override EasyQuerySharp.Dialects.OracleDialect.WritePagedSelect(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query, System.Action! writeUnpaged) -> void
 override EasyQuerySharp.Dialects.PostgreSqlDialect.CastTemplate(System.Type! targetType) -> string!
 override EasyQuerySharp.Dialects.PostgreSqlDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
+override EasyQuerySharp.Dialects.PostgreSqlDialect.CreateTableSql(EasyQuerySharp.Metadata.EntityMetadata! entity) -> string!
 override EasyQuerySharp.Dialects.PostgreSqlDialect.Name.get -> string!
 override EasyQuerySharp.Dialects.PostgreSqlDialect.ParameterWrap(string? columnDbType) -> (string! Before, string! After)?
 override EasyQuerySharp.Dialects.PostgreSqlDialect.QualifySetColumns.get -> bool
@@ -1945,7 +2034,9 @@ override EasyQuerySharp.Dialects.SqlServerDialect.WriteOrderedStringJoin(EasyQue
 override EasyQuerySharp.Dialects.SqlServerDialect.WritePaging(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
 override EasyQuerySharp.Dialects.SqlServerDialect.WriteSelectHead(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
 override EasyQuerySharp.Dialects.SqliteDialect.CastTemplate(System.Type! targetType) -> string!
+override EasyQuerySharp.Dialects.SqliteDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
 override EasyQuerySharp.Dialects.SqliteDialect.ColumnDefinition(EasyQuerySharp.Metadata.EntityMetadata! entity, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
+override EasyQuerySharp.Dialects.SqliteDialect.CreateTableSql(EasyQuerySharp.Metadata.EntityMetadata! entity) -> string!
 override EasyQuerySharp.Dialects.SqliteDialect.InlinePrimaryKey(EasyQuerySharp.Metadata.ColumnMetadata! key) -> bool
 override EasyQuerySharp.Dialects.SqliteDialect.LastInsertIdQuery.get -> string?
 override EasyQuerySharp.Dialects.SqliteDialect.Name.get -> string!
@@ -2039,6 +2130,19 @@ override EasyQuerySharp.Part<TEntity, T1>.ToString() -> string!
 override EasyQuerySharp.Querying.Page<T>.Equals(object? obj) -> bool
 override EasyQuerySharp.Querying.Page<T>.GetHashCode() -> int
 override EasyQuerySharp.Querying.Page<T>.ToString() -> string!
+override EasyQuerySharp.Schema.CodeFirstCommand.ToString() -> string!
+override EasyQuerySharp.Schema.DbColumnInfo.Equals(object? obj) -> bool
+override EasyQuerySharp.Schema.DbColumnInfo.GetHashCode() -> int
+override EasyQuerySharp.Schema.DbColumnInfo.ToString() -> string!
+override EasyQuerySharp.Schema.DbForeignKeyInfo.Equals(object? obj) -> bool
+override EasyQuerySharp.Schema.DbForeignKeyInfo.GetHashCode() -> int
+override EasyQuerySharp.Schema.DbForeignKeyInfo.ToString() -> string!
+override EasyQuerySharp.Schema.DbIndexInfo.Equals(object? obj) -> bool
+override EasyQuerySharp.Schema.DbIndexInfo.GetHashCode() -> int
+override EasyQuerySharp.Schema.DbIndexInfo.ToString() -> string!
+override EasyQuerySharp.Schema.DbTableInfo.Equals(object? obj) -> bool
+override EasyQuerySharp.Schema.DbTableInfo.GetHashCode() -> int
+override EasyQuerySharp.Schema.DbTableInfo.ToString() -> string!
 override EasyQuerySharp.SqlAst.InsertConflict.Equals(object? obj) -> bool
 override EasyQuerySharp.SqlAst.InsertConflict.GetHashCode() -> int
 override EasyQuerySharp.SqlAst.InsertConflict.ToString() -> string!
@@ -2145,6 +2249,14 @@ static EasyQuerySharp.Rendering.SqlRenderer.Render(EasyQuerySharp.Dialects.SqlDi
 static EasyQuerySharp.Rendering.SqlRenderer.Render(EasyQuerySharp.Dialects.SqlDialect! dialect, EasyQuerySharp.SqlAst.InsertStatement! insert) -> EasyQuerySharp.SqlStatement!
 static EasyQuerySharp.Rendering.SqlRenderer.Render(EasyQuerySharp.Dialects.SqlDialect! dialect, EasyQuerySharp.SqlAst.SelectQuery! query) -> EasyQuerySharp.SqlStatement!
 static EasyQuerySharp.Rendering.SqlRenderer.Render(EasyQuerySharp.Dialects.SqlDialect! dialect, EasyQuerySharp.SqlAst.UpdateStatement! update) -> EasyQuerySharp.SqlStatement!
+static EasyQuerySharp.Schema.DbColumnInfo.operator !=(EasyQuerySharp.Schema.DbColumnInfo? left, EasyQuerySharp.Schema.DbColumnInfo? right) -> bool
+static EasyQuerySharp.Schema.DbColumnInfo.operator ==(EasyQuerySharp.Schema.DbColumnInfo? left, EasyQuerySharp.Schema.DbColumnInfo? right) -> bool
+static EasyQuerySharp.Schema.DbForeignKeyInfo.operator !=(EasyQuerySharp.Schema.DbForeignKeyInfo? left, EasyQuerySharp.Schema.DbForeignKeyInfo? right) -> bool
+static EasyQuerySharp.Schema.DbForeignKeyInfo.operator ==(EasyQuerySharp.Schema.DbForeignKeyInfo? left, EasyQuerySharp.Schema.DbForeignKeyInfo? right) -> bool
+static EasyQuerySharp.Schema.DbIndexInfo.operator !=(EasyQuerySharp.Schema.DbIndexInfo? left, EasyQuerySharp.Schema.DbIndexInfo? right) -> bool
+static EasyQuerySharp.Schema.DbIndexInfo.operator ==(EasyQuerySharp.Schema.DbIndexInfo? left, EasyQuerySharp.Schema.DbIndexInfo? right) -> bool
+static EasyQuerySharp.Schema.DbTableInfo.operator !=(EasyQuerySharp.Schema.DbTableInfo? left, EasyQuerySharp.Schema.DbTableInfo? right) -> bool
+static EasyQuerySharp.Schema.DbTableInfo.operator ==(EasyQuerySharp.Schema.DbTableInfo? left, EasyQuerySharp.Schema.DbTableInfo? right) -> bool
 static EasyQuerySharp.Sql.AsAlias<T>(T navigation, string! alias) -> T
 static EasyQuerySharp.Sql.AsAlias<T>(this System.Collections.Generic.IEnumerable<T>! navigation, string! alias) -> System.Collections.Generic.IEnumerable<T>!
 static EasyQuerySharp.Sql.AsTable<T>(T navigation, string! tableName) -> T

@@ -81,6 +81,9 @@ public sealed class ColumnMetadata
     /// <summary>列注释。</summary>
     public string? Comment { get; internal init; }
 
+    /// <summary>改名前的列名（<see cref="RenamedFromAttribute"/>）；code-first 同步时用。</summary>
+    internal string? RenamedFrom { get; init; }
+
     /// <summary>读属性值。</summary>
     public Func<object, object?> Getter { get; }
 
@@ -100,6 +103,7 @@ public sealed class ColumnMetadata
         IsPrimaryKey = IsPrimaryKey, IsGenerated = IsGenerated, KeyGenerator = KeyGenerator, GeneratedSql = GeneratedSql, AutoSelect = AutoSelect,
         Computed = Computed, InsertIgnore = InsertIgnore, UpdateIgnore = UpdateIgnore, UpdateWhenTrackedChanged = UpdateWhenTrackedChanged,
         Converter = Converter, SqlConversion = SqlConversion, DbType = DbType, Comment = Comment, InNullableValueObject = InNullableValueObject,
+        RenamedFrom = RenamedFrom,
     };
 
     /// <inheritdoc />

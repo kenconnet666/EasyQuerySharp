@@ -98,13 +98,29 @@ public class TDengineDialect : SqlDialect
     {
         if (entity.KeyColumns is not [var key] || (Nullable.GetUnderlyingType(key.ClrType) ?? key.ClrType) != typeof(DateTime))
             throw new NotSupportedException($"TDengine 的表要有一个 DateTime 主键（行的时间戳）：{entity.Type.Name} 不满足");
-        var columns = entity.Columns.Where(c => c != key).Prepend(key).Select(c => ColumnDefinition(entity, c));
+        var columns = TableColumns(entity).Where(c => c != key).Prepend(key).Select(c => ColumnDefinition(entity, c));
         return CreateTableStatement(entity, string.Join(", ", columns));
     }
 
     /// <summary>列只有名字与类型：TDengine 的列不能声明 NOT NULL（时间戳主键本身不能为空）。</summary>
     protected override string ColumnDefinition(EntityMetadata entity, ColumnMetadata column) =>
         column.IsGenerated ? throw NoIdentity() : $"{QuoteIdentifier(column.Name)} {ColumnType(column)}";
+
+    // code-first：TDengine 的普通表没有注释、索引、外键，也不能改表名；同步只能加列（不支持读库结构，同步也就用不了）
+
+    /// <inheritdoc />
+    internal override string? TableCommentSql(EntityMetadata entity) => null;
+
+    /// <inheritdoc />
+    internal override string? ColumnCommentSql(EntityMetadata entity, ColumnMetadata column) => null;
+
+    /// <summary>TDengine 的普通表没有索引。</summary>
+    internal override string CreateIndexSql(EntityMetadata entity, IndexMetadata index) =>
+        throw new NotSupportedException($"TDengine 的普通表不能建索引：{entity.Type.Name} 的索引 {index.Name}");
+
+    /// <summary>TDengine 没有外键。</summary>
+    internal override string AddForeignKeySql(ForeignKeyMetadata foreignKey) =>
+        throw new NotSupportedException($"TDengine 没有外键：{foreignKey.Entity.Type.Name} 上的 [ForeignKey] {foreignKey.Name}");
 
     /// <summary>TDengine 的类型名：NCHAR（Unicode 字符串）、BOOL、INT、TINYINT UNSIGNED、DOUBLE、VARBINARY。</summary>
     protected override string ClrColumnType(Type type, ColumnMetadata column) => type switch

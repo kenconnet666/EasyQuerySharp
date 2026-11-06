@@ -59,7 +59,7 @@ public sealed class DuckDbDialectTest(DuckDbFixture fixture) : DuckDbTest(fixtur
     public void AutoIncrementUsesSequence()
     {
         Assert.Equal(
-            "CREATE SEQUENCE IF NOT EXISTS t_topic_auto_id_seq; CREATE TABLE IF NOT EXISTS \"t_topic_auto\" (\"id\" INTEGER DEFAULT nextval('t_topic_auto_id_seq') NOT NULL, \"stars\" INTEGER NULL, \"title\" VARCHAR NULL, \"create_time\" TIMESTAMP NULL, PRIMARY KEY (\"id\"))",
+            "CREATE SEQUENCE IF NOT EXISTS t_topic_auto_id_seq; CREATE TABLE IF NOT EXISTS \"t_topic_auto\" ( \n\"id\" INTEGER NOT NULL  DEFAULT nextval('t_topic_auto_id_seq'),\n\"stars\" INTEGER NULL ,\n\"title\" VARCHAR NULL ,\n\"create_time\" TIMESTAMP NULL , \n PRIMARY KEY (\"id\")\n);",
             Duck.CodeFirst.CreateTableSql(typeof(TopicAuto)));
         Assert.Equal("DROP TABLE IF EXISTS \"t_topic_auto\"; DROP SEQUENCE IF EXISTS t_topic_auto_id_seq", Duck.Options.Dialect.DropTableIfExistsSql(Duck.Metadata.Get<TopicAuto>()));
     }

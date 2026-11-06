@@ -68,31 +68,62 @@ public class DuckDbDialect : PostgreSqlDialect
     public override (string Before, string After)? ParameterWrap(string? columnDbType) => null;
 
     /// <summary>
-    /// 类型名与 Java 的 DuckDBSQLMigrationEntityParser 一致：VARCHAR、DOUBLE、UUID、BLOB；
+    /// 类型名与 Java 的 DuckDBSQLMigrationEntityParser 一致：VARCHAR、INTEGER、BOOLEAN、REAL、DOUBLE、DECIMAL(16,2)、UUID、BLOB；
     /// DuckDB 有无符号整型，C# 的 byte / ushort / uint / ulong 与 sbyte 各取同宽的类型。
     /// </summary>
     protected override string ClrColumnType(Type type, ColumnMetadata column) => type switch
     {
         _ when type == typeof(string) => "VARCHAR",
+        _ when type == typeof(int) || type.IsEnum => "INTEGER",
+        _ when type == typeof(long) => "BIGINT",
+        _ when type == typeof(short) => "SMALLINT",
         _ when type == typeof(sbyte) => "TINYINT",
         _ when type == typeof(byte) => "UTINYINT",
         _ when type == typeof(ushort) => "USMALLINT",
         _ when type == typeof(uint) => "UINTEGER",
         _ when type == typeof(ulong) => "UBIGINT",
+        _ when type == typeof(bool) => "BOOLEAN",
+        _ when type == typeof(float) => "REAL",
         _ when type == typeof(double) => "DOUBLE",
+        _ when type == typeof(decimal) => "DECIMAL(16,2)",
         _ when type == typeof(Guid) => "UUID",
         _ when type == typeof(byte[]) => "BLOB",
         _ => base.ClrColumnType(type, column),
     };
 
-    /// <summary>自增列用序列：先 <c>CREATE SEQUENCE</c>，列的默认值取 <c>nextval</c>（DuckDB 不支持 IDENTITY）。</summary>
+    /// <summary>
+    /// 建表格式同 PostgreSQL（与 Java 的 DuckDBSQLDatabaseMigrationProvider 一致）；自增列用序列：先 <c>CREATE SEQUENCE</c>，
+    /// 列的默认值取 <c>nextval</c>（DuckDB 不支持 IDENTITY）。
+    /// </summary>
     public override string CreateTableSql(EntityMetadata entity) =>
         string.Concat(entity.Columns.Where(c => c.IsGenerated).Select(c => $"CREATE SEQUENCE IF NOT EXISTS {SequenceName(entity, c)}; ")) + base.CreateTableSql(entity);
 
     /// <inheritdoc />
-    protected override string ColumnDefinition(EntityMetadata entity, ColumnMetadata column) => column.IsGenerated
-        ? $"{QuoteIdentifier(column.Name)} {ColumnType(column)} DEFAULT nextval('{SequenceName(entity, column)}') NOT NULL"
-        : base.ColumnDefinition(entity, column);
+    private protected override string GeneratedColumnTail(EntityMetadata entity, ColumnMetadata column) => $" DEFAULT nextval('{SequenceName(entity, column)}')";
+
+    /// <summary>DuckDB 不能给已有的表加外键（ALTER TABLE … ADD CONSTRAINT 没有实现），外键写在建表语句里。</summary>
+    internal override bool InlineForeignKeys => true;
+
+    /// <summary>DuckDB 的索引列不能写 ASC / DESC：<c>CREATE [UNIQUE ]INDEX 名 ON "表" ("列",…);</c></summary>
+    internal override string CreateIndexSql(EntityMetadata entity, IndexMetadata index) =>
+        $"CREATE {(index.Unique ? "UNIQUE " : "")}INDEX {index.Name} ON {QualifiedTable(entity)} ({QuotedNames(index.Columns.Select(c => c.Column))});";
+
+    /// <summary>information_schema 之外的 duckdb_tables() / duckdb_columns() / duckdb_indexes() / duckdb_constraints()（当前 schema）。</summary>
+    internal override CatalogQueries CatalogQueries { get; } = new(
+        "SELECT table_name, comment FROM duckdb_tables() WHERE schema_name = current_schema() ORDER BY table_name",
+        "SELECT c.table_name, c.column_name, c.data_type AS column_type, c.is_nullable AS is_nullable, c.column_default, c.comment, "
+        + "COALESCE(c.column_default LIKE 'nextval(%', false) AS is_generated, "
+        + "EXISTS (SELECT 1 FROM duckdb_constraints() k WHERE k.table_name = c.table_name AND k.schema_name = c.schema_name "
+        + "AND k.constraint_type = 'PRIMARY KEY' AND list_contains(k.constraint_column_names, c.column_name)) AS primary_key "
+        + "FROM duckdb_columns() c WHERE c.schema_name = current_schema() ORDER BY c.table_name, c.column_index",
+        // expressions 是 '[a, "b"]' 这样的文字
+        "SELECT i.table_name, i.index_name, i.is_unique, trim(trim(e.column_name), '\"') AS column_name "
+        + "FROM duckdb_indexes() i, unnest(string_split(trim(i.expressions, '[]'), ',')) WITH ORDINALITY AS e(column_name, ord) "
+        + "WHERE i.schema_name = current_schema() ORDER BY i.table_name, i.index_name, e.ord",
+        "SELECT k.table_name, k.constraint_name, u.column_name, k.referenced_table, r.referenced_column "
+        + "FROM duckdb_constraints() k, unnest(k.constraint_column_names) WITH ORDINALITY AS u(column_name, ord), "
+        + "unnest(k.referenced_column_names) WITH ORDINALITY AS r(referenced_column, rord) "
+        + "WHERE k.constraint_type = 'FOREIGN KEY' AND k.schema_name = current_schema() AND u.ord = r.rord ORDER BY k.table_name, k.constraint_name, u.ord");
 
     /// <summary>先删表再删它的自增序列（序列被表引用时不能先删）。</summary>
     public override string DropTableIfExistsSql(EntityMetadata entity) =>

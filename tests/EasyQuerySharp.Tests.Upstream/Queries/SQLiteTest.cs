@@ -3,8 +3,9 @@ using Microsoft.Data.Sqlite;
 namespace EasyQuerySharp.Tests.Upstream.Queries;
 
 /// <summary>
-/// 对应 Java：sqlite/SQLiteTest.java 的查询用例（SQLite 上整表查询、日期区间条件，读出后序列化成 JSON）。
-/// Java 连一个现成的 SQLite 文件库；这里用共享的内存库，code-first 建表并写入一行。建表的 DDL 用例另起一个列名按 UpperCamelCase 的库。
+/// 对应 Java：sqlite/SQLiteTest.java（SQLite 上整表查询、日期区间条件，读出后序列化成 JSON；code-first 建表）。
+/// Java 连一个现成的 SQLite 文件库；这里用共享的内存库，code-first 建表并写入一行。
+/// 建表用例的列名是 Java 的 SQLite 库里的大驼峰（<c>"Id"</c>、<c>"CreateTime"</c>），用 <see cref="Metadata.NameConversion.UpperCamelCase"/> 的库。
 /// </summary>
 public sealed class SQLiteTest : IAsyncLifetime
 {
@@ -36,31 +37,40 @@ public sealed class SQLiteTest : IAsyncLifetime
         Assert.All(list, b => Assert.Contains("\"title\":\"title1\"", System.Text.Json.JsonSerializer.Serialize(b, System.Text.Json.JsonSerializerOptions.Web)));
     }
 
-    private const string DdlDeviation = "建表语句由 C# 的 SQLite 方言生成（单行、标准类型名 INTEGER / TIMESTAMP，主键列表不留空格）；Java 是多行格式（integer、日期存 TEXT）";
-
-    // Java 的 SQLiteBaseTest 用 UpperCamelCase 列名；建表 DDL 单独起一个库，与上面查询用的库分开
-    private static async Task<string> CreateTableSql(Type entity)
+    private static EasyDb UpperCamelCase() => new(o =>
     {
-        var db = new EasyDb(o =>
-        {
-            o.NameConversion = Metadata.NameConversion.UpperCamelCase;
-            o.UseSqlite(SqliteFactory.Instance.CreateDataSource("Data Source=:memory:")).AddListener(SqlCapture.Instance);
-        });
-        await db.CodeFirst.DropTablesIfExistsAsync([entity], Ct);
-        using var listen = SqlCapture.Listen();
-        await db.CodeFirst.CreateTablesAsync([entity], Ct);
-        return listen.Last.Statement.Text;
+        o.NameConversion = Metadata.NameConversion.UpperCamelCase;
+        o.UseSqlite(SqliteFactory.Instance.CreateDataSource("Data Source=eqs-sqlite-test;Mode=Memory;Cache=Shared"));
+    });
+
+    // 先删表再同步：表不存在，同步就是建表（Java 的 getSQL() 在语句前加一个换行）
+    [Fact, Upstream("sqlite/SQLiteTest.java#testDDL")]
+    public async Task TestDDL()
+    {
+        var db = UpperCamelCase();
+        await db.CodeFirst.DropTablesIfExistsAsync([typeof(Topic)], Ct);
+        var sync = await db.CodeFirst.SyncTablesAsync([typeof(Topic)], Ct);
+        Assert.Equal("CREATE TABLE IF NOT EXISTS \"t_topic\" ( \n" +
+                     "\"Id\" VARCHAR(255) NOT NULL ,\n" +
+                     "\"Stars\" integer NULL ,\n" +
+                     "\"Title\" VARCHAR(255) NULL ,\n" +
+                     "\"CreateTime\" TEXT NULL , \n" +
+                     " PRIMARY KEY (\"Id\")\n" +
+                     ");", sync.ToSql());
     }
 
-    [Fact, Upstream("sqlite/SQLiteTest.java#testDDL", Deviation = DdlDeviation)]
-    public async Task TestDDL() =>
-        Assert.Equal("CREATE TABLE IF NOT EXISTS \"t_topic\" (\"Id\" VARCHAR(255) NOT NULL, \"Stars\" INTEGER NULL, \"Title\" VARCHAR(255) NULL, \"CreateTime\" TIMESTAMP NULL, PRIMARY KEY (\"Id\"))",
-            await CreateTableSql(typeof(Topic)));
-
-    [Fact, Upstream("sqlite/SQLiteTest.java#testDDL2", Deviation = DdlDeviation)]
-    public async Task TestDDL2() =>
-        Assert.Equal("CREATE TABLE IF NOT EXISTS \"t_multi_primary\" (\"Id1\" VARCHAR(255) NOT NULL, \"Id2\" VARCHAR(255) NOT NULL, PRIMARY KEY (\"Id1\",\"Id2\"))",
-            await CreateTableSql(typeof(H2.MultiPrimaryEntity)));
+    [Fact, Upstream("sqlite/SQLiteTest.java#testDDL2")]
+    public async Task TestDDL2()
+    {
+        var db = UpperCamelCase();
+        await db.CodeFirst.DropTablesIfExistsAsync([typeof(H2.MultiPrimaryEntity)], Ct);
+        var sync = await db.CodeFirst.SyncTablesAsync([typeof(H2.MultiPrimaryEntity)], Ct);
+        Assert.Equal("CREATE TABLE IF NOT EXISTS \"t_multi_primary\" ( \n" +
+                     "\"Id1\" VARCHAR(255) NOT NULL ,\n" +
+                     "\"Id2\" VARCHAR(255) NOT NULL , \n" +
+                     " PRIMARY KEY (\"Id1\", \"Id2\")\n" +
+                     ");", sync.ToSql());
+    }
 
     [Fact, Upstream("sqlite/SQLiteTest.java#testQuery1")]
     public async Task TestQuery1()

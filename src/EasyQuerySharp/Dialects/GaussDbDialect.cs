@@ -33,6 +33,9 @@ public class GaussDbDialect : PostgreSqlDialect
         return true;
     }
 
+    /// <summary>openGauss 的 pg_attribute 没有 attidentity：默认值取序列的就是自增列（同 TS 版）。</summary>
+    private protected override string IntrospectedIdentity => "coalesce(pg_get_expr(d.adbin, d.adrelid), '') LIKE 'nextval(%'";
+
     /// <inheritdoc />
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {

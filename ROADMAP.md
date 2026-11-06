@@ -15,8 +15,8 @@
 
 ## 现状（2026-11-06）
 
-- 对标：已移植 2002、偏离 195、不适用 141、骨架 6、待做 60。
-- 待做的分布：分库分表 48（等 0006 定稿），code-first 7 与 MySQL8Test2 一个（4.1 进行中），二级缓存 4（等 0007 定稿）。
+- 对标：已移植 2011、偏离 193、不适用 141、骨架 7、待做 52。
+- 待做的分布：分库分表 48（等 0006 定稿）、二级缓存 4（等 0007 定稿）；骨架里另有等列默认值的 MySQL8Test2 与 QueryTest26 testGenerateKeys 之外的分表与 HANA 实库用例。
 - 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17、DuckDB（进程内）；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
 
 ## 已定的取舍
@@ -139,7 +139,11 @@ R → 1 → 2 → 3 → 4 → 5。
 
 ## 阶段 4 平台能力
 
-- [ ] 4.1 code-first：建表（注释、索引、外键）、只增不删的同步、`RenamedFrom`、`ToSql()`、读取库结构（MigrationTest 等 15 个，含 MigrationDamengTest）。
+- [~] 4.1 code-first：建表（注释、索引、外键）、只增不删的同步、`RenamedFrom`、`ToSql()`、读取库结构（MigrationTest 等 15 个，含 MigrationDamengTest）。
+  - 已做：`[TableIndex]`（不写名字时 `表_列_idx` / `_uidx`，与 Java 一致）、对一导航上的 `[ForeignKey(Action = ..)]`（`本表_目标表_列_fk`），建表时外键排在全部建表之后（SQLite、DuckDB 写在建表语句里）；`[RenamedFrom]` 用在类与属性上；`db.CodeFirst.PlanSyncAsync(..)` 得出 `CodeFirstCommand`（`Statements`、`ToSql()`、`Differences`、`ExecuteAsync()`），`SyncTablesAsync(..)` 得出并执行，`PlanSync(types, tables)` 与保存下来的结构比较、不连库；`ReadTablesAsync()` / `TableExistsAsync(type)` 读当前 schema 的列、主键、索引、外键（各方言的系统表查询照 TS 版，TDengine 不支持）。同步只增不删：建缺的表，改表名列名，加缺的列（带注释），补缺的索引与外键；库里多出来的列、可空性不一致写进 `Differences`，不比较类型。
+  - 方言：MySQL、PostgreSQL（Kingbase、GaussDB 沿用）、SQLite、DuckDB 的建表、加列、改名、索引、外键语句与 Java 逐字一致（MyMigrationBlog0 的 MySQL / PG 建表语句与 Java 断言的 MD5 相同），PG、SQLite、DuckDB 的列类型改成 Java 迁移解析器的（`INT4`、`BOOL`、`numeric(16,2)`；`integer`、`TEXT`）；Java 的几处错误按各库语法改正（PG 改列名后的注释漏了列名、SQLite 改列名多写类型、自增列写成 `NOT NULL AUTOINCREMENT`、PG / SQLite 新表名带 schema）。SQL Server 的注释是扩展属性（已有时不重复加）、改名用 `sp_rename`；Oracle、达梦、HANA 加列 `ADD (…)`；HANA、Db2、ClickHouse 改表名 `RENAME TABLE`；ClickHouse 的索引是跳数索引、没有外键。顺手修了计算列被当成真实列建进表里的问题。
+  - 用例：MigrationTest ×4、pgsql/MigrationTest、migration/MigrationPgTest、SQLiteTest testDDL / testDDL2、QueryTest22 testManyOrder 已移植；migration/MigrationDamengTest（达梦沿用 TS 实测的写法，只核对 SQL）、QueryTest3 userBookTest（地址列没有 Java 端加密）、testmysql8/MyTest testaa（没有建库）记偏离；H2 的 testDDL2 随 SQLite 改成 Java 的格式改回已移植。另有 `Extras/CodeFirstTest` 核对各方言的写法，并在 SQLite、DuckDB 上实际建表、读结构、改名加列。MySQL、PG 上的用例要实库验证。
+  - [!] 列默认值（Java 的 `@Column(dbDefault = "…")`）：MySQL8Test2 test（建表语句与 Java 只差 `DEFAULT ''` / `DEFAULT CURRENT_TIMESTAMP(3)`，按 Java 的写法拼出的语句已核对过 MD5）、QueryTest26 testGenerateKeys（插入时不写、由库填当前时间）要它，留骨架。是规划外的公共 API（`[Column(DbDefault = ..)]`，SQLite 加 NOT NULL 列也要默认值），待定。
 - [x] 4.2 表名映射：
   - 查询级 `MapTable<T>("表名")` / `MapTable<T>(name => …)`、`InSchema("schema")`（所有查询类型都有）：这条查询翻译出的实体表——主表、联表、隐式 JOIN、集合导航的子查询与分组合并、取第几行、多对多中间表、Include 与 DTO 自动带出、嵌在里面的子查询——都按它换，子查询自己的映射优先，显式的 `AsTable` / `Sql.AsTable` 优先；
   - `WithTableLink`：Java 的 asTableLink，改写最近一张表前面的连接符（`LEFT JOIN` → `LEFT JOIN lateral`），写入时写在目标表名前面，查询、联表、写入都能用（走导航的更新 / 删除明确报不支持）；

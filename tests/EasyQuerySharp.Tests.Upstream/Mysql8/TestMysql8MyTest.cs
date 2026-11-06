@@ -5,17 +5,16 @@ using MySqlConnector;
 namespace EasyQuerySharp.Tests.Upstream.Mysql8;
 
 /// <summary>
-/// 对应 Java：testmysql8/MyTest.java（独立的库 easy-query-test123，列名就是属性名，实体共用带自增主键的基类）。
-/// 实体与 mysql8 的同名实体无关，嵌在这里。
+/// 对应 Java：testmysql8/MyTest.java（另一个库 easy-query-test123 上的三张后台表：自增主键的基类、text 列）。
+/// 实体是 Java 的 testmysql8 包里的 SysUser / SysRole / SysModule，与别处的同名实体无关，写成嵌套类。
 /// </summary>
-public sealed class MyTest
+public sealed class TestMysql8MyTest
 {
     private const string Database = "easy-query-test123";
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    /// <summary>对应 Java：testmysql8/BaseBean。</summary>
-    public abstract class BaseBean
+    public class BaseBean
     {
         [Column(PrimaryKey = true, Generated = true)]
         public int Id { get; set; }
@@ -25,7 +24,6 @@ public sealed class MyTest
         public DateTime? UpdateTime { get; set; }
     }
 
-    /// <summary>对应 Java：testmysql8/SysUser。</summary>
     [Table("t_sys_user")]
     public class SysUser : BaseBean
     {
@@ -40,7 +38,6 @@ public sealed class MyTest
         public int AllowLogin { get; set; }
     }
 
-    /// <summary>对应 Java：testmysql8/SysRole。</summary>
     [Table("t_sys_role")]
     public class SysRole : BaseBean
     {
@@ -55,7 +52,6 @@ public sealed class MyTest
         public string? Menus { get; set; }
     }
 
-    /// <summary>对应 Java：testmysql8/SysModule。</summary>
     [Table("t_sys_module")]
     public class SysModule : BaseBean
     {
@@ -79,25 +75,22 @@ public sealed class MyTest
         public int SortNo { get; set; }
     }
 
-    // 建库、建三张表，之后能查（Java 的 PropertyFirstEntityMappingRule：列名取属性名，对应 LowerCamelCase）
-    [Fact, Upstream("testmysql8/MyTest.java#testaa", Deviation = "C# 的 code-first 不建库（Java 的 createDatabaseIfNotExists），用驱动连接执行 CREATE DATABASE IF NOT EXISTS；"
-                                                                + "表已存在时 CreateTablesAsync 跳过，不做 Java syncTable 的补列（只增不删的同步归 4.1）")]
-    public async Task TestAa()
+    // Java 先 createDatabaseIfNotExists() 再 syncTable；同步两次，第二次没有要执行的语句
+    [Fact, Upstream("testmysql8/MyTest.java#testaa",
+         Deviation = "C# 没有 createDatabaseIfNotExists（库由连接串决定，建库属于部署）：测试先用服务器连接建库 easy-query-test123，再同步三张表")]
+    public async Task Testaa()
     {
-        await using (var server = new MySqlConnection(TestDatabases.MySql.ConnectionString()))
+        var serverCs = TestDatabases.MySql.TryConnectionString();
+        if (serverCs is null) Assert.Skip(TestDatabases.MySql.SkipReason);
+        await using (var server = new MySqlConnection(serverCs))
         {
             await server.OpenAsync(Ct);
             await SqlScript.ExecuteAsync(server, $"CREATE DATABASE IF NOT EXISTS `{Database}` CHARACTER SET utf8mb4;", ct: Ct);
         }
-        var db = new EasyDb(o =>
-        {
-            o.NameConversion = NameConversion.LowerCamelCase;
-            o.UseMySql(new MySqlDataSource(TestDatabases.MySql.ConnectionString(Database)));
-        });
-        await db.CodeFirst.CreateTablesAsync([typeof(SysUser), typeof(SysRole), typeof(SysModule)], Ct);
 
-        await db.Query<SysUser>().Where(u => u.UserName == "admin" && u.AllowLogin == 1).ToListAsync(Ct);
-        await db.Query<SysRole>().Where(r => r.Desc != null).ToListAsync(Ct);
-        await db.Query<SysModule>().OrderBy(m => m.SortNo).ToListAsync(Ct);
+        var db = new EasyDb(o => o.UseMySql(new MySqlDataSource(TestDatabases.MySql.TryConnectionString(Database)!)));
+        Type[] tables = [typeof(SysUser), typeof(SysRole), typeof(SysModule)];
+        await db.CodeFirst.SyncTablesAsync(tables, Ct);
+        Assert.Empty((await db.CodeFirst.PlanSyncAsync(tables, Ct)).Statements);
     }
 }
