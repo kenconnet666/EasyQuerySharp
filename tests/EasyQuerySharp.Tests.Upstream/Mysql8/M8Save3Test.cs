@@ -5,8 +5,6 @@ namespace EasyQuerySharp.Tests.Upstream.Mysql8;
 /// <summary>对应 Java：mysql8/M8Save3Test.java（A → B → C → D 一对一链上的归属变更、置空删除、多对多默认级联与 forEach）。</summary>
 public sealed class M8Save3Test(Mysql8Fixture fixture) : Mysql8Test(fixture)
 {
-    private const string Include2 = "Java 的 include2 写成嵌套 Include(a => a.M8SaveB, b => b.Include(...))";
-
     private async Task DeleteAll()
     {
         await Db.Delete<M8SaveA>().Where(o => o.Id != null).ExecuteAsync(Ct);
@@ -89,14 +87,17 @@ public sealed class M8Save3Test(Mysql8Fixture fixture) : Mysql8Test(fixture)
         });
     }
 
-    [Fact, Upstream("mysql8/M8Save3Test.java#testOwnershipChange1", Deviation = Include2)]
+    // 写法与 Java 不同、SQL 一致：Java 的 include2 写成嵌套 Include(a => a.M8SaveB, b => b.Include(...))
+    [Fact, Upstream("mysql8/M8Save3Test.java#testOwnershipChange1")]
     public Task TestOwnershipChange1() => SwapAcrossChains();
 
-    [Fact, Upstream("mysql8/M8Save3Test.java#testOwnershipChange1_1", Deviation = Include2)]
+    // 写法与 Java 不同、SQL 一致：Java 的 include2 写成嵌套 Include(a => a.M8SaveB, b => b.Include(...))
+    [Fact, Upstream("mysql8/M8Save3Test.java#testOwnershipChange1_1")]
     public Task TestOwnershipChange1_1() => SwapAcrossChains();
 
     // 一对一置空：整条链按级联删除，最深的先删
-    [Fact, Upstream("mysql8/M8Save3Test.java#testOwnershipChange2", Deviation = Include2)]
+    // 写法与 Java 不同、SQL 一致：Java 的 include2 写成嵌套 Include(a => a.M8SaveB, b => b.Include(...))
+    [Fact, Upstream("mysql8/M8Save3Test.java#testOwnershipChange2")]
     public async Task TestOwnershipChange2()
     {
         await DeleteAll();
@@ -117,7 +118,8 @@ public sealed class M8Save3Test(Mysql8Fixture fixture) : Mysql8Test(fixture)
     }
 
     // b2 置空、c3 挪到 b6 下：b2 与 c3 原来的 d4、b6 原来的 c7 连同 d8 删除，c3 只改外键
-    [Fact, Upstream("mysql8/M8Save3Test.java#testOwnershipChange3", Deviation = Include2)]
+    // 写法与 Java 不同、SQL 一致：Java 的 include2 写成嵌套 Include(a => a.M8SaveB, b => b.Include(...))
+    [Fact, Upstream("mysql8/M8Save3Test.java#testOwnershipChange3")]
     public async Task TestOwnershipChange3()
     {
         await DeleteAll();
@@ -174,7 +176,8 @@ public sealed class M8Save3Test(Mysql8Fixture fixture) : Mysql8Test(fixture)
     }
 
     // 行回调抛异常：带出查询不再执行
-    [Fact, Upstream("mysql8/M8Save3Test.java#testForeach", Deviation = Include2)]
+    // 写法与 Java 不同、SQL 一致：Java 的 include2 写成嵌套 Include(a => a.M8SaveB, b => b.Include(...))
+    [Fact, Upstream("mysql8/M8Save3Test.java#testForeach")]
     public async Task TestForeach()
     {
         await DeleteAll();

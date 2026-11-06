@@ -220,7 +220,8 @@ public sealed class QueryTest24(MySqlFixture fixture) : MySqlTest(fixture)
     }
 
     // 先右连接、只取第一张表，再整体作为派生表左连接
-    [Fact, Upstream("QueryTest24.java#testJoinParameterCount", Deviation = "Java 两参 lambda 的 leftJoin 把前面的连接收成第一张表的派生表；C# 显式 Select((t, b) => t) 再连接，SQL 相同")]
+    // 写法与 Java 不同、SQL 一致：Java 两参 lambda 的 leftJoin 把前面的连接收成第一张表的派生表；C# 显式 Select((t, b) => t) 再连接，SQL 相同
+    [Fact, Upstream("QueryTest24.java#testJoinParameterCount")]
     public async Task TestJoinParameterCount()
     {
         using var listen = SqlCapture.Listen();
@@ -232,7 +233,8 @@ public sealed class QueryTest24(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("false(Boolean)");
     }
 
-    [Fact, Upstream("QueryTest24.java#testdraft1", Deviation = "同 testJoinParameterCount")]
+    // 写法与 Java 不同、SQL 一致：Java 两参 lambda 的 leftJoin 把前面的连接收成第一张表的派生表；C# 显式 Select((t, b) => t) 再连接，SQL 相同
+    [Fact, Upstream("QueryTest24.java#testdraft1")]
     public async Task Testdraft1()
     {
         using var listen = SqlCapture.Listen();

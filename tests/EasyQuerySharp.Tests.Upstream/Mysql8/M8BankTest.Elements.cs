@@ -73,7 +73,8 @@ public sealed partial class M8BankTest
     }
 
     // Java 的 flatElement() 是"任一元素满足"，C# 写 Any；ALL_SUB_QUERY_GROUP_JOIN 对应显式 GroupJoin
-    [Fact, Upstream("mysql8/M8BankTest.java#testFlatTest", Deviation = "Java 用 ALL_SUB_QUERY_GROUP_JOIN 行为让全部集合导航合并成分组 JOIN；C# 在查询上显式 GroupJoin(导航)，flatElement 写成 Any")]
+    // 写法与 Java 不同、SQL 一致：Java 用 ALL_SUB_QUERY_GROUP_JOIN 行为让全部集合导航合并成分组 JOIN；C# 在查询上显式 GroupJoin(导航)，flatElement 写成 Any
+    [Fact, Upstream("mysql8/M8BankTest.java#testFlatTest")]
     public async Task TestFlatTest()
     {
         using var listen = SqlCapture.Listen();

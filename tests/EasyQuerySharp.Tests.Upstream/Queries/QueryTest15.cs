@@ -252,7 +252,8 @@ public sealed class QueryTest15(MySqlFixture fixture) : MySqlTest(fixture)
     }
 
     // 各库的中文日期格式（Java 的 Kingbase 是 PG 模式，C# 用 PG 方言比对）
-    [Fact, Upstream("QueryTest15.java#test122345", Deviation = "Java 用人大金仓（PG 模式）方言；C# 用 PostgreSQL 方言比对，SQL 相同")]
+    // 写法与 Java 不同、SQL 一致：Java 用人大金仓（PG 模式）方言；C# 用 PostgreSQL 方言比对，SQL 相同
+    [Fact, Upstream("QueryTest15.java#test122345")]
     public void Test122345()
     {
         Assert.Equal("SELECT \"id\",\"stars\",\"title\",\"create_time\" FROM \"t_topic\" WHERE TO_CHAR((\"create_time\")::TIMESTAMP,'YYYY年MM月DD日') = ?", TestKit.SqlOnly.Db("pgsql").Query<Topic>().Where(m => m.CreateTime!.Value.ToString("yyyy年MM月dd日") == "2022年01月01日").ToSql());

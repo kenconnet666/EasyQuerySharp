@@ -63,7 +63,8 @@ public sealed class CTETest(Mysql8Fixture fixture) : Mysql8Test(fixture)
     }
 
     // 视图实体上的多对多导航
-    [Fact, Upstream("mysql8/CTETest.java#cteTest4", Deviation = "Java 的 flatElement 在 C# 里写成 Any")]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement 在 C# 里写成 Any
+    [Fact, Upstream("mysql8/CTETest.java#cteTest4")]
     public async Task CteTest4()
     {
         using var listen = SqlCapture.Listen();
@@ -85,7 +86,8 @@ public sealed class CTETest(Mysql8Fixture fixture) : Mysql8Test(fixture)
     }
 
     // 视图里带窗口函数列；前一段 GroupJoinAll 下的嵌套 Any 只执行不断言
-    [Fact, Upstream("mysql8/CTETest.java#cteTest6", Deviation = "Java 的 flatElement 在 C# 里写成 Any")]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement 在 C# 里写成 Any
+    [Fact, Upstream("mysql8/CTETest.java#cteTest6")]
     public async Task CteTest6()
     {
         await Db.Query<M8User>().GroupJoinAll().Where(m => m.Roles!.Any(r => r.Menus!.Any(x => Sql.LikeContains(x.Path, "/admin")))).ToListAsync(Ct);

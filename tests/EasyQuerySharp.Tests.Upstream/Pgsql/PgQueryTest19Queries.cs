@@ -8,7 +8,6 @@ namespace EasyQuerySharp.Tests.Upstream.Pgsql;
 /// </summary>
 public sealed class PgQueryTest19Queries(PgFixture fixture) : PgTest(fixture)
 {
-    private const string MapDeviation = "Java 的 Map 投影写成带 [Column] 的 DTO，SQL 相同";
     private const string MapValueDeviation = "Java 的 Map 投影写成带 [Column] 的 DTO，SQL 相同；Map 的值是 Object，Java 的比较参数保持 Integer，C# 按 DTO 属性的 decimal 传参";
     private const string DateFormat = "yyyy年MM-01 HH:mm分ss秒";
 
@@ -92,7 +91,8 @@ public sealed class PgQueryTest19Queries(PgFixture fixture) : PgTest(fixture)
         listen.AssertParams(",(String),false(Boolean),2022-01-01T00:00(LocalDateTime),false(Boolean),123(String)");
     }
 
-    [Fact, Upstream("pgsql/QueryTest19.java#testJoining4", Deviation = MapDeviation)]
+    // 写法与 Java 不同、SQL 一致：Java 的 Map 投影写成带 [Column] 的 DTO，SQL 相同
+    [Fact, Upstream("pgsql/QueryTest19.java#testJoining4")]
     public async Task TestJoining4()
     {
         using var listen = SqlCapture.Listen();

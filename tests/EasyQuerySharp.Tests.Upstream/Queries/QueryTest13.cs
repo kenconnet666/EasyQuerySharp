@@ -8,10 +8,9 @@ namespace EasyQuerySharp.Tests.Upstream.Queries;
 /// </summary>
 public sealed class QueryTest13(MySqlFixture fixture) : MySqlTest(fixture)
 {
-    private const string MapDeviation = "Java 用 MapKey 拼 Map 投影；C# 写成 DTO，[Column] 给出相同的列别名，SQL 相同";
-
     // 分组计数作为派生表，再连接主题表
-    [Fact, Upstream("QueryTest13.java#orderTest1", Deviation = MapDeviation), Upstream("QueryTest13.java#orderTest1_1", Deviation = MapDeviation)]
+    // 写法与 Java 不同、SQL 一致：Java 用 MapKey 拼 Map 投影；C# 写成 DTO，[Column] 给出相同的列别名，SQL 相同
+    [Fact, Upstream("QueryTest13.java#orderTest1"), Upstream("QueryTest13.java#orderTest1_1")]
     public async Task OrderTest1()
     {
         using var listen = SqlCapture.Listen();
@@ -25,7 +24,8 @@ public sealed class QueryTest13(MySqlFixture fixture) : MySqlTest(fixture)
     }
 
     // 读成字典时日期列的值仍是 DateTime
-    [Fact, Upstream("QueryTest13.java#orderTest2", Deviation = MapDeviation)]
+    // 写法与 Java 不同、SQL 一致：Java 用 MapKey 拼 Map 投影；C# 写成 DTO，[Column] 给出相同的列别名，SQL 相同
+    [Fact, Upstream("QueryTest13.java#orderTest2")]
     public async Task OrderTest2()
     {
         using var listen = SqlCapture.Listen();

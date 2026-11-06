@@ -7,8 +7,6 @@ namespace EasyQuerySharp.Tests.Upstream.Mysql8;
 /// </summary>
 public sealed partial class ManyJoinTest(Mysql8Fixture fixture) : Mysql8Test(fixture)
 {
-    private const string FlatElement = "Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同";
-
     // Java 用例没有断言，只验证能执行
     [Fact, Upstream("mysql8/ManyJoinTest.java#manyGroupTest1")]
     public async Task ManyGroupTest1()
@@ -204,7 +202,8 @@ public sealed partial class ManyJoinTest(Mysql8Fixture fixture) : Mysql8Test(fix
 
     private const string NestedAnySql = "SELECT t.`id`,t.`name`,t.`age`,t.`create_time` FROM `m8_user` t LEFT JOIN (SELECT t2.`user_id` AS `__group_key1__`,(COUNT(?) > 0) AS `__any2__` FROM `m8_role` t1 INNER JOIN `m8_user_role` t2 ON t1.`id` = t2.`role_id` LEFT JOIN (SELECT t6.`role_id` AS `__group_key1__`,(COUNT(?) > 0) AS `__any2__` FROM `m8_menu` t5 INNER JOIN `m8_role_menu` t6 ON t5.`id` = t6.`menu_id` WHERE t5.`name` = ? GROUP BY t6.`role_id`) t8 ON t8.`__group_key1__` = t1.`id` WHERE IFNULL(t8.`__any2__`,?) = ? GROUP BY t2.`user_id`) t4 ON t4.`__group_key1__` = t.`id` WHERE IFNULL(t4.`__any2__`,?) = ?";
 
-    [Fact, Upstream("mysql8/ManyJoinTest.java#testMany2Many2GroupJoin2", Deviation = FlatElement)]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同
+    [Fact, Upstream("mysql8/ManyJoinTest.java#testMany2Many2GroupJoin2")]
     public async Task TestMany2Many2GroupJoin2()
     {
         using var listen = SqlCapture.Listen();
@@ -213,7 +212,8 @@ public sealed partial class ManyJoinTest(Mysql8Fixture fixture) : Mysql8Test(fix
         listen.AssertSql(NestedAnySql);
     }
 
-    [Fact, Upstream("mysql8/ManyJoinTest.java#testMany2Many2GroupJoin24", Deviation = FlatElement)]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同
+    [Fact, Upstream("mysql8/ManyJoinTest.java#testMany2Many2GroupJoin24")]
     public async Task TestMany2Many2GroupJoin24()
     {
         using var listen = SqlCapture.Listen();
@@ -232,7 +232,8 @@ public sealed partial class ManyJoinTest(Mysql8Fixture fixture) : Mysql8Test(fix
         listen.AssertParams("1(Integer),1(Integer),admin(String),false(Boolean),true(Boolean),false(Boolean),true(Boolean)");
     }
 
-    [Fact, Upstream("mysql8/ManyJoinTest.java#testMany2Many2GroupJoin4", Deviation = FlatElement)]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同
+    [Fact, Upstream("mysql8/ManyJoinTest.java#testMany2Many2GroupJoin4")]
     public async Task TestMany2Many2GroupJoin4()
     {
         using var listen = SqlCapture.Listen();
@@ -241,7 +242,8 @@ public sealed partial class ManyJoinTest(Mysql8Fixture fixture) : Mysql8Test(fix
     }
 
     // 两个条件各是一个聚合，两层分组表里各有两列
-    [Fact, Upstream("mysql8/ManyJoinTest.java#testMany2Many2GroupJoin5", Deviation = FlatElement)]
+    // 写法与 Java 不同、SQL 一致：Java 的 flatElement() 链式取元素属性；C# 写成嵌套 Any，SQL 相同
+    [Fact, Upstream("mysql8/ManyJoinTest.java#testMany2Many2GroupJoin5")]
     public async Task TestMany2Many2GroupJoin5()
     {
         using var listen = SqlCapture.Listen();

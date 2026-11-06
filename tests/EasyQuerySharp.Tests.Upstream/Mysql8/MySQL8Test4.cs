@@ -213,7 +213,8 @@ public sealed class MySQL8Test4(Mysql8Fixture fixture) : Mysql8Test(fixture)
     }
 
     // Java 的 notEmptyAll：至少有一张、且全部满足；C# 写成分组的 Any && All
-    [Fact, Upstream("mysql8/MySQL8Test4.java#testAll4", Deviation = "Java 的 notEmptyAll(…) 是一个方法；C# 写成 Sql.Group(Any() && All(…))，SQL 相同")]
+    // 写法与 Java 不同、SQL 一致：Java 的 notEmptyAll(…) 是一个方法；C# 写成 Sql.Group(Any() && All(…))，SQL 相同
+    [Fact, Upstream("mysql8/MySQL8Test4.java#testAll4")]
     public async Task TestAll4()
     {
         using var listen = SqlCapture.Listen();
@@ -224,7 +225,8 @@ public sealed class MySQL8Test4(Mysql8Fixture fixture) : Mysql8Test(fixture)
         listen.AssertParams("储蓄卡(String),储蓄卡(String),33123(String)");
     }
 
-    [Fact, Upstream("mysql8/MySQL8Test4.java#testAll5", Deviation = "Java 的 notEmptyAll(…) 是一个方法；C# 写成 Sql.Group(Any() && All(…))，SQL 相同")]
+    // 写法与 Java 不同、SQL 一致：Java 的 notEmptyAll(…) 是一个方法；C# 写成 Sql.Group(Any() && All(…))，SQL 相同
+    [Fact, Upstream("mysql8/MySQL8Test4.java#testAll5")]
     public async Task TestAll5()
     {
         using var listen = SqlCapture.Listen();
@@ -247,10 +249,9 @@ public sealed class MySQL8Test4(Mysql8Fixture fixture) : Mysql8Test(fixture)
         listen.AssertParams("123(String)");
     }
 
-    private const string FirstCardInclude = "Java 的 firstCard 是 OneToOne + limit 1 + orderByProps 的导航；C# 写成 Include(BankCards, q => q.OrderBy(OpenTime).Take(1))，SQL 相同";
-
     // 子数据带 Take：按用户分区编号后各取一张
-    [Fact, Upstream("mysql8/MySQL8Test4.java#includeOneTest1", Deviation = FirstCardInclude)]
+    // 写法与 Java 不同、SQL 一致：Java 的 firstCard 是 OneToOne + limit 1 + orderByProps 的导航；C# 写成 Include(BankCards, q => q.OrderBy(OpenTime).Take(1))，SQL 相同
+    [Fact, Upstream("mysql8/MySQL8Test4.java#includeOneTest1")]
     public async Task IncludeOneTest1()
     {
         using var listen = SqlCapture.Listen();
@@ -263,7 +264,8 @@ public sealed class MySQL8Test4(Mysql8Fixture fixture) : Mysql8Test(fixture)
     }
 
     // 先查出用户，再给这些用户带出
-    [Fact, Upstream("mysql8/MySQL8Test4.java#includeOneTest2", Deviation = FirstCardInclude)]
+    // 写法与 Java 不同、SQL 一致：Java 的 firstCard 是 OneToOne + limit 1 + orderByProps 的导航；C# 写成 Include(BankCards, q => q.OrderBy(OpenTime).Take(1))，SQL 相同
+    [Fact, Upstream("mysql8/MySQL8Test4.java#includeOneTest2")]
     public async Task IncludeOneTest2()
     {
         using var listen = SqlCapture.Listen();
@@ -314,7 +316,8 @@ public sealed class MySQL8Test4(Mysql8Fixture fixture) : Mysql8Test(fixture)
     }
 
     // ON 里引用了用户的第一张卡：那张卡的 JOIN 提到用户表的 JOIN 之前
-    [Fact, Upstream("mysql8/MySQL8Test4.java#testFilterAndDependency", Deviation = "Java 的 filter(…) 在 C# 里直接写条件，firstCard 写成 BankCards.OrderBy(OpenTime).First()；SQL 相同")]
+    // 写法与 Java 不同、SQL 一致：Java 的 filter(…) 在 C# 里直接写条件，firstCard 写成 BankCards.OrderBy(OpenTime).First()；SQL 相同
+    [Fact, Upstream("mysql8/MySQL8Test4.java#testFilterAndDependency")]
     public async Task TestFilterAndDependency()
     {
         using var listen = SqlCapture.Listen();
