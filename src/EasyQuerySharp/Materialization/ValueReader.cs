@@ -22,10 +22,11 @@ public static class ValueReader
         {
             raw = reader.GetValue(ordinal);
         }
-        // Oracle 的 NUMBER 运算结果（LOG、LN 等）可能超过 decimal 的 28 位精度，按 decimal 读会溢出：浮点目标改按 double 读
+        // Oracle 的 NUMBER 运算结果（LOG、LN 等）可能超过 decimal 的 28 位精度，按 decimal 读会溢出：浮点目标改读驱动自己的数值类型，
+        // 按文本转成 double（ODP.NET 的 GetDouble 在这里会丢精度）
         catch (OverflowException) when (converter is null && (Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T)) is var t && (t == typeof(double) || t == typeof(float)))
         {
-            raw = reader.GetDouble(ordinal);
+            raw = reader.GetProviderSpecificValue(ordinal);
         }
         if (converter is not null) return (T)converter.FromProvider(ConvertTo(raw, converter.ProviderType))!;
         return (T)ConvertTo(raw, typeof(T))!;

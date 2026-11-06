@@ -242,8 +242,9 @@ public class OracleDialect : SqlDialect
             part => part switch
             {
                 DatePart.DayOfYear => "cast(to_char({0},'DDD') as number)",
-                DatePart.DayOfWeek => "(case when to_char({0},'D')='7' then 0 else cast(to_char({0},'D') as number) end)",
-                DatePart.IsoDayOfWeek => "cast(to_char({0},'D') as number)",
+                // Java 用 to_char(x,'D')，结果随会话的 NLS_TERRITORY 变（美国区星期日是 1）；按 ISO 周的起点算，与 NLS 无关
+                DatePart.DayOfWeek => "MOD(TRUNC({0}) - TRUNC({0},'IW') + 1,7)",
+                DatePart.IsoDayOfWeek => "(TRUNC({0}) - TRUNC({0},'IW') + 1)",
                 _ => "cast(to_char({0},'" + part switch
                 {
                     DatePart.Year => "YYYY", DatePart.Month => "MM", DatePart.Day => "DD", DatePart.Hour => "HH24", DatePart.Minute => "MI", _ => "SS",

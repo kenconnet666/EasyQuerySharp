@@ -144,7 +144,7 @@ R → 1 → 2 → 3 → 4 → 5。
 - [ ] 4.4 分库分表（ShardingTest 48 个，另有 H2 的 3 个骨架：H2OrderTest ×2、H2QueryTest allTypeTestSharding1），先写决策文档 0006：草案已写（[0006](docs/decisions/0006-sharding.md)），末尾“待定”的 5 点确认后开工：
   - 分表：按取模或按时间路由、按条件裁剪、库内 UNION ALL、写入路由；
   - 分库：路由，在内存里做归并排序和分页，跨库合并 `count` / `sum` / `min` / `max`。
-- [ ] 4.5 二级缓存 `EasyQuerySharp.Caching`，先写决策文档 0007（用例在 QueryTest25：test11a、test11a1、topicIntegerTest、xxx）：
+- [ ] 4.5 二级缓存 `EasyQuerySharp.Caching`，先写决策文档 0007（用例在 QueryTest25：test11a、test11a1、topicIntegerTest、xxx）：草案已写（[0007](docs/decisions/0007-second-level-cache.md)），末尾“待定”确认后开工；
   - 参照 Java 的 `sql-extension/sql-cache`：单实体、多实体、键值三种缓存查询，写入后让缓存失效；
   - 对接 `Microsoft.Extensions.Caching` 的抽象，支持本机和分布式两级。
 - [x] 4.6 依赖注入 `EasyQuerySharp.DependencyInjection`（只引用 Microsoft.Extensions.DependencyInjection.Abstractions 10.0.14）：`services.AddEasyQuery(o => ..)` / `AddEasyQuery((sp, o) => ..)` 把 `EasyDb` 注册成单例（线程安全，环境事务与追踪作用域借 AsyncLocal 跟随异步流程，每个请求本就隔离）；`AddEasyQuery("name", ..)` 注册成 keyed 单例，用 `[FromKeyedServices("name")]` 注入。对应 Java starter 的自动装配：容器里的 `IExecutionListener`、`IInterceptor` 在配置函数之前加入，配置函数没有指定数据源时取容器里的 `DbDataSource`（Npgsql / MySqlConnector 的 `AddXxxDataSource` 会登记它）；默认的库只取不带键的服务，命名的库只取以库名为键的服务。测试在 `tests/EasyQuerySharp.Tests.DependencyInjection`（真实容器 + SQLite），用法见 [依赖注入指南](docs/guide/dependency-injection.md)。DocsExamples 的卡片按方言比对 SQL，注册代码没有 SQL 可比，所以只写指南。
