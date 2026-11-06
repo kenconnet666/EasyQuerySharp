@@ -2,7 +2,7 @@
 
 `src/EasyQuerySharp.Generator` 里的分析器在编译期指出运行时才会失败的查询写法。它是 netstandard2.0 程序集，Roslyn 固定在 4.14（不能高于使用者 SDK 自带的编译器）。测试在 `tests/EasyQuerySharp.Tests.Generator`：把代码片段连同真实的核心库一起编译，断言报出的诊断，每条诊断都有正例和反例。
 
-只检查**查询表达式**：作为表达式树传给 EasyQuerySharp 方法的 lambda（`Where`、`Select`、`OrderBy`、`Set` 等），连同里面嵌套的 lambda（`u.Posts.Any(p => …)`）。普通的 LINQ to Objects 不检查。
+EQ0001、EQ0002 只检查**查询表达式**：作为表达式树传给 EasyQuerySharp 方法的 lambda（`Where`、`Select`、`OrderBy`、`Set` 等），连同里面嵌套的 lambda（`u.Posts.Any(p => …)`）。普通的 LINQ to Objects 不检查。EQ0007 反过来，检查查询表达式**之外**的代码。
 
 | 编号 | 级别 | 内容 | 怎么改 |
 |---|---|---|---|
@@ -12,6 +12,7 @@
 | EQ0004 | 错误 | `[Navigate]` 的 `ExtraFilter` / `ExtraMappingFilter` 引用的成员不存在、不是静态，或类型不是 `Expression<Func<目标（中间表）, bool>>` | 用 `nameof` 引用本实体上的静态表达式属性或字段 |
 | EQ0005 | 警告 | `[MapFrom<T>]` 的 DTO 把没有标 `Required` 的可空对一导航映射成了非空成员 | DTO 成员加 `?`，或在导航上标 `Required = true` |
 | EQ0006 | 错误 | `[Projection]` 方法写法生成器处理不了：不是静态、是泛型、所在类型不是 partial 或是泛型、方法体不止一个表达式 | 按诊断说明改写；方法体只写一个表达式（`=> 表达式` 或只有一句 `return`） |
+| EQ0007 | 错误 | 只能写在查询表达式里的方法（`Sql.*`，`Sql.Identifier` 除外；标了 `[SqlFunction]` 的方法）在普通代码里被调用，执行时会抛异常。写在任意一层转换成 `Expression<…>` 的 lambda 里、`[Projection]` 方法体里、LINQ 查询语法里都不报 | 挪进查询表达式；要在内存里算，就用对应的 BCL 写法 |
 
 ## 生成器
 

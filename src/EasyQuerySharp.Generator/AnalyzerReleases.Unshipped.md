@@ -11,3 +11,4 @@ EQ0006 | EasyQuerySharp | Error | Descriptors
 EQ0003 | EasyQuerySharp | Warning | Descriptors
 EQ0004 | EasyQuerySharp | Error | Descriptors
 EQ0005 | EasyQuerySharp | Warning | Descriptors
+EQ0007 | EasyQuerySharp | Error | Descriptors
