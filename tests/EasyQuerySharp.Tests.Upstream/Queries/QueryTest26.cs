@@ -191,6 +191,23 @@ public sealed class QueryTest26(MySqlFixture fixture) : MySqlTest(fixture)
         Assert.Equal(100_001, count);
     }
 
+    // 自增主键插入后回填；为 null 的列不写，由库端默认值补上（时间是库的当前时间，按库的 NOW 比较，库与测试进程的时区可以不同）
+    [Fact, Upstream("QueryTest26.java#testGenerateKeys", Deviation = "建表用原生 DDL：C# 的 code-first 还不能声明列的库端默认值（Java 的 dbDefault，归 4.1）；插入、回填与读取同 Java")]
+    public async Task TestGenerateKeys()
+    {
+        await Db.CodeFirst.DropTablesIfExistsAsync([typeof(MySQLGenerateKey)], Ct);
+        await Db.ExecuteSqlAsync("CREATE TABLE `my_sql_generate_key` (`id` INT NOT NULL AUTO_INCREMENT, `name` VARCHAR(255) NULL DEFAULT '', `now` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3), PRIMARY KEY (`id`))", cancellationToken: Ct);
+
+        var key = new MySQLGenerateKey { Name = "test" };
+        await Db.Insert(key).FillGeneratedKeys().ExecuteAsync(Ct);
+        Assert.Equal(1, key.Id);
+
+        var read = await Db.Query<MySQLGenerateKey>().WhereById(1).SingleOrDefaultAsync(Ct);
+        Assert.Equal(1, read?.Id);
+        var dbNow = (DateTime)(await Db.SqlQueryAsync<Dictionary<string, object?>>("SELECT NOW(3) AS `n`", cancellationToken: Ct))[0]["n"]!;
+        Assert.InRange((dbNow - read!.Now!.Value).Duration(), TimeSpan.Zero, TimeSpan.FromMinutes(5));
+    }
+
     // IN 列表超过上限时按上限拆成 OR 连接的多个 IN（只比对 SQL，用 Oracle 方言）
     [Fact, Upstream("QueryTest26.java#testMaxInCaluse", Deviation = "Java 的 contains 在 Oracle 上写成 LIKE ('%'||TO_CHAR(?)||'%')，C# 的 string.Contains 写成 LIKE ?（值里带好 %）")]
     public void TestMaxInClause()

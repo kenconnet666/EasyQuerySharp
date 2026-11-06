@@ -37,6 +37,19 @@ public sealed class NullSafeSqlTest
         Assert.Equal("SELECT t.`id` FROM `t_fork_post` t INNER JOIN `t_fork_user` t1 ON (t1.`id` <=> t.`user_id`)",
             SqlOnly.Db("mysql").Query<ForkPost>().InnerJoin<ForkUser>((p, u) => u.Id.EqualsNullSafe(p.UserId)).Select((p, u) => p.Id).ToSql());
 
+    // fork 的方法体不在本机，快照里只有 MySQL 的原文；其余方言按各自的写法：PG 家族与 Db2 IS NOT DISTINCT FROM、SQLite IS，没有专门运算符的库展开成 OR
+    [Theory, Upstream("fork/functions/NullSafeSqlTest.java#nullSafeEqualsPerDialect")]
+    [InlineData("mysql", "SELECT t.`id` FROM `t_fork_user` t WHERE (t.`name` <=> ?)")]
+    [InlineData("pgsql", "SELECT t.\"id\" FROM \"t_fork_user\" t WHERE (t.\"name\" IS NOT DISTINCT FROM ?)")]
+    [InlineData("duckdb", "SELECT t.\"id\" FROM \"t_fork_user\" t WHERE (t.\"name\" IS NOT DISTINCT FROM ?)")]
+    [InlineData("db2", "SELECT t.\"id\" FROM \"t_fork_user\" t WHERE (t.\"name\" IS NOT DISTINCT FROM ?)")]
+    [InlineData("sqlite", "SELECT t.\"id\" FROM \"t_fork_user\" t WHERE (t.\"name\" IS ?)")]
+    [InlineData("mssql", "SELECT t.[id] FROM [t_fork_user] t WHERE ((t.[name] = ?) OR (t.[name] IS NULL AND ? IS NULL))")]
+    [InlineData("oracle", "SELECT t.\"id\" FROM \"t_fork_user\" t WHERE ((t.\"name\" = ?) OR (t.\"name\" IS NULL AND ? IS NULL))")]
+    [InlineData("hana", "SELECT t.\"id\" FROM \"t_fork_user\" t WHERE ((t.\"name\" = ?) OR (t.\"name\" IS NULL AND ? IS NULL))")]
+    public void NullSafeEqualsPerDialect(string dialect, string sql) =>
+        Assert.Equal(sql, SqlOnly.Db(dialect).Query<ForkUser>().Where(u => u.Name.EqualsNullSafe("a")).Select(u => u.Id).ToSql());
+
     [Fact, Upstream("fork/functions/NullSafeSqlTest.java#nullIf")]
     public void NullIf()
     {

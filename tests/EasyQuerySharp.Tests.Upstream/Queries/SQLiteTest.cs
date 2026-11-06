@@ -4,7 +4,7 @@ namespace EasyQuerySharp.Tests.Upstream.Queries;
 
 /// <summary>
 /// 对应 Java：sqlite/SQLiteTest.java 的查询用例（SQLite 上整表查询、日期区间条件，读出后序列化成 JSON）。
-/// Java 连一个现成的 SQLite 文件库；这里用共享的内存库，code-first 建表并写入一行。建表的 DDL 用例随 code-first（7.1）移植。
+/// Java 连一个现成的 SQLite 文件库；这里用共享的内存库，code-first 建表并写入一行。建表的 DDL 用例另起一个列名按 UpperCamelCase 的库。
 /// </summary>
 public sealed class SQLiteTest : IAsyncLifetime
 {
@@ -35,6 +35,32 @@ public sealed class SQLiteTest : IAsyncLifetime
         var list = await _db.Query<BlogEntity>().ToListAsync(Ct);
         Assert.All(list, b => Assert.Contains("\"title\":\"title1\"", System.Text.Json.JsonSerializer.Serialize(b, System.Text.Json.JsonSerializerOptions.Web)));
     }
+
+    private const string DdlDeviation = "建表语句由 C# 的 SQLite 方言生成（单行、标准类型名 INTEGER / TIMESTAMP，主键列表不留空格）；Java 是多行格式（integer、日期存 TEXT）";
+
+    // Java 的 SQLiteBaseTest 用 UpperCamelCase 列名；建表 DDL 单独起一个库，与上面查询用的库分开
+    private static async Task<string> CreateTableSql(Type entity)
+    {
+        var db = new EasyDb(o =>
+        {
+            o.NameConversion = Metadata.NameConversion.UpperCamelCase;
+            o.UseSqlite(SqliteFactory.Instance.CreateDataSource("Data Source=:memory:")).AddListener(SqlCapture.Instance);
+        });
+        await db.CodeFirst.DropTablesIfExistsAsync([entity], Ct);
+        using var listen = SqlCapture.Listen();
+        await db.CodeFirst.CreateTablesAsync([entity], Ct);
+        return listen.Last.Statement.Text;
+    }
+
+    [Fact, Upstream("sqlite/SQLiteTest.java#testDDL", Deviation = DdlDeviation)]
+    public async Task TestDDL() =>
+        Assert.Equal("CREATE TABLE IF NOT EXISTS \"t_topic\" (\"Id\" VARCHAR(255) NOT NULL, \"Stars\" INTEGER NULL, \"Title\" VARCHAR(255) NULL, \"CreateTime\" TIMESTAMP NULL, PRIMARY KEY (\"Id\"))",
+            await CreateTableSql(typeof(Topic)));
+
+    [Fact, Upstream("sqlite/SQLiteTest.java#testDDL2", Deviation = DdlDeviation)]
+    public async Task TestDDL2() =>
+        Assert.Equal("CREATE TABLE IF NOT EXISTS \"t_multi_primary\" (\"Id1\" VARCHAR(255) NOT NULL, \"Id2\" VARCHAR(255) NOT NULL, PRIMARY KEY (\"Id1\",\"Id2\"))",
+            await CreateTableSql(typeof(H2.MultiPrimaryEntity)));
 
     [Fact, Upstream("sqlite/SQLiteTest.java#testQuery1")]
     public async Task TestQuery1()

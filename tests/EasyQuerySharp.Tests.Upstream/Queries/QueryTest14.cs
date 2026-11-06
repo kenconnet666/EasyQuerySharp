@@ -193,8 +193,7 @@ public sealed class QueryTest14(MySqlFixture fixture) : MySqlTest(fixture)
 
     // 同上，方言换成 SQLite：分组分页、目标表的 asTableLink 与 Java 一致
     [Fact, Upstream("QueryTest14.java#test3", Deviation = "插入冲突：Java 的 SQLite 方言写 REPLACE INTO（更新）与 INSERT … SELECT … WHERE NOT EXISTS（忽略），"
-        + "C# 写 SQLite 3.24 起的 ON CONFLICT … DO UPDATE / DO NOTHING，没有可作约束的列时报错；带条件的删除与逻辑删除 Java 用表名限定列，C# 给目标表起别名 t（UPDATE / DELETE … AS t）；"
-        + "列模式的 LIKE：Java 写 ('%'||列||'%')，C# 写 CONCAT('%',列,'%')")]
+        + "C# 写 SQLite 3.24 起的 ON CONFLICT … DO UPDATE / DO NOTHING，没有可作约束的列时报错；带条件的删除与逻辑删除 Java 用表名限定列，C# 给目标表起别名 t（UPDATE / DELETE … AS t）")]
     public void Test3()
     {
         var db = SqlOnly.Db("sqlite");
@@ -210,7 +209,7 @@ public sealed class QueryTest14(MySqlFixture fixture) : MySqlTest(fixture)
         SqlOnly.AssertStatement(db.Query<BlogEntity>().Where(b => b.Id == "123").OrderBy(b => b.Star).GroupBy(b => b.Title)
                 .Select(g => new BlogEntity { Title = g.Key, Star = (int)g.Count(x => x.Id) }).Skip(20).Take(10).ToStatement(),
             GroupedSql + " ORDER BY t.\"star\" ASC LIMIT 10 OFFSET 20", "false(Boolean),123(String)");
-        Assert.Equal(TopicJoinBlog + "CONCAT('%',t1.\"title\",'%')", db.Query<Topic>().LeftJoin<BlogEntity>((t, b2) => t.Id == b2.Id).Where((t1, b2) => t1.Id!.Contains(b2.Title!)).ToSql());
+        Assert.Equal(TopicJoinBlog + "('%'||t1.\"title\"||'%')", db.Query<Topic>().LeftJoin<BlogEntity>((t, b2) => t.Id == b2.Id).Where((t1, b2) => t1.Id!.Contains(b2.Title!)).ToSql());
 
         const string AutoInsert = "INSERT INTO \"t_topic_auto\" (\"stars\",\"title\",\"create_time\") VALUES (?,?,?)";
         Assert.Equal(AutoInsert.Replace("INTO ", "INTO 1", StringComparison.Ordinal) + " ON CONFLICT (\"title\") DO UPDATE SET \"stars\" = EXCLUDED.\"stars\"",

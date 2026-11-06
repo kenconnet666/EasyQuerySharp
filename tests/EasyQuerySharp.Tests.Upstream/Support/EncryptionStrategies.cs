@@ -22,6 +22,14 @@ public sealed class MyEncryptionStrategy : AesBase64EncryptionStrategy
     protected override string Key => "1234567890abcdef";
 }
 
+/// <summary>对应 Java：conversion/JavaEncryptionStrategy（SysUserEncrypt 的地址）。</summary>
+public sealed class JavaEncryptionStrategy : AesBase64EncryptionStrategy
+{
+    protected override string Iv => "1234567890123456";
+
+    protected override string Key => "1234561234567890";
+}
+
 /// <summary>对应 Java：encryption/DefaultAesEasyEncryptionStrategy（测试用的固定密钥）。</summary>
 public sealed class DefaultAesEasyEncryptionStrategy : AesBase64EncryptionStrategy
 {

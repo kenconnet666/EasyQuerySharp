@@ -15,8 +15,8 @@
 
 ## 现状（2026-11-06）
 
-- 对标：已移植 1999、偏离 191、不适用 140、骨架 6、待做 68。
-- 待做的分布：分库分表 48（等 0006 定稿），code-first 7（进行中），二级缓存 4（等 0007 定稿），其余零散 9（进行中）。
+- 对标：已移植 2002、偏离 195、不适用 141、骨架 6、待做 60。
+- 待做的分布：分库分表 48（等 0006 定稿），code-first 7 与 MySQL8Test2 一个（4.1 进行中），二级缓存 4（等 0007 定稿）。
 - 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17、DuckDB（进程内）；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
 
 ## 已定的取舍
@@ -134,7 +134,8 @@ R → 1 → 2 → 3 → 4 → 5。
   - 用例：ClickHouseTest 4 个、ForUpdateDialectToSQLSmokeTest 的 clickHouse / db2 两条移植（只渲染）；`Dialects/` 下另有 `ClickHouseDialectTest`、`Db2DialectTest`、`TDengineDialectTest` 核对分页、写入、连接、分组、函数表、行锁与建表的 SQL 文本。
   - 待做：实库冒烟。compose 已有 clickhouse / db2 / tdengine 三个 profile；要在 TestKit 里加测试用的驱动（ClickHouse.Client、Net.IBM.Data.Db2、TDengine.Connector，新依赖先说明）、`TestDatabases` 登记、LiveSuite 子类按能力裁剪（参照 TS 的 analyticSuite / tdengine live 测试），跑通后各方言的参数占位符、函数表再按实库修正。
 - [x] 3.6 H2 的 74 个用例：H2 没有 .NET 驱动，改在 SQLite 共享内存库上跑（`Upstream/H2/`，`H2Fixture` 对应 H2BaseTest）。Java 的 H2 用例把关键字服务换成不加引号的 DefaultSQLKeyword，C# 同样用标识符不加引号的 SQLite 方言，63 个 SQL 与 Java 逐字一致、记为已移植（H2DocTest 用到的 doc 表 Java 的 H2 库里没有，这里建好并核对结果）。偏离 4 个：testDDL / testDDL2 / testTableCommentDDL 的建表语句按 SQLite 方言（没有注释），tree8 的递归 CTE 按 SQLite 写法（分支不加括号、不写列名清单）。不适用 4 个：H2ForUpdateTest 里断言 FOR UPDATE 文本与行锁等待的用例（SQLite 没有行锁，MySQL、PG 上已有同样的用例）。分表的 3 个（H2OrderTest ×2、H2QueryTest allTypeTestSharding1）留骨架，随 4.4 做。顺手补齐：`sbyte` 列有了默认列类型（原来建表报不支持）；TestKit 的参数文本支持 sbyte（Byte）、TimeSpan（Time），DateOnly / TimeOnly 按 Java 的 LocalDate / LocalTime 格式输出。
-- [ ] 3.7 跨方言的零散用例：ForUpdateDialectToSQLSmokeTest 剩下的方言、NullSafeSqlTest nullSafeEqualsPerDialect。
+- [x] 3.7 跨方言的零散用例：ForUpdateDialectToSQLSmokeTest 剩下的 h2 一条记不适用（没有 H2 方言，SQLite 没有行锁），NullSafeSqlTest nullSafeEqualsPerDialect 按各方言移植（MySQL 一条与快照逐字一致，其余方言核对 C# 的写法）。同一批零散用例还移植了 QueryTest3 userBookTest、QueryTest22 testManyOrder、QueryTest26 testGenerateKeys、SQLiteTest testDDL / testDDL2、testmysql8 MyTest testaa；SQLite 在 SQL 里拼的 LIKE 改成 `('%'||v||'%')`（Java 的写法，`CONCAT` 要 SQLite 3.44）。
+  - [!] mysql8/MySQL8Test2#test：断言带 `@TableIndexes` 与列默认值的同步 DDL 的 MD5，等 4.1 的索引与列默认值。
 
 ## 阶段 4 平台能力
 

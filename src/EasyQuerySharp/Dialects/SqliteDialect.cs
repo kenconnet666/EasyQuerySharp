@@ -64,9 +64,21 @@ public class SqliteDialect : SqlDialect
     public override void WriteLock(SqlRenderer renderer, RowLock rowLock) =>
         throw new NotSupportedException("SQLite 不支持 FOR UPDATE 行锁：写事务会锁住整个库，需要先占写锁时用 BEGIN IMMEDIATE");
 
-    /// <summary>值里含 % 或 _ 时，包含 / 开头 / 结尾改写成 INSTR，避免被当成通配符（与 Java 版一致）。</summary>
+    /// <summary>
+    /// 值里含 % 或 _ 时，包含 / 开头 / 结尾改写成 INSTR，避免被当成通配符；模式在 SQL 里拼（列、<c>Sql.LikeContains</c> 等）时
+    /// 写 <c>LIKE ('%'||v||'%')</c>（都与 Java 的 SQLiteLikeSQLFunction 一致；CONCAT 要 SQLite 3.44 起才有）。
+    /// </summary>
     public override void WriteLike(SqlRenderer renderer, LikeExpr predicate)
     {
+        if (!predicate.HasWildcardValue && predicate is { Pattern: FunctionExpr { Name: SqlFunctionNames.Concat }, Value: not null })
+        {
+            renderer.Write(predicate.Operand).Append(predicate.Negated ? " NOT LIKE (" : " LIKE (");
+            if (predicate.Mode != LikeMode.StartsWith) renderer.Append("'%'||");
+            renderer.Write(predicate.Value);
+            if (predicate.Mode != LikeMode.EndsWith) renderer.Append("||'%'");
+            renderer.Append(")");
+            return;
+        }
         if (!predicate.HasWildcardValue)
         {
             base.WriteLike(renderer, predicate);

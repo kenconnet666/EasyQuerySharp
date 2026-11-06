@@ -55,6 +55,12 @@ public sealed class ForUpdateDialectToSqlSmokeTest
         Assert.Equal(1, sql.Split("FOR UPDATE").Length - 1);
     }
 
+    [Fact, Upstream("ForUpdateDialectToSQLSmokeTest.java#h2ForUpdateToSQLSmoke",
+        NotApplicable = "C# 没有 H2 方言（H2 没有 .NET 驱动，H2 的用例在 SQLite 上跑）；SQLite 没有行锁语法，见 sqliteForUpdateToSQLSmoke")]
+    public void H2ForUpdateToSqlSmoke()
+    {
+    }
+
     [Fact, Upstream("ForUpdateDialectToSQLSmokeTest.java#sqliteForUpdateToSQLSmoke",
         Deviation = "SQLite 没有 FOR UPDATE 语法（写事务锁整个库），Java 照样拼出、执行时才报语法错误；C# 渲染时就抛出 NotSupportedException")]
     public void SqliteForUpdateThrowsUnsupported()

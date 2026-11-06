@@ -320,3 +320,15 @@ public class MathTestDTO
     public decimal? TestAtan2 { get; set; }
     public decimal? TestTruncate { get; set; }
 }
+
+/// <summary>对应 Java：entity/MySQLGenerateKey（自增主键；名称与时间有库端默认值，插入时为 null 不写）。</summary>
+[Table("my_sql_generate_key")]
+public class MySQLGenerateKey
+{
+    [Column(PrimaryKey = true, Generated = true)]
+    public int? Id { get; set; }
+
+    public string? Name { get; set; }
+
+    public DateTime? Now { get; set; }
+}

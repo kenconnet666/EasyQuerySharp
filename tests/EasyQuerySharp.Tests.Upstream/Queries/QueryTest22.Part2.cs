@@ -86,6 +86,14 @@ public sealed partial class QueryTest22
 
     private const string ByJianshe = UserColumns + " ORDER BY ";
 
+    // Java 用例没有断言（先 syncTable 建 doc_part 再执行）：按某类卡所属银行的计数排序，
+    // Java 的 count(x -> x.bank().id()) 对应 Select(..).LongCount()，计非 NULL 的值
+    [Fact, Upstream("QueryTest22.java#testManyOrder")]
+    public void TestManyOrder() =>
+        SqlOnly.AssertStatement(Db.Query<DocUser>().OrderBy(user => user.BankCards!.Where(bk => bk.Type == "建设").Select(x => x.Bank!.Id).LongCount()).ToStatement(),
+            ByJianshe + "(SELECT COUNT(t2.`id`) FROM `doc_bank_card` t1 INNER JOIN `doc_bank` t2 ON t2.`id` = t1.`bank_id` WHERE t1.`uid` = t.`id` AND t1.`type` = ?) ASC",
+            "建设(String)");
+
     // 嵌套的导航聚合：外层 SUM 套内层 COUNT(DISTINCT)；不合并时 SUM 子查询外包 IFNULL(…,0)
     [Fact, Upstream("QueryTest22.java#testOrderCountDistinct1")]
     public void TestOrderCountDistinct1() =>

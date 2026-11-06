@@ -44,7 +44,7 @@ public class SysUserSQLEncryption
     public DateTime? CreateTime { get; set; }
 }
 
-/// <summary>对应 Java：entity/SysUserEncrypt（两种库端加解密；Java 地址列的 Java 端加密策略这里用不到，省略）。</summary>
+/// <summary>对应 Java：entity/SysUserEncrypt（手机号两种库端加解密，地址在程序端加密、支持 LIKE）。</summary>
 [Table("sys_user_encrypt")]
 public class SysUserEncrypt
 {
@@ -59,10 +59,23 @@ public class SysUserEncrypt
     [Column(SqlConversion = typeof(MySqlAesEncrypt2Conversion))]
     public string? Phone2 { get; set; }
 
+    [Encryption(typeof(JavaEncryptionStrategy), SupportQueryLike = true)]
     [Column(DbType = "varchar(4000)")]
     public string? Address { get; set; }
 
     public DateTime? CreateTime { get; set; }
+}
+
+/// <summary>对应 Java：entity/UserBookEncrypt（SysUserEncrypt 的书）。</summary>
+[Table("user_book_encrypt")]
+public class UserBookEncrypt
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? UserId { get; set; }
+
+    public string? Name { get; set; }
 }
 
 /// <summary>对应 Java：entity/SysUserEncrypt2（库里没有这张表）。</summary>

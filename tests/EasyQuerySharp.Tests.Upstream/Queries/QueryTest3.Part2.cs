@@ -106,6 +106,48 @@ public sealed partial class QueryTest3
     [Fact, Upstream("QueryTest3.java#queryToList1")]
     public async Task QueryToList1() => Assert.NotEmpty(await Db.Query<Topic>().ToListAsync(Ct));
 
+    /// <summary>对应 Java：dto/UserBookEncryptVO（书加上用户的名字、手机号与地址）。</summary>
+    public sealed class UserBookEncryptVO
+    {
+        public string? Id { get; set; }
+
+        public string? UserId { get; set; }
+
+        public string? Name { get; set; }
+
+        public string? UserName { get; set; }
+
+        public string? UserPhone { get; set; }
+
+        public string? UserAddress { get; set; }
+    }
+
+    // 手机号在库端解密、地址在程序端解密；按地址模糊查询时值按同样的分段规则加密。
+    // Java 的 VO 要在地址上再标 @Encryption 才解密；C# 投影加密列时总按列上的策略解密
+    [Fact, Upstream("QueryTest3.java#userBookTest")]
+    public async Task UserBookTest()
+    {
+        await Db.CodeFirst.CreateTablesAsync([typeof(SysUserEncrypt), typeof(UserBookEncrypt)], Ct);
+        await DeleteUserBooks();
+        await Db.Insert(new SysUserEncrypt { Id = "1", Name = "用户1", Phone = "12345678901", Address = "浙江省绍兴市越城区城市广场1234号", CreateTime = DateTime.Now }).ExecuteAsync(Ct);
+        await Db.Insert(new[] { new UserBookEncrypt { Id = "1", UserId = "1", Name = "语文" }, new UserBookEncrypt { Id = "2", UserId = "1", Name = "数学" } }).ExecuteAsync(Ct);
+        await Db.Insert(new SysUserEncrypt { Id = "2", Name = "用户2", Phone = "19012345678", Address = "浙江省杭州市上城区武林广场1234号", CreateTime = DateTime.Now }).ExecuteAsync(Ct);
+        await Db.Insert(new[] { new UserBookEncrypt { Id = "3", UserId = "2", Name = "语文" }, new UserBookEncrypt { Id = "4", UserId = "2", Name = "英语" } }).ExecuteAsync(Ct);
+
+        var books = await Db.Query<UserBookEncrypt>().LeftJoin<SysUserEncrypt>((t, t1) => t.UserId == t1.Id).Where((t, t1) => t1.Address!.Contains("越城区"))
+            .Select((t, t1) => new UserBookEncryptVO { Id = t.Id, UserId = t.UserId, Name = t.Name, UserName = t1.Name, UserPhone = t1.Phone, UserAddress = t1.Address })
+            .ToListAsync(Ct);
+        Assert.Equal(["1", "2"], books.Select(b => b.Id).Order());
+        Assert.All(books, b => Assert.Equal(("12345678901", "浙江省绍兴市越城区城市广场1234号"), (b.UserPhone, b.UserAddress)));
+        await DeleteUserBooks();
+    }
+
+    private async Task DeleteUserBooks()
+    {
+        await Db.Delete<SysUserEncrypt>().WhereByIds(new[] { "1", "2" }).ExecuteAsync(Ct);
+        await Db.Delete<UserBookEncrypt>().WhereByIds(new[] { "1", "2", "3", "4" }).ExecuteAsync(Ct);
+    }
+
     [Fact, Upstream("QueryTest3.java#orTest")]
     public void OrTest() =>
         Assert.Equal("SELECT `id`,`stars`,`title`,`create_time` FROM `t_topic` WHERE (`title` LIKE ? OR `id` LIKE ?)",
