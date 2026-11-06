@@ -86,6 +86,34 @@ public sealed class OracleLiveSuite : LiveSuite
     protected override LiveSuiteOptions Options { get; } = new() { JsonFunctions = false, ShardDataSources = false };
 }
 
+/// <summary>达梦 DM8：在 SYSDBA 下建独立的模式 <c>EQS_LIVE</c>（分库用例另有 <c>EQS_LIVE_DS1</c>），连接串用 <c>Schema</c> 指定。</summary>
+public sealed class DamengLiveSuite : LiveSuite
+{
+    protected override TestDatabase Database => TestDatabases.Dameng;
+    protected override SqlDialect Dialect => DamengDialect.Instance;
+    // 达梦沿用 Oracle 方言，没有 Sql.Json 的写法
+    protected override LiveSuiteOptions Options { get; } = new() { JsonFunctions = false };
+    protected override Task<string> ConnectionStringAsync() => SchemaAsync("EQS_LIVE");
+    protected internal override Task<string> ShardConnectionStringAsync() => SchemaAsync("EQS_LIVE_DS1");
+
+    private Task<string> SchemaAsync(string schema) =>
+        LiveDatabase.EnsureAsync(Database, "SELECT 1", $"SELECT 1 FROM SYSOBJECTS WHERE TYPE$ = 'SCH' AND NAME = '{schema}'", $"CREATE SCHEMA {schema}", schema);
+}
+
+/// <summary>openGauss：独立的库 <c>eqs_live</c>，按 PG 兼容模式建（默认的 A 兼容模式把空字符串当 NULL，与 PG 方言不符）。</summary>
+public sealed class OpenGaussLiveSuite : LiveSuite
+{
+    protected override TestDatabase Database => TestDatabases.OpenGauss;
+    protected override SqlDialect Dialect => GaussDbDialect.Instance;
+    // 与 PG 一样：-> / JSONB_EXISTS 要求 json / jsonb 列，模型的 JSON 列是 VARCHAR
+    protected override LiveSuiteOptions Options { get; } = new() { JsonFunctions = false };
+    protected override Task<string> ConnectionStringAsync() => DatabaseAsync("eqs_live");
+    protected internal override Task<string> ShardConnectionStringAsync() => DatabaseAsync("eqs_live_ds1");
+
+    private Task<string> DatabaseAsync(string name) =>
+        LiveDatabase.EnsureAsync(Database, "SELECT 1", $"SELECT 1 FROM pg_database WHERE datname = '{name}'", $"CREATE DATABASE {name} DBCOMPATIBILITY 'PG'", name);
+}
+
 /// <summary>DuckDB（进程内）：临时文件库（内存库每条连接各是一个库，跨连接看不到表）；没有行锁。</summary>
 public sealed class DuckDbLiveSuite : LiveSuite
 {

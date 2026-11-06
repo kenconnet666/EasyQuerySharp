@@ -37,7 +37,7 @@ public sealed record LiveSuiteOptions
 
     /// <summary>
     /// Sql.Json 函数用在模型的 JSON 列上（统一是 VARCHAR）：PostgreSQL 的 -&gt; / JSONB_EXISTS 要求 json / jsonb 列（与 Java 一样不加转换）；
-    /// SQL Server、Oracle 方言还没有 Sql.Json 的写法（Java 也没有）。
+    /// SQL Server、Oracle（及沿用它的达梦）方言还没有 Sql.Json 的写法（Java 也没有）；openGauss 同 PostgreSQL。
     /// </summary>
     public bool JsonFunctions { get; init; } = true;
 
