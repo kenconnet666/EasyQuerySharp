@@ -216,6 +216,19 @@ public static partial class Sql
     /// <summary>这个对一导航的隐式 JOIN 用别名 <paramref name="alias"/>：<c>Sql.AsAlias(u.Company, "c")!.Name</c>。同一导航带不同配置时各自 JOIN 一次。</summary>
     public static T AsAlias<T>(T navigation, string alias) where T : class? => throw OnlyInQuery();
 
+    /// <summary>
+    /// 这个集合导航的隐式子查询（或分组合并）里目标表的整个引用改用 <paramref name="segment"/> 写（对应 Java 的 nav().configure(r -> r.asTableSegment(..))），
+    /// 参数是带引号的表名和别名：<c>.Where(u => u.Cards!.AsTableSegment(NoLock).Any(c => …))</c>。
+    /// </summary>
+    public static IEnumerable<T> AsTableSegment<T>(this IEnumerable<T> navigation, Func<string, string?, string> segment) => throw OnlyInQuery();
+
+    /// <summary>
+    /// 这个对一导航的隐式 JOIN 的目标表整个引用改用 <paramref name="segment"/> 写，如 SQL Server 的表提示：
+    /// <c>.Where(c => Sql.AsTableSegment(c.User, (table, alias) =&gt; $"{table} {alias} WITH(NOLOCK)")!.Name == "x")</c>。
+    /// 同一导航带不同配置时各自 JOIN 一次。
+    /// </summary>
+    public static T AsTableSegment<T>(T navigation, Func<string, string?, string> segment) where T : class? => throw OnlyInQuery();
+
     // ---------- Map 投影 ----------
 
     /// <summary>
@@ -293,6 +306,15 @@ public static partial class Sql
 
     /// <summary><c>(CASE a WHEN b THEN 1 ELSE 0 END)</c>：相等为真（对应 Java 的 equalsWith）。</summary>
     public static bool EqualsWith<T>(T a, T b) => throw OnlyInQuery();
+
+    /// <summary>
+    /// 同一行里几个值中最大的（对应 Java 的 maxColumns）：MySQL / PostgreSQL 写 <c>GREATEST(a,b,c)</c>，SQLite 写多参数的 <c>MAX(a,b,c)</c>，
+    /// SQL Server 写 <c>(SELECT MAX(__col__) FROM (VALUES (a), (b)) AS t(__col__))</c>，其余写成每个值一个 SELECT 的 UNION ALL 派生表再取 MAX。
+    /// </summary>
+    public static T MaxColumns<T>(T first, T second, params T[] more) => throw OnlyInQuery();
+
+    /// <summary>同一行里几个值中最小的（对应 Java 的 minColumns），写法见 <see cref="MaxColumns{T}"/>。</summary>
+    public static T MinColumns<T>(T first, T second, params T[] more) => throw OnlyInQuery();
 
     internal static InvalidOperationException OnlyInQuery() =>
         new("这个方法只能写在 EasyQuerySharp 的查询表达式里，由翻译器转成 SQL，不能直接调用");

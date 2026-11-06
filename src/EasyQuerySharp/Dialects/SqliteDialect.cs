@@ -99,6 +99,9 @@ public class SqliteDialect : SqlDialect
     {
         base.RegisterFunctions(f);
         f[SqlFunctionNames.Length] = Call("LENGTH");
+        // 多参数的 MAX / MIN 是标量函数（SQLite 没有 GREATEST / LEAST，Java 版在这里写 GREATEST，在 SQLite 上执行不了）
+        f[SqlFunctionNames.MaxColumns] = Call("MAX");
+        f[SqlFunctionNames.MinColumns] = Call("MIN");
         f[SqlFunctionNames.NullSafeEquals] = Template("({0} IS {1})");
         // instr 精确匹配、区分大小写；LIKE 不区分 ASCII 大小写，键里的 % _ 还会被当通配符
         // 日期存成文本：按格式截断后仍是 'yyyy-MM-dd HH:mm:ss'；周从周一起（与 MySQL 的 WEEKDAY 一致）

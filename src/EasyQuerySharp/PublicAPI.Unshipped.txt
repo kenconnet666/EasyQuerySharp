@@ -861,6 +861,7 @@ EasyQuerySharp.Querying.Page<T>.Total.init -> void
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.AsTableSegment(System.Func<string!, string?, string!>! segment) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.AverageAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<double?>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.AverageDecimalAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<decimal?>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.DisableTableLogicDelete() -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>!
@@ -888,6 +889,7 @@ EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.WhereIf(b
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>.AsTableSegment(System.Func<string!, string?, string!>! segment) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>.AverageAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<double?>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>.AverageDecimalAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<decimal?>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>.CrossJoin<TNext>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TNext, bool>!>! on) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, TNext>!
@@ -921,6 +923,7 @@ EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, T9>.WhereIf(bool c
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>.AsTableSegment(System.Func<string!, string?, string!>! segment) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>.AverageAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, T7, T8, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<double?>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>.AverageDecimalAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, T7, T8, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<decimal?>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>.CrossJoin<TNext>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, T7, T8, TNext, bool>!>! on) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8, TNext>!
@@ -954,6 +957,7 @@ EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, T8>.WhereIf(bool condi
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>.AsTableSegment(System.Func<string!, string?, string!>! segment) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>.AverageAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, T7, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<double?>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>.AverageDecimalAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, T7, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<decimal?>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>.CrossJoin<TNext>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, T7, TNext, bool>!>! on) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7, TNext>!
@@ -987,6 +991,7 @@ EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, T7>.WhereIf(bool condition
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>.AsTableSegment(System.Func<string!, string?, string!>! segment) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>.AverageAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<double?>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>.AverageDecimalAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<decimal?>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>.CrossJoin<TNext>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, T6, TNext, bool>!>! on) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6, TNext>!
@@ -1020,6 +1025,7 @@ EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, T6>.WhereIf(bool condition, Sy
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>.AsTableSegment(System.Func<string!, string?, string!>! segment) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>.AverageAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<double?>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>.AverageDecimalAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<decimal?>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>.CrossJoin<TNext>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, T5, TNext, bool>!>! on) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5, TNext>!
@@ -1053,6 +1059,7 @@ EasyQuerySharp.Querying.Query<T1, T2, T3, T4, T5>.WhereIf(bool condition, System
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4>
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4>!
+EasyQuerySharp.Querying.Query<T1, T2, T3, T4>.AsTableSegment(System.Func<string!, string?, string!>! segment) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4>.AverageAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<double?>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4>.AverageDecimalAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<decimal?>!
 EasyQuerySharp.Querying.Query<T1, T2, T3, T4>.CrossJoin<TNext>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, T4, TNext, bool>!>! on) -> EasyQuerySharp.Querying.Query<T1, T2, T3, T4, TNext>!
@@ -1086,6 +1093,7 @@ EasyQuerySharp.Querying.Query<T1, T2, T3, T4>.WhereIf(bool condition, System.Lin
 EasyQuerySharp.Querying.Query<T1, T2, T3>
 EasyQuerySharp.Querying.Query<T1, T2, T3>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2, T3>!
 EasyQuerySharp.Querying.Query<T1, T2, T3>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2, T3>!
+EasyQuerySharp.Querying.Query<T1, T2, T3>.AsTableSegment(System.Func<string!, string?, string!>! segment) -> EasyQuerySharp.Querying.Query<T1, T2, T3>!
 EasyQuerySharp.Querying.Query<T1, T2, T3>.AverageAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<double?>!
 EasyQuerySharp.Querying.Query<T1, T2, T3>.AverageDecimalAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<decimal?>!
 EasyQuerySharp.Querying.Query<T1, T2, T3>.CrossJoin<TNext>(System.Linq.Expressions.Expression<System.Func<T1, T2, T3, TNext, bool>!>! on) -> EasyQuerySharp.Querying.Query<T1, T2, T3, TNext>!
@@ -1119,6 +1127,7 @@ EasyQuerySharp.Querying.Query<T1, T2, T3>.WhereIf(bool condition, System.Linq.Ex
 EasyQuerySharp.Querying.Query<T1, T2>
 EasyQuerySharp.Querying.Query<T1, T2>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T1, T2>!
 EasyQuerySharp.Querying.Query<T1, T2>.AsTable(string! tableName) -> EasyQuerySharp.Querying.Query<T1, T2>!
+EasyQuerySharp.Querying.Query<T1, T2>.AsTableSegment(System.Func<string!, string?, string!>! segment) -> EasyQuerySharp.Querying.Query<T1, T2>!
 EasyQuerySharp.Querying.Query<T1, T2>.AverageAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<double?>!
 EasyQuerySharp.Querying.Query<T1, T2>.AverageDecimalAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T1, T2, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<decimal?>!
 EasyQuerySharp.Querying.Query<T1, T2>.CrossJoin<TNext>(System.Linq.Expressions.Expression<System.Func<T1, T2, TNext, bool>!>! on) -> EasyQuerySharp.Querying.Query<T1, T2, TNext>!
@@ -1653,6 +1662,7 @@ abstract EasyQuerySharp.Metadata.NameConversion.Convert(string! name) -> string!
 abstract EasyQuerySharp.Metadata.ValueConverter<TModel, TProvider>.FromProvider(TProvider value) -> TModel
 abstract EasyQuerySharp.Metadata.ValueConverter<TModel, TProvider>.ToProvider(TModel value) -> TProvider
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Abs = "ABS" -> string!
+const EasyQuerySharp.SqlAst.SqlFunctionNames.Atan2 = "ATAN2" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Avg = "AVG" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.AvgDistinct = "AvgDistinct" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.BooleanValue = "BooleanValue" -> string!
@@ -1679,7 +1689,9 @@ const EasyQuerySharp.SqlAst.SqlFunctionNames.Ln = "Ln" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Log10 = "LOG10" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Lower = "LOWER" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Max = "MAX" -> string!
+const EasyQuerySharp.SqlAst.SqlFunctionNames.MaxColumns = "MaxColumns" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Min = "MIN" -> string!
+const EasyQuerySharp.SqlAst.SqlFunctionNames.MinColumns = "MinColumns" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Now = "Now" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.NullIf = "NULLIF" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.NullOrDefault = "NullOrDefault" -> string!
@@ -1873,7 +1885,8 @@ static EasyQuerySharp.Dialects.SqlDialect.Lower<TEnum>(TEnum value) -> string!
 static EasyQuerySharp.Dialects.SqlDialect.Pad(string! name, string? defaultPad) -> EasyQuerySharp.Dialects.FunctionWriter!
 static EasyQuerySharp.Dialects.SqlDialect.Reordered(string! name, params int[]! order) -> EasyQuerySharp.Dialects.FunctionWriter!
 static EasyQuerySharp.Dialects.SqlDialect.Template(string! template) -> EasyQuerySharp.Dialects.FunctionWriter!
-static EasyQuerySharp.Dialects.SqlDialect.TruncateTo(string! name) -> EasyQuerySharp.Dialects.FunctionWriter!
+static EasyQuerySharp.Dialects.SqlDialect.UnionAllExtreme(string! aggregate, string! selectSuffix) -> EasyQuerySharp.Dialects.FunctionWriter!
+static EasyQuerySharp.Dialects.SqlDialect.WithDigits(string! name) -> EasyQuerySharp.Dialects.FunctionWriter!
 static EasyQuerySharp.Dialects.SqlDialect.WriteCommaJoinedTables(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.JoinClause!>! joins, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! where) -> void
 static EasyQuerySharp.Dialects.SqlServerDialect.Instance.get -> EasyQuerySharp.Dialects.SqlServerDialect!
 static EasyQuerySharp.Dialects.SqliteDialect.Instance.get -> EasyQuerySharp.Dialects.SqliteDialect!
@@ -1936,6 +1949,8 @@ static EasyQuerySharp.Sql.AsAlias<T>(T navigation, string! alias) -> T
 static EasyQuerySharp.Sql.AsAlias<T>(this System.Collections.Generic.IEnumerable<T>! navigation, string! alias) -> System.Collections.Generic.IEnumerable<T>!
 static EasyQuerySharp.Sql.AsTable<T>(T navigation, string! tableName) -> T
 static EasyQuerySharp.Sql.AsTable<T>(this System.Collections.Generic.IEnumerable<T>! navigation, string! tableName) -> System.Collections.Generic.IEnumerable<T>!
+static EasyQuerySharp.Sql.AsTableSegment<T>(T navigation, System.Func<string!, string?, string!>! segment) -> T
+static EasyQuerySharp.Sql.AsTableSegment<T>(this System.Collections.Generic.IEnumerable<T>! navigation, System.Func<string!, string?, string!>! segment) -> System.Collections.Generic.IEnumerable<T>!
 static EasyQuerySharp.Sql.Avg<T>(T value) -> T
 static EasyQuerySharp.Sql.Avg<T>(T value, bool filter) -> T
 static EasyQuerySharp.Sql.AvgDistinct<T>(T value) -> T
@@ -1972,8 +1987,10 @@ static EasyQuerySharp.Sql.LikeEndsWith(this string? value, string? part) -> bool
 static EasyQuerySharp.Sql.LikeStartsWith(this string? value, string? part) -> bool
 static EasyQuerySharp.Sql.Max<T>(T value) -> T
 static EasyQuerySharp.Sql.Max<T>(T value, bool filter) -> T
+static EasyQuerySharp.Sql.MaxColumns<T>(T first, T second, params T[]! more) -> T
 static EasyQuerySharp.Sql.Min<T>(T value) -> T
 static EasyQuerySharp.Sql.Min<T>(T value, bool filter) -> T
+static EasyQuerySharp.Sql.MinColumns<T>(T first, T second, params T[]! more) -> T
 static EasyQuerySharp.Sql.MySql.Json<T>(T column) -> EasyQuerySharp.MySqlJson<T>!
 static EasyQuerySharp.Sql.MySql.Match(params object?[]! columns) -> EasyQuerySharp.MySqlMatch!
 static EasyQuerySharp.Sql.NotExists<TSelf, T>(EasyQuerySharp.Querying.QueryBase<TSelf!, T>! subQuery) -> bool

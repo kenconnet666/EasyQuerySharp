@@ -203,11 +203,7 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     /// 自定义最近一个实体表的整个引用写法（对应 Java 的 asTableSegment）：参数是带引号的表名和别名，
     /// 如 ClickHouse 的 <c>.AsTableSegment((table, alias) =&gt; $"{table} {alias} FINAL")</c>。
     /// </summary>
-    public Query<T> AsTableSegment(Func<string, string?, string> segment)
-    {
-        ArgumentNullException.ThrowIfNull(segment);
-        return new(QueryStates.WithLast(State, s => s is EntitySource e ? e with { TableSegment = segment } : s));
-    }
+    public Query<T> AsTableSegment(Func<string, string?, string> segment) => new(QueryStates.WithTableSegment(State, segment));
 
     /// <summary>
     /// 把这条查询作为公共表表达式（对应 Java 的 toCteAs）：之后的查询从 <c>`名字`</c> 读，定义写在整条语句前面的
@@ -312,6 +308,13 @@ internal static class QueryStates
     /// <summary>修改最近一个表来源。</summary>
     public static QueryState WithLast(QueryState state, Func<QuerySource, QuerySource> change) =>
         state with { Sources = state.Sources.SetItem(state.Sources.Length - 1, change(state.Sources[^1])) };
+
+    /// <summary>最近一个实体表的整个引用改用 <paramref name="segment"/> 写（AsTableSegment）。</summary>
+    public static QueryState WithTableSegment(QueryState state, Func<string, string?, string> segment)
+    {
+        ArgumentNullException.ThrowIfNull(segment);
+        return WithLast(state, s => s is EntitySource e ? e with { TableSegment = segment } : s);
+    }
 
     /// <summary>追加一个连接的表来源。</summary>
     public static QueryState AddJoin(QueryState state, QuerySource source) => state with { Sources = state.Sources.Add(source) };

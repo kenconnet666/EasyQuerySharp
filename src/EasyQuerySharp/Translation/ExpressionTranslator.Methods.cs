@@ -101,6 +101,10 @@ internal sealed partial class ExpressionTranslator
                 var (a, b) = TranslatePair(call.Arguments[0], call.Arguments[1]);
                 return new FunctionExpr(SqlFunctionNames.EqualsWith, [a, b]);
             }
+            case nameof(Sql.MaxColumns):
+            case nameof(Sql.MinColumns):
+                return new FunctionExpr(call.Method.Name == nameof(Sql.MaxColumns) ? SqlFunctionNames.MaxColumns : SqlFunctionNames.MinColumns,
+                    call.Arguments.SelectMany(a => a is NewArrayExpression array ? array.Expressions : [a]).Select(Translate).ToList());
             case nameof(Sql.Exists):
             case nameof(Sql.NotExists):
                 return TranslateExists(call.Arguments[0], call.Method.Name == nameof(Sql.NotExists));

@@ -48,6 +48,12 @@ public static class SqlFunctionNames
     /// <summary>(key)：<c>GROUPING(key)</c>，ROLLUP / CUBE 的小计行里被汇总掉的键为 1。</summary>
     public const string Grouping = "GROUPING";
 
+    /// <summary>(a, b, …)：同一行里几个值中最大的。MySQL / PG 的 GREATEST，SQLite 的多参数 MAX，SQL Server 的 VALUES，其余 UNION ALL 派生表。</summary>
+    public const string MaxColumns = "MaxColumns";
+
+    /// <summary>(a, b, …)：同一行里几个值中最小的，写法同 <see cref="MaxColumns"/>。</summary>
+    public const string MinColumns = "MinColumns";
+
     // ---------- 字符串 ----------
 
     /// <summary>(a, b, …)：拼接。MySQL / PG / SQL Server 的 CONCAT，Oracle 的 ||。</summary>
@@ -149,6 +155,9 @@ public static class SqlFunctionNames
 
     /// <summary>(x, [digits])：截断。</summary>
     public const string Truncate = "Truncate";
+
+    /// <summary>(y, x)：点 (x, y) 与 x 轴正方向的夹角（弧度）。</summary>
+    public const string Atan2 = "ATAN2";
 
     // ---------- 聚合 ----------
 

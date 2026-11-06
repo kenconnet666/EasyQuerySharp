@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1822、偏离 141、不适用 136、骨架 2、待做 303。
+合计：已移植 1859、偏离 142、不适用 136、骨架 2、待做 265。
 
 ## 按能力
 
@@ -57,7 +57,7 @@
 | H2 方言 | `dialect.h2` | M6 | 74 | 0 | 0 | 0 | 0 | 74 |
 | SAP HANA 方言 | `dialect.hana` | M6 | 18 | 0 | 0 | 0 | 0 | 18 |
 | 人大金仓方言 | `dialect.kingbase` | M6 | 2 | 0 | 0 | 0 | 0 | 2 |
-| SQL Server 方言 | `dialect.mssql` | M6 | 38 | 0 | 0 | 0 | 0 | 38 |
+| SQL Server 方言 | `dialect.mssql` | M6 | 38 | 37 | 1 | 0 | 0 | 0 |
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | M6 | 13 | 0 | 0 | 13 | 0 | 0 |
 | UPDATE / DELETE … RETURNING | `write.returning` | M6 | 3 | 3 | 0 | 0 | 0 | 0 |
 | 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 3 | 0 | 0 | 0 | 14 |
@@ -2358,44 +2358,44 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| mssql/MSSQLMathQueryTest.java#testPropertyMath | 待做 |  | `SELECT t.[TestValue] AS [TestValue],ABS(t.[TestValue]) AS [TestAbs],SIGN(t.[TestValue]) AS [TestSign…` |
-| mssql/MSSQLTest1.java#test1 | 待做 |  | `SELECT t2.[code] AS [code],t2.[name] AS [name] FROM (SELECT t.[Code] AS [code],t1.[Code] AS [name] F…` |
-| mssql/MsSQLQueryTest.java#concat1 | 待做 |  | `select CONCAT('a', null , 'b') as [aa]` |
-| mssql/MsSQLQueryTest.java#query0 | 待做 |  | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
-| mssql/MsSQLQueryTest.java#query1 | 待做 |  | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
-| mssql/MsSQLQueryTest.java#query10 | 待做 |  | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE (SUBSTRING(CONVERT(CHAR(8), [CreateTim…` |
-| mssql/MsSQLQueryTest.java#query11 | 待做 |  | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE (SUBSTRING(CONVERT(CHAR(8), [CreateTim…` |
-| mssql/MsSQLQueryTest.java#query2 | 待做 |  | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
-| mssql/MsSQLQueryTest.java#query3 | 待做 |  | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
-| mssql/MsSQLQueryTest.java#query4 | 待做 |  |  |
-| mssql/MsSQLQueryTest.java#query5 | 待做 |  |  |
-| mssql/MsSQLQueryTest.java#query6 | 待做 |  |  |
-| mssql/MsSQLQueryTest.java#query7 | 待做 |  | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE (CASE WHEN [Title] = ? THEN 0 WHEN [Ti…` |
-| mssql/MsSQLQueryTest.java#query8 | 待做 |  | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE (CASE WHEN [Title] = [Id] THEN 0 WHEN …` |
-| mssql/MsSQLQueryTest.java#query9 | 待做 |  | `SELECT t.[Title] AS [Value1],STRING_AGG(t.[Id], ?) AS [Value2] FROM [MyTopic] t GROUP BY t.[Title]` |
-| mssql/MsSQLQueryTest.java#testAll | 待做 |  | `SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t WHERE NOT (EXISTS(SELECT…` |
-| mssql/MsSQLQueryTest.java#testAll1 | 待做 |  | `SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t WHERE NOT (EXISTS(SELECT…` |
-| mssql/MsSQLQueryTest.java#testAll2 | 待做 |  | `SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t WHERE NOT (EXISTS(SELECT…` |
-| mssql/MsSQLQueryTest.java#testAllGroupJoin | 待做 |  | `SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t LEFT JOIN (SELECT t1.[Ui…` |
-| mssql/MsSQLQueryTest.java#testAllGroupJoin2 | 待做 |  | `SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t LEFT JOIN (SELECT t1.[Ui…` |
-| mssql/MsSQLQueryTest.java#testBatchInsert | 待做 |  |  |
-| mssql/MsSQLQueryTest.java#testBigDecima2 | 待做 |  |  |
-| mssql/MsSQLQueryTest.java#testBigDecima4 | 待做 |  |  |
-| mssql/MsSQLQueryTest.java#testBigDecimal | 待做 |  |  |
-| mssql/MsSQLQueryTest.java#testFormat | 待做 |  | `SELECT t.[CreateTime] AS [Value1],(SUBSTRING(CONVERT(CHAR(8), t.[CreateTime], 112), 1, 4) + ? + SUBS…` |
-| mssql/MsSQLQueryTest.java#testLikeConcat1 | 待做 |  | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Title] LIKE ('%'+CAST(CONCAT(?,[Id],?…` |
-| mssql/MsSQLQueryTest.java#testLikeConcat2 | 待做 |  | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Title] LIKE (CAST(CONCAT(?,[Id],?) AS…` |
-| mssql/MsSQLQueryTest.java#testLikeConcat3 | 待做 |  | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Title] LIKE ('%'+CAST(CONCAT(?,[Id],?…` |
-| mssql/MsSQLQueryTest.java#testMaxColumns | 待做 |  | `SELECT [Id],[Column1],[Column2],[Column3] FROM [t_calc] WHERE (SELECT MAX(__col__) FROM (VALUES ([Co…` |
-| mssql/MsSQLQueryTest.java#testMaxColumns2 | 待做 |  | `SELECT t.[Column1] AS [Value1],t.[Column2] AS [Value2],t.[Column3] AS [Value3],(SELECT MAX(__col__) …` |
-| mssql/MsSQLQueryTest.java#testWithIndex | 待做 |  | `SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t WITH(INDEX(myIndex)) LEF…` |
-| mssql/MsSQLQueryTest.java#testWithNolock1 | 待做 |  | `SELECT t.[Id],t.[Uid],t.[Code],t.[Type],t.[BankId],t.[OpenTime] FROM [t_bank_card] t WITH(NOLOCK) LE…` |
-| mssql/MsSQLQueryTest.java#testWithNolock2 | 待做 |  | `SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t WITH(NOLOCK) LEFT JOIN […` |
-| mssql/MsSQLQueryTest.java#update1 | 待做 |  | `UPDATE t SET t.[Title] = ? FROM [MyTopic] t WHERE t.[Id] IS NULL AND EXISTS(SELECT 1 FROM [MyTopic] …` |
-| mssql/MsSQLUpdateJoinTest.java#testDeleteJoin1 | 待做 |  | `DELETE t FROM [doc_bank_card] t INNER JOIN [doc_user] t1 ON t1.[Id] = t.[Uid] WHERE t1.[Name] LIKE ?` |
-| mssql/MsSQLUpdateJoinTest.java#testDeleteJoin2 | 待做 |  | `DELETE t FROM [doc_bank_card] t INNER JOIN [doc_user] t1 ON t1.[Id] = t.[Uid] WHERE t1.[Name] LIKE ?` |
-| mssql/MsSQLUpdateJoinTest.java#testUpdateJoin1 | 待做 |  | `UPDATE t SET t.[Type] = t1.[Name] FROM [doc_bank_card] t INNER JOIN [doc_user] t1 ON t1.[Id] = t.[Ui…` |
-| mssql/MsSQLUpdateJoinTest.java#testUpdateJoin2 | 待做 |  | `UPDATE t SET t.[Type] = t1.[Name] FROM [doc_bank_card] t INNER JOIN [doc_bank] t1 ON t1.[Id] = t.[Ba…` |
+| mssql/MSSQLMathQueryTest.java#testPropertyMath | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MSSQLMathQueryTest.cs:15：C# 的 Math.Pow / Atan2 只有 double 重载，pow 与 atan2 的参数是 Double（Java 是 BigDecimal），SQL Server 的 atan2 模板里同一个参数写六次；Java 的 DTO 代理 set() 同名列也写 AS，C# 同名不写；Java 把 floor 写成与 truncate 相同的 CASE（对负数是 Java 的 bug），C# 写 FLOOR | `SELECT t.[TestValue] AS [TestValue],ABS(t.[TestValue]) AS [TestAbs],SIGN(t.[TestValue]) AS [TestSign…` |
+| mssql/MSSQLTest1.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MSSQLTest1.cs:9 | `SELECT t2.[code] AS [code],t2.[name] AS [name] FROM (SELECT t.[Code] AS [code],t1.[Code] AS [name] F…` |
+| mssql/MsSQLQueryTest.java#concat1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:255 | `select CONCAT('a', null , 'b') as [aa]` |
+| mssql/MsSQLQueryTest.java#query0 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:14 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
+| mssql/MsSQLQueryTest.java#query1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:22 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
+| mssql/MsSQLQueryTest.java#query10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:90 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE (SUBSTRING(CONVERT(CHAR(8), [CreateTim…` |
+| mssql/MsSQLQueryTest.java#query11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:100 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE (SUBSTRING(CONVERT(CHAR(8), [CreateTim…` |
+| mssql/MsSQLQueryTest.java#query2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:14 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
+| mssql/MsSQLQueryTest.java#query3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:22 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Id] = ?` |
+| mssql/MsSQLQueryTest.java#query4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:36 |  |
+| mssql/MsSQLQueryTest.java#query5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:43 |  |
+| mssql/MsSQLQueryTest.java#query6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:50 |  |
+| mssql/MsSQLQueryTest.java#query7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:62 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE (CASE WHEN [Title] = ? THEN 0 WHEN [Ti…` |
+| mssql/MsSQLQueryTest.java#query8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:71 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE (CASE WHEN [Title] = [Id] THEN 0 WHEN …` |
+| mssql/MsSQLQueryTest.java#query9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:80 | `SELECT t.[Title] AS [Value1],STRING_AGG(t.[Id], ?) AS [Value2] FROM [MyTopic] t GROUP BY t.[Title]` |
+| mssql/MsSQLQueryTest.java#testAll | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.Like.cs:48 | `SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t WHERE NOT (EXISTS(SELECT…` |
+| mssql/MsSQLQueryTest.java#testAll1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.Like.cs:62 | `SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t WHERE NOT (EXISTS(SELECT…` |
+| mssql/MsSQLQueryTest.java#testAll2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.Like.cs:76 | `SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t WHERE NOT (EXISTS(SELECT…` |
+| mssql/MsSQLQueryTest.java#testAllGroupJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.Like.cs:90 | `SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t LEFT JOIN (SELECT t1.[Ui…` |
+| mssql/MsSQLQueryTest.java#testAllGroupJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.Like.cs:104 | `SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t LEFT JOIN (SELECT t1.[Ui…` |
+| mssql/MsSQLQueryTest.java#testBatchInsert | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:200 |  |
+| mssql/MsSQLQueryTest.java#testBigDecima2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:157 |  |
+| mssql/MsSQLQueryTest.java#testBigDecima4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:178 |  |
+| mssql/MsSQLQueryTest.java#testBigDecimal | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:137 |  |
+| mssql/MsSQLQueryTest.java#testFormat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:111 | `SELECT t.[CreateTime] AS [Value1],(SUBSTRING(CONVERT(CHAR(8), t.[CreateTime], 112), 1, 4) + ? + SUBS…` |
+| mssql/MsSQLQueryTest.java#testLikeConcat1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.Like.cs:10 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Title] LIKE ('%'+CAST(CONCAT(?,[Id],?…` |
+| mssql/MsSQLQueryTest.java#testLikeConcat2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.Like.cs:19 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Title] LIKE (CAST(CONCAT(?,[Id],?) AS…` |
+| mssql/MsSQLQueryTest.java#testLikeConcat3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.Like.cs:28 | `SELECT [Id],[Stars],[Title],[CreateTime] FROM [MyTopic] WHERE [Title] LIKE ('%'+CAST(CONCAT(?,[Id],?…` |
+| mssql/MsSQLQueryTest.java#testMaxColumns | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:220 | `SELECT [Id],[Column1],[Column2],[Column3] FROM [t_calc] WHERE (SELECT MAX(__col__) FROM (VALUES ([Co…` |
+| mssql/MsSQLQueryTest.java#testMaxColumns2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:232 | `SELECT t.[Column1] AS [Value1],t.[Column2] AS [Value2],t.[Column3] AS [Value3],(SELECT MAX(__col__) …` |
+| mssql/MsSQLQueryTest.java#testWithIndex | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:269 | `SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t WITH(INDEX(myIndex)) LEF…` |
+| mssql/MsSQLQueryTest.java#testWithNolock1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:279 | `SELECT t.[Id],t.[Uid],t.[Code],t.[Type],t.[BankId],t.[OpenTime] FROM [t_bank_card] t WITH(NOLOCK) LE…` |
+| mssql/MsSQLQueryTest.java#testWithNolock2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:290 | `SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t WITH(NOLOCK) LEFT JOIN […` |
+| mssql/MsSQLQueryTest.java#update1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLQueryTest.cs:123 | `UPDATE t SET t.[Title] = ? FROM [MyTopic] t WHERE t.[Id] IS NULL AND EXISTS(SELECT 1 FROM [MyTopic] …` |
+| mssql/MsSQLUpdateJoinTest.java#testDeleteJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLUpdateJoinTest.cs:27 | `DELETE t FROM [doc_bank_card] t INNER JOIN [doc_user] t1 ON t1.[Id] = t.[Uid] WHERE t1.[Name] LIKE ?` |
+| mssql/MsSQLUpdateJoinTest.java#testDeleteJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLUpdateJoinTest.cs:27 | `DELETE t FROM [doc_bank_card] t INNER JOIN [doc_user] t1 ON t1.[Id] = t.[Uid] WHERE t1.[Name] LIKE ?` |
+| mssql/MsSQLUpdateJoinTest.java#testUpdateJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLUpdateJoinTest.cs:9 | `UPDATE t SET t.[Type] = t1.[Name] FROM [doc_bank_card] t INNER JOIN [doc_user] t1 ON t1.[Id] = t.[Ui…` |
+| mssql/MsSQLUpdateJoinTest.java#testUpdateJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mssql/MsSQLUpdateJoinTest.cs:18 | `UPDATE t SET t.[Type] = t1.[Name] FROM [doc_bank_card] t INNER JOIN [doc_bank] t1 ON t1.[Id] = t.[Ba…` |
 
 ### SQL Server 2008（ROW_NUMBER 分页）（`dialect.mssql2008`，M6）
 

@@ -190,6 +190,9 @@ public class OracleDialect : SqlDialect
         f[SqlFunctionNames.InCsv] = Template("(INSTR(',' || {1} || ',', ',' || {0} || ',') > 0)");
         f[SqlFunctionNames.NullOrDefault] = Call("NVL");
         f[SqlFunctionNames.Concat] = Infix(" || ");
+        // 与 Java 的 OracleMaxMinColumnsSQLFunction 一致（达梦沿用）：每个值 SELECT … FROM DUAL
+        f[SqlFunctionNames.MaxColumns] = UnionAllExtreme("MAX", " FROM DUAL");
+        f[SqlFunctionNames.MinColumns] = UnionAllExtreme("MIN", " FROM DUAL");
         f[SqlFunctionNames.Length] = Call("LENGTH");
         f[SqlFunctionNames.PadLeft] = Pad("LPAD", "' '");
         f[SqlFunctionNames.PadRight] = Pad("RPAD", "' '");

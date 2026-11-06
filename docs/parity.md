@@ -27,7 +27,7 @@
 |---|---|---|---|---|
 | 字符串函数 | `func.string` | 131 | 优先映射 BCL：`Contains` / `StartsWith` / `Trim` / `ToUpper` / `Substring` / `IndexOf` / `Length` / `Replace` / `PadLeft`；没有 BCL 对应的用扩展方法：`Like` / `NotLike`；`Contains` 等对应 Java 的 like（`LIKE ?`，% 在参数里），`LikeContains` / `LikeStartsWith` / `LikeEndsWith` 对应 Java 的 contains / startsWith / endsWith（`LIKE CONCAT('%',?,'%')`） | 阶段 1 |
 | 日期函数 | `func.date` | 101 | `AddDays` / `AddMonths` / `.Year` / `.DayOfWeek` / `ToString("yyyy-MM")`（格式串按方言翻译）/ `Sql.Now()`；日期相减 `(end - start).TotalDays` / `.Days` / `.TotalHours`（对应 Java 的 duration）；`DateTime` / `DateOnly` / `DateTimeOffset`；日期截断 `p.CreatedAt.DateTrunc(DateTruncUnit.Month)`（MySQL、PG、SQLite、SQL Server 2022 的 DATETRUNC、Oracle 的 TRUNC；周从周一起） | 完成 |
-| 通用函数 | `func.general` | 59 | `??`（nullOrDefault）/ `x.NullIf(y)` / `x.EqualsNullSafe(y)`（按方言写 `<=>` / `IS NOT DISTINCT FROM` / `IS`）/ `Sql.Random()` | 阶段 3 |
+| 通用函数 | `func.general` | 59 | `??`（nullOrDefault）/ `x.NullIf(y)` / `x.EqualsNullSafe(y)`（按方言写 `<=>` / `IS NOT DISTINCT FROM` / `IS`）/ `Sql.Random()` / `Sql.MaxColumns(a, b, c)`、`Sql.MinColumns(..)`（一行里几个值取最大 / 最小：MySQL、PG 的 GREATEST / LEAST，SQLite 的多参数 MAX / MIN，SQL Server 的 VALUES，Oracle 的 UNION ALL 派生表） | 阶段 3 |
 | 字符串聚合 | `func.joining` | 29 | `g.StringJoin(p => p.Name, ",")`，集合导航上写 `string.Join(",", u.Posts.Select(p => p.Name))`；链上的 `OrderBy` / `ThenBy` 写进聚合 | 完成 |
 | JSON 函数 | `func.json` | 12 | `Sql.Json(u.Attrs).Get / Text / Value<T> / Length / ContainsKey`；方言专属的在 `Sql.MySql.Json(..)` / `Sql.Pg.Jsonb(..)` 下 | 完成 |
 | 数学函数 | `func.math` | 4 | 映射 `Math.Abs` / `Round` / `Floor` / `Ceiling` / `Pow` / `Sqrt` / `Sign` / `Log` / `Exp` / `Truncate` | 完成 |
@@ -78,7 +78,7 @@
 | 能力 | key | 用例数 | C# 写法 | 状态 |
 |---|---|---|---|---|
 | 建表与迁移（code-first） | `codeFirst` | 17 | `db.CodeFirst.CreateTablesAsync(..)` / `DropTablesIfExistsAsync(..)` / `CreateTableSql(type)`；只增不删的同步、`RenamedFrom`、读库结构（计划） | 阶段 4 |
-| 换表名 asTable | `table.rename` | 52 | `.AsTable("t_post_2025")` / `.AsTable(name => name + "_2025")` / `AsTableSegment(..)`；写入同样 `AsTable` / `AsSchema`；查询级的 `MapTable<Post>(..)`（导航、隐式 join、include 跟着变，fork 的 TableNameMapping）（计划） | 阶段 4 |
+| 换表名 asTable | `table.rename` | 52 | `.AsTable("t_post_2025")` / `.AsTable(name => name + "_2025")` / `AsTableSegment(..)`（整个表引用的写法，如 SQL Server 的 `WITH(NOLOCK)`；单表、联表后最近的一张表、导航上的 `Sql.AsTableSegment(u.User, ..)` 都能用）；写入同样 `AsTable` / `AsSchema`；查询级的 `MapTable<Post>(..)`（导航、隐式 join、include 跟着变，fork 的 TableNameMapping）（计划） | 阶段 4 |
 | 换 schema | `table.schema` | 25 | 写入 `.AsSchema("tenant_a")`；查询级的写法（计划） | 阶段 4 |
 | 跨库链接 | `table.link` | 13 | `.WithTableLink("link")`（计划） | 阶段 4 |
 | 分库分表 | `sharding` | 48 | 分表路由（取模、时间）、条件裁剪、库内 UNION ALL、写入路由；分库时在内存里归并排序和分页（计划，先写决策文档 0006） | 阶段 4 |
@@ -92,7 +92,7 @@
 | MySQL（8.0.18 / 8.4、PolarDB、MariaDB） | 归在上面各项 | — | MySqlConnector；`options.UseMySql(..)` | 第一档，完成 |
 | SQLite | 归在上面各项 | — | Microsoft.Data.Sqlite；`options.UseSqlite(..)` | 第一档，完成 |
 | PostgreSQL 17 | 归在上面各项（Java `pgsql/` 目录约 100 个） | — | Npgsql；`options.UsePostgreSql(..)` | 第一档，完成 |
-| SQL Server | `dialect.mssql` | 38 | Microsoft.Data.SqlClient；`options.UseSqlServer(..)`（渲染已有，实库验证在阶段 2） | 第一档，阶段 2 |
+| SQL Server | `dialect.mssql` | 38 | Microsoft.Data.SqlClient；`options.UseSqlServer(..)`；Upstream 的 38 个 mssql 用例（库 `mssql_eq`）在实库跑通，CI 有独立的 upstream 分片；日期格式按 Java 写成 CONVERT / SUBSTRING 段，拼接式 LIKE 先 `CAST(.. AS NVARCHAR(MAX))`，`Math.Round` / `Atan2` / `Truncate` 按 SQL Server 改写 | 第一档，阶段 2（2.1 完成） |
 | Oracle | 归在上面各项 | — | Oracle.ManagedDataAccess.Core；`options.UseOracle(..)` | 第一档，阶段 2 |
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | 13 | — | 不做 |
 | 达梦 | `dialect.dameng` | 51 | DM.DmProvider；方言继承 Oracle | 第二档，阶段 3 |

@@ -147,10 +147,21 @@ jobs:
           project: ${{ env.LIVE_TESTS }}
           report-name: test-results-mariadb
 
+  # SQL Server：live 套件与 Upstream 的 mssql 用例（库 mssql_eq）拆成两片并行
   mssql:
-    name: SQL Server 2022
+    name: SQL Server 2022 ${{ matrix.shard.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - name: live
+            project: tests/EasyQuerySharp.Tests.Live
+            filter: ''
+          - name: upstream
+            project: tests/EasyQuerySharp.Tests.Upstream
+            filter: --filter-namespace "EasyQuerySharp.Tests.Upstream.Mssql"
     services:
       mssql:
         # 2022 CU27（16.0.4305.5）
@@ -171,8 +182,9 @@ jobs:
       - uses: ./.github/actions/dotnet-test
         with:
           require-dbs: mssql
-          project: ${{ env.LIVE_TESTS }}
-          report-name: test-results-mssql
+          project: ${{ matrix.shard.project }}
+          filter: ${{ matrix.shard.filter }}
+          report-name: test-results-mssql-${{ strategy.job-index }}
 
   oracle:
     name: Oracle 23ai Free

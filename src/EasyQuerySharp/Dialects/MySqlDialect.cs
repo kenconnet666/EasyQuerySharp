@@ -145,6 +145,8 @@ public class MySqlDialect : SqlDialect
     {
         base.RegisterFunctions(f);
         f[SqlFunctionNames.NullOrDefault] = Call("IFNULL");
+        f[SqlFunctionNames.MaxColumns] = Call("GREATEST");
+        f[SqlFunctionNames.MinColumns] = Call("LEAST");
         f[SqlFunctionNames.NullSafeEquals] = Template("({0} <=> {1})");
         f[SqlFunctionNames.InCsv] = Template("FIND_IN_SET({0},{1})");
         // JSON：键写进路径字面量（与 Java 的 JSONObjectFieldSQLFunction 等一致，数组下标的逗号后没有空格）
@@ -166,7 +168,7 @@ public class MySqlDialect : SqlDialect
         f[SqlFunctionNames.CompareTo] = Call("STRCMP");
         f[SqlFunctionNames.IndexOf] = Reordered("LOCATE", 1, 0);
         f[SqlFunctionNames.Ceiling] = Call("CEILING");
-        f[SqlFunctionNames.Truncate] = TruncateTo("TRUNCATE");
+        f[SqlFunctionNames.Truncate] = WithDigits("TRUNCATE");
         f[SqlFunctionNames.Power] = Call("POW");
         // MySQL 的 LOG(x) 是自然对数（Java 版也这样写）
         f[SqlFunctionNames.Ln] = Call("LOG");

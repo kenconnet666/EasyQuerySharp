@@ -54,6 +54,8 @@ public abstract partial class SqlDialect
             f[SqlFunctionNames.DateTrunc(unit)] = (_, _) => throw new NotSupportedException($"{Name} 方言不支持 DateTrunc({unit})");
         foreach (var json in new[] { SqlFunctionNames.JsonGet, SqlFunctionNames.JsonGetIndex, SqlFunctionNames.JsonText, SqlFunctionNames.JsonTextIndex, SqlFunctionNames.JsonLength, SqlFunctionNames.JsonContainsKey })
             f[json] = (_, _) => throw new NotSupportedException($"{Name} 方言还不支持 Sql.Json 的 {json}");
+        f[SqlFunctionNames.MaxColumns] = UnionAllExtreme("MAX", "");
+        f[SqlFunctionNames.MinColumns] = UnionAllExtreme("MIN", "");
         f[SqlFunctionNames.Concat] = Call("CONCAT");
         f[SqlFunctionNames.Length] = Call("CHAR_LENGTH");
         f[SqlFunctionNames.Trim] = Call("TRIM");
@@ -65,7 +67,7 @@ public abstract partial class SqlDialect
         f[SqlFunctionNames.IndexOf] = Call("INSTR");
         f[SqlFunctionNames.Ceiling] = Call("CEIL");
         f[SqlFunctionNames.Ln] = Call("LN");
-        f[SqlFunctionNames.Truncate] = TruncateTo("TRUNC");
+        f[SqlFunctionNames.Truncate] = WithDigits("TRUNC");
         f[SqlFunctionNames.CountDistinct] = Distinct("COUNT");
         f[SqlFunctionNames.SumDistinct] = Distinct("SUM");
         f[SqlFunctionNames.AvgDistinct] = Distinct("AVG");
@@ -132,8 +134,8 @@ public abstract partial class SqlDialect
     /// <summary>小写的单位 / 部分名，用于拼模板（<c>day</c>、<c>hour</c>）。</summary>
     protected static string Lower<TEnum>(TEnum value) where TEnum : struct, Enum => value.ToString().ToLowerInvariant();
 
-    /// <summary>截断小数：<c>NAME(x,n)</c>，没给位数时截到整数 <c>NAME(x,0)</c>（与 Java 一致）。</summary>
-    protected static FunctionWriter TruncateTo(string name) => (r, a) =>
+    /// <summary>按小数位数处理（截断、四舍五入）：<c>NAME(x,n)</c>，没给位数时写 <c>NAME(x,0)</c>（与 Java 一致）。</summary>
+    protected static FunctionWriter WithDigits(string name) => (r, a) =>
     {
         r.Append(name + "(").Write(a[0]).Append(",");
         if (a.Count > 1) r.Write(a[1]);
@@ -161,6 +163,21 @@ public abstract partial class SqlDialect
 
     /// <summary><c>NAME(a,b)</c>。</summary>
     protected static FunctionWriter Call(string name) => (r, a) => r.Append(name).Append("(").WriteList(a, ",").Append(")");
+
+    /// <summary>
+    /// 几个值取最大 / 最小的通用写法（与 Java 的 MaxMinColumnsSQLFunction 一致）：每个值一个 <c>SELECT v AS __col__</c>，UNION ALL 后再聚合；
+    /// <paramref name="selectSuffix"/> 接在每个 SELECT 后（Oracle 的 <c> FROM DUAL</c>）。
+    /// </summary>
+    protected static FunctionWriter UnionAllExtreme(string aggregate, string selectSuffix) => (r, a) =>
+    {
+        r.Append("(SELECT " + aggregate + "(__mmc.__col__) FROM (");
+        for (var i = 0; i < a.Count; i++)
+        {
+            if (i > 0) r.Append(" UNION ALL ");
+            r.Append("SELECT ").Write(a[i]).Append(" AS __col__" + selectSuffix);
+        }
+        r.Append(") __mmc)");
+    };
 
     /// <summary><c>NAME(DISTINCT x)</c>。</summary>
     protected static FunctionWriter Distinct(string name) => (r, a) => r.Append(name).Append("(DISTINCT ").Write(a[0]).Append(")");
