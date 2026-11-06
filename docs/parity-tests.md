@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1964、偏离 174、不适用 140、骨架 6、待做 120。
+合计：已移植 1973、偏离 186、不适用 140、骨架 8、待做 97。
 
 ## 按能力
 
@@ -15,7 +15,7 @@
 | 分页结果 | `query.page` | M1 | 22 | 18 | 3 | 0 | 0 | 1 |
 | 原生 SQL | `sql.native` | M1 | 50 | 41 | 8 | 1 | 0 | 0 |
 | 删除 | `write.delete` | M1 | 25 | 13 | 2 | 10 | 0 | 0 |
-| 插入 | `write.insert` | M1 | 50 | 48 | 1 | 0 | 0 | 1 |
+| 插入 | `write.insert` | M1 | 50 | 49 | 1 | 0 | 0 | 0 |
 | 更新 | `write.update` | M1 | 59 | 46 | 5 | 8 | 0 | 0 |
 | CASE WHEN | `expr.case` | M2 | 27 | 20 | 7 | 0 | 0 | 0 |
 | 日期函数 | `func.date` | M2 | 101 | 79 | 15 | 7 | 0 | 0 |
@@ -40,7 +40,7 @@
 | include 带出导航 | `nav.include` | M4 | 37 | 36 | 1 | 0 | 0 | 0 |
 | 隐式子查询（any / none / count / sum …） | `nav.subquery` | M4 | 142 | 138 | 3 | 1 | 0 | 0 |
 | 树（toTreeList / asTreeCTE） | `tree` | M4 | 25 | 24 | 1 | 0 | 0 | 0 |
-| 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 5 | 2 | 1 | 0 | 1 |
+| 值转换、枚举、JSON 列 | `column.converter` | M5 | 9 | 5 | 3 | 1 | 0 | 0 |
 | 列加密 | `column.encryption` | M5 | 8 | 8 | 0 | 0 | 0 | 0 |
 | 拦截器 | `interceptor` | M5 | 3 | 3 | 0 | 0 | 0 | 0 |
 | 逻辑删除 | `logicDelete` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
@@ -53,9 +53,9 @@
 | ClickHouse 方言 | `dialect.clickhouse` | M6 | 4 | 0 | 0 | 0 | 0 | 4 |
 | 达梦方言 | `dialect.dameng` | M6 | 51 | 30 | 20 | 0 | 1 | 0 |
 | DuckDB 方言 | `dialect.duckdb` | M6 | 16 | 10 | 6 | 0 | 0 | 0 |
-| 方言静态入口与专属函数 | `dialect.functions` | M6 | 25 | 22 | 0 | 0 | 0 | 3 |
+| 方言静态入口与专属函数 | `dialect.functions` | M6 | 25 | 24 | 1 | 0 | 0 | 0 |
 | H2 方言 | `dialect.h2` | M6 | 74 | 63 | 4 | 4 | 3 | 0 |
-| SAP HANA 方言 | `dialect.hana` | M6 | 18 | 0 | 0 | 0 | 0 | 18 |
+| SAP HANA 方言 | `dialect.hana` | M6 | 18 | 6 | 10 | 0 | 2 | 0 |
 | 人大金仓方言 | `dialect.kingbase` | M6 | 2 | 0 | 0 | 0 | 0 | 2 |
 | SQL Server 方言 | `dialect.mssql` | M6 | 38 | 37 | 1 | 0 | 0 | 0 |
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | M6 | 13 | 0 | 0 | 13 | 0 | 0 |
@@ -674,7 +674,7 @@
 | UpperPropertyTest.java#test1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpperPropertyTest.cs:9：Java 的库是宽松模式，MyTopicTestDTO 不写 create_time 也能插入；MySQL 8.4 严格模式下改为比对插入 SQL、读取已有的行 |  |
 | UpperPropertyTest.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpperPropertyTest.cs:46 |  |
 | fork/insert/InsertSelectSqlTest.java#defaultTargetIsTheEntityTable | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/InsertSelectSqlTest.cs:15 | `INSERT INTO "t_fork_post" ("id","user_id","title","amount") SELECT eq_src."id",eq_src."user_id",eq_s…` |
-| fork/insert/InsertSelectSqlTest.java#hanaUsesQuotedNames | 待做 |  | `INSERT INTO "t_fork_post_archive" ("id","user_id","title","amount") SELECT eq_src."id",eq_src."user_…` |
+| fork/insert/InsertSelectSqlTest.java#hanaUsesQuotedNames | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/InsertSelectSqlTest.cs:21 | `INSERT INTO "t_fork_post_archive" ("id","user_id","title","amount") SELECT eq_src."id",eq_src."user_…` |
 | fork/insert/InsertSelectSqlTest.java#mysqlCopiesEntityColumnsPlusExtraColumn | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/InsertSelectSqlTest.cs:6 | `INSERT INTO 't_fork_post_archive' ('id','user_id','title','amount','archived_at') SELECT eq_src.'id'…` |
 | fork/live/InsertSelectLiveTest.java#copyMatchingRowsWithArchiveTime | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/FunctionsLiveTest.cs:41 | `CREATE COLUMN TABLE` |
 | mysql8/MySQL8Test5.java#testLikeStartsWith | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:129 | `SELECT 'column1','column2','column3' FROM 'no_key_table' WHERE 'column2' LIKE CONCAT(?,'%') ESCAPE '…` |
@@ -1893,7 +1893,7 @@
 | fork/json/JsonValueConverterTest.java#columnIsBoundToTheConverter | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/JsonValueConverterTest.cs:34 |  |
 | fork/json/JsonValueConverterTest.java#decodesWithTheDeclaredGenericType | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Fork/JsonValueConverterTest.cs:13：Java 另外验证 JDBC 的 Clob；.NET 的驱动把文本列读成 string、二进制列读成 byte[]，这两种都验证 |  |
 | fork/json/JsonValueConverterTest.java#nullAndBlankStayNull | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/JsonValueConverterTest.cs:26 |  |
-| fork/live/JsonValueConverterLiveTest.java#hanaNclobColumn | 待做 |  | `DROP TABLE "t_fork_profile"` |
+| fork/live/JsonValueConverterLiveTest.java#hanaNclobColumn | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaLiveTest.cs:207：Java 在 HANA 实库上往返 NCLOB 列；C# 只核对建表与写入的 SQL（JSON 序列化为字符串参数），实库验证留到 HANA 冒烟（ROADMAP 3.2） | `DROP TABLE "t_fork_profile"` |
 | fork/live/JsonValueConverterLiveTest.java#mysql8018JsonColumn | 偏离 | tests/EasyQuerySharp.Tests.Live/LiveSuite.Json.cs:10：C# 的实库套件在每个库上跑同一份往返（MySQL 系的列改成 JSON 类型）；Dictionary<string, object?> 的值按 System.Text.Json 读成 JsonElement | `DROP TABLE IF EXISTS t_fork_profile` |
 | fork/types/ZonedTimeColumnSqlTest.java#compareAndDateArithmetic | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/ZonedTimeColumnSqlTest.cs:15 | `SELECT 'id','kind','created_at','completed_at','due_at','seen_at' FROM 't_fork_event' WHERE 'created…` |
 | fork/types/ZonedTimeColumnSqlTest.java#durationAggregateInGroupSelect | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/ZonedTimeColumnSqlTest.cs:33 | `SELECT t.'kind' AS 'value1',AVG(` |
@@ -2227,13 +2227,13 @@
 | fork/dialect/DialectEntrySqlTest.java#userDefinedFunctionHasTheSameShape | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:68 | `SELECT t.{…} FROM 't_fork_user' t WHERE EXISTS(SELECT 1 FROM 't_fork_post' t1 WHERE t1.'user_id' = t…` |
 | fork/dialect/DialectEntrySqlTest.java#userDefinedValueFunctionChainsLikeBuiltIns | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:63 | `SELECT {…} FROM 't_fork_user' WHERE CHAR_LENGTH('name') > ? ORDER BY CHAR_LENGTH('name') DESC` |
 | fork/dialect/DialectEntrySqlTest.java#wrongDialectFailsWhenTheExpressionIsBuilt | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:56 |  |
-| fork/dialect/HanaTextSqlTest.java#containsAndFuzzy | 待做 |  |  |
-| fork/dialect/HanaTextSqlTest.java#wrongDialectAndBadThreshold | 待做 |  |  |
+| fork/dialect/HanaTextSqlTest.java#containsAndFuzzy | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaSqlTest.cs:90 |  |
+| fork/dialect/HanaTextSqlTest.java#wrongDialectAndBadThreshold | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaSqlTest.cs:105 |  |
 | fork/dialect/MySQLJsonSqlTest.java#containsPath | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:73 | `SELECT 'id','name','age','company_id','attrs','created_at' FROM 't_fork_user' WHERE JSON_CONTAINS_PA…` |
 | fork/dialect/MySQLJsonSqlTest.java#modificationsChainIntoUpdate | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:82 | `UPDATE 't_fork_user' SET 'attrs' = JSON_REMOVE(JSON_SET('attrs',?,?),?,?) WHERE 'id' = ?` |
 | fork/dialect/PgSQLM4SqlTest.java#arrayAndFullText | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:94 |  |
 | fork/dialect/PgSQLM4SqlTest.java#jsonbEdit | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntrySqlTest.cs:88 | `UPDATE "t_fork_user" SET "attrs" = (jsonb_set(("attrs")::jsonb,(?)::text[],(?)::jsonb,true) #- (?)::…` |
-| fork/live/HanaTextLiveTest.java#containsFuzzyAndScore | 待做 |  | `DROP TABLE "t_fork_post"` |
+| fork/live/HanaTextLiveTest.java#containsFuzzyAndScore | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaLiveTest.cs:179：Java 在 HANA 实库上建全文索引后检索；C# 只核对检索与删表的 SQL，实库验证留到 HANA 冒烟（ROADMAP 3.2） | `DROP TABLE "t_fork_post"` |
 | fork/live/MySQLDialectEntryLiveTest.java#fullTextAgainstAndScore | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntryLiveTest.cs:75 |  |
 | fork/live/MySQLDialectEntryLiveTest.java#insideImplicitSubquery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntryLiveTest.cs:68 |  |
 | fork/live/MySQLDialectEntryLiveTest.java#jsonContainsWithPath | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/DialectEntryLiveTest.cs:53 |  |
@@ -2328,24 +2328,24 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| fork/dialect/HanaSqlTest.java#dateFormatTranslation | 待做 |  |  |
-| fork/dialect/HanaSqlTest.java#existsSubqueryHasNoLimit | 待做 |  | `SELECT {…} FROM "t_fork_user" t LEFT JOIN "t_fork_company" t1 ON t1."id" = t."company_id" WHERE t1."…` |
-| fork/dialect/HanaSqlTest.java#functions | 待做 |  | `SELECT ((t."name" \|\| ?) \|\| t."id") AS "value1",SUBSTRING(t."name",1,4) AS "value2",(LOCATE(t."name",…` |
-| fork/dialect/HanaSqlTest.java#joinedUpdateIsMergeAndJoinedDeleteIsExists | 待做 |  | `MERGE INTO "t_fork_user" t USING (SELECT t."id" AS "eq_key_0",? AS "eq_value_0" FROM "t_fork_user" t…` |
-| fork/dialect/HanaSqlTest.java#pagingUsesLimitOffset | 待做 |  | `SELECT "id","name","age","company_id","attrs","created_at" FROM "t_fork_user" WHERE "name" LIKE ? OR…` |
-| fork/dialect/HanaSqlTest.java#upsertIsMerge | 待做 |  | `MERGE INTO "t_fork_user" t1 USING (SELECT ? AS "id",? AS "name" FROM DUMMY) t2 ON (t1."id" = t2."id"…` |
-| fork/live/HanaDialectLiveTest.java#aggregatesAndBooleanProjection | 待做 |  |  |
-| fork/live/HanaDialectLiveTest.java#dateFunctions | 待做 |  |  |
-| fork/live/HanaDialectLiveTest.java#joinedUpdateAndDelete | 待做 |  |  |
-| fork/live/HanaDialectLiveTest.java#likeEscapesWildcards | 待做 |  |  |
-| fork/live/HanaDialectLiveTest.java#mergeUpsert | 待做 |  |  |
-| fork/live/HanaDialectLiveTest.java#pagingImplicitJoinAndSubquery | 待做 |  |  |
-| fork/live/HanaDialectLiveTest.java#plainCrudAndForUpdate | 待做 |  |  |
-| fork/live/HanaDialectLiveTest.java#stringAndNullFunctions | 待做 |  |  |
-| fork/live/HanaKeysAndTypesLiveTest.java#generatedKeyIsFilledBack | 待做 |  |  |
-| fork/live/HanaKeysAndTypesLiveTest.java#generatedKeysForBatch | 待做 |  |  |
-| fork/live/HanaKeysAndTypesLiveTest.java#localDateTimeRoundTrip | 待做 |  |  |
-| fork/live/HanaKeysAndTypesLiveTest.java#localDateTimeSurvivesDstGapOfJvmZone | 待做 |  |  |
+| fork/dialect/HanaSqlTest.java#dateFormatTranslation | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaSqlTest.cs:49 |  |
+| fork/dialect/HanaSqlTest.java#existsSubqueryHasNoLimit | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaSqlTest.cs:28 | `SELECT {…} FROM "t_fork_user" t LEFT JOIN "t_fork_company" t1 ON t1."id" = t."company_id" WHERE t1."…` |
+| fork/dialect/HanaSqlTest.java#functions | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaSqlTest.cs:36 | `SELECT ((t."name" \|\| ?) \|\| t."id") AS "value1",SUBSTRING(t."name",1,4) AS "value2",(LOCATE(t."name",…` |
+| fork/dialect/HanaSqlTest.java#joinedUpdateIsMergeAndJoinedDeleteIsExists | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaSqlTest.cs:61 | `MERGE INTO "t_fork_user" t USING (SELECT t."id" AS "eq_key_0",? AS "eq_value_0" FROM "t_fork_user" t…` |
+| fork/dialect/HanaSqlTest.java#pagingUsesLimitOffset | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaSqlTest.cs:18 | `SELECT "id","name","age","company_id","attrs","created_at" FROM "t_fork_user" WHERE "name" LIKE ? OR…` |
+| fork/dialect/HanaSqlTest.java#upsertIsMerge | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaSqlTest.cs:73 | `MERGE INTO "t_fork_user" t1 USING (SELECT ? AS "id",? AS "name" FROM DUMMY) t2 ON (t1."id" = t2."id"…` |
+| fork/live/HanaDialectLiveTest.java#aggregatesAndBooleanProjection | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaLiveTest.cs:112：Java 在 HANA 实库上执行并核对结果；C# 只核对同一组操作的 SQL，实库验证留到 HANA 冒烟（ROADMAP 3.2） |  |
+| fork/live/HanaDialectLiveTest.java#dateFunctions | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaLiveTest.cs:96：Java 在 HANA 实库上执行并核对结果；C# 只核对同一组操作的 SQL，实库验证留到 HANA 冒烟（ROADMAP 3.2） |  |
+| fork/live/HanaDialectLiveTest.java#joinedUpdateAndDelete | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaLiveTest.cs:49：Java 在 HANA 实库上执行并核对结果；C# 只核对同一组操作的 SQL，实库验证留到 HANA 冒烟（ROADMAP 3.2） |  |
+| fork/live/HanaDialectLiveTest.java#likeEscapesWildcards | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaLiveTest.cs:63：Java 在 HANA 实库上执行并核对结果；C# 只核对同一组操作的 SQL，实库验证留到 HANA 冒烟（ROADMAP 3.2） |  |
+| fork/live/HanaDialectLiveTest.java#mergeUpsert | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaLiveTest.cs:37：Java 在 HANA 实库上执行并核对结果；C# 只核对同一组操作的 SQL，实库验证留到 HANA 冒烟（ROADMAP 3.2） |  |
+| fork/live/HanaDialectLiveTest.java#pagingImplicitJoinAndSubquery | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaLiveTest.cs:76：Java 在 HANA 实库上执行并核对结果；C# 只核对同一组操作的 SQL，实库验证留到 HANA 冒烟（ROADMAP 3.2） |  |
+| fork/live/HanaDialectLiveTest.java#plainCrudAndForUpdate | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaLiveTest.cs:19：Java 在 HANA 实库上执行并核对结果；C# 只核对同一组操作的 SQL，实库验证留到 HANA 冒烟（ROADMAP 3.2） |  |
+| fork/live/HanaDialectLiveTest.java#stringAndNullFunctions | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaLiveTest.cs:84：Java 在 HANA 实库上执行并核对结果；C# 只核对同一组操作的 SQL，实库验证留到 HANA 冒烟（ROADMAP 3.2） |  |
+| fork/live/HanaKeysAndTypesLiveTest.java#generatedKeyIsFilledBack | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaLiveTest.cs:143：Java 在 HANA 实库上插入并读回生成的键；C# 只核对插入语句、取键的查询与建表语句，实库验证留到 HANA 冒烟（ROADMAP 3.2） |  |
+| fork/live/HanaKeysAndTypesLiveTest.java#generatedKeysForBatch | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaLiveTest.cs:154：Java 在 HANA 实库上插入并读回生成的键；C# 只核对插入语句、取键的查询与建表语句，实库验证留到 HANA 冒烟（ROADMAP 3.2） |  |
+| fork/live/HanaKeysAndTypesLiveTest.java#localDateTimeRoundTrip | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaLiveTest.cs:162 |  |
+| fork/live/HanaKeysAndTypesLiveTest.java#localDateTimeSurvivesDstGapOfJvmZone | 骨架 | tests/EasyQuerySharp.Tests.Upstream/Fork/HanaLiveTest.cs:168 |  |
 
 ### 人大金仓方言（`dialect.kingbase`，M6）
 

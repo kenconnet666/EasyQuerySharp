@@ -26,14 +26,14 @@
 | 能力 | key | 用例数 | C# 写法 | 状态 |
 |---|---|---|---|---|
 | 字符串函数 | `func.string` | 131 | 优先映射 BCL：`Contains` / `StartsWith` / `Trim` / `ToUpper` / `Substring` / `IndexOf` / `Length` / `Replace` / `PadLeft`；没有 BCL 对应的用扩展方法：`Like` / `NotLike`；`Contains` 等对应 Java 的 like（`LIKE ?`，% 在参数里），`LikeContains` / `LikeStartsWith` / `LikeEndsWith` 对应 Java 的 contains / startsWith / endsWith（`LIKE CONCAT('%',?,'%')`） | 阶段 1 |
-| 日期函数 | `func.date` | 101 | `AddDays` / `AddMonths` / `.Year` / `.DayOfWeek` / `ToString("yyyy-MM")`（格式串按方言翻译）/ `Sql.Now()`；日期相减 `(end - start).TotalDays` / `.Days` / `.TotalHours`（对应 Java 的 duration）；`DateTime` / `DateOnly` / `DateTimeOffset`；日期截断 `p.CreatedAt.DateTrunc(DateTruncUnit.Month)`（MySQL、PG、SQLite、SQL Server 2022 的 DATETRUNC、Oracle 的 TRUNC；周从周一起） | 完成 |
-| 通用函数 | `func.general` | 59 | `??`（nullOrDefault）/ `x.NullIf(y)` / `x.EqualsNullSafe(y)`（按方言写 `<=>` / `IS NOT DISTINCT FROM` / `IS`）/ `Sql.Random()` / `Sql.MaxColumns(a, b, c)`、`Sql.MinColumns(..)`（一行里几个值取最大 / 最小：MySQL、PG 的 GREATEST / LEAST，SQLite 的多参数 MAX / MIN，SQL Server 的 VALUES，Oracle / 达梦的 UNION ALL 派生表） | 阶段 3 |
+| 日期函数 | `func.date` | 101 | `AddDays` / `AddMonths` / `.Year` / `.DayOfWeek` / `ToString("yyyy-MM")`（格式串按方言翻译）/ `Sql.Now()`；日期相减 `(end - start).TotalDays` / `.Days` / `.TotalHours`（对应 Java 的 duration）；`DateTime` / `DateOnly` / `DateTimeOffset`；日期截断 `p.CreatedAt.DateTrunc(DateTruncUnit.Month)`（MySQL、PG、SQLite、SQL Server 2022 的 DATETRUNC、Oracle 的 TRUNC、HANA 按格式取出起点再 TO_TIMESTAMP；周从周一起） | 完成 |
+| 通用函数 | `func.general` | 59 | `??`（nullOrDefault）/ `x.NullIf(y)` / `x.EqualsNullSafe(y)`（按方言写 `<=>` / `IS NOT DISTINCT FROM` / `IS`）/ `Sql.Random()` / `Sql.MaxColumns(a, b, c)`、`Sql.MinColumns(..)`（一行里几个值取最大 / 最小：MySQL、PG、HANA 的 GREATEST / LEAST，SQLite 的多参数 MAX / MIN，SQL Server 的 VALUES，Oracle / 达梦的 UNION ALL 派生表） | 阶段 3 |
 | 字符串聚合 | `func.joining` | 29 | `g.StringJoin(p => p.Name, ",")`，集合导航上写 `string.Join(",", u.Posts.Select(p => p.Name))`；链上的 `OrderBy` / `ThenBy` 写进聚合 | 完成 |
 | JSON 函数 | `func.json` | 12 | `Sql.Json(u.Attrs).Get / Text / Value<T> / Length / ContainsKey`；方言专属的在 `Sql.MySql.Json(..)` / `Sql.Pg.Jsonb(..)` 下 | 完成 |
 | 数学函数 | `func.math` | 4 | 映射 `Math.Abs` / `Round` / `Floor` / `Ceiling` / `Pow` / `Sqrt` / `Sign` / `Log` / `Exp` / `Truncate` | 完成 |
 | CASE WHEN | `expr.case` | 27 | 三元表达式（多分支写成嵌套三元），渲染成 `CASE WHEN … THEN … ELSE … END`；聚合加过滤：`g.Count(p => p.Paid)` | 完成 |
 | 窗口函数 | `window` | 44 | `Sql.Over.RowNumber(w => w.PartitionBy(p.UserId).OrderBy(p.Id))`；`Lag` / `Lead` / `FirstValue` / `NthValue` / `Ntile` / `PercentRank` / `CumeDist`，支持 frame；取值函数不带窗口或窗口没写排序时沿用查询的 ORDER BY（`Sql.Over.Lag(p.Views, 1)`），查询没有排序时报错 | 完成 |
-| 行锁 | `lock` | 28 | `.ForUpdate()` / `.ForUpdateNoWait()` / `.ForUpdateSkipLocked()`：只能在事务里、对单表调用；SQL Server、SQLite 渲染时抛 NotSupportedException。Java 没有 FOR SHARE，不做；其余方言的冒烟用例随阶段 2、3 | 阶段 2、3 |
+| 行锁 | `lock` | 28 | `.ForUpdate()` / `.ForUpdateNoWait()` / `.ForUpdateSkipLocked()`：只能在事务里、对单表调用；SQL Server、SQLite 渲染时抛 NotSupportedException；HANA 的 SkipLocked 写 `FOR UPDATE IGNORE LOCKED`。Java 没有 FOR SHARE，不做；其余方言的冒烟用例随阶段 2、3 | 阶段 2、3 |
 
 ## 导航与对象树（[0002](decisions/0002-object-tree-and-dto.md)）
 
@@ -51,7 +51,7 @@
 
 | 能力 | key | 用例数 | C# 写法 | 状态 |
 |---|---|---|---|---|
-| 插入 | `write.insert` | 50 | `db.Insert(entities).ExecuteAsync()`，`.FillGeneratedKeys()` 回填自增键；字典写入 `db.InsertMap(table, rows)`；INSERT … SELECT：`q.InsertInto(table).Column(name, value)`（HANA 的用例随阶段 3） | 完成 |
+| 插入 | `write.insert` | 50 | `db.Insert(entities).ExecuteAsync()`，`.FillGeneratedKeys()` 回填自增键；字典写入 `db.InsertMap(table, rows)`；INSERT … SELECT：`q.InsertInto(table).Column(name, value)` | 完成 |
 | 更新 | `write.update` | 59 | `db.Update<T>().Set(u => new T { Age = u.Age + 1 }).Where(..).ExecuteAsync()`；`db.Update(entity)` 按主键整行更新；`.Columns(..)` 限定列、`.WhereColumns(..)` 换定位列；字典 `db.UpdateMap(..)`；没有任何 SET 时抛异常（Java 是静默返回 0） | 完成 |
 | 删除 | `write.delete` | 25 | `db.Delete<T>().Where(..).ExecuteAsync()`；没有条件时必须写 `.All()`；逻辑删除的实体要真删时用 `.Hard()`；条件里可以用集合导航和对一导航 | 阶段 1 |
 | upsert | `write.upsert` | 13 | `.OnConflictIgnore(冲突列?)` / `.OnConflictUpdate(更新列?, 冲突列?)`：MySQL（INSERT IGNORE / ON DUPLICATE KEY UPDATE）、PG 与 SQLite（ON CONFLICT）、SQL Server、Oracle 与达梦（单行 MERGE）；MySQL 上忽略冲突也可以写成 `ON DUPLICATE KEY UPDATE 主键 = VALUES(主键)`（`new MySqlDialect { IgnoreConflictAsKeyUpdate = true }`） | 完成 |
@@ -99,7 +99,7 @@
 | 人大金仓 / openGauss | `dialect.kingbase` | 2 | Npgsql；与 PG 共用方言 | 第二档，阶段 3 |
 | DuckDB | `dialect.duckdb` | 16 | DuckDB.NET.Data.Full（只在测试项目里引用）；`options.UseDuckDb(..)` | 第二档，完成 |
 | ClickHouse | `dialect.clickhouse` | 4 | ClickHouse.Client | 第二档，阶段 3 |
-| SAP HANA | `dialect.hana` | 18 | SAP HANA ADO.NET 驱动 | 第二档，阶段 3 |
+| SAP HANA | `dialect.hana` | 18 | HANA 客户端自带的 Sap.Data.Hana（不在 nuget.org）；`options.UseHana(..)`；位置参数 `?`，`LIMIT … OFFSET`，拼接逐对写 `||`，日期格式化用 `TO_NVARCHAR`（格式串里的文字单独拼接），条件当值写三值 CASE，upsert 写 `MERGE … FROM DUMMY`，带导航的更新写按主键对上的 MERGE、删除写 EXISTS，EXISTS 子查询不带 LIMIT，自增键取 `CURRENT_IDENTITY_VALUE()`，建表 `CREATE COLUMN TABLE`；没有递归 CTE、`STRING_AGG` 不能去重、`Sql.Json` 未实现。SQL 文本按 fork 用例核对，实库冒烟未做 | 第二档，阶段 3 |
 | Db2 / TDengine | 没有用例 | — | Net.IBM.Data.Db2 / TDengine.Connector | 第二档，阶段 3 |
 | H2 | `dialect.h2` | 74 | 没有 .NET 驱动：和方言无关的用例改在 SQLite 上移植（偏离），只测 H2 方言本身的标不适用 | 阶段 3 |
 
@@ -107,7 +107,7 @@
 
 | 能力 | 来源 | C# 写法 | 状态 |
 |---|---|---|---|
-| 方言静态入口加专属函数 | fork decisions/0001、M1、M4 | `Sql.MySql.Json(..).Contains / HasMember / Overlaps / ContainsPath / Edit(..)`、`Sql.MySql.Match(..).Against(..)`；`Sql.Pg.Jsonb(..)`、`Sql.Pg.Array(..)`、`Sql.Pg.FullText(..)`；`Sql.Hana.Text(..)`（阶段 3） | 阶段 3 |
+| 方言静态入口加专属函数 | fork decisions/0001、M1、M4 | `Sql.MySql.Json(..).Contains / HasMember / Overlaps / ContainsPath / Edit(..)`、`Sql.MySql.Match(..).Against(..)`；`Sql.Pg.Jsonb(..)`、`Sql.Pg.Array(..)`、`Sql.Pg.FullText(..)`；`Sql.Hana.Text(..).Contains / Fuzzy(q, 阈值) / Score()` | 完成 |
 | 窗口 frame、`ntile` / `percent_rank` / `cume_dist` | fork 3.4 | 并入 `window` | 完成 |
 | rollup / cube / grouping | fork 3.5 | 并入 `query.group` | 完成 |
 | NULLIF、null-safe 等值 | fork 3.6 | 并入 `func.general` | 完成 |
@@ -118,7 +118,7 @@
 | 类型化 INSERT … SELECT | fork 3.2 | 并入 `write.insert` | 完成 |
 | JSON 列转换器 + 编解码接口 | fork 3.3 | `JsonValueConverter<T>`（`System.Text.Json`） | 完成 |
 | `DateTimeOffset` 等带时区的时间类型 | fork 1.4 | 原生支持 | 完成 |
-| SAP HANA 方言 | fork M2 | 见方言表 | 阶段 3 |
+| SAP HANA 方言 | fork M2 | 见方言表（SQL 文本完成，实库冒烟待做） | 阶段 3 |
 | 实库用例（live） | fork `live/` | 并入 L3 跨方言套件 | 阶段 2、3 |
 
 ## TS 版独有的能力（不在 Java 用例里）
