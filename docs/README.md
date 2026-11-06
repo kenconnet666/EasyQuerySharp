@@ -23,9 +23,29 @@
 
 ## 指南
 
-按能力写的用法、限制与对应的 Java 写法（ROADMAP 5.3 补齐其余能力）。
+按能力写的用法、方言差异、限制与对应的 Java 写法。代码和 SQL 由 `tools/DocsExamples` 从 `docs/examples` 的卡片生成（在 SQLite 示例库上实跑），不手写。
 
-- [依赖注入](guide/dependency-injection.md)：`services.AddEasyQuery(..)`，多个库按名字注入，从容器取数据源、监听器、拦截器，生命周期。
+| 指南 | 内容 |
+|---|---|
+| [入门](guide/getting-started.md) | 安装、选方言和驱动、定义实体、创建 EasyDb、第一条查询和写入 |
+| [实体与映射](guide/entities.md) | `[Table]` / `[Column]`、命名约定、主键生成、枚举与值转换、JSON 列、值对象、计算列、关系的声明 |
+| [列规则](guide/rules.md) | 逻辑删除、乐观锁、查询过滤与写入拦截器（多租户、自动填充）、列加密 |
+| [查询](guide/queries.md) | 终结方法、条件、子查询、排序与分页（含深分页）、投影与 DTO（`Select<TDto>()`、`[MapPath]`、`[Projection]`）、UNION 与 CTE、流式读取 |
+| [联表与导航](guide/joins-and-navigations.md) | 显式 JOIN、对一导航的隐式 JOIN、集合导航的隐式子查询、分组合并、取第几个元素、直达导航 |
+| [带出与对象树](guide/include-and-trees.md) | `Include`、`IncludeLimitMode`、投影里的嵌套集合、按 DTO 结构自动带出、按键填充、树 |
+| [函数](guide/functions.md) | 字符串、日期、数值、NULL 与 CASE、JSON、窗口函数、方言专属函数、自定义函数，各方言的支持 |
+| [分组与聚合](guide/grouping.md) | `GroupBy` / `Having`、按条件聚合、字符串聚合、ROLLUP / CUBE、整表聚合 |
+| [写入](guide/writes.md) | 插入、回填主键、upsert、按条件 / 按实体更新、删除、批量、`RETURNING`、走导航的更新删除 |
+| [追踪与聚合保存](guide/save-and-tracking.md) | 追踪作用域、差异更新、`db.Save(根)` 的级联与行为开关 |
+| [事务与行锁](guide/transactions.md) | 环境事务、回调式事务、不能嵌套、`ForUpdate` 各方言写法 |
+| [原生 SQL](guide/raw-sql.md) | `SqlQueryAsync` / `ExecuteSqlAsync`（插值参数化）、`FromSql`、`Sql.Raw`、`ReadAsync` |
+| [换表](guide/tables.md) | `AsTable`、`MapTable`、`InSchema`、`AsTableSegment`、`WithTableLink`，写入时换表 |
+| [动态筛选与列表页](guide/filter.md) | `FilterBy` / `SortBy`、`ToPageAsync(TableRequest)` |
+| [方言](guide/dialects.md) | 13 个方言的档位、实库验证情况、能力矩阵、自定义方言 |
+| [从 Java / TS 迁移](guide/migration.md) | 写法差别，Java → C#、TS → C# 的 API 对照表 |
+| [依赖注入](guide/dependency-injection.md) | `services.AddEasyQuery(..)`，多个库按名字注入，从容器取数据源、监听器、拦截器，生命周期 |
+
+开发中、还没有指南的能力：建表与迁移（code-first，ROADMAP 4.1）、分库分表（4.4，[0006](decisions/0006-sharding.md)）、二级缓存（4.5，[0007](decisions/0007-second-level-cache.md)）。
 
 ## 设计
 

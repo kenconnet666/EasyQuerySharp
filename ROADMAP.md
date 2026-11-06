@@ -162,5 +162,19 @@ R → 1 → 2 → 3 → 4 → 5。
 
 - [ ] 5.1 冻结公共 API：PublicApiAnalyzers 的基线转为已发布（Shipped），公开成员都有 XML 文档。
 - [ ] 5.2 基准对比：用 BenchmarkDotNet 和 EF Core、Dapper、FreeSql、SqlSugar 比较查询翻译、物化、对象树三项；根据结果决定要不要缓存翻译结果。
-- [ ] 5.3 文档：在 `docs/guide/` 下按能力写 Markdown 指南（用法、方言支持矩阵、限制、对应的 Java 方法名），代码片段和 SQL 由 DocsExamples 生成；另写 README、入门教程，以及从 Java / TS 迁移的指南。
+- [~] 5.3 文档：在 `docs/guide/` 下按能力写 Markdown 指南（用法、方言支持矩阵、限制、对应的 Java 方法名），代码片段和 SQL 由 DocsExamples 生成；另写 README、入门教程，以及从 Java / TS 迁移的指南。
+  - [x] 已完成的能力都有指南（索引见 [docs/README.md](docs/README.md#指南)）：入门、实体与映射、列规则、查询、联表与导航、带出与对象树、函数、分组与聚合、写入、追踪与聚合保存、事务与行锁、原生 SQL、换表、动态筛选与列表页、方言、迁移，加上已有的依赖注入；根目录 README 重写。
+  - [x] 指南与 README 里的代码不手写：`<!-- card: 页面/方法 sql=方言 -->` 区域由 DocsExamples 从卡片（Roslyn 截取方法体）和各方言的 SQL 重写，`<!-- snippet: 名字 -->` 区域取 `docs/examples` 或示例模型里标记的代码，`--check` 时过期或引用不存在都算失败。新增约 130 张卡片（`docs/examples` 下的新文件），卡片随生成器与分析器一起编译。
+  - [ ] code-first（4.1）、分库分表（4.4）、二级缓存（4.5）做完后补指南，索引里已留位置。
+  - [ ] 写文档时发现、待修的问题（正确性问题按 CLAUDE.md 直接修，修完从这里删掉，指南里对应的"限制"一并更新）：
+    - `SqlQueryAsync<T>($"…")` / `ExecuteSqlAsync($"…")` 只传插值字符串时，C# 选的是 `string` 重载，值直接拼进 SQL（注入风险）；要带 `CancellationToken` 才走 `FormattableString` 重载。需要改 API（如 `[InterpolatedStringHandler]` 或给 `string` 重载换名字）。
+    - 聚合保存：给已有的父对象新增子对象时，非空外键的默认值 0 被当成"已挂在别的父对象上"而报错（`SavePlan.CheckOwnership`），要求手动设外键或 `AllowOwnershipChange`。
+    - `IncludeLimitMode.UnionAll` 在 SQLite 上生成的 `(… ORDER BY … LIMIT n) UNION ALL …` 执行不了（SQLite 不允许 UNION 成员带括号 / ORDER BY / LIMIT），要包一层 `SELECT * FROM (…)`。
+    - 投影里的集合导航不支持 `Take` / `Skip`（0002 写了"对多集合加 OrderBy + Take(n) 用 ROW_NUMBER 派生表"，`ProjectionCompiler` 只认 Select / Where / OrderBy）。
+    - 标量投影合并后按元素本身排序（`q1.UnionAll(q2).OrderBy(n => n)`）报不支持；`GroupBy(..).Keys().OrderBy(k => k)` 在 Oracle / 达梦上报不支持、其余方言可以。
+    - 声明了条数的对一导航（`OneToOne` + `Limit`）不能与 null 比较（`a.TopPost != null`）；普通对一导航可以。
+    - `PadLeft` / `PadRight` 在 SQLite 上写成 `LPAD` / `RPAD`，SQLite 没有这两个函数。
+    - `Convert.ToXxx` 只映射 `object` / `string` 参数的重载，`Convert.ToString(p.Views)`（`int` 重载）报不支持。
+    - 0002 写的按名字拼接自动平铺（DTO 的 `CompanyName` 对应 `Company.Name`）没有实现，只认 `[MapPath]`；实现或改文档二选一。
+    - 没有公开的"当前是否在事务里"的判断（`EasyDb` 只有 `IsTracking`）。
 - [ ] 5.4 打包：NuGet 元数据、Source Link、确定性构建，生成器和分析器随核心包一起分发。是否发布到 nuget.org 在这一步决定。
