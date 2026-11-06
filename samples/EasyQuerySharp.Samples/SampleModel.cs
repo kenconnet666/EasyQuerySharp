@@ -63,6 +63,7 @@ public enum UserLevel
     [EnumMember(Value = "lead")] Lead,
 }
 
+// <snippet:sample-user>
 /// <summary>用户：方圆的年龄为空，顾言未成年且没有公司；<see cref="ManagerId"/> 指向上级。</summary>
 [Table("t_user")]
 public class User
@@ -129,6 +130,7 @@ public class User
 
     private static Expression<Func<Post, bool>> HotPostFilter => p => p.Views >= 1000;
 }
+// </snippet:sample-user>
 
 /// <summary>用户资料：与用户一对一，主键就是用户 id；不是每个用户都填了。</summary>
 [Table("t_profile")]
@@ -355,6 +357,7 @@ public class OrderItem
     public Product? Product { get; set; }
 }
 
+// <snippet:sample-doc>
 /// <summary>用到列规则的文档：逻辑删除、乐观锁、只在插入时写的创建人、更新时由拦截器填的时间。</summary>
 [Table("t_doc")]
 public class Doc
@@ -377,7 +380,9 @@ public class Doc
 
     public DateTime? UpdatedAt { get; set; }
 }
+// </snippet:sample-doc>
 
+// <snippet:sample-ticket>
 /// <summary>工单：多租户（示例只看 1 号租户）、更新时自动填的时间、加密的联系方式。</summary>
 [Table("t_ticket")]
 public class Ticket
@@ -397,7 +402,9 @@ public class Ticket
 
     public DateTime? TouchedAt { get; set; }
 }
+// </snippet:sample-ticket>
 
+// <snippet:sample-shop>
 /// <summary>门店：地址是值对象，在库里展开成几列（address_city、address_street、geo_lat、geo_lng）。</summary>
 [Table("t_shop")]
 public class Shop
@@ -432,6 +439,7 @@ public class GeoPoint
 
     public double Lng { get; set; }
 }
+// </snippet:sample-shop>
 
 /// <summary>示例用的可逆"加密"：确定性的，所以能按密文比较。真实项目换成 AES 这类加密。</summary>
 public sealed class ReverseEncryption : IEncryptionStrategy

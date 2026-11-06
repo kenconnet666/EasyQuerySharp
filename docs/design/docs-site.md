@@ -90,5 +90,6 @@ public static class BasicsExamples
 ## 现状（2026-11）
 
 - `tools/DocsExamples` 已实现：卡片在 `docs/examples/*.cs`，用 `[Example("页面", "标题")]` 标记；`Only` 限定方言，`Unsupported` 写已知还不支持的方言（快照里照样写出报错，但不算校验失败）。
-- 回放用"磁带"（`Tape`）：录制时包住真实的 SQLite 连接，回放时一个不连库的 ADO.NET 连接按顺序还回结果。各方言发出的语句条数不同（比如 PG 插入取自增键用 RETURNING，SQLite 多一条查询）时，那张卡片在该方言上会报"回放的结果不够"，这类卡片标 `Unsupported` 或改写。
-- CI 的 `core` 任务运行 `DocsExamples --check`。xUnit 包装与站点数据 `examples.json`、Roslyn 截取卡片代码，等文档站（M8）开工时再做。
+- 回放用"磁带"（`Tape`）：录制时包住真实的 SQLite 连接，回放时一个不连库的 ADO.NET 连接按顺序还回结果。各方言发出的语句条数不同（比如 PG 插入取自增键用 RETURNING，SQLite 多一条查询）时，那张卡片在该方言上会报"回放的结果不够"，这类卡片标 `Unsupported` 或改写。回放的参数借用 SQLite 的参数对象，不支持输出参数（Oracle / 达梦取自增键的 `RETURNING … INTO ?`），这类卡片在这两个方言上同样标 `Unsupported`。
+- 指南（`docs/guide/*.md`）里的代码与 SQL 由工具生成：`<!-- card: 页面/方法名 sql=mysql,pgsql -->` 与 `<!-- /card -->` 之间重写成卡片的方法体（Roslyn 截取）和所列方言发出的 SQL；`<!-- snippet: 名字 -->` 与 `<!-- /snippet -->` 之间重写成 `docs/examples` 或示例模型（`samples/EasyQuerySharp.Samples`）里 `// <snippet:名字>` 与 `// </snippet:名字>` 之间的代码（实体声明、配置这类不是卡片的代码）。`--check` 时指南过期、引用不存在的卡片或片段都算失败。
+- CI 的 `core` 任务运行 `DocsExamples --check`。xUnit 包装与站点数据 `examples.json` 等文档站（M8）开工时再做。

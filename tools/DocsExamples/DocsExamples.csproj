@@ -2,8 +2,8 @@
 
     <!--
       文档卡片：docs/examples 下标了 [Example] 的方法。每张卡片在 SQLite 上实跑（记下结果），再在其余每种方言上
-      用回放的结果跑一遍，记下这个方言发出的 SQL，写成 docs/sql-snapshots 下的快照；加 check 参数时只校验不写入（CI 用）。
-      见 docs/design/docs-site.md。
+      用回放的结果跑一遍，记下这个方言发出的 SQL，写成 docs/sql-snapshots 下的快照；docs/guide 里引用卡片与代码片段的区域
+      由卡片源码（Roslyn 截取方法体）和各方言的 SQL 重写。加 check 参数时只校验不写入（CI 用）。见 docs/design/docs-site.md。
     -->
 
     <PropertyGroup>
@@ -15,10 +15,13 @@
     <ItemGroup>
         <ProjectReference Include="..\..\src\EasyQuerySharp\EasyQuerySharp.csproj" />
         <ProjectReference Include="..\..\samples\EasyQuerySharp.Samples\EasyQuerySharp.Samples.csproj" />
+        <!-- 卡片和使用者的代码一样经过 [Projection] 生成器与分析器 -->
+        <ProjectReference Include="..\..\src\EasyQuerySharp.Generator\EasyQuerySharp.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Microsoft.Data.Sqlite" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     </ItemGroup>
 
     <ItemGroup>

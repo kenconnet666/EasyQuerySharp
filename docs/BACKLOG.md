@@ -25,7 +25,7 @@
 - 日期 `ToString(format)` 只转换 `yyyy` / `MM` / `dd` / `HH` / `mm` / `ss` 六个格式符，`yy`、`M`、`d`、`H`、`h`、`m`、`s`、`tt` 等单字母格式符在各方言里都原样当文字输出（Java 的 DuckDB、MySQL 等方言有对应的转换）：结果静默不对，要补的话各方言一起补。
 - DuckDB 的日期相差用 `DATEDIFF`（与 Java 一致），数的是跨过的边界：03:59 到 04:01 算 1 小时；`(a - b).TotalHours` 在 .NET 里是整段时长（0 小时）。要对齐 .NET 时改用 `date_sub`。
 - HANA 的 `Sql.Json(..)` 没有登记（渲染时报不支持）：HANA 2.0 有 `JSON_VALUE` / `JSON_QUERY`，没有数组长度函数；fork 只用 NCLOB 存 JSON、没有 HANA 的 JSON 函数用例，有需求时再补。
-- 文档卡片的 SQL 快照（`tools/DocsExamples`）只渲染第一档的 5 个方言；第二档方言（DuckDB 等）要不要进快照，到阶段 5 写指南时再定。
+- 文档卡片的 SQL 快照（`tools/DocsExamples`）只渲染第一档的 5 个方言加达梦；其余第二档方言（DuckDB 等）的 SQL 文本由 `tests` 里的 `XxxDialectTest` 核对，指南里的方言差异写在各页的"方言差异"表里。实库冒烟都做完、方言稳定后再评估要不要进快照（回放的磁带还不支持输出参数，Oracle / 达梦取自增键的卡片标了 Unsupported）。
 - Db2：CASE 分支等处只有参数、推不出类型时报 SQL0418N，要按值的类型包 `CAST(? AS …)`（TS 版做了）；递归 CTE 的递归成员不能有显式 JOIN（SQL0345N），树查询要改成逗号连接。实库冒烟时一起补。
 - ClickHouse：LEFT JOIN 没匹配上的列默认是类型的默认值而不是 NULL，要在连接上设 `join_use_nulls = 1`；`EXISTS` 等关联子查询要 25.x 的新分析器；`UNION` 不带 ALL / DISTINCT 时取决于 `union_default_mode`；带组内排序的字符串聚合不支持。
 - TDengine：日期加减（时长只能写字面量）、字符串聚合、`InCsv`、截到周及以上的 `DateTrunc` 不支持；子查询、窗口函数能力有限，实库冒烟时再按能力裁剪。
