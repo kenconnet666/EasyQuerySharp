@@ -18,3 +18,4 @@
 - 投影里直接写非导航的关联查询（`Select(o => new { o.No, Lines = db.Query<Line>().Where(l => l.OrderNo == o.No).ToList() })`），规划器自动按键批量（旧 ROADMAP 4.9）：现在用 `FillMany` / `FillOne` 表达，Java 的 fill 用例都已覆盖。
 - 任意关联条件的导航（TS 的 `r.manyOn(.., (a, b) => b.id.inCsv(a.ids))`）：查询时本表自连接成派生表按主键对上，带出要在内存里求逆；现在只有 `KeyMatch.SelfCsv`（0005）。
 - 逗号列表键的带出在 MySQL 上是 `FIND_IN_SET(列,?)`，用不上索引：目标表大时可以改成拆好的 `IN (…)`；现在与 Java 一致。
+- SQL Server 的 `Sql.LikeContains` / `LikeStartsWith` / `LikeEndsWith` 遇到含 `%` 或 `_` 的常量值：Java 的 MsSQLLikeSQLFunction 写成 `CHARINDEX(值,列) > 0` 一类，C# 沿用 `LIKE ? ESCAPE '\'`（语义相同、SQL 不同，没有 Java 用例覆盖）；要逐字对齐时再改。
