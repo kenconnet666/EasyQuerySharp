@@ -1237,6 +1237,7 @@ EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ForUpdateNoWait() -> TSelf!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ForUpdateSkipLocked() -> TSelf!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.GroupJoinAll() -> TSelf!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.GroupJoinNoMerge() -> TSelf!
+EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.IgnoreNavigationDefaults() -> TSelf!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.IncludeGroupSize(int size) -> TSelf!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.MaxResultSize(int rows) -> TSelf!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.OffsetChunkAsync(int size, System.Func<System.Collections.Generic.IReadOnlyList<TElement>!, long>! handle, long maxFetchSize = 100000, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!

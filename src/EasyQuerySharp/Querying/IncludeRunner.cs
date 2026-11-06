@@ -45,10 +45,13 @@ internal static partial class IncludeRunner
             // LoadIncludeAsync 的单表子查询不写别名（Java 的 loadInclude）；按父对象取段时包成派生表，照常写
             var state = configured with { ForceAlias = !flat && !(plan.Unaliased && configured.Limit is null && configured.Offset is null) };
             // 带出的子数据没写排序、条数时按导航声明的（Java 的 orderByProps、limit、offset）
-            if (state.OrderBys.IsEmpty && nav.DefaultOrder.Count > 0)
-                state = state with { OrderBys = [.. nav.DefaultOrder.Select(o => new OrderSpec(o.Key, o.Descending))] };
-            if (state.Limit is null && nav.Limit is { } navLimit) state = state with { Limit = navLimit };
-            if (state.Offset is null && nav.Offset is { } navOffset) state = state with { Offset = navOffset };
+            if (!state.IgnoreNavigationDefaults)
+            {
+                if (state.OrderBys.IsEmpty && nav.DefaultOrder.Count > 0)
+                    state = state with { OrderBys = [.. nav.DefaultOrder.Select(o => new OrderSpec(o.Key, o.Descending))] };
+                if (state.Limit is null && nav.Limit is { } navLimit) state = state with { Limit = navLimit };
+                if (state.Offset is null && nav.Offset is { } navOffset) state = state with { Offset = navOffset };
+            }
             if (plan.ChildSelector is not null) state = state with { Selector = plan.ChildSelector, ImplicitSelector = flat };
 
             var childrenByKey = new Dictionary<CompositeKey, List<object?>>();

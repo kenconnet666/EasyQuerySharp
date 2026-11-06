@@ -106,30 +106,31 @@ internal static class AutoProjection
         return Include(nameof(AutoIncludeMarkers.Many), nav, navValue, property, element, selector);
     }
 
-    // AutoIncludeMarkers.One / Many(导航, 配置, 投影)：规划器据此建带出计划。配置先按 DTO 属性上的 [Navigate] 覆盖排序与条数，
-    // 嵌套 DTO 实现 IAutoIncludeConfigure 时再接上它的配置
+    // AutoIncludeMarkers.One / Many(导航, 配置, 投影)：规划器据此建带出计划。嵌套 DTO 实现 IAutoIncludeConfigure 时先按它配置，
+    // DTO 属性上的 [Navigate] 再补上它没写的排序与条数
     private static MethodCallExpression Include(string marker, NavigationMetadata nav, Expression navValue, PropertyInfo property, Type element, LambdaExpression? selector)
     {
         var resultType = selector?.ReturnType ?? nav.Target.Type;
         var method = typeof(AutoIncludeMarkers).GetMethod(marker)!.MakeGenericMethod(nav.Target.Type, resultType);
         var overrides = NavigateOverrides(property, nav.Target.Type);
         var configure = ConfigureOf(element, nav.Target.Type);
-        var combined = overrides is null ? configure : configure is null ? overrides : state => configure(overrides(state));
+        var combined = overrides is null ? configure : configure is null ? overrides : state => overrides(configure(state));
         return Expression.Call(method, navValue, Expression.Constant(combined, typeof(Func<QueryState, QueryState>)),
             Expression.Constant(selector, typeof(LambdaExpression)));
     }
 
-    // DTO 属性上的 [Navigate(OrderBy / Limit / Offset)]（Java DTO 上的 @Navigate）覆盖实体导航上声明的排序与条数
+    // DTO 属性上的 [Navigate(OrderBy / Limit / Offset)]（Java DTO 上的 @Navigate）是这次投影的默认值，替代实体导航上声明的；
+    // 带出查询自己写了排序、条数（IAutoIncludeConfigure）时以那边为准（Java 要另写 ignoreNavigateConfigure）
     private static Func<QueryState, QueryState>? NavigateOverrides(PropertyInfo property, Type target)
     {
         if (property.GetCustomAttribute<NavigateAttribute>() is not { } attribute) return null;
         var orders = NavigationMetadata.ParseOrder(attribute.OrderBy, target);
         if (orders.Count == 0 && attribute.Limit <= 0 && attribute.Offset <= 0) return null;
-        return state => state with
+        return state => state.IgnoreNavigationDefaults ? state : state with
         {
-            OrderBys = orders.Count == 0 ? state.OrderBys : [.. orders.Select(o => new OrderSpec(o.Key, o.Descending))],
-            Limit = attribute.Limit > 0 ? attribute.Limit : state.Limit,
-            Offset = attribute.Offset > 0 ? attribute.Offset : state.Offset,
+            OrderBys = orders.Count == 0 || !state.OrderBys.IsEmpty ? state.OrderBys : [.. orders.Select(o => new OrderSpec(o.Key, o.Descending))],
+            Limit = state.Limit ?? (attribute.Limit > 0 ? attribute.Limit : null),
+            Offset = state.Offset ?? (attribute.Offset > 0 ? attribute.Offset : null),
         };
     }
 

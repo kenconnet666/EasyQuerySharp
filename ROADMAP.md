@@ -15,8 +15,8 @@
 
 ## 现状（2026-11-06）
 
-- 对标：已移植 1823、偏离 139、不适用 136、骨架 2、待做 304。
-- 待做的分布：方言 206，平台能力 82（分库分表 48、code-first 14、表名 / schema / link 14、按对象筛选 6），其余零散 16。
+- 对标：已移植 1823、偏离 140、不适用 136、骨架 2、待做 303。
+- 待做的分布：方言 206，平台能力 82（分库分表 48、code-first 14、表名 / schema / link 14、按对象筛选 6），其余零散 15。
 - 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
 
 ## 已定的取舍
@@ -87,7 +87,8 @@ R → 1 → 2 → 3 → 4 → 5。
   - [x] G2 先分页再投影 `ToPageAsync(page, size, q => q.Select<TDto>())`（Java 的 `toPageSelectResult`）：这一页包成派生表，Include 留在外层；
   - [x] G4 DTO 属性上的 `[Navigate(OrderBy / Limit / Offset)]` 覆盖实体导航的排序与条数，`NavigateAttribute` 补 `Offset`（实体导航上同样生效）；
   - [x] G5 `IncludeLimitMode.UnionAll` 与 Java 逐字一致（每段取整个实体、单键写 `= ?`、投影写在外层不写 AS），根夹具按 Java 的 BaseTest 改用 UnionAll；
-  - testRelation 已移植第 1–8 段与 DTO4 / DTO6 / DTO7 三段；剩下分页加额外列（Java 的 `selectAutoInclude(DTO, extra)`）、`MyComUserDTO1` / `DTO3` / `DTO5` / `DTO8`–`DTO11`、`NavigateJoin` 的 DTOy；testOneToOne 未开始。
+  - [x] QueryTestRelationTest testRelation：24 段全部移植（`QueryTestRelationTest.Relation.cs`），记为偏离（第 9 段 Java 多写 AS 与重复列；第 18、19 段在 MySQL 8.4 严格模式下只核对 SQL）。Java 的 `selectAutoInclude(DTO, extra)` 用 DTO 上的 `[MapExpression]` 表达；`ignoreNavigateConfigure` 对应新增的 `Query.IgnoreNavigationDefaults()`，DTO 上 `[Navigate]` 的排序与条数是默认值，带出配置自己写了就以配置为准；
+  - [ ] RelationTest testOneToOne（约 80 段）。
 ## 阶段 2 第一档方言
 
 - [ ] 2.1 SQL Server：

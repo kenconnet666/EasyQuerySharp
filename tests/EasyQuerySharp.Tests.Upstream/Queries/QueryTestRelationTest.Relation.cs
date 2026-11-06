@@ -1,8 +1,9 @@
+using System.Linq.Expressions;
 using EasyQuerySharp.Metadata;
 
 namespace EasyQuerySharp.Tests.Upstream.Queries;
 
-// QueryTestRelationTest.java#testRelation 的各段（共 24 段，按段移植；全部移植后再标 Upstream，见 ROADMAP 1.9）
+// QueryTestRelationTest.java#testRelation 的 24 段拆成本文件里的多个测试（第 16 段与第 1 段相同），Upstream 标在第 1 段上
 public sealed partial class QueryTestRelationTest
 {
     /// <summary>Java 的 MySignUpDTOx：企业用户上的三列平铺进来；ComUserName 没有对应的列，保持 null。</summary>
@@ -87,7 +88,8 @@ public sealed partial class QueryTestRelationTest
     private const string ComUserKeys = "((`com_id` =? AND `user_id` =?) OR (`com_id` =? AND `user_id` =?) OR (`com_id` =? AND `user_id` =?))";
 
     // 第 1 段：带出复合键的集合导航，按导航上声明的排序
-    [Fact]
+    [Fact, Upstream("QueryTestRelationTest.java#testRelation",
+         Deviation = "24 段拆成本文件的多个测试；第 9 段（NavigateJoin 的 DTO 分页投影）Java 给 JOIN 的列写同名 AS 并多选一遍 t1 的关联列，C# 不写；第 18、19 段在 MySQL 8.4 严格模式下拿 '123123' 比较 DATETIME 会报错，只核对 SQL")]
     public Task TestRelation_IncludeOrderedCollection() => WithRelationDataAsync(async listen =>
     {
         await Db.Query<MyComUser1>().Include(s => s.MySignUps).ToListAsync(Ct);
@@ -305,6 +307,322 @@ public sealed partial class QueryTestRelationTest
         listen.AssertSql(1, UnionAllSegments("LIMIT 2 OFFSET 1"));
         Assert.Equal(["s1"], rows["JAVA"].MySignUps!.Select(s => s.Id));
         Assert.Empty(rows["C#"].MySignUps!);
+    });
+
+    // 第 10 段：先排序、分页，再投影到 DTO（排序留在包好的这一页里）
+    [Fact]
+    public Task TestRelation_OrderedPageThenProject() => WithRelationDataAsync(async listen =>
+    {
+        await Db.Query<MySignUp>().Where(m => m.Id != null).OrderBy(m => m.Content).ToPageAsync(1, 10, q => q.Select<MySignUpDTOx>(), Ct);
+        Assert.Equal(3, listen.Events.Count);
+        listen.AssertSql(0, "SELECT COUNT(*) FROM `my_sign_up` WHERE `id` IS NOT NULL");
+        listen.AssertSql(1, "SELECT t1.`id`,t1.`time`,t1.`content`,t1.`com_id` AS `__relation__comId`,t1.`user_id` AS `__relation__userId` FROM (SELECT t.`id`,t.`com_id`,t.`user_id`,t.`time`,t.`content` FROM `my_sign_up` t WHERE t.`id` IS NOT NULL ORDER BY t.`content` ASC LIMIT 4) t1");
+        listen.AssertSql(2, "SELECT `gw`,`com_id`,`user_id` FROM `my_com_user` WHERE " + ComUserKeys);
+        listen.AssertParams(2, ComUserParams3);
+    });
+
+    /// <summary>Java 的 MyComUserDTO1 / DTO3：一个集合导航、两个对一导航；DTO3 只要部分列。</summary>
+    public sealed class MyComUserDTO1
+    {
+        public string? Id { get; set; }
+
+        public string? ComId { get; set; }
+
+        public string? UserId { get; set; }
+
+        public string? Gw { get; set; }
+
+        public List<SignUpRow>? MySignUps { get; set; }
+
+        public CompanyDto? MyCompany { get; set; }
+
+        public UserDto? MyUser { get; set; }
+    }
+
+    /// <summary>报名的全部列。</summary>
+    public sealed class SignUpRow
+    {
+        public string? Id { get; set; }
+
+        public string? ComId { get; set; }
+
+        public string? UserId { get; set; }
+
+        public DateTime? Time { get; set; }
+
+        public string? Content { get; set; }
+    }
+
+    /// <summary>用户。</summary>
+    public sealed class UserDto
+    {
+        public string? Id { get; set; }
+
+        public string? Name { get; set; }
+
+        public int? Age { get; set; }
+    }
+
+    /// <summary>Java 的 MyComUserDTO3。</summary>
+    public sealed class MyComUserDTO3
+    {
+        public string? Gw { get; set; }
+
+        public List<SignUpItem>? MySignUps { get; set; }
+
+        public CompanyName? MyCompany { get; set; }
+
+        public UserNameAge? MyUser { get; set; }
+    }
+
+    /// <summary>用户的名字与年龄。</summary>
+    public sealed class UserNameAge
+    {
+        public string? Name { get; set; }
+
+        public int? Age { get; set; }
+    }
+
+    private const string SignUpKeysByComUser = "((t.`com_id` =? AND t.`user_id` =?) OR (t.`com_id` =? AND t.`user_id` =?) OR (t.`com_id` =? AND t.`user_id` =?) OR (t.`com_id` =? AND t.`user_id` =?))";
+
+    // 第 13 段：三个导航各一条带出查询，结果按复合键挂回
+    [Fact]
+    public Task TestRelation_ThreeNavigationsInDto() => WithRelationDataAsync(async listen =>
+    {
+        var rows = (await Db.Query<MyComUser>().Select<MyComUserDTO1>().ToListAsync(Ct)).ToDictionary(r => r.Id!);
+        Assert.Equal(4, listen.Events.Count);
+        listen.AssertSql(0, "SELECT t.`id`,t.`com_id`,t.`user_id`,t.`gw` FROM `my_com_user` t");
+        listen.AssertSql(1, "SELECT t.`id`,t.`com_id`,t.`user_id`,t.`time`,t.`content` FROM `my_sign_up` t WHERE " + SignUpKeysByComUser);
+        listen.AssertParams(1, SignUpParams4);
+        listen.AssertSql(2, "SELECT t.`id`,t.`name` FROM `my_company_info` t WHERE t.`id` IN (?,?)");
+        listen.AssertParams(2, "c1(String),c2(String)");
+        listen.AssertSql(3, "SELECT t.`id`,t.`name`,t.`age` FROM `my_user` t WHERE t.`id` IN (?,?,?)");
+        listen.AssertParams(3, "u1(String),u2(String),u3(String)");
+        Assert.All(rows.Values, r => Assert.NotNull(r.MyUser));
+        Assert.Equal(2, rows["cu1"].MySignUps!.Count);
+        Assert.Single(rows["cu4"].MySignUps!);
+        Assert.Empty(rows["cu2"].MySignUps!);
+        Assert.Empty(rows["cu3"].MySignUps!);
+    });
+
+    // 第 14 段：DTO 只要部分列，各导航的键另起 __relation__ 列
+    [Fact]
+    public Task TestRelation_ThreeNavigationsWithPartialColumns() => WithRelationDataAsync(async listen =>
+    {
+        await Db.Query<MyComUser>().Select<MyComUserDTO3>().ToListAsync(Ct);
+        Assert.Equal(4, listen.Events.Count);
+        listen.AssertSql(0, ComUserMain);
+        listen.AssertSql(1, "SELECT t.`id`,t.`time`,t.`content`,t.`com_id` AS `__relation__comId`,t.`user_id` AS `__relation__userId` FROM `my_sign_up` t WHERE " + SignUpKeysByComUser);
+        listen.AssertSql(2, "SELECT t.`name`,t.`id` AS `__relation__id` FROM `my_company_info` t WHERE t.`id` IN (?,?)");
+        listen.AssertSql(3, "SELECT t.`name`,t.`age`,t.`id` AS `__relation__id` FROM `my_user` t WHERE t.`id` IN (?,?,?)");
+    });
+
+    /// <summary>Java 的 MyComUserDTO8：元素按 time 过滤、排序，DTO 上声明的排序不用（Java 写 ignoreNavigateConfigure）。</summary>
+    public sealed class MyComUserDTO8
+    {
+        public string? Gw { get; set; }
+
+        [Navigate(RelationType.OneToMany, OrderBy = "ComId, Time desc nulls last")]
+        public List<SignUpByTime>? MySignUps { get; set; }
+    }
+
+    /// <summary>按 time 过滤、排序的报名（Java 的 time().asStr() 只改类型，C# 写 (string)(object)）。</summary>
+    public sealed class SignUpByTime : IAutoIncludeConfigure<MySignUp>
+    {
+        public string? Id { get; set; }
+
+        public DateTime? Time { get; set; }
+
+        public string? Content { get; set; }
+
+        public static Query<MySignUp> Configure(Query<MySignUp> query) => query.Where(s => (string)(object)s.Time! == "123123").OrderBy(s => s.Time);
+    }
+
+    /// <summary>Java 的 MyComUserDTO9：条件来自查询的配置参数（列名 → 值）。</summary>
+    public sealed class MyComUserDTO9
+    {
+        public string? Gw { get; set; }
+
+        public List<SignUpByArgument>? MySignUps { get; set; }
+    }
+
+    /// <summary>按配置参数里的列名与值过滤，不用导航上声明的排序。</summary>
+    public sealed class SignUpByArgument : IAutoIncludeConfigure<MySignUp>
+    {
+        public string? Id { get; set; }
+
+        public DateTime? Time { get; set; }
+
+        public string? Content { get; set; }
+
+        public static Query<MySignUp> Configure(Query<MySignUp> query)
+        {
+            foreach (var (column, value) in (Dictionary<string, string>)query.ConfigureArgument!)
+                query = query.Where(s => Sql.Column<string>(s, column) == value);
+            return query.IgnoreNavigationDefaults();
+        }
+    }
+
+    /// <summary>Java 的 MyComUserDTO10 / DTO11：按 user_id 过滤，DTO10 另按 content 排序（替代导航的排序），DTO11 保留导航的排序。</summary>
+    public sealed class MyComUserDTO10<TItem>
+    {
+        public string? Gw { get; set; }
+
+        public List<TItem>? MySignUps { get; set; }
+    }
+
+    /// <summary>DTO10 的元素。</summary>
+    public sealed class SignUpByUserOrdered : IAutoIncludeConfigure<MySignUp>
+    {
+        public string? Id { get; set; }
+
+        public DateTime? Time { get; set; }
+
+        public string? Content { get; set; }
+
+        public static Query<MySignUp> Configure(Query<MySignUp> query) => query.Where(s => s.UserId == "12345").OrderBy(s => s.Content);
+    }
+
+    /// <summary>DTO11 的元素。</summary>
+    public sealed class SignUpByUser : IAutoIncludeConfigure<MySignUp>
+    {
+        public string? Id { get; set; }
+
+        public DateTime? Time { get; set; }
+
+        public string? Content { get; set; }
+
+        public static Query<MySignUp> Configure(Query<MySignUp> query) => query.Where(s => s.UserId == "12345");
+    }
+
+    private const string SignUpItemColumns = "SELECT t.`id`,t.`time`,t.`content`,t.`com_id` AS `__relation__comId`,t.`user_id` AS `__relation__userId` FROM `my_sign_up` t WHERE ";
+    private const string EntityOrder = " ORDER BY t.`com_id` ASC,CASE WHEN t.`time` IS NULL THEN 0 ELSE 1 END ASC,t.`time` DESC";
+
+    // 第 18、19 段：元素按 time 与配置参数过滤。MySQL 8.4 的严格模式下拿 '123123' 比较 DATETIME 会报错（Java 的库没报），这里核对发出的带出 SQL
+    [Fact]
+    public Task TestRelation_ElementConfigureWithTimeFilter() => WithRelationDataAsync(async _ =>
+    {
+        var props = new Dictionary<string, string> { ["time"] = "123123", ["id"] = "456" };
+        var byTime = await Assert.ThrowsAsync<EasyQueryException>(() => Db.Query<MyComUser1>().Select<MyComUserDTO8>().ToListAsync(Ct));
+        SqlOnly.AssertStatement(byTime.Statement!, SignUpItemColumns + "t.`time` = ? AND " + SignUpKeysByComUser + " ORDER BY t.`time` ASC",
+            "123123(String)," + SignUpParams4);
+        var byArgument = await Assert.ThrowsAsync<EasyQueryException>(() => Db.Query<MyComUser1>().WithConfigureArgument(props).Select<MyComUserDTO9>().ToListAsync(Ct));
+        SqlOnly.AssertStatement(byArgument.Statement!, SignUpItemColumns + "t.`time` = ? AND t.`id` = ? AND " + SignUpKeysByComUser,
+            "123123(String),456(String)," + SignUpParams4);
+    });
+
+    // 第 20–22 段：元素自己的排序替代导航上声明的；只加条件时导航的排序照用
+    [Fact]
+    public Task TestRelation_ElementConfigureAndNavigationOrder() => WithRelationDataAsync(async listen =>
+    {
+        await Db.Query<MyComUser1>().Select<MyComUserDTO10<SignUpByUserOrdered>>().ToListAsync(Ct);
+        await Db.Query<MyComUser1>().Select<MyComUserDTO10<SignUpByUser>>().ToListAsync(Ct);
+        await Db.Query<MyComUser1>().Select<MyComUserDTO10<SignUpItem>>().ToListAsync(Ct);
+        Assert.Equal(6, listen.Events.Count);
+        for (var i = 0; i < 6; i += 2) listen.AssertSql(i, ComUserMain);
+        listen.AssertSql(1, SignUpItemColumns + "t.`user_id` = ? AND " + SignUpKeysByComUser + " ORDER BY t.`content` ASC");
+        listen.AssertParams(1, "12345(String)," + SignUpParams4);
+        listen.AssertSql(3, SignUpItemColumns + "t.`user_id` = ? AND " + SignUpKeysByComUser + EntityOrder);
+        listen.AssertSql(5, SignUpItemColumns + SignUpKeysByComUser + EntityOrder);
+    });
+    /// <summary>Java 的 MySignUpDTO 加 selectAutoInclude 的额外列 comUser.gw AS comUserName：C# 用 [MapExpression]，写在最前面与 Java 的列序一致。</summary>
+    public sealed class MySignUpDTO
+    {
+        private static Expression<Func<MySignUp, string?>> ComUserGw => m => m.ComUser!.Gw;
+
+        [MapExpression(nameof(ComUserGw))]
+        public string? ComUserName { get; set; }
+
+        public string? Id { get; set; }
+
+        public string? ComId { get; set; }
+
+        public string? UserId { get; set; }
+
+        public DateTime? Time { get; set; }
+
+        public string? Content { get; set; }
+
+        public ComUserColumns? ComUser { get; set; }
+    }
+
+    /// <summary>企业用户的列（Java 的 MySignUpDTO.InternalComUser）。</summary>
+    public sealed class ComUserColumns
+    {
+        public string? Id { get; set; }
+
+        public string? ComId { get; set; }
+
+        public string? UserId { get; set; }
+
+        public string? Gw { get; set; }
+    }
+
+    /// <summary>Java 的 MyComUserDTO 加额外列 mySignUps.count AS gwName。</summary>
+    public sealed class MyComUserDTO
+    {
+        private static Expression<Func<MyComUser, long>> SignUpCount => u => u.MySignUps!.LongCount();
+
+        [MapExpression(nameof(SignUpCount))]
+        public long? GwName { get; set; }
+
+        public string? Id { get; set; }
+
+        public string? ComId { get; set; }
+
+        public string? UserId { get; set; }
+
+        public string? Gw { get; set; }
+
+        public List<SignUpRow>? MySignUps { get; set; }
+    }
+
+    // 第 11、12 段：分页后投影到 DTO，额外列（经对一导航的列、集合导航的计数）写在外层
+    [Fact]
+    public Task TestRelation_PageThenProjectWithExtraColumns() => WithRelationDataAsync(async listen =>
+    {
+        await Db.Query<MySignUp>().Where(m => m.Id != null).OrderBy(m => m.Content).ToPageAsync(1, 10, q => q.Select<MySignUpDTO>(), Ct);
+        await Db.Query<MyComUser>().Where(m => m.Id != null).OrderBy(m => m.Gw).ToPageAsync(1, 10, q => q.Select<MyComUserDTO>(), Ct);
+        Assert.Equal(6, listen.Events.Count);
+        listen.AssertSql(0, "SELECT COUNT(*) FROM `my_sign_up` WHERE `id` IS NOT NULL");
+        listen.AssertSql(1, "SELECT t2.`gw` AS `com_user_name`,t1.`id`,t1.`com_id`,t1.`user_id`,t1.`time`,t1.`content` FROM (SELECT t.`id`,t.`com_id`,t.`user_id`,t.`time`,t.`content` FROM `my_sign_up` t WHERE t.`id` IS NOT NULL ORDER BY t.`content` ASC LIMIT 4) t1 LEFT JOIN `my_com_user` t2 ON (t2.`com_id` = t1.`com_id` AND t2.`user_id` = t1.`user_id`)");
+        listen.AssertSql(2, "SELECT t.`id`,t.`com_id`,t.`user_id`,t.`gw` FROM `my_com_user` t WHERE ((t.`com_id` =? AND t.`user_id` =?) OR (t.`com_id` =? AND t.`user_id` =?) OR (t.`com_id` =? AND t.`user_id` =?))");
+        listen.AssertParams(2, ComUserParams3);
+        listen.AssertSql(3, "SELECT COUNT(*) FROM `my_com_user` WHERE `id` IS NOT NULL");
+        listen.AssertSql(4, "SELECT (SELECT COUNT(*) FROM `my_sign_up` t2 WHERE (t2.`com_id` = t1.`com_id` AND t2.`user_id` = t1.`user_id`)) AS `gw_name`,t1.`id`,t1.`com_id`,t1.`user_id`,t1.`gw` FROM (SELECT t.`id`,t.`com_id`,t.`user_id`,t.`gw` FROM `my_com_user` t WHERE t.`id` IS NOT NULL ORDER BY t.`gw` ASC LIMIT 4) t1");
+        listen.AssertSql(5, "SELECT t.`id`,t.`com_id`,t.`user_id`,t.`time`,t.`content` FROM `my_sign_up` t WHERE " + SignUpKeysByComUser);
+        listen.AssertParams(5, "c1(String),u3(String),c1(String),u1(String),c1(String),u2(String),c2(String),u1(String)");
+    });
+
+    /// <summary>Java 的 MySignUpDTOy：企业用户上的三列经主查询 JOIN 取（Java 的 @NavigateJoin）。</summary>
+    public sealed class MySignUpDTOy
+    {
+        public string? Id { get; set; }
+
+        public DateTime? Time { get; set; }
+
+        public string? Content { get; set; }
+
+        public string? ComUserName { get; set; }
+
+        [MapPath("ComUser.Gw", Join = true)]
+        public string? Gw { get; set; }
+
+        [MapPath("ComUser.ComId", Join = true)]
+        public string? ComId { get; set; }
+
+        [MapPath("ComUser.UserId", Join = true)]
+        public string? UserId { get; set; }
+    }
+
+    // 第 9 段：分页后投影，JOIN 取的列写在外层。与 Java 不同（偏离）：Java 给 JOIN 的列写同名 AS，并且多选了一遍 t1.`com_id`,t1.`user_id`
+    [Fact]
+    public Task TestRelation_PageThenProjectJoinedColumns() => WithRelationDataAsync(async listen =>
+    {
+        await Db.Query<MySignUp>().Where(m => m.Id != null).OrderBy(m => m.Content).ToPageAsync(1, 10, q => q.Select<MySignUpDTOy>(), Ct);
+        Assert.Equal(2, listen.Events.Count);
+        listen.AssertSql(0, "SELECT COUNT(*) FROM `my_sign_up` WHERE `id` IS NOT NULL");
+        listen.AssertSql(1, "SELECT t2.`gw`,t2.`com_id`,t2.`user_id`,t1.`id`,t1.`time`,t1.`content` FROM (SELECT t.`id`,t.`com_id`,t.`user_id`,t.`time`,t.`content` FROM `my_sign_up` t WHERE t.`id` IS NOT NULL ORDER BY t.`content` ASC LIMIT 4) t1 LEFT JOIN `my_com_user` t2 ON (t2.`com_id` = t1.`com_id` AND t2.`user_id` = t1.`user_id`)");
     });
 
     // 第 4 段：DTO 里的直达导航沿路径逐段带出（以前拿本表的键去查目标表，静默取错数据）

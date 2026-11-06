@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1823、偏离 139、不适用 136、骨架 2、待做 304。
+合计：已移植 1823、偏离 140、不适用 136、骨架 2、待做 303。
 
 ## 按能力
 
@@ -33,7 +33,7 @@
 | 复用查询（cloneQueryable） | `query.reuse` | M3 | 2 | 2 | 0 | 0 | 0 | 0 |
 | 流式读取 | `query.stream` | M3 | 9 | 6 | 2 | 1 | 0 | 0 |
 | union / union all | `query.union` | M3 | 18 | 14 | 4 | 0 | 0 | 0 |
-| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 33 | 1 | 0 | 1 | 1 |
+| 按 DTO 自动带出（selectAutoInclude） | `dto.autoInclude` | M4 | 36 | 33 | 2 | 0 | 1 | 0 |
 | 按键填充（fillMany / fillOne） | `fill` | M4 | 4 | 3 | 1 | 0 | 0 | 0 |
 | 一对多展开（flatElement / elements） | `nav.flat` | M4 | 56 | 51 | 1 | 3 | 0 | 1 |
 | 隐式子查询改分组 join | `nav.groupJoin` | M4 | 67 | 64 | 1 | 2 | 0 | 0 |
@@ -1495,7 +1495,7 @@
 | QueryTest16.java#test111 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest16.cs:132 | `SELECT t.'id' AS '__relation__id' FROM 'sys_user' t WHERE t.'deleted' = ?` |
 | QueryTest19.java#testDoc100 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:80 | `SELECT t.'id',t.'name' FROM 't_user' t` |
 | QueryTest19.java#testDoc99 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest19.cs:63 | `SELECT t.'id',t.'name' FROM 't_user' t` |
-| QueryTestRelationTest.java#testRelation | 待做 |  | `SELECT 'id','com_id','user_id','gw' FROM 'my_com_user'` |
+| QueryTestRelationTest.java#testRelation | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTestRelationTest.Relation.cs:91：24 段拆成本文件的多个测试；第 9 段（NavigateJoin 的 DTO 分页投影）Java 给 JOIN 的列写同名 AS 并多选一遍 t1 的关联列，C# 不写；第 18、19 段在 MySQL 8.4 严格模式下拿 '123123' 比较 DATETIME 会报错，只核对 SQL | `SELECT 'id','com_id','user_id','gw' FROM 'my_com_user'` |
 | doc/DocTest1.java#testBlog5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DocTest1.cs:82 | `SELECT t1.'name' AS 'uname1',t3.'name' AS 'uname2',t.'id',t.'name' FROM 'test_self' t LEFT JOIN 'my_…` |
 | mysql8/IncludeConditionTest.java#testInclude3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/IncludeConditionTest.cs:111 | `SELECT t.'id',t.'name',t.'version' AS '__relation__version' FROM 'my_task' t WHERE t.'id' = ?` |
 | mysql8/IncludeConditionTest.java#testInclude4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/IncludeConditionTest.cs:127 | `SELECT t.'id',t.'name',t.'version' FROM 'my_task' t WHERE t.'id' = ?` |

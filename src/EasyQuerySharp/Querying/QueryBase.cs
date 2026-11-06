@@ -100,6 +100,12 @@ public abstract partial class QueryBase<TSelf, TElement> : IQueryStateAccessor
     /// <summary>追踪作用域里也不追踪这条查询的结果（对应 Java 的 asNoTracking）。</summary>
     public TSelf AsNoTracking() => With(State with { NoTracking = true });
 
+    /// <summary>
+    /// 作为带出查询时（Include 的配置、<see cref="IAutoIncludeConfigure{TEntity}.Configure"/>）不用导航上声明的排序与条数
+    /// （实体或 DTO 上 <c>[Navigate]</c> 的 OrderBy / Limit / Offset，对应 Java 的 ignoreNavigateConfigure）；自己写了排序、条数时本来就以自己的为准。
+    /// </summary>
+    public TSelf IgnoreNavigationDefaults() => With(State with { IgnoreNavigationDefaults = true });
+
     /// <summary>分页时不做深分页反向排序（对应 Java 的 configure(op -> op.setReverseOrder(false))），见 <see cref="EasyDbOptions.ReverseOffsetThreshold"/>。</summary>
     public TSelf DisableReversePaging() => With(State with { NoReversePaging = true });
 

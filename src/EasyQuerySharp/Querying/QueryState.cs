@@ -151,6 +151,9 @@ internal sealed record QueryState(EasyDb Db, ImmutableArray<QuerySource> Sources
     /// <summary>分页时不做深分页反向排序（DisableReversePaging）。</summary>
     public bool NoReversePaging { get; init; }
 
+    /// <summary>作为带出查询时不用导航上声明的排序与条数（IgnoreNavigationDefaults）。</summary>
+    public bool IgnoreNavigationDefaults { get; init; }
+
     /// <summary>行锁（ForUpdate / ForUpdateNoWait / ForUpdateSkipLocked）。</summary>
     public RowLock Lock { get; init; }
 
