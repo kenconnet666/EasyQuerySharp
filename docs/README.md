@@ -32,6 +32,10 @@
 - [架构](design/architecture.md)：模块、查询管线、核心抽象、用到的 C# 特性、分析器、扩展点。
 - [文档站](design/docs-site.md)：示例模型、卡片写法、各方言 SQL 的生成方式和快照。
 
+## 性能
+
+- [基准对比](benchmarks.md)：和 EF Core、Dapper、FreeSql、SqlSugar 比较查询翻译、物化、对象树三项；怎么跑、测试环境、结果，以及翻译结果要不要缓存的结论。
+
 ## 参考仓库
 
 | 仓库 | 用途 |
