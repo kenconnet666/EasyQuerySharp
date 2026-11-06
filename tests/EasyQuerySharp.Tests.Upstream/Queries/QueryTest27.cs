@@ -246,7 +246,6 @@ public sealed class QueryTest27(MySqlFixture fixture) : MySqlTest(fixture)
     {
         using var listen = SqlCapture.Listen();
         await Vo(Db).Where(o => o.Status == 0 && o.Order == 1m).ToListAsync(Ct);
-        File.WriteAllText(@"C:\Users\LIONHE~1\AppData\Local\Temp\claude\601ed800640b56b9\fa6f1234-f8d0-4222-9049-a9fa7d31c046\scratchpad\sql.txt", listen.Last.Statement.Text);
         listen.AssertSql("SELECT t1.`score` AS `score`,t1.`status1` AS `status1`,t1.`order` AS `order`,t1.`is_top` AS `is_top`,t1.`top` AS `top` FROM (SELECT t.`score` AS `score`,t.`status` AS `status1`,t.`order` AS `order`,t.`is_top` AS `is_top`,t.`top` AS `top` FROM `t_blog` t WHERE t.`deleted` = ? AND t.`status` = ? AND t.`order` = ?) t1");
         listen.AssertParams("false(Boolean),0(Integer),1(BigDecimal)");
     }

@@ -302,23 +302,40 @@ public sealed partial class QueryTest(MySqlFixture fixture) : MySqlTest(fixture)
         Assert.Null(await query.FirstOrDefaultAsync(Ct));
     }
 
+    // query37 / query38 改的是种子数据 blog 1：结束后还原，别的用例（如 QueryTest3 nativePage4）按种子内容过滤
     [Fact, Upstream("QueryTest.java#query37")]
     public async Task Query37()
     {
         var newContent = Guid.NewGuid().ToString();
-        Assert.Equal(1, await Db.ExecuteSqlAsync("update t_blog set content='" + newContent + "' where id='1'", cancellationToken: Ct));
-        var blog = await Db.Query<BlogEntity>().WhereById("1").FirstOrDefaultAsync(Ct);
-        Assert.Equal(newContent, blog?.Content);
+        try
+        {
+            Assert.Equal(1, await Db.ExecuteSqlAsync("update t_blog set content='" + newContent + "' where id='1'", cancellationToken: Ct));
+            var blog = await Db.Query<BlogEntity>().WhereById("1").FirstOrDefaultAsync(Ct);
+            Assert.Equal(newContent, blog?.Content);
+        }
+        finally
+        {
+            await RestoreBlog1ContentAsync();
+        }
     }
 
     [Fact, Upstream("QueryTest.java#query38")]
     public async Task Query38()
     {
         var newContent = Guid.NewGuid().ToString();
-        Assert.Equal(1, await Db.ExecuteSqlAsync("update t_blog set content=? where id=?", [newContent, "1"], Ct));
-        var blog = await Db.Query<BlogEntity>().WhereById("1").FirstOrDefaultAsync(Ct);
-        Assert.Equal(newContent, blog?.Content);
+        try
+        {
+            Assert.Equal(1, await Db.ExecuteSqlAsync("update t_blog set content=? where id=?", [newContent, "1"], Ct));
+            var blog = await Db.Query<BlogEntity>().WhereById("1").FirstOrDefaultAsync(Ct);
+            Assert.Equal(newContent, blog?.Content);
+        }
+        finally
+        {
+            await RestoreBlog1ContentAsync();
+        }
     }
+
+    private Task<long> RestoreBlog1ContentAsync() => Db.ExecuteSqlAsync("update t_blog set content=? where id=?", ["content1", "1"], Ct);
 
     [Fact, Upstream("QueryTest.java#query39", Deviation = "Java 的第 4、5 块把 url 选了两次（allFields 再加 url），C# 成员初始化不能给同一成员赋两次值，这两块只选一次 url")]
     public async Task Query39()
