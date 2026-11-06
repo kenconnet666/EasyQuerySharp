@@ -140,8 +140,8 @@ public sealed partial class QueryTest18(MySqlFixture fixture) : MySqlTest(fixtur
     [Fact, Upstream("QueryTest18.java#testxx")]
     public async Task Testxx()
     {
-        Assert.NotNull(await Db.FromSql<Topic>("select * from t_topic where id != ? ", "123").Where(t => t.Id != "456").ToPageAsync(1, 2, Ct));
-        var joinTable = Db.FromSql<Topic>("select * from t_topic where id != ? ", "123");
+        Assert.NotNull(await Db.FromSqlRaw<Topic>("select * from t_topic where id != ? ", "123").Where(t => t.Id != "456").ToPageAsync(1, 2, Ct));
+        var joinTable = Db.FromSqlRaw<Topic>("select * from t_topic where id != ? ", "123");
         Assert.NotNull(await Db.Query<BlogEntity>().LeftJoin(joinTable, (b, t2) => b.Id == t2.Id)
             .Where((b1, t2) => b1.CreateTime > DateTime.Now && t2.CreateTime!.Value.ToString("yyyy") == "2014")
             .Select((b1, t2) => new Draft<string?, string?>(b1.Id, t2.Id)).ToListAsync(Ct));

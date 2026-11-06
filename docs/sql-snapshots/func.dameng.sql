@@ -2,6 +2,10 @@
 SELECT UPPER(t."title") AS "upper",LENGTH(t."title") AS "length",SUBSTR(t."title",1,2) AS "first",REPLACE(t."title",?,?) AS "replaced",TRIM(? || t."title" || ?) AS "trimmed",(INSTR(t."title",?) - 1) AS "position" FROM "t_post" t WHERE t."id" <= ? ORDER BY t."id" ASC;
 -- params: ['查询', 'query', ' ', ' ', 'join', 2]
 
+-- Pad：补齐：PadLeft / PadRight（SQLite 没有 LPAD，拼出填充字符）
+SELECT LPAD(t."name", 6, ?) FROM "t_user" t WHERE t."id" <= ? ORDER BY t."id" ASC;
+-- params: ['*', 3]
+
 -- Concat：拼接：+、string.Concat、插值字符串
 SELECT rt.* FROM (SELECT t."name" || ? || t."age" || ? FROM "t_user" t WHERE t."age" IS NOT NULL ORDER BY t."id" ASC) rt WHERE ROWNUM < 4;
 -- params: ['（', ' 岁）']
@@ -39,6 +43,10 @@ SELECT rt.* FROM (SELECT t."title",(CASE WHEN t."views" >= ? THEN ? WHEN t."view
 -- Casts：类型转换：ToString() 写成 CAST
 SELECT t."title" || ? || TO_CHAR(t."views") FROM "t_post" t WHERE TO_CHAR(t."views") LIKE ? ORDER BY t."id" ASC;
 -- params: ['：', '8%']
+
+-- ConvertTo：Convert.ToXxx：各类型的重载都写成 CAST
+SELECT TO_CHAR(t."views") FROM "t_post" t WHERE (CAST(t."views" AS DECIMAL(18,4)) / ?) >= ? ORDER BY t."id" ASC;
+-- params: [1000, 2]
 
 -- Json：JSON：Sql.Json(列) 取长度、取元素
 -- error: dameng 方言还不支持 Sql.Json 的 JsonLength

@@ -1,3 +1,4 @@
+using EasyQuerySharp.Metadata;
 using SysBank = EasyQuerySharp.Tests.Upstream.Mysql8.SysBank;
 using SysUser = EasyQuerySharp.Tests.Upstream.Mysql8.SysUser;
 
@@ -25,4 +26,40 @@ public sealed class RankedNavigationTest
         Assert.Equal("SELECT t.`id`,t.`name`,t.`create_time` FROM `t_bank` t WHERE EXISTS(SELECT 1 FROM `t_bank_card` t1 LEFT JOIN `t_sys_user` t2 ON t2.`id` = t1.`uid` "
                      + FirstCard("t3", "t5", "t2") + " WHERE t1.`bank_id` = t.`id` AND t5.`type` = ? LIMIT 1)",
             Db.Query<SysBank>().Where(b => b.BankCards!.Any(c => c.User!.FirstCard!.Type == "x")).ToSql());
+
+    // 与 null 比较看取到的那一行的主键，和普通的对一导航一样：条件、投影、隐式子查询
+    [Fact]
+    public void ComparesTheRankedRowWithNull()
+    {
+        Assert.Equal("SELECT t.`id` FROM `t_sys_user` t " + FirstCard("t1", "t3", "t") + " WHERE t3.`id` IS NOT NULL",
+            Db.Query<SysUser>().Where(u => u.FirstCard != null).Select(u => u.Id).ToSql());
+        Assert.Equal("SELECT t.`id` AS `value1`,(t3.`id` IS NULL) AS `value2` FROM `t_sys_user` t " + FirstCard("t1", "t3", "t"),
+            Db.Query<SysUser>().Select(u => new Draft<string?, bool>(u.Id, u.FirstCard == null)).ToSql());
+        Assert.Equal("SELECT t.`id`,t.`name`,t.`create_time` FROM `t_bank` t WHERE EXISTS(SELECT 1 FROM `t_bank_card` t1 LEFT JOIN `t_sys_user` t2 ON t2.`id` = t1.`uid` "
+                     + FirstCard("t3", "t5", "t2") + " WHERE t1.`bank_id` = t.`id` AND t5.`id` IS NULL LIMIT 1)",
+            Db.Query<SysBank>().Where(b => b.BankCards!.Any(c => c.User!.FirstCard == null)).ToSql());
+    }
+
+    // 导航声明了 OrderBy、没写 PartitionOrder：取那一行按声明的排序（Java 的默认 THROW 在这里报错）；写了 Key 才按主键
+    [Fact]
+    public void DeclaredOrderRanksTheRowByDefault()
+    {
+        Assert.Contains("ROW_NUMBER() OVER (PARTITION BY t1.`uid` ORDER BY t1.`open_time` DESC)",
+            Db.Query<RankedUser>().Select(u => u.LatestCard!.Code).ToSql());
+        Assert.Contains("ROW_NUMBER() OVER (PARTITION BY t1.`uid` ORDER BY t1.`id` ASC)",
+            Db.Query<RankedUser>().Select(u => u.FirstCardById!.Code).ToSql());
+    }
+
+    [Table("t_sys_user")]
+    public sealed class RankedUser
+    {
+        [Column(PrimaryKey = true)]
+        public string? Id { get; set; }
+
+        [Navigate(RelationType.OneToOne, TargetProperties = [nameof(Mysql8.SysBankCard.Uid)], OrderBy = "OpenTime desc", Limit = 1)]
+        public Mysql8.SysBankCard? LatestCard { get; set; }
+
+        [Navigate(RelationType.OneToOne, TargetProperties = [nameof(Mysql8.SysBankCard.Uid)], OrderBy = "OpenTime desc", PartitionOrder = PartitionOrder.Key, Limit = 1)]
+        public Mysql8.SysBankCard? FirstCardById { get; set; }
+    }
 }

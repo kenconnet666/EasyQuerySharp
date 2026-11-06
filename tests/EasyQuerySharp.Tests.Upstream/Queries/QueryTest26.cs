@@ -204,7 +204,7 @@ public sealed class QueryTest26(MySqlFixture fixture) : MySqlTest(fixture)
 
         var read = await Db.Query<MySQLGenerateKey>().WhereById(1).SingleOrDefaultAsync(Ct);
         Assert.Equal(1, read?.Id);
-        var dbNow = (DateTime)(await Db.SqlQueryAsync<Dictionary<string, object?>>("SELECT NOW(3) AS `n`", cancellationToken: Ct))[0]["n"]!;
+        var dbNow = (DateTime)(await Db.SqlQueryRawAsync<Dictionary<string, object?>>("SELECT NOW(3) AS `n`", cancellationToken: Ct))[0]["n"]!;
         Assert.InRange((dbNow - read!.Now!.Value).Duration(), TimeSpan.Zero, TimeSpan.FromMinutes(5));
     }
 

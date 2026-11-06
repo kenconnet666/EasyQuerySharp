@@ -108,6 +108,8 @@ internal sealed partial class ExpressionTranslator
             or nameof(Enumerable.Count) or nameof(Enumerable.LongCount)
             ? scope.Predicate(Lambda(terminal.Arguments[1]), filtered: terminal.Method.Name != nameof(Enumerable.All))
             : null;
+        // Any / All 只看有没有行，LIMIT 留在 EXISTS 里不影响结果；计数与聚合只算取到的那段行
+        if (terminal.Method.Name is not (nameof(Enumerable.Any) or nameof(Enumerable.All))) scope.BeforeAggregate();
         var (sub, t, element, selector, distinct) = (scope.Query, scope.Translator, scope.Element, scope.Selector, scope.Distinct);
         SqlExpr Value()
         {
@@ -194,15 +196,15 @@ internal sealed partial class ExpressionTranslator
         }
         var scope = NewCollectionSubQuery(owner, nav, options);
         foreach (var op in chain) scope.Apply(op);
+        scope.BeforeAggregate();
         if (scope.Selector is not { } selector) throw Unsupported(call, "string.Join 需要先 Select 出字符串");
         scope.Translator.Bind(selector, [scope.Element]);
         var value = scope.Translator.Translate(StripConvert(selector.Body));
-        // 集合上的排序决定拼接顺序，写进聚合函数（子查询自己的 ORDER BY 不影响聚合）。
-        // 取了一段（Take / Skip）时照 Java 把 ORDER BY / LIMIT 留在子查询末尾，见 ROADMAP 2.4 的 [!]
+        // 集合上的排序决定拼接顺序，写进聚合函数（子查询自己的 ORDER BY 不影响聚合）
         SqlExpr joined;
-        if (scope.Query.OrderBy.Count > 0 && scope.Query.Limit is null && scope.Query.Offset is null)
+        if (scope.ElementOrder.Count > 0)
         {
-            joined = new OrderedStringJoinExpr(value, separator, scope.Distinct, [.. scope.Query.OrderBy]);
+            joined = new OrderedStringJoinExpr(value, separator, scope.Distinct, [.. scope.ElementOrder]);
             scope.Query.OrderBy.Clear();
         }
         else joined = new FunctionExpr(scope.Distinct ? SqlFunctionNames.StringJoinDistinct : SqlFunctionNames.StringJoin, [value, separator]);

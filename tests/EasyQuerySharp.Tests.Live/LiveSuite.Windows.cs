@@ -50,4 +50,40 @@ public abstract partial class LiveSuite
             .ToListAsync(Ct);
         Assert.Equal([["sql 100%"], ["hello"], []], users.Select(u => u.Posts!.Select(p => p.Title).ToArray()));
     }
+
+    // 投影里的集合导航取段：与 Include 里的 Take 一样每个父对象各取一段（按父对象分区编行号，或 UNION ALL 模式每个父对象一段）
+    [Theory]
+    [InlineData(IncludeLimitMode.Partition)]
+    [InlineData(IncludeLimitMode.UnionAll)]
+    public async Task TakesAndSkipsCollectionsInsideProjections(IncludeLimitMode mode)
+    {
+        var db = await SeededAsync(o => o.IncludeLimitMode = mode);
+        var top = await db.Query<User>().OrderBy(u => u.Id)
+            .Select(u => new { u.Name, Titles = u.Posts!.OrderByDescending(p => p.Amount).Take(1).Select(p => p.Title).ToList() })
+            .ToListAsync(Ct);
+        Assert.Equal([("alice", "sql 100%"), ("bob", "hello"), ("carol", "")], top.Select(r => (r.Name, string.Join(",", r.Titles))));
+
+        // Skip 与 Take 合成一段；Select 写在前面也一样；嵌套的集合同样按父对象取段
+        var skip = 1;
+        var rest = await db.Query<User>().Where(u => u.Id <= 2).OrderBy(u => u.Id)
+            .Select(u => new { Posts = u.Posts!.OrderBy(p => p.Id).Select(p => new { p.Title, p.Id }).Skip(skip).Take(5).ToList() })
+            .ToListAsync(Ct);
+        Assert.Equal([["sql 100%"], ["hello"]], rest.Select(r => r.Posts.Select(p => p.Title).ToArray()));
+        var first = await db.Query<User>().Where(u => u.Id == 1)
+            .Select(u => new { Posts = u.Posts!.OrderBy(p => p.Id).Take(1).Select(p => new { Bodies = p.Comments!.OrderBy(c => c.Body).Skip(1).Select(c => c.Body).ToList() }).ToList() })
+            .SingleAsync(Ct);
+        Assert.Equal(["thanks"], Assert.Single(first.Posts).Bodies);
+    }
+
+    // 取了段的带出里再 Include：子对象从取好段的派生表读出，再往下的带出照常执行
+    [Theory]
+    [InlineData(IncludeLimitMode.Partition)]
+    [InlineData(IncludeLimitMode.UnionAll)]
+    public async Task IncludesFurtherUnderATakenInclude(IncludeLimitMode mode)
+    {
+        var db = await SeededAsync(o => o.IncludeLimitMode = mode);
+        var users = await db.Query<User>().Where(u => u.Id <= 2).OrderBy(u => u.Id)
+            .Include(u => u.Posts, q => q.OrderBy(p => p.Id).Take(1).Include(p => p.Comments, c => c.OrderBy(x => x.Body))).ToListAsync(Ct);
+        Assert.Equal([["nice", "thanks"], []], users.Select(u => Assert.Single(u.Posts!).Comments!.Select(c => c.Body).ToArray()));
+    }
 }

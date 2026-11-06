@@ -184,14 +184,25 @@ internal sealed partial class ProjectionCompiler
             && materialize.Method.DeclaringType == typeof(Enumerable))
             inner = materialize.Arguments[0];
 
-        // 从外往里拆：最外层可以是 Select，里面是 Where 与排序；排序在子查询上执行（按书写顺序）
+        // 从外往里拆：最外层可以是 Select，里面是 Where 与排序；排序在子查询上执行（按书写顺序）。
+        // Skip / Take 写在 Where、排序之后（Select 前后都行），带出时每个父对象各取一段（与 Include 里的 Take 相同）
         LambdaExpression? selector = null;
         var filters = new List<LambdaExpression>();
         var orders = new List<OrderSpec>();
+        var paging = new List<(bool Skip, long Count)>();
         while (inner is MethodCallExpression mc && mc.Method.DeclaringType == typeof(Enumerable) && mc.Arguments.Count == 2
                && mc.Method.Name is nameof(Enumerable.Select) or nameof(Enumerable.Where) or nameof(Enumerable.OrderBy) or nameof(Enumerable.OrderByDescending)
-                   or nameof(Enumerable.ThenBy) or nameof(Enumerable.ThenByDescending))
+                   or nameof(Enumerable.ThenBy) or nameof(Enumerable.ThenByDescending) or nameof(Enumerable.Skip) or nameof(Enumerable.Take))
         {
+            if (mc.Method.Name is nameof(Enumerable.Skip) or nameof(Enumerable.Take))
+            {
+                if (mc.Arguments[1].Type != typeof(int)) return null;
+                if (filters.Count > 0 || orders.Count > 0)
+                    throw new NotSupportedException($"投影里的集合先 Skip / Take 再 Where / 排序不支持，把 Skip / Take 写在 Where、OrderBy 之后：{value}");
+                paging.Insert(0, (mc.Method.Name == nameof(Enumerable.Skip), PagingCount(mc)));
+                inner = mc.Arguments[0];
+                continue;
+            }
             var lambda = (LambdaExpression)ExpressionTranslator.StripConvert(mc.Arguments[1]);
             switch (mc.Method.Name)
             {
@@ -209,23 +220,55 @@ internal sealed partial class ProjectionCompiler
             inner = mc.Arguments[0];
         }
 
-        if (inner is not MemberExpression { Expression: { } ownerExpr } navMember || translator.BindingOf(ownerExpr) is not EntityBinding owner) return null;
+        // 所属的可以是实体表，也可以是按实体读的派生表（父集合取了段时，子对象的投影从取好段的派生表取列）
+        if (inner is not MemberExpression { Expression: { } ownerExpr } navMember || translator.BindingOf(ownerExpr) is not { OwnerEntity: not null } owner) return null;
         if (translator.FindNavigation(owner, navMember.Member.Name) is not { } nav) return null;
-        if (!nav.IsCollection && (selector is not null || filters.Count > 0 || orders.Count > 0 || inner != value)) return null;
+        if (!nav.IsCollection && (selector is not null || filters.Count > 0 || orders.Count > 0 || paging.Count > 0 || inner != value)) return null;
+        // 直达导航展开成沿路径的各段，链上的条件、排序、取段、投影作用在最后一段的目标上
+        var target = nav;
+        List<NavigationMetadata> path = [];
         if (nav.DirectPath.Count > 0)
         {
-            var direct = IncludePlan.ForNavigation(translator.Context!.Metadata, nav, Merged(owner, nav.Property.Name, null), unaliased);
-            _includes.Add((direct, owner));
-            return direct;
+            var chain = IncludePlan.DirectChain(translator.Context!.Metadata, nav);
+            path = chain[..^1];
+            target = chain[^1];
         }
 
-        var plan = new IncludePlan(nav, selector?.ReturnType ?? nav.Target.Type, selector, filters, nav.IsCollection)
+        var (skip, take) = Range(paging);
+        var plan = new IncludePlan(target, selector?.ReturnType ?? target.Target.Type, selector, filters, nav.IsCollection)
         {
-            Configure = Merged(owner, nav.Property.Name, orders.Count == 0 ? null : state => state with { OrderBys = state.OrderBys.AddRange(orders) }),
+            Configure = Merged(owner, nav.Property.Name, orders.Count == 0 && paging.Count == 0 ? null
+                : state => state with { OrderBys = state.OrderBys.AddRange(orders), Offset = skip ?? state.Offset, Limit = take ?? state.Limit }),
             Unaliased = unaliased,
+            Via = path,
+            DirectVia = path.Count > 0,
         };
         _includes.Add((plan, owner));
         return plan;
+    }
+
+    // Skip / Take 的条数在客户端求值（常量或捕获的变量），不能引用投影里的行
+    private static long PagingCount(MethodCallExpression call) =>
+        ClientEvaluator.MustTranslate(call.Arguments[1])
+            ? throw new NotSupportedException($"投影里集合的 {call.Method.Name} 只能用常量或变量作条数，不能引用查询里的列：{call}")
+            : Convert.ToInt64(ClientEvaluator.Evaluate(call.Arguments[1]), System.Globalization.CultureInfo.InvariantCulture);
+
+    // 依次作用的 Skip / Take 合成一段：跳过几条、最多取几条（Take(5).Skip(2) 是跳过 2 条取 3 条）
+    private static (long? Offset, long? Limit) Range(List<(bool Skip, long Count)> paging)
+    {
+        if (paging.Count == 0) return (null, null);
+        long offset = 0;
+        long? limit = null;
+        foreach (var (skip, count) in paging)
+        {
+            if (skip)
+            {
+                offset += Math.Max(count, 0);
+                if (limit is { } l) limit = Math.Max(l - Math.Max(count, 0), 0);
+            }
+            else limit = limit is { } l ? Math.Min(l, Math.Max(count, 0)) : Math.Max(count, 0);
+        }
+        return (offset == 0 ? null : offset, limit);
     }
 
     // Include(导航, 配置) 之后又投影：根实体上同名导航的带出先按投影自带的配置，再按 Include 的（调用处在后）
@@ -235,15 +278,16 @@ internal sealed partial class ProjectionCompiler
             : own;
 
     // 实体查询的 Include：实体读出后，集合导航先放一个空 List（主查询后填充），对一导航登记回填函数
-    private Expression WithIncludes(Expression entity, EntityBinding owner, IReadOnlyList<IncludeSpec> includes)
+    // 实体可以来自实体表，也可以来自按实体读的派生表（带出的子数据按父对象取了段时，再往下的 Include）
+    private Expression WithIncludes(Expression entity, (SourceBinding Binding, EntityMetadata Entity) owner, IReadOnlyList<IncludeSpec> includes)
     {
         var instance = Expression.Variable(entity.Type, "entity");
         var body = new List<Expression> { Expression.Assign(instance, entity) };
         foreach (var spec in includes)
         {
-            var nav = translator.FindNavigation(owner, spec.Member) ?? throw new NotSupportedException($"{owner.Entity.Type.Name}.{spec.Member} 不是导航属性");
+            var nav = translator.FindNavigation(owner.Binding, spec.Member) ?? throw new NotSupportedException($"{owner.Entity.Type.Name}.{spec.Member} 不是导航属性");
             var plan = IncludePlan.ForNavigation(translator.Context!.Metadata, nav, spec.Configure);
-            _includes.Add((plan, owner));
+            _includes.Add((plan, owner.Binding));
             var property = owner.Entity.Type.GetProperty(spec.Member)!;
             // 带上父实体：追踪查询据此登记"已加载的导航"（聚合保存只处理加载过的导航，见 0004）
             var register = RegisterOwnedMethod;

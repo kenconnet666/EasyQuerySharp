@@ -67,15 +67,26 @@ public sealed class DerivedTableSource(SelectQuery query) : TableSource
 
 /// <summary>
 /// 原生 SQL 作为表来源：<c>(SELECT * FROM t_blog t) t</c>（对应 Java 的 queryable(sql, Class, params)）。
-/// SQL 里的 <c>?</c> 依次对应 <see cref="Parameters"/>。
+/// 由 <c>db.FromSql</c> / <c>db.FromSqlRaw</c> 构造：文本已拆成片段，片段之间依次是参数。
 /// </summary>
-public sealed class RawTableSource(string sql, IReadOnlyList<object?>? parameters = null) : TableSource
+public sealed class RawTableSource : TableSource
 {
-    /// <summary>原生 SQL（不含外层括号）。</summary>
-    public string Sql { get; } = sql;
+    internal RawTableSource(IReadOnlyList<string> segments, IReadOnlyList<ParameterExpr> parameters)
+    {
+        Segments = segments;
+        ParameterExprs = parameters;
+    }
 
-    /// <summary><c>?</c> 占位依次对应的参数值。</summary>
-    public IReadOnlyList<object?> Parameters { get; } = parameters ?? [];
+    /// <summary>原生 SQL（不含外层括号），参数位置写成 <c>?</c>。</summary>
+    public string Sql => string.Join('?', Segments);
+
+    /// <summary><c>?</c> 位置依次对应的参数值。</summary>
+    public IReadOnlyList<object?> Parameters => ParameterExprs.Select(p => p.Value).ToList();
+
+    // 片段比参数多一个，渲染时片段与参数交替写出
+    internal IReadOnlyList<string> Segments { get; }
+
+    internal IReadOnlyList<ParameterExpr> ParameterExprs { get; }
 }
 
 /// <summary>

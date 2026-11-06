@@ -50,6 +50,17 @@ public abstract partial class LiveSuite
         Assert.Equal(["alice", "bob"], peers.Order(StringComparer.Ordinal));
     }
 
+    // 直达的对多导航写在投影里：条件、排序、取段作用在路径最后一段的目标上（acme 金额大于 2 的帖子里最贵的两篇）
+    [Fact]
+    public async Task ProjectsFilteredDirectCollections()
+    {
+        var db = await SeededAsync();
+        var rows = await db.Query<Company>().OrderBy(c => c.Id)
+            .Select(c => new Draft<string, List<string>>(c.Name, c.Posts!.Where(p => p.Amount > 2m).OrderByDescending(p => p.Amount).Take(2).Select(p => p.Title).ToList()))
+            .ToListAsync(Ct);
+        Assert.Equal([("acme", "sql 100%,orm tips"), ("globex", "")], rows.Select(r => (r.Value1, string.Join(",", r.Value2 ?? []))));
+    }
+
     [Fact]
     public async Task FiltersAndCountsThroughTheJunctionTable()
     {

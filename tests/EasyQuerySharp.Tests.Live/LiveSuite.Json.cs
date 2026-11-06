@@ -12,7 +12,7 @@ public abstract partial class LiveSuite
     public async Task RoundTripsJsonColumns()
     {
         var db = await SeededAsync();
-        if (Dialect is MySqlDialect) await db.ExecuteSqlAsync("ALTER TABLE t_live_profile MODIFY addresses JSON, MODIFY extra JSON", cancellationToken: Ct);
+        if (Dialect is MySqlDialect) await db.ExecuteSqlRawAsync("ALTER TABLE t_live_profile MODIFY addresses JSON, MODIFY extra JSON", cancellationToken: Ct);
 
         await db.Insert(new Profile
         {

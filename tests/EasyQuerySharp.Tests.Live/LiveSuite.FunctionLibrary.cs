@@ -25,9 +25,10 @@ public abstract partial class LiveSuite
         SkipUnless(Options.PadFunctions, "LPAD / RPAD");
         var db = await SeededAsync();
         var row = await db.Query<User>().Where(u => u.Name == "alice")
-            .Select(u => new Draft<string, string>(u.Name.PadLeft(7, '*'), u.Name.PadRight(7, '-')))
+            .Select(u => new Draft<string, string, string, string>(u.Name.PadLeft(7, '*'), u.Name.PadRight(7, '-'), u.Name.PadLeft(6), u.Name.PadRight(3)))
             .SingleAsync(Ct);
-        Assert.Equal(("**alice", "alice--"), (row.Value1, row.Value2));
+        // 够长时与 LPAD / RPAD 一样截成前 n 个字符（.NET 的 PadLeft 不截断）
+        Assert.Equal(("**alice", "alice--", " alice", "ali"), (row.Value1, row.Value2, row.Value3, row.Value4));
     }
 
     // 第 1 篇帖子金额 10.50
@@ -86,6 +87,9 @@ public abstract partial class LiveSuite
         Assert.Equal(new DateTime(2026, 2, 1, 3, 4, 5), row.ByColumn.AddTicks(-row.ByColumn.Ticks % TimeSpan.TicksPerSecond));
         Assert.Equal((5d, -90d), (row.Hours, row.Minutes));
         Assert.Equal(3, await db.Query<User>().Where(u => Sql.Now() > u.CreatedAt).CountAsync(Ct));
+        // 达梦、openGauss 的容器时区是 Asia/Shanghai：UTC 时间取成本地时间会差 8 小时
+        var utcNow = await db.Query<User>().Where(u => u.Name == "alice").Select(u => Sql.UtcNow()).SingleAsync(Ct);
+        Assert.InRange(utcNow, DateTime.UtcNow.AddMinutes(-10), DateTime.UtcNow.AddMinutes(10));
     }
 
     private sealed record DateLibrary(

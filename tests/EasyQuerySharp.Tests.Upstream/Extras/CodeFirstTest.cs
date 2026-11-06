@@ -236,7 +236,7 @@ public sealed class CodeFirstTest(DuckDbFixture duck) : IAsyncLifetime
     public async Task SqliteCreateReadAndSync()
     {
         var db = _sqlite;
-        await db.ExecuteSqlAsync("DROP TABLE IF EXISTS cf_article", cancellationToken: Ct);
+        await db.ExecuteSqlRawAsync("DROP TABLE IF EXISTS cf_article", cancellationToken: Ct);
         await db.CodeFirst.DropTablesIfExistsAsync([typeof(CfPost), typeof(CfAuthor)], Ct);
         Assert.False(await db.CodeFirst.TableExistsAsync(typeof(CfPost), Ct));
 
@@ -372,14 +372,14 @@ public sealed class CodeFirstTest(DuckDbFixture duck) : IAsyncLifetime
         var db = _sqlite;
         await db.CodeFirst.DropTablesIfExistsAsync([typeof(CfEvent)], Ct);
         await db.CodeFirst.CreateTablesAsync([typeof(CfEvent)], Ct);
-        await db.ExecuteSqlAsync("INSERT INTO cf_event (id) VALUES ('e1')", cancellationToken: Ct);
+        await db.ExecuteSqlRawAsync("INSERT INTO cf_event (id) VALUES ('e1')", cancellationToken: Ct);
         var e1 = Assert.Single(await db.Query<CfEvent>().ToListAsync(Ct));
         Assert.Equal(("", 0), (e1.Title, e1.Views));
         Assert.InRange((DateTime.UtcNow - e1.CreatedAt).Duration(), TimeSpan.Zero, TimeSpan.FromMinutes(5));
         var columns = Assert.Single(await db.CodeFirst.ReadTablesAsync(Ct), t => t.Name == "cf_event").Columns;
         Assert.Equal(["''", "0", "CURRENT_TIMESTAMP"], columns.Skip(1).Select(c => c.Default));
 
-        await db.ExecuteSqlAsync("ALTER TABLE cf_event DROP COLUMN views", cancellationToken: Ct);
+        await db.ExecuteSqlRawAsync("ALTER TABLE cf_event DROP COLUMN views", cancellationToken: Ct);
         var sync = await db.CodeFirst.SyncTablesAsync([typeof(CfEvent)], Ct);
         Assert.Equal(["ALTER TABLE \"cf_event\" ADD COLUMN \"views\" integer NOT NULL DEFAULT 0;"], sync.Statements);
         Assert.Equal(0, Assert.Single(await db.Query<CfEvent>().ToListAsync(Ct)).Views);

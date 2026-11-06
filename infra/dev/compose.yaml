@@ -169,6 +169,13 @@ services:
       LENGTH_IN_CHAR: 1
       CASE_SENSITIVE: 1
       TZ: Asia/Shanghai
+    # disql 要在自己的目录里运行（找同目录的动态库）；-L 只试一次登录，-S 不进交互
+    healthcheck:
+      test: [CMD-SHELL, 'cd /opt/dmdbms/bin && ./disql -L -S "SYSDBA/$$SYSDBA_PWD@127.0.0.1:5236" -e "SELECT 1" < /dev/null > /dev/null']
+      interval: 5s
+      timeout: 10s
+      retries: 60
+      start_period: 20s
     ports:
       - '45236:5236'
     volumes:
@@ -184,6 +191,12 @@ services:
     environment:
       GS_PASSWORD: ${EQS_DEV_OPENGAUSS_PASSWORD:?run infra/dev/db.sh to create .local/db.env}
       TZ: Asia/Shanghai
+    healthcheck:
+      test: [CMD-SHELL, "echo 'SELECT 1' | su - omm -c 'gsql -d postgres -v ON_ERROR_STOP=1' > /dev/null"]
+      interval: 5s
+      timeout: 10s
+      retries: 60
+      start_period: 30s
     ports:
       - '45433:5432'
     volumes:

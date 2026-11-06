@@ -101,6 +101,33 @@ var db = new EasyDb(o =>
 ```
 <!-- /snippet -->
 
+分支的写法按方言：默认与 Java 一致写成 `(… LIMIT n)`；SQLite 的分支不能加括号、也不能带 ORDER BY / LIMIT，写成 `SELECT * FROM (…)`；SQL Server 括号里不能带 ORDER BY，写成 `(SELECT * FROM (…) t)`：
+
+<!-- card: include/IncludeTakeUnionAll sql=mysql,sqlite -->
+```csharp
+DocsDb.Reconfigure(db, o => o.IncludeLimitMode = IncludeLimitMode.UnionAll)
+    .Query<User>().Where(u => u.Id <= 2).OrderBy(u => u.Id)
+    .Include(u => u.Posts, q => q.OrderByDescending(p => p.Views).Take(1))
+    .ToListAsync();
+```
+
+```sql
+-- MySQL
+SELECT `id`,`name`,`age`,`company_id`,`department_id`,`manager_id`,`level`,`joined_at` FROM `t_user` WHERE `id` <= ? ORDER BY `id` ASC;
+-- params: [2]
+SELECT t1.`id`,t1.`author_id`,t1.`category_id`,t1.`title`,t1.`status`,t1.`views`,t1.`published_at` FROM ( (SELECT t.`id`,t.`author_id`,t.`category_id`,t.`title`,t.`status`,t.`views`,t.`published_at` FROM `t_post` t WHERE t.`author_id` = ? ORDER BY t.`views` DESC LIMIT 1)  UNION ALL  (SELECT t.`id`,t.`author_id`,t.`category_id`,t.`title`,t.`status`,t.`views`,t.`published_at` FROM `t_post` t WHERE t.`author_id` = ? ORDER BY t.`views` DESC LIMIT 1) ) t1;
+-- params: [1, 2]
+```
+
+```sql
+-- SQLite
+SELECT "id","name","age","company_id","department_id","manager_id","level","joined_at" FROM "t_user" WHERE "id" <= ? ORDER BY "id" ASC;
+-- params: [2]
+SELECT t1."id",t1."author_id",t1."category_id",t1."title",t1."status",t1."views",t1."published_at" FROM ( SELECT * FROM (SELECT t."id",t."author_id",t."category_id",t."title",t."status",t."views",t."published_at" FROM "t_post" t WHERE t."author_id" = ? ORDER BY t."views" DESC LIMIT 1)  UNION ALL  SELECT * FROM (SELECT t."id",t."author_id",t."category_id",t."title",t."status",t."views",t."published_at" FROM "t_post" t WHERE t."author_id" = ? ORDER BY t."views" DESC LIMIT 1) ) t1;
+-- params: [1, 2]
+```
+<!-- /card -->
+
 导航上声明的 `[Navigate(OrderBy = "…", Limit = n, Offset = m)]` 是带出时的默认排序和条数；带出查询的配置里写 `q.IgnoreNavigationDefaults()` 时不用它们（自己写了排序、条数时本来就以自己的为准）。
 
 ### 分批与后补
@@ -160,6 +187,24 @@ SELECT t.`title`,t.`views`,t.`author_id` AS `__relation__authorId` FROM `t_post`
 <!-- /card -->
 
 需要隐藏的键（父主键、子外键）由规划器自动补上（`__relation__…` 列），物化后丢掉。
+
+在 `Where` / `OrderBy` 之后写 `Skip` / `Take`（`Select` 前后都行），每个父对象各取一段，与 `Include(.., q => q.Take(n))` 相同：默认按父对象分区编行号，`IncludeLimitMode.UnionAll` 时每个父对象一段。条数要是常量或变量；先 `Take` 再 `Where` / `OrderBy` 报不支持：
+
+<!-- card: include/ProjectionTake sql=mysql -->
+```csharp
+db.Query<User>().Where(u => u.Id <= 3).OrderBy(u => u.Id)
+    .Select(u => new AuthorPosts(u.Name, u.Company!.Name, u.Posts!.OrderByDescending(p => p.Views).Take(2).Select(p => new PostItem(p.Title, p.Views)).ToList()))
+    .ToListAsync();
+```
+
+```sql
+-- MySQL
+SELECT t.`name`,t1.`name` AS `company`,t.`id` AS `__relation__id` FROM `t_user` t LEFT JOIN `t_company` t1 ON t1.`id` = t.`company_id` WHERE t.`id` <= ? ORDER BY t.`id` ASC;
+-- params: [3]
+SELECT t2.`title` AS `title`,t2.`views` AS `views`,t2.`author_id` AS `__relation__authorId` FROM (SELECT t1.`id` AS `id`,t1.`author_id` AS `author_id`,t1.`category_id` AS `category_id`,t1.`title` AS `title`,t1.`status` AS `status`,t1.`views` AS `views`,t1.`published_at` AS `published_at` FROM (SELECT t.`id`,t.`author_id`,t.`category_id`,t.`title`,t.`status`,t.`views`,t.`published_at`,(ROW_NUMBER() OVER (PARTITION BY t.`author_id` ORDER BY t.`views` DESC)) AS `__row__` FROM `t_post` t WHERE t.`author_id` IN (?,?,?)) t1 WHERE t1.`__row__` >= ? AND t1.`__row__` <= ?) t2;
+-- params: [1, 2, 3, 1, 2]
+```
+<!-- /card -->
 
 ## 按 DTO 结构自动带出
 
@@ -303,8 +348,7 @@ SELECT `id`,`parent_id`,`name` FROM `t_category`;
 
 ## 限制
 
-- 投影里的集合不支持 `Take` / `Skip`（`u.Posts!.OrderBy(..).Take(2).Select(..).ToList()` 报不支持）：每个父对象取几条用 `Include(.., q => q.Take(n))`、DTO 属性上的 `[Navigate(Limit = n)]` 或 `IAutoIncludeConfigure`。
-- `IncludeLimitMode.UnionAll` 在 SQLite 上生成的 SQL 执行不了（SQLite 不允许 UNION 的成员带 ORDER BY / LIMIT）。
+- 投影里集合的 `Skip` / `Take` 要写在 `Where` / `OrderBy` 之后，条数是常量或变量（不能引用父对象的列）。
 - 投影里有带出时不能流式读取（`AsAsyncEnumerable()` 报错），要用 `ToListAsync()`。
 - 多次查询之间数据可能被改，需要一致的快照时把整组查询放进同一个事务。
 - 不做"一条 SQL 用 JSON 聚合出整棵树"，理由见 [0002](../decisions/0002-object-tree-and-dto.md#3-执行策略对一用-join对多分层批量查询)。

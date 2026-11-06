@@ -67,6 +67,38 @@ public abstract partial class LiveSuite
         Assert.Equal(["c1", "c2"], await db.Query<Comment>().Where(c => c.Post!.UserId == dave.Id).OrderBy(c => c.Body).Select(c => c.Body).ToListAsync(Ct));
     }
 
+    // 已有的父对象上新增子对象：非空外键还是默认值 0（没设）时当作新挂上的，不当作属于别的父对象（Java 里没设的外键是 null）
+    [Fact]
+    public async Task AddsChildrenToALoadedParentWithoutSettingTheirForeignKeys()
+    {
+        var db = await SeededAsync();
+        Task<User> LoadAliceAsync() => db.Query<User>().Where(u => u.Id == 1)
+            .Include(u => u.Posts, q => q.OrderBy(p => p.Id).Include(p => p.Comments)).SingleAsync(Ct);
+        using (db.BeginTracking())
+        {
+            var alice = await LoadAliceAsync();
+            alice.Posts!.Add(new Post { Title = "added", Amount = 3.00m, Comments = [new Comment { Body = "first" }] });
+            alice.Posts[0].Comments!.Add(new Comment { Body = "more" });
+            await using var tx = db.BeginTransaction();
+            await db.Save(alice).ExecuteAsync(Ct);
+            await tx.CommitAsync(Ct);
+        }
+        var added = await db.Query<Post>().Where(p => p.Title == "added").SingleAsync(Ct);
+        Assert.Equal(1L, added.UserId);
+        Assert.Equal(["first"], await db.Query<Comment>().Where(c => c.PostId == added.Id).Select(c => c.Body).ToListAsync(Ct));
+        Assert.Equal(["more", "nice", "thanks"], await db.Query<Comment>().Where(c => c.PostId == 1).OrderBy(c => c.Body).Select(c => c.Body).ToListAsync(Ct));
+
+        // 外键设成了别的父对象时照样报错
+        using (db.BeginTracking())
+        {
+            var alice = await LoadAliceAsync();
+            alice.Posts!.Add(new Post { UserId = 2, Title = "stolen", Amount = 1.00m });
+            await using var tx = db.BeginTransaction();
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => db.Save(alice).ExecuteAsync(Ct));
+            Assert.Contains(nameof(SaveBehavior.AllowOwnershipChange), ex.Message);
+        }
+    }
+
     // 外键可空的引用关系（公司的员工）：拿掉的员工外键置空，人还在
     [Fact]
     public async Task UnlinksRemovedChildrenWhoseForeignKeyIsNullable()

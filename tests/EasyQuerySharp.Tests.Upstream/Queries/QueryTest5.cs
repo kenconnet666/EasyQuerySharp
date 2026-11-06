@@ -124,8 +124,8 @@ public sealed class QueryTest5(MySqlFixture fixture) : MySqlTest(fixture)
     [Fact, Upstream("QueryTest5.java#test1")]
     public async Task Test1()
     {
-        Assert.Equal(1, await Db.FromSql<int>("select 1").FirstOrDefaultAsync(Ct));
-        Assert.Equal("SELECT * FROM (select 1) t", Db.FromSql<int>("select 1").ToSql());
+        Assert.Equal(1, await Db.FromSqlRaw<int>("select 1").FirstOrDefaultAsync(Ct));
+        Assert.Equal("SELECT * FROM (select 1) t", Db.FromSqlRaw<int>("select 1").ToSql());
     }
 
     // Java 的 FETCHER.allFields().alias() 选出了 alias 列；C# 的 Topic.Alias 标了 ColumnIgnore，不是列

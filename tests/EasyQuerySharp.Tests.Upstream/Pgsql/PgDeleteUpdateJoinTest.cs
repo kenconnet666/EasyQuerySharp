@@ -19,7 +19,7 @@ public sealed class PgDeleteUpdateJoinTest(PgFixture fixture) : PgTest(fixture)
     public async Task TestUpdateJoin2()
     {
         // Java 先手写执行一条同形状的 SQL，确认 PostgreSQL 接受这种写法
-        await Db.ExecuteSqlAsync("UPDATE \"doc_bank_card\" t SET \"type\" = t1.\"name\" FROM \"doc_bank\" t1 , \"doc_user\" t2 WHERE t1.\"id\" = t.\"bank_id\" AND t2.\"id\" = t1.\"id\" AND t2.\"name\" LIKE '123'", cancellationToken: Ct);
+        await Db.ExecuteSqlRawAsync("UPDATE \"doc_bank_card\" t SET \"type\" = t1.\"name\" FROM \"doc_bank\" t1 , \"doc_user\" t2 WHERE t1.\"id\" = t.\"bank_id\" AND t2.\"id\" = t1.\"id\" AND t2.\"name\" LIKE '123'", cancellationToken: Ct);
         using var listen = SqlCapture.Listen();
         await Db.Update<DocBankCard>().Set(c => new DocBankCard { Type = c.Bank!.Name }).Where(c => c.User!.Name!.Contains("123")).ExecuteAsync(Ct);
         listen.AssertSql("UPDATE \"doc_bank_card\" t SET \"type\" = t1.\"name\" FROM \"doc_bank\" t1 , \"doc_user\" t2 WHERE t1.\"id\" = t.\"bank_id\" AND t2.\"id\" = t.\"uid\" AND t2.\"name\" LIKE ?");

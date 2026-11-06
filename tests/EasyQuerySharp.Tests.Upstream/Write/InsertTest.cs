@@ -161,7 +161,7 @@ public sealed class InsertTest(MySqlFixture fixture) : MySqlTest(fixture)
     [Fact, Upstream("InsertTest.java#testIncrement")]
     public async Task TestIncrement()
     {
-        await Db.ExecuteSqlAsync("truncate table t_test_inc;", cancellationToken: Ct);
+        await Db.ExecuteSqlRawAsync("truncate table t_test_inc;", cancellationToken: Ct);
         var expected = 1;
         foreach (var size in new[] { 100, 1191, 2991, 2999, 1000, 10000 })
         {

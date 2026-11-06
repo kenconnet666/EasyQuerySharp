@@ -1,4 +1,3 @@
-using System.Globalization;
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.Rendering;
 using EasyQuerySharp.SqlAst;
@@ -47,12 +46,7 @@ public class HanaDialect : SqlDialect
     public override string RecursiveWith => throw new NotSupportedException("SAP HANA 2.0 不支持递归 CTE（WITH RECURSIVE），树查询请改用 HIERARCHY 函数或逐层查询");
 
     /// <summary>OFFSET 前必须有 LIMIT：只跳过行数时写 <c>LIMIT 2147483647 OFFSET m</c>。</summary>
-    public override void WritePaging(SqlRenderer renderer, SelectQuery query)
-    {
-        if (query.Limit is null && query.Offset is not > 0) return;
-        renderer.Append(" LIMIT ").Append((query.Limit ?? int.MaxValue).ToString(CultureInfo.InvariantCulture));
-        if (query.Offset is > 0) renderer.Append(" OFFSET ").Append(query.Offset.Value.ToString(CultureInfo.InvariantCulture));
-    }
+    public override string OffsetOnlyLimit => "2147483647";
 
     /// <summary>跳过被锁的行是 <c>FOR UPDATE IGNORE LOCKED</c>，其余同标准写法。</summary>
     public override void WriteLock(SqlRenderer renderer, RowLock rowLock)

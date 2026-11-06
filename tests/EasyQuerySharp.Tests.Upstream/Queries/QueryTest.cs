@@ -286,7 +286,7 @@ public sealed partial class QueryTest(MySqlFixture fixture) : MySqlTest(fixture)
     [Fact, Upstream("QueryTest.java#query30")]
     public async Task Query30()
     {
-        var query = Db.FromSql<BlogEntity>("SELECT * FROM `t_blog` t").Where(o => o.Id == "123");
+        var query = Db.FromSqlRaw<BlogEntity>("SELECT * FROM `t_blog` t").Where(o => o.Id == "123");
         Assert.Equal("SELECT * FROM (SELECT * FROM `t_blog` t) t WHERE t.`id` = ?", query.ToSql());
         Assert.Null(await query.FirstOrDefaultAsync(Ct));
     }
@@ -294,7 +294,7 @@ public sealed partial class QueryTest(MySqlFixture fixture) : MySqlTest(fixture)
     [Fact, Upstream("QueryTest.java#query31")]
     public async Task Query31()
     {
-        var query = Db.FromSql<BlogEntity>("SELECT * FROM `t_blog` t")
+        var query = Db.FromSqlRaw<BlogEntity>("SELECT * FROM `t_blog` t")
             .DisableInterceptors()
             .Where(o => o.Id == "123")
             .Select(o => new BlogEntity { Id = o.Id, Content = o.Content });
@@ -309,7 +309,7 @@ public sealed partial class QueryTest(MySqlFixture fixture) : MySqlTest(fixture)
         var newContent = Guid.NewGuid().ToString();
         try
         {
-            Assert.Equal(1, await Db.ExecuteSqlAsync("update t_blog set content='" + newContent + "' where id='1'", cancellationToken: Ct));
+            Assert.Equal(1, await Db.ExecuteSqlRawAsync("update t_blog set content='" + newContent + "' where id='1'", cancellationToken: Ct));
             var blog = await Db.Query<BlogEntity>().WhereById("1").FirstOrDefaultAsync(Ct);
             Assert.Equal(newContent, blog?.Content);
         }
@@ -325,7 +325,7 @@ public sealed partial class QueryTest(MySqlFixture fixture) : MySqlTest(fixture)
         var newContent = Guid.NewGuid().ToString();
         try
         {
-            Assert.Equal(1, await Db.ExecuteSqlAsync("update t_blog set content=? where id=?", [newContent, "1"], Ct));
+            Assert.Equal(1, await Db.ExecuteSqlRawAsync("update t_blog set content=? where id=?", [newContent, "1"], Ct));
             var blog = await Db.Query<BlogEntity>().WhereById("1").FirstOrDefaultAsync(Ct);
             Assert.Equal(newContent, blog?.Content);
         }
@@ -335,7 +335,7 @@ public sealed partial class QueryTest(MySqlFixture fixture) : MySqlTest(fixture)
         }
     }
 
-    private Task<long> RestoreBlog1ContentAsync() => Db.ExecuteSqlAsync("update t_blog set content=? where id=?", ["content1", "1"], Ct);
+    private Task<long> RestoreBlog1ContentAsync() => Db.ExecuteSqlRawAsync("update t_blog set content=? where id=?", ["content1", "1"], Ct);
 
     [Fact, Upstream("QueryTest.java#query39", Deviation = "Java 的第 4、5 块把 url 选了两次（allFields 再加 url），C# 成员初始化不能给同一成员赋两次值，这两块只选一次 url")]
     public async Task Query39()

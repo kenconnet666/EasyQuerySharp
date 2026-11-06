@@ -144,6 +144,16 @@ public class SqlServerDialect : SqlDialect
     }
 
     /// <summary>
+    /// SQL Server 括号里的 UNION 分支不能带 ORDER BY（ORDER BY 只能写在整个语句后面，派生表里配 TOP / OFFSET 可以）：
+    /// 带排序或分页的分支写成 <c>(SELECT * FROM (q) t)</c>，其余照常 <c>(q)</c>。
+    /// </summary>
+    public override void WriteCompoundPart(SqlRenderer renderer, SelectQuery part)
+    {
+        if (IsOrderedOrPaged(part)) renderer.Append("(SELECT * FROM (").WriteSelect(part).Append(") t)");
+        else base.WriteCompoundPart(renderer, part);
+    }
+
+    /// <summary>
     /// 有跳过行数时写 <c>OFFSET … ROWS FETCH NEXT … ROWS ONLY</c>。SQL Server 要求有 ORDER BY：没有时按分组键，再不然按主键排序，
     /// 都没有时补 <c>ORDER BY (SELECT 1)</c>（与 Java 一致，Java 在最后一种情况下报错）。
     /// </summary>
@@ -231,6 +241,15 @@ public class SqlServerDialect : SqlDialect
     };
 
     // 几个值取最大 / 最小：(SELECT MAX(__col__) FROM (VALUES (a), (b)) AS t(__col__))（与 Java 的 MsSQLMaxMinColumnsSQLFunction 一致）
+    // REPLICATE(填充字符, n)，没给填充字符时是空格
+    private static SqlRenderer WritePadding(SqlRenderer r, IReadOnlyList<SqlExpr> a)
+    {
+        r.Append("REPLICATE(");
+        if (a.Count > 2) r.Write(a[2]);
+        else r.Append("N' '");
+        return r.Append(", ").Write(a[1]).Append(")");
+    }
+
     private static FunctionWriter ValuesExtreme(string aggregate) => (r, a) =>
     {
         r.Append("(SELECT " + aggregate + "(__col__) FROM (VALUES ");
@@ -318,6 +337,9 @@ public class SqlServerDialect : SqlDialect
         f[SqlFunctionNames.NullOrDefault] = Call("ISNULL");
         f[SqlFunctionNames.Length] = Call("LEN");
         f[SqlFunctionNames.Trim] = (r, a) => r.Append("LTRIM(RTRIM(").Write(a[0]).Append("))");
+        // 没有 LPAD / RPAD（Java 照写了，执行不了）：REPLICATE 拼出填充再截取，够长时与 LPAD / RPAD 一样截成前 n 个字符
+        f[SqlFunctionNames.PadLeft] = (r, a) => WritePadding(r.Append("RIGHT("), a).Append(" + LEFT(").Write(a[0]).Append(", ").Write(a[1]).Append("), ").Write(a[1]).Append(")");
+        f[SqlFunctionNames.PadRight] = (r, a) => WritePadding(r.Append("LEFT(").Write(a[0]).Append(" + "), a).Append(", ").Write(a[1]).Append(")");
         // SUBSTRING 必须给长度：不给（Substring(start)）时取到末尾
         f[SqlFunctionNames.SubString] = (r, a) =>
         {

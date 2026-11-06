@@ -109,18 +109,21 @@ internal sealed partial class ExpressionTranslator
 
     /// <summary>
     /// 取元素、取一段行而链上没写排序时组内的排序，按导航的 <see cref="NavigationMetadata.PartitionOrder"/>：
-    /// 主键升序（默认）、不排序、或导航上声明的 <see cref="NavigateAttribute.OrderBy"/>。
+    /// 默认按导航上声明的 <see cref="NavigateAttribute.OrderBy"/>、没有声明时主键升序；或指定主键升 / 降序、不排序、只按声明的排序。
     /// </summary>
     internal IEnumerable<OrderByItem> DefaultPartitionOrder(NavigationMetadata nav, EntityTableSource element) => nav.PartitionOrder switch
     {
         PartitionOrder.None => [],
-        PartitionOrder.Navigation => nav.DefaultOrder.Select(o =>
-        {
-            Bind(o.Key, [new EntityBinding(element)]);
-            return OrderItem(o.Key.Body, o.Descending);
-        }).ToList(),
+        PartitionOrder.Navigation => NavigationOrder(nav, element),
+        PartitionOrder.Default when nav.DefaultOrder.Count > 0 => NavigationOrder(nav, element),
         _ => KeyOrder(nav, element),
     };
+
+    private List<OrderByItem> NavigationOrder(NavigationMetadata nav, EntityTableSource element) => nav.DefaultOrder.Select(o =>
+    {
+        Bind(o.Key, [new EntityBinding(element)]);
+        return OrderItem(o.Key.Body, o.Descending);
+    }).ToList();
 
     // 按目标表主键排（Key 升序、KeyDescending 降序）；没有主键时无从排序，明确报错（与 Java 一致，不悄悄不排）
     private static IEnumerable<OrderByItem> KeyOrder(NavigationMetadata nav, EntityTableSource element) =>

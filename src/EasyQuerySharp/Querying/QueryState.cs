@@ -48,7 +48,7 @@ internal sealed record UnionSource(ImmutableArray<QueryState> Parts, bool All) :
 }
 
 /// <summary>原生 SQL 作为派生表，列按实体的列名访问（对应 Java 的 queryable(sql, Class)）。</summary>
-internal sealed record RawSqlSource(string Sql, Type EntityType, IReadOnlyList<object?> Parameters) : QuerySource;
+internal sealed record RawSqlSource(RawSqlText Text, Type EntityType) : QuerySource;
 
 /// <summary>公共表表达式（AsCte）：定义是 <paramref name="Inner"/>，按名字引用。</summary>
 internal sealed record CteSource(string Name, QueryState Inner) : QuerySource

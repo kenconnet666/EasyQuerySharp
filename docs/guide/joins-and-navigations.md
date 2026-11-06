@@ -311,7 +311,7 @@ SELECT t.`name` FROM `t_user` t LEFT JOIN (SELECT t1.`id`,t1.`author_id`,t1.`cat
 ```
 <!-- /card -->
 
-链上没写排序时按导航的 `PartitionOrder`：默认按目标主键升序，`KeyDescending` 降序，`Navigation` 按导航声明的 `OrderBy`，`None` 不排序。
+链上没写排序时按导航的 `PartitionOrder`：默认（`Default`）按导航声明的 `OrderBy`，没有声明时按目标主键升序；`Key` / `KeyDescending` 按主键升 / 降序，`Navigation` 只按声明的 `OrderBy`，`None` 不排序。Java 的默认 `THROW` 在链上和导航上都没写排序时报错，C# 按上面的规则取，不报错。
 
 ## 更多导航声明
 
@@ -335,7 +335,7 @@ public class Author
     public List<Post>? Posts { get; set; }
 
     // 声明了排序和条数的对一导航：每个作者阅读量最高的那篇
-    [Navigate(RelationType.OneToOne, TargetProperties = [nameof(Post.AuthorId)], OrderBy = "Views desc", PartitionOrder = PartitionOrder.Navigation, Limit = 1)]
+    [Navigate(RelationType.OneToOne, TargetProperties = [nameof(Post.AuthorId)], OrderBy = "Views desc", Limit = 1)]
     public Post? TopPost { get; set; }
 }
 
@@ -359,7 +359,7 @@ public class Article
 ```
 <!-- /snippet -->
 
-声明了排序和条数的对一导航（Java 的 OneToOne + `orderByProps` + `limit`，如"每个作者最热的一篇"）在条件、投影里按排序取那一行：
+声明了排序和条数的对一导航（Java 的 OneToOne + `orderByProps` + `limit`，如"每个作者最热的一篇"）在条件、投影、隐式子查询里按排序取那一行（排序规则同上，声明了 `OrderBy` 就按它，不用再写 `PartitionOrder`）；与 null 比较时看那一行的主键，和普通的对一导航一样：
 
 <!-- card: navigate/RankedToOne sql=mysql -->
 ```csharp
@@ -371,6 +371,18 @@ db.Query<Author>().Where(a => a.TopPost!.Views >= 1000).OrderBy(a => a.Id)
 -- MySQL
 SELECT t.`name`,t3.`title` AS `top`,t3.`views` FROM `t_user` t LEFT JOIN (SELECT t1.`id`,t1.`author_id`,t1.`category_id`,t1.`title`,t1.`status`,t1.`views`,t1.`published_at`,(ROW_NUMBER() OVER (PARTITION BY t1.`author_id` ORDER BY t1.`views` DESC)) AS `__row__` FROM `t_post` t1) t3 ON (t3.`author_id` = t.`id` AND t3.`__row__` = ?) WHERE t3.`views` >= ? ORDER BY t.`id` ASC;
 -- params: [1, 1000]
+```
+<!-- /card -->
+
+<!-- card: navigate/RankedToOneNull sql=mysql -->
+```csharp
+db.Query<Author>().Where(a => a.TopPost == null).OrderBy(a => a.Id).Select(a => a.Name).ToListAsync();
+```
+
+```sql
+-- MySQL
+SELECT t.`name` FROM `t_user` t LEFT JOIN (SELECT t1.`id`,t1.`author_id`,t1.`category_id`,t1.`title`,t1.`status`,t1.`views`,t1.`published_at`,(ROW_NUMBER() OVER (PARTITION BY t1.`author_id` ORDER BY t1.`views` DESC)) AS `__row__` FROM `t_post` t1) t3 ON (t3.`author_id` = t.`id` AND t3.`__row__` = ?) WHERE t3.`id` IS NULL ORDER BY t.`id` ASC;
+-- params: [1]
 ```
 <!-- /card -->
 
@@ -420,7 +432,6 @@ SELECT t."title" FROM "t_post" t WHERE ((t."id")::text = ANY(string_to_array(?,'
 
 ## 限制
 
-- 声明了条数的对一导航（`TopPost`）不能与 null 比较（`a.TopPost != null` 报不支持），要比较它的列；`OrderBy` 只在 `PartitionOrder = PartitionOrder.Navigation` 时生效，否则按主键排。
 - `KeyMatch.SelfCsv` 的导航不能取第几个元素、不能合并成分组 JOIN（回退成子查询）。
 - 集合导航上只支持 `Where` / `Select` / `OrderBy` / `ThenBy` / `Skip` / `Take` / `Distinct` 和终结的聚合方法；`GroupBy`、`Join` 等写在导航上报不支持。
 - 显式 JOIN 最多 10 张表；更多时用导航或派生表。

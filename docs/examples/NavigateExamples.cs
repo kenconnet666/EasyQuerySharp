@@ -151,7 +151,7 @@ public static class NavigateExamples
         public List<Post>? Posts { get; set; }
 
         // 声明了排序和条数的对一导航：每个作者阅读量最高的那篇
-        [Navigate(RelationType.OneToOne, TargetProperties = [nameof(Post.AuthorId)], OrderBy = "Views desc", PartitionOrder = PartitionOrder.Navigation, Limit = 1)]
+        [Navigate(RelationType.OneToOne, TargetProperties = [nameof(Post.AuthorId)], OrderBy = "Views desc", Limit = 1)]
         public Post? TopPost { get; set; }
     }
 
@@ -181,6 +181,10 @@ public static class NavigateExamples
     public static Task<List<AuthorTop>> RankedToOne(EasyDb db) =>
         db.Query<Author>().Where(a => a.TopPost!.Views >= 1000).OrderBy(a => a.Id)
             .Select(a => new AuthorTop(a.Name, a.TopPost!.Title, a.TopPost!.Views)).ToListAsync();
+
+    [Example("navigate", "声明了条数的对一导航判空：有没有那一行")]
+    public static Task<List<string>> RankedToOneNull(EasyDb db) =>
+        db.Query<Author>().Where(a => a.TopPost == null).OrderBy(a => a.Id).Select(a => a.Name).ToListAsync();
 
     /// <summary>文章与作者所在公司。</summary>
     public sealed record ArticleCompany(string Title, string? Company);

@@ -10,14 +10,15 @@ internal sealed partial class ExpressionTranslator
     /// <summary>
     /// 集合导航子查询的构造状态：链上的 <c>Where</c> / <c>Select</c> / <c>Distinct</c> / 排序 / <c>Skip</c> / <c>Take</c> 依次作用上来，
     /// 最后由调用方加上 EXISTS、聚合或字符串聚合的列。
-    /// 取了一段行（<c>Skip</c> / <c>Take</c>，Java 的 <c>elements(i, j)</c>）之后再加条件时，先把这段行包成派生表
-    /// <c>(SELECT 列… FROM 目标 WHERE 关联 ORDER BY … LIMIT n) tN</c>，条件和导航作用在派生表上（与 Java 一致）；
-    /// 直接在这段行上聚合时不包，ORDER BY / LIMIT 留在聚合子查询里（Java 的写法）。
+    /// 取了一段行（<c>Skip</c> / <c>Take</c>，Java 的 <c>elements(i, j)</c>）之后再加条件或聚合时，先把这段行包成派生表
+    /// <c>(SELECT 列… FROM 目标 WHERE 关联 ORDER BY … LIMIT n) tN</c>，条件、导航和聚合作用在派生表上。
+    /// Java 直接在这段行上聚合时不包，LIMIT 作用在聚合出的一行上、聚合的是全部行，这里按 C# 的语义先取段（ROADMAP 已定的取舍）。
     /// </summary>
     private sealed class CollectionSubQuery(ExpressionTranslator outer, SelectQuery query, ExpressionTranslator translator, EntityBinding element)
     {
         private readonly EntityMetadata _entity = element.EntityTable.Entity;
         private bool _limited;
+        private readonly List<(LambdaExpression Key, bool Descending)> _orderKeys = [];
 
         /// <summary>当前的子查询（包过派生表后是外面那层）。</summary>
         public SelectQuery Query { get; private set; } = query;
@@ -33,6 +34,12 @@ internal sealed partial class ExpressionTranslator
 
         /// <summary>链上有 <c>Distinct</c>。</summary>
         public bool Distinct { get; private set; }
+
+        /// <summary>
+        /// 元素的顺序（字符串聚合按它拼接）：没包过时是子查询的 ORDER BY；包过派生表后是同样的排序键作用在派生表上
+        /// （派生表里的 ORDER BY 只决定取哪段行，不保证外层的顺序）。
+        /// </summary>
+        public List<OrderByItem> ElementOrder { get; private set; } = query.OrderBy;
 
         /// <summary>作用链上的一个方法。</summary>
         public void Apply(MethodCallExpression op)
@@ -52,8 +59,10 @@ internal sealed partial class ExpressionTranslator
                 case nameof(Enumerable.OrderBy) or nameof(Enumerable.ThenBy) or nameof(Enumerable.OrderByDescending) or nameof(Enumerable.ThenByDescending):
                     if (_limited) throw Unsupported(op, "取了一段行之后不能再排序");
                     var key = Lambda(op.Arguments[1]);
+                    var descending = op.Method.Name.EndsWith("Descending", System.StringComparison.Ordinal);
                     Translator.Bind(key, [Element]);
-                    Query.OrderBy.Add(Translator.OrderItem(key.Body, op.Method.Name.EndsWith("Descending", System.StringComparison.Ordinal)));
+                    Query.OrderBy.Add(Translator.OrderItem(key.Body, descending));
+                    _orderKeys.Add((key, descending));
                     break;
                 case nameof(Enumerable.Skip):
                     Query.Offset = Count(op);
@@ -78,6 +87,12 @@ internal sealed partial class ExpressionTranslator
             return kept is null ? null : Translator.ElementPredicate(kept, Element);
         }
 
+        /// <summary>要在元素上聚合：取过一段行时先包成派生表，聚合只算这段行。</summary>
+        public void BeforeAggregate()
+        {
+            if (_limited) WrapLimitedRows();
+        }
+
         // (SELECT 目标的列… FROM 目标 WHERE … ORDER BY … LIMIT n) tN：列不写 AS（与 Java 一致），外层按实体属性找列
         private void WrapLimitedRows()
         {
@@ -89,6 +104,11 @@ internal sealed partial class ExpressionTranslator
             Translator = new ExpressionTranslator(new Dictionary<ParameterExpression, SourceBinding>(outer._scope)) { Context = outer.Context!.ForSubQuery(Query) };
             Element = new DerivedBinding(derived, columns.ToDictionary(c => c.PropertyName, c => c.Name, System.StringComparer.Ordinal), _entity);
             _limited = false;
+            ElementOrder = [.. _orderKeys.Select(k =>
+            {
+                Translator.Bind(k.Key, [Element]);
+                return Translator.OrderItem(k.Key.Body, k.Descending);
+            })];
         }
 
         private static long Count(MethodCallExpression op) =>

@@ -53,7 +53,7 @@ public sealed class PgQueryTest19Queries(PgFixture fixture) : PgTest(fixture)
     [Fact, Upstream("pgsql/QueryTest19.java#concat1")]
     public async Task Concat1()
     {
-        var rows = await Db.FromSql<DynamicRow>("select CONCAT('a', null , 'b') as \"aa\" ").ToListAsync(Ct);
+        var rows = await Db.FromSqlRaw<DynamicRow>("select CONCAT('a', null , 'b') as \"aa\" ").ToListAsync(Ct);
         Assert.Equal("ab", rows[0]["aa"]);
     }
 

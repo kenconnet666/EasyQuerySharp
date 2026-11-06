@@ -116,7 +116,7 @@ public sealed class AddEasyQueryTest
         var db = provider.GetRequiredService<EasyDb>();
 
         Assert.Same(dataSource, db.Options.DataSource);
-        Assert.Equal(1L, Assert.Single(await db.SqlQueryAsync<long>("SELECT 1", cancellationToken: TestContext.Current.CancellationToken)));
+        Assert.Equal(1L, Assert.Single(await db.SqlQueryRawAsync<long>("SELECT 1", cancellationToken: TestContext.Current.CancellationToken)));
         Assert.Equal("SELECT 1", Assert.Single(listener.Sql));
     }
 

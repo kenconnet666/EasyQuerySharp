@@ -17,6 +17,10 @@ public static partial class FunctionExamples
                 (" " + p.Title + " ").Trim(), p.Title.IndexOf("join")))
             .ToListAsync();
 
+    [Example("func", "补齐：PadLeft / PadRight（SQLite 没有 LPAD，拼出填充字符）")]
+    public static Task<List<string>> Pad(EasyDb db) =>
+        db.Query<User>().Where(u => u.Id <= 3).OrderBy(u => u.Id).Select(u => u.Name.PadLeft(6, '*')).ToListAsync();
+
     [Example("func", "拼接：+、string.Concat、插值字符串")]
     public static Task<List<string>> Concat(EasyDb db) =>
         db.Query<User>().Where(u => u.Age != null).OrderBy(u => u.Id).Take(3).Select(u => $"{u.Name}（{u.Age} 岁）").ToListAsync();
@@ -91,6 +95,10 @@ public static partial class FunctionExamples
     [Example("func", "类型转换：ToString() 写成 CAST")]
     public static Task<List<string>> Casts(EasyDb db) =>
         db.Query<Post>().Where(p => p.Views.ToString().StartsWith("8")).OrderBy(p => p.Id).Select(p => p.Title + "：" + p.Views.ToString()).ToListAsync();
+
+    [Example("func", "Convert.ToXxx：各类型的重载都写成 CAST")]
+    public static Task<List<string>> ConvertTo(EasyDb db) =>
+        db.Query<Post>().Where(p => Convert.ToDecimal(p.Views) / 1000 >= 2).OrderBy(p => p.Id).Select(p => Convert.ToString(p.Views)).ToListAsync();
 
     // ---- JSON
 
