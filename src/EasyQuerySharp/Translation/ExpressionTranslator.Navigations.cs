@@ -45,6 +45,10 @@ internal sealed partial class ExpressionTranslator
         // 起点可以是实体表，也可以是整行实体的派生表（如集合导航的 First() 行）
         if (m.Expression is null || BindingOf(m.Expression) is not { OwnerEntity: { } entity } owner) return null;
         if (Context?.Metadata.FindNavigation(entity, m.Member.Name) is not { IsCollection: false } nav) return null;
+        if (nav.Limit is not null)
+            return options == default
+                ? RankedToOne(owner, nav)
+                : throw Unsupported(m, $"声明了条数的对一导航 {nav} 不支持 Sql.DisableLogicDelete / Sql.AsTable / Sql.AsAlias / Sql.AsTableSegment");
         if (nav.DirectPath.Count == 0) return Context!.JoinFor(owner, nav, options);
         if (options != default) throw Unsupported(m, $"直达导航 {nav} 不支持 Sql.DisableLogicDelete / Sql.AsTable / Sql.AsAlias / Sql.AsTableSegment");
         // 直达导航：沿路径逐级 JOIN（与手写 x.A.B 共用同一组 JOIN）

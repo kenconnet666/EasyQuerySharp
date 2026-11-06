@@ -329,4 +329,18 @@ public sealed class MySQL8Test4(Mysql8Fixture fixture) : Mysql8Test(fixture)
         listen.AssertSql("SELECT t.`id`,t.`name`,t.`phone`,t.`age`,t.`create_time` FROM `t_sys_user` t LEFT JOIN (SELECT t2.`id`,t2.`uid`,t2.`code`,t2.`type`,t2.`bank_id`,t2.`open_time`,(ROW_NUMBER() OVER (PARTITION BY t2.`uid` ORDER BY t2.`open_time` ASC)) AS `__row__` FROM `t_bank_card` t2) t4 ON (t4.`uid` = t.`id` AND t4.`__row__` = ?) LEFT JOIN `t_sys_user` t1 ON t4.`uid` = t1.`id` AND t.`id` = t1.`id` AND t.`name` LIKE CONCAT('%',?,'%') AND t1.`name` LIKE CONCAT('%',?,'%') WHERE t.`name` LIKE CONCAT('%',?,'%') AND t1.`name` LIKE CONCAT('%',?,'%') AND t4.`type` = ?");
         listen.AssertParams("1(Integer),123(String),456(String),789(String),987(String),123123(String)");
     }
+
+    // 第一张卡（声明了排序与条数的对一导航）上的条件写进它的 ON：Java 在连接的 ON 里写 firstCard().filter(…)，C# 在查询上声明 FilterNavigation；
+    // 只在 WHERE 里用到第一张卡，它的 JOIN 排在用户表的 JOIN 之后
+    [Fact, Upstream("mysql8/MySQL8Test4.java#testFilter")]
+    public async Task TestFilter()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysUser>().UseValueFilter(ValueFilter.NotNullOrBlank, includeNavigations: true).FilterNavigation(u => u.FirstCard, s => s.Type == "4567")
+            .LeftJoin<SysUser>((u1, u2) => u1.Id == u2.Id && u1.Name.LikeContains("123") && u2.Name.LikeContains("456"))
+            .Where((u1, u2) => u1.Name.LikeContains("789") && u2.Name.LikeContains("987") && u1.FirstCard!.Type == "123123")
+            .Select((u1, _) => u1).ToListAsync(Ct);
+        listen.AssertSql("SELECT t.`id`,t.`name`,t.`phone`,t.`age`,t.`create_time` FROM `t_sys_user` t LEFT JOIN `t_sys_user` t1 ON t.`id` = t1.`id` AND t.`name` LIKE CONCAT('%',?,'%') AND t1.`name` LIKE CONCAT('%',?,'%') LEFT JOIN (SELECT t2.`id`,t2.`uid`,t2.`code`,t2.`type`,t2.`bank_id`,t2.`open_time`,(ROW_NUMBER() OVER (PARTITION BY t2.`uid` ORDER BY t2.`open_time` ASC)) AS `__row__` FROM `t_bank_card` t2) t4 ON (t4.`uid` = t.`id` AND t4.`__row__` = ?) AND t4.`type` = ? WHERE t.`name` LIKE CONCAT('%',?,'%') AND t1.`name` LIKE CONCAT('%',?,'%') AND t4.`type` = ?");
+        listen.AssertParams("123(String),456(String),1(Integer),4567(String),789(String),987(String),123123(String)");
+    }
 }

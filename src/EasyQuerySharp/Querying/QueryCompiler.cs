@@ -82,7 +82,7 @@ internal static class QueryCompiler
         // 可选导航（LEFT JOIN）不影响行数，没用到时 Java 会省掉，用到时再连
         if (translator.Context is { } navContext && bindings[0].OwnerEntity is { } root)
             foreach (var spec in state.NavigationFilters)
-                if (db.Metadata.FindNavigation(root, spec.Member) is { IsCollection: false, Required: true } nav && spec.OwnerType.IsAssignableFrom(root.Type))
+                if (db.Metadata.FindNavigation(root, spec.Member) is { IsCollection: false, Required: true, Limit: null } nav && spec.OwnerType.IsAssignableFrom(root.Type))
                     navContext.JoinFor(bindings[0], nav);
 
         // 外层传播下来的值过滤也作用于子查询自己的条件（本查询的条件在 Where 时已按自己的值过滤处理过）

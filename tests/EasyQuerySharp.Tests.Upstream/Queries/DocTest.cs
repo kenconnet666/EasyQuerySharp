@@ -1,3 +1,5 @@
+using EasyQuerySharp.Filtering;
+
 namespace EasyQuerySharp.Tests.Upstream.Queries;
 
 /// <summary>
@@ -53,6 +55,55 @@ public sealed class DocTest(MySqlFixture fixture) : MySqlTest(fixture)
 
         await filtered.Select(o => new Topic { Id = o.Id, Title = o.Title, Stars = o.Stars }).ToListAsync(Ct);
         listen.AssertSql("SELECT t.`id`,t.`title`,t.`stars`" + FilterOrder);
+    }
+
+    /// <summary>对应 Java：doc/dto/SysUserQueryRequest（文字条件模糊匹配，创建时间两端分别是下限与上限）。</summary>
+    public sealed class SysUserQueryRequest
+    {
+        [Filter]
+        public string? Name { get; set; }
+
+        [Filter]
+        public string? Account { get; set; }
+
+        [Filter]
+        public string? DepartName { get; set; }
+
+        [Filter]
+        public string? Phone { get; set; }
+
+        [Filter(FilterOp.GreaterThanOrEqual, Property = nameof(DocSysUser.CreateTime))]
+        public DateTime? CreateTimeBegin { get; set; }
+
+        [Filter(FilterOp.LessThanOrEqual, Property = nameof(DocSysUser.CreateTime))]
+        public DateTime? CreateTimeEnd { get; set; }
+    }
+
+    // 同一组条件的几种写法：条件对象、跳过空值的值过滤、按条件追加；库里的 t_sys_user 没有这些列，执行失败后取 SQL（与 Java 一样）
+    [Fact, Upstream("doc/DocTest.java#test1")]
+    public async Task Test1()
+    {
+        var request = new SysUserQueryRequest { Name = "小明", CreateTimeBegin = DateTime.Now.AddDays(-10), CreateTimeEnd = DateTime.Now, Phone = "180" };
+        const string Columns = "SELECT `id`,`name`,`account`,`depart_name`,`phone`,`create_time` FROM `t_sys_user`";
+        const string Where = " WHERE `name` LIKE ? AND `phone` LIKE ? AND `create_time` >= ? AND `create_time` <= ?";
+        const string RangeWhere = " WHERE `name` LIKE ? AND `phone` LIKE ? AND (`create_time` >= ? AND `create_time` <= ?)";
+
+        Assert.Equal("SELECT COUNT(*) FROM `t_sys_user`" + Where, (await Failed(() => Db.Query<DocSysUser>().FilterBy(request).ToPageAsync(1, 10, Ct))).Text);
+        Assert.Equal(Columns + Where + " LIMIT 10", (await Failed(() => Db.Query<DocSysUser>().FilterBy(request).Skip(0).Take(10).ToListAsync(Ct))).Text);
+        Assert.Equal(Columns + RangeWhere, (await Failed(() => Db.Query<DocSysUser>().UseValueFilter(ValueFilter.NotNullOrBlank)
+            .Where(o => o.Name!.Contains(request.Name!) && o.Account!.Contains(request.Account!) && o.Phone!.Contains(request.Phone!) && o.DepartName!.Contains(request.DepartName!)
+                        && o.CreateTime.RangeClosed(request.CreateTimeBegin, request.CreateTimeEnd))
+            .ToListAsync(Ct))).Text);
+        Assert.Equal(Columns + RangeWhere, (await Failed(() => Db.Query<DocSysUser>()
+            .WhereIf(!string.IsNullOrWhiteSpace(request.Name), o => o.Name!.Contains(request.Name!)).WhereIf(!string.IsNullOrWhiteSpace(request.Account), o => o.Account!.Contains(request.Account!))
+            .WhereIf(!string.IsNullOrWhiteSpace(request.Phone), o => o.Phone!.Contains(request.Phone!)).WhereIf(!string.IsNullOrWhiteSpace(request.DepartName), o => o.DepartName!.Contains(request.DepartName!))
+            .WhereIf(request.CreateTimeBegin is not null && request.CreateTimeEnd is not null, o => o.CreateTime.RangeClosed(request.CreateTimeBegin, request.CreateTimeEnd))
+            .ToListAsync(Ct))).Text);
+        Assert.Equal(Columns + Where, (await Failed(() => Db.Query<DocSysUser>()
+            .WhereIf(!string.IsNullOrWhiteSpace(request.Name), o => o.Name!.Contains(request.Name!)).WhereIf(!string.IsNullOrWhiteSpace(request.Account), o => o.Account!.Contains(request.Account!))
+            .WhereIf(!string.IsNullOrWhiteSpace(request.Phone), o => o.Phone!.Contains(request.Phone!))
+            .WhereIf(request.CreateTimeBegin is not null, o => o.CreateTime >= request.CreateTimeBegin).WhereIf(request.CreateTimeEnd is not null, o => o.CreateTime <= request.CreateTimeEnd)
+            .ToListAsync(Ct))).Text);
     }
 
     [Fact, Upstream("doc/DocTest.java#test2")]

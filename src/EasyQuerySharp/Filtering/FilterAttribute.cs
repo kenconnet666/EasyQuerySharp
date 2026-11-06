@@ -69,13 +69,13 @@ public enum FilterOp
     /// <summary><c>LIKE '%v'</c>（Java 的 LIKE_MATCH_RIGHT）</summary>
     LikeEnd,
 
-    /// <summary>包含（Java 的 CONTAINS：值里的 % 与 _ 不当通配符）。</summary>
+    /// <summary>包含（Java 的 CONTAINS，同 <see cref="Sql.LikeContains"/>）：<c>LIKE CONCAT('%',?,'%')</c>，值里的 % 与 _ 按字面匹配。</summary>
     Contains,
 
-    /// <summary>以值开头（Java 的 STARTS_WITH）。</summary>
+    /// <summary>以值开头（Java 的 STARTS_WITH，同 <see cref="Sql.LikeStartsWith"/>）：<c>LIKE CONCAT(?,'%')</c>。</summary>
     StartsWith,
 
-    /// <summary>以值结尾（Java 的 ENDS_WITH）。</summary>
+    /// <summary>以值结尾（Java 的 ENDS_WITH，同 <see cref="Sql.LikeEndsWith"/>）：<c>LIKE CONCAT('%',?)</c>。</summary>
     EndsWith,
 
     /// <summary><c>IN (…)</c>，值是集合。</summary>
