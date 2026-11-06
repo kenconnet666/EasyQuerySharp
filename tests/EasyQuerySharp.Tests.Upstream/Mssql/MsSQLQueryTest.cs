@@ -86,6 +86,40 @@ public sealed partial class MsSQLQueryTest(MsSqlFixture fixture) : MsSqlTest(fix
         listen.AssertParams(",(String)");
     }
 
+    // 带中文的格式串：格式符各取 CONVERT 的一段，中文等字面量当参数用 + 拼上（2021-12-01 起第 31 天是 2022-01-01）
+    [Fact, Upstream("mssql/MsSQLQueryTest.java#query10")]
+    public async Task Query10()
+    {
+        using var listen = SqlCapture.Listen();
+        var list = await Db.Query<MsSQLMyTopic>().Where(m => m.CreateTime!.Value.ToString("yyyy年MM月dd日") == "2022年01月01日").ToListAsync(Ct);
+        Assert.NotEmpty(list);
+        listen.AssertSql(TopicSql + " WHERE (SUBSTRING(CONVERT(CHAR(8), [CreateTime], 112), 1, 4) + ? + SUBSTRING(CONVERT(CHAR(6), [CreateTime], 12), 3, 2) + ? + SUBSTRING(CONVERT(CHAR(6), [CreateTime], 12), 5, 2) + ?) = ?");
+        listen.AssertParams("年(String),月(String),日(String),2022年01月01日(String)");
+    }
+
+    [Fact, Upstream("mssql/MsSQLQueryTest.java#query11")]
+    public async Task Query11()
+    {
+        using var listen = SqlCapture.Listen();
+        var list = await Db.Query<MsSQLMyTopic>().Where(m => m.CreateTime!.Value.ToString("yyyy年MM月dd日 HH时mm分ss秒") == "2022年01月01日 00时00分00秒").ToListAsync(Ct);
+        Assert.NotEmpty(list);
+        listen.AssertSql(TopicSql + " WHERE (SUBSTRING(CONVERT(CHAR(8), [CreateTime], 112), 1, 4) + ? + SUBSTRING(CONVERT(CHAR(6), [CreateTime], 12), 3, 2) + ? + SUBSTRING(CONVERT(CHAR(6), [CreateTime], 12), 5, 2) + ? + SUBSTRING(CONVERT(CHAR(8), [CreateTime], 24), 1, 2) + ? + SUBSTRING(CONVERT(CHAR(8), [CreateTime], 24), 4, 2) + ? + SUBSTRING(CONVERT(CHAR(8), [CreateTime], 24), 7, 2) + ?) = ?");
+        listen.AssertParams("年(String),月(String),日 (String),时(String),分(String),秒(String),2022年01月01日 00时00分00秒(String)");
+    }
+
+    // 查出的格式化结果与 .NET 按同样格式串格式化一致
+    [Fact, Upstream("mssql/MsSQLQueryTest.java#testFormat")]
+    public async Task TestFormat()
+    {
+        const string format = "yyyy年MM-01 HH:mm分ss秒";
+        using var listen = SqlCapture.Listen();
+        var list = await Db.Query<MsSQLMyTopic>().Select(d => new Draft<DateTime?, string?>(d.CreateTime, d.CreateTime!.Value.ToString(format))).ToListAsync(Ct);
+        Assert.NotEmpty(list);
+        Assert.All(list, r => Assert.Equal(r.Value1!.Value.ToString(format, System.Globalization.CultureInfo.InvariantCulture), r.Value2));
+        listen.AssertSql("SELECT t.[CreateTime] AS [Value1],(SUBSTRING(CONVERT(CHAR(8), t.[CreateTime], 112), 1, 4) + ? + SUBSTRING(CONVERT(CHAR(6), t.[CreateTime], 12), 3, 2) + ? + SUBSTRING(CONVERT(CHAR(8), t.[CreateTime], 24), 1, 2) + ? + SUBSTRING(CONVERT(CHAR(8), t.[CreateTime], 24), 4, 2) + ? + SUBSTRING(CONVERT(CHAR(8), t.[CreateTime], 24), 7, 2) + ?) AS [Value2] FROM [MyTopic] t");
+        listen.AssertParams("年(String),-01 (String),:(String),分(String),秒(String)");
+    }
+
     [Fact, Upstream("mssql/MsSQLQueryTest.java#update1")]
     public async Task Update1()
     {
