@@ -51,6 +51,9 @@ public class DamengDialect : OracleDialect
         "(SELECT BITAND(sc.info2, 1) FROM syscolumns sc JOIN sysobjects so ON so.id = sc.id AND so.subtype$ = 'UTAB' AND so.schid = CURRENT_SCHID() "
         + "WHERE so.name = c.table_name AND sc.name = c.column_name)";
 
+    /// <summary>达梦的 user_tab_cols 没有 data_default_vc：索引列照 user_ind_columns 读。</summary>
+    private protected override string IntrospectedIndexColumn => "ic.column_name";
+
     /// <summary>Java 的 DamengSQLFuncImpl 没有覆盖 orderByNullsMode：NULL 位置沿用通用的 CASE 写法。</summary>
     protected override bool NativeNullsOrder => false;
 

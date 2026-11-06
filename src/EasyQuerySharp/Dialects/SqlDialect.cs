@@ -43,6 +43,9 @@ public abstract partial class SqlDialect
     /// </summary>
     public virtual string? LastInsertIdQuery => null;
 
+    /// <summary>交给驱动的参数值：驱动不认的 CLR 类型在这里换成它认的（Oracle 的 Guid、DateOnly、TimeOnly）；默认原样。</summary>
+    public virtual object? ParameterValue(SqlParameterValue parameter) => parameter.Value;
+
     /// <summary>驱动参数的补充设置（如 SQL Server 把 DateTime 按 datetime2 传）；默认不改。</summary>
     public virtual void ConfigureParameter(System.Data.Common.DbParameter parameter, SqlParameterValue value)
     {

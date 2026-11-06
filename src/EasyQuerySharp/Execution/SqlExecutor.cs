@@ -411,7 +411,7 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
                 p.Direction = System.Data.ParameterDirection.Output;
                 p.DbType = OutputDbType(parameter.ClrType);
             }
-            else p.Value = parameter.Value ?? DBNull.Value;
+            else p.Value = db.Options.Dialect.ParameterValue(parameter) ?? DBNull.Value;
             db.Options.Dialect.ConfigureParameter(p, parameter);
             target.Add(p);
         }
