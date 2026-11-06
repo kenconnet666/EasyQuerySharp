@@ -35,6 +35,8 @@ public sealed class EasyDb
 
     internal Tracking.Tracker Tracker { get; }
 
+    internal AmbientTransaction AmbientTransaction { get; } = new();
+
     /// <summary>按实体建表、删表（code-first）。</summary>
     public Schema.CodeFirst CodeFirst { get; }
 
@@ -192,7 +194,7 @@ public sealed class EasyDb
         return Tracker.Remove(entity);
     }
 
-    /// <summary>开启环境事务（见 <see cref="EasyTransaction"/>）。</summary>
+    /// <summary>开启环境事务（见 <see cref="EasyTransaction"/>）。当前异步流程已经在这个库的事务里时抛出 <see cref="InvalidOperationException"/>（不支持嵌套）。</summary>
     public EasyTransaction BeginTransaction(IsolationLevel isolation = IsolationLevel.Unspecified) => new(this, isolation);
 
     /// <summary>在事务里执行 <paramref name="work"/>：正常结束提交，抛出异常回滚。</summary>

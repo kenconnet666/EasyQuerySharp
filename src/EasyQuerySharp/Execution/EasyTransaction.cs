@@ -6,6 +6,7 @@ namespace EasyQuerySharp.Execution;
 /// <summary>
 /// 环境事务：<see cref="EasyDb.BeginTransaction"/> 开启后，同一异步流程里该 <see cref="EasyDb"/> 的所有执行都走这个事务的连接，
 /// 不必把事务对象到处传。连接在第一次执行时才打开。释放时若没有提交就回滚。
+/// 已经在事务里时不能再开（与 Java 的 repeat begin transaction 一致）。
 /// </summary>
 /// <example><code>
 /// await using var tx = db.BeginTransaction();
@@ -15,11 +16,8 @@ namespace EasyQuerySharp.Execution;
 /// </code></example>
 public sealed class EasyTransaction : IAsyncDisposable, IDisposable
 {
-    private static readonly AsyncLocal<EasyTransaction?> Ambient = new();
-
     private readonly EasyDb _db;
     private readonly IsolationLevel _isolation;
-    private readonly EasyTransaction? _outer;
     private DbConnection? _connection;
     private DbTransaction? _transaction;
     private bool _completed;
@@ -28,17 +26,11 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
     {
         _db = db;
         _isolation = isolation;
-        _outer = Ambient.Value;
-        Ambient.Value = this;
+        db.AmbientTransaction.Enter(this);
     }
 
     /// <summary>当前异步流程里属于 <paramref name="db"/> 的事务；没有时为 null。</summary>
-    internal static EasyTransaction? Current(EasyDb db)
-    {
-        for (var t = Ambient.Value; t is not null; t = t._outer)
-            if (ReferenceEquals(t._db, db) && !t._completed) return t;
-        return null;
-    }
+    internal static EasyTransaction? Current(EasyDb db) => db.AmbientTransaction.Current;
 
     /// <summary>事务是否已经结束（提交或回滚）。</summary>
     public bool IsCompleted => _completed;
@@ -80,15 +72,56 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
     public void Dispose()
     {
         if (_completed) return;
-        _transaction?.Rollback();
-        EndAsync().AsTask().GetAwaiter().GetResult();
+        try
+        {
+            _transaction?.Rollback();
+        }
+        finally
+        {
+            End();
+            _transaction?.Dispose();
+            _connection?.Dispose();
+        }
     }
 
     private async ValueTask EndAsync()
     {
-        _completed = true;
-        if (ReferenceEquals(Ambient.Value, this)) Ambient.Value = _outer;
+        End();
         if (_transaction is not null) await _transaction.DisposeAsync().ConfigureAwait(false);
         if (_connection is not null) await _connection.DisposeAsync().ConfigureAwait(false);
+    }
+
+    private void End()
+    {
+        _completed = true;
+        _db.AmbientTransaction.Exit(this);
+    }
+}
+
+/// <summary>
+/// 每个 <see cref="EasyDb"/> 一个：当前异步流程里的事务。AsyncLocal 里放可变的 holder，结束时清空 holder 而不是给 AsyncLocal 赋 null——
+/// 提交、回滚都是 async 方法，在里面给 AsyncLocal 赋值不会传回调用方，已结束的事务会一直挂在调用方的流程上。
+/// </summary>
+internal sealed class AmbientTransaction
+{
+    private sealed class Holder
+    {
+        public EasyTransaction? Transaction;
+    }
+
+    private readonly AsyncLocal<Holder?> _current = new();
+
+    public EasyTransaction? Current => _current.Value?.Transaction;
+
+    public void Enter(EasyTransaction transaction)
+    {
+        if (Current is not null)
+            throw new InvalidOperationException("当前异步流程已经在这个库的事务里，不能再开事务（不支持嵌套）：在外层事务里直接执行，或先提交 / 回滚外层事务");
+        _current.Value = new Holder { Transaction = transaction };
+    }
+
+    public void Exit(EasyTransaction transaction)
+    {
+        if (_current.Value is { } holder && ReferenceEquals(holder.Transaction, transaction)) holder.Transaction = null;
     }
 }

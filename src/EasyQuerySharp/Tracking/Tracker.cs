@@ -38,15 +38,18 @@ internal sealed class Tracker(MetadataRegistry metadata)
     {
         var state = _current.Value;
         if (state is null || state.Depth == 0) _current.Value = state = new State();
-        state.Depth++;
+        lock (state) state.Depth++;
     }
 
     public void Release()
     {
-        if (_current.Value is not { } state || state.Depth == 0) return;
-        if (--state.Depth != 0) return;
-        state.Entries.Clear();
-        state.Loaded.Clear();
+        if (_current.Value is not { } state) return;
+        lock (state)
+        {
+            if (state.Depth == 0 || --state.Depth != 0) return;
+            state.Entries.Clear();
+            state.Loaded.Clear();
+        }
     }
 
     /// <summary>类型能否追踪：有主键的实体。</summary>
@@ -66,15 +69,18 @@ internal sealed class Tracker(MetadataRegistry metadata)
     /// <summary>查询结果的追踪：同一主键已追踪时返回已追踪的实例（查询结果以它为准）。</summary>
     public object AttachQueried(object entity) => Attach(entity);
 
-    public bool Remove(object entity) =>
-        _current.Value is { Depth: > 0 } state && state.Entries.Remove(KeyOf(metadata.Get(entity.GetType()), entity));
+    public bool Remove(object entity)
+    {
+        if (_current.Value is not { Depth: > 0 } state) return false;
+        lock (state) return state.Entries.Remove(KeyOf(metadata.Get(entity.GetType()), entity));
+    }
 
     /// <summary>实体是否被追踪（按主键找到的正是这个实例）。</summary>
     public TrackedEntry? Find(object entity)
     {
         // 没有主键或主键还为 null（新对象）的不会被追踪
         if (_current.Value is not { Depth: > 0 } state || TrackKeyOf(entity) is not { } key) return null;
-        return state.Entries.TryGetValue(key, out var entry) && ReferenceEquals(entry.Current, entity) ? entry : null;
+        lock (state) return state.Entries.TryGetValue(key, out var entry) && ReferenceEquals(entry.Current, entity) ? entry : null;
     }
 
     private object Attach(object entity)
@@ -83,9 +89,12 @@ internal sealed class Tracker(MetadataRegistry metadata)
         var meta = metadata.Get(entity.GetType());
         if (meta.KeyColumns.Count == 0) throw new InvalidOperationException($"{meta.Type.Name} 没有主键，不能追踪");
         var key = KeyOf(meta, entity);
-        if (state.Entries.TryGetValue(key, out var existing)) return existing.Current;
-        state.Entries[key] = new TrackedEntry(meta, entity);
-        return entity;
+        lock (state)
+        {
+            if (state.Entries.TryGetValue(key, out var existing)) return existing.Current;
+            state.Entries[key] = new TrackedEntry(meta, entity);
+            return entity;
+        }
     }
 
     /// <summary>
@@ -95,21 +104,27 @@ internal sealed class Tracker(MetadataRegistry metadata)
     public void RecordLoaded(object owner, string navigation, IReadOnlyList<object> children)
     {
         if (_current.Value is not { Depth: > 0 } state) return;
-        if (!state.Loaded.TryGetValue(owner, out var navigations)) state.Loaded[owner] = navigations = new(StringComparer.Ordinal);
-        navigations[navigation] = children;
+        lock (state)
+        {
+            if (!state.Loaded.TryGetValue(owner, out var navigations)) state.Loaded[owner] = navigations = new(StringComparer.Ordinal);
+            navigations[navigation] = children;
+        }
     }
 
     /// <summary>父实体的导航是否在追踪查询里加载过；加载过时给出当时的子对象。</summary>
     public bool TryGetLoaded(object owner, string navigation, out IReadOnlyList<object> children)
     {
         children = [];
-        return _current.Value is { Depth: > 0 } state && state.Loaded.TryGetValue(owner, out var navigations)
-            && navigations.TryGetValue(navigation, out children!);
+        if (_current.Value is not { Depth: > 0 } state) return false;
+        lock (state) return state.Loaded.TryGetValue(owner, out var navigations) && navigations.TryGetValue(navigation, out children!);
     }
 
     /// <summary>父实体在追踪查询里加载过的导航名，按加载的先后（Java 按 include 的顺序处理导航）。</summary>
-    public IReadOnlyList<string> LoadedNavigations(object owner) =>
-        _current.Value is { Depth: > 0 } state && state.Loaded.TryGetValue(owner, out var navigations) ? [.. navigations.Keys] : [];
+    public IReadOnlyList<string> LoadedNavigations(object owner)
+    {
+        if (_current.Value is not { Depth: > 0 } state) return [];
+        lock (state) return state.Loaded.TryGetValue(owner, out var navigations) ? [.. navigations.Keys] : [];
+    }
 
     /// <summary>追踪键（实体类型 + 主键值）；主键为 null 时返回 null。</summary>
     public string? TrackKeyOf(object entity)
@@ -119,8 +134,11 @@ internal sealed class Tracker(MetadataRegistry metadata)
     }
 
     /// <summary>按追踪键找已追踪的实体。</summary>
-    public TrackedEntry? FindByKey(string key) =>
-        _current.Value is { Depth: > 0 } state && state.Entries.TryGetValue(key, out var entry) ? entry : null;
+    public TrackedEntry? FindByKey(string key)
+    {
+        if (_current.Value is not { Depth: > 0 } state) return null;
+        lock (state) return state.Entries.TryGetValue(key, out var entry) ? entry : null;
+    }
 
     // 类型 + 各主键值；主键为 null 的实体没法追踪
     private static string KeyOf(EntityMetadata meta, object entity)
@@ -130,6 +148,7 @@ internal sealed class Tracker(MetadataRegistry metadata)
         return meta.Type.FullName + ":" + string.Join(",", values.Select(v => Convert.ToString(v, System.Globalization.CultureInfo.InvariantCulture)));
     }
 
+    // 作用域里的并行查询（Task.WhenAll 等）共用同一个 State，读写都要加锁
     private sealed class State
     {
         public int Depth { get; set; }
