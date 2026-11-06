@@ -632,7 +632,7 @@ SELECT `id`,`name` FROM `t_tag` ORDER BY `id` ASC LIMIT 4 OFFSET 4;
 - 投影里有带出（集合导航、`Select<TDto>()` 的嵌套 DTO）时不能 `AsAsyncEnumerable()`，要用 `ToListAsync()`。
 - `MaxResultSize(n)`：结果超过 n 行时抛 `ResultSizeLimitException`，防止误查整张大表。
 - `SelectMany` 之外的 LINQ 方法（`Zip`、`Aggregate` 等）不支持；不支持的写法在翻译时抛 `NotSupportedException`，消息里带原表达式。
-- DTO 自动映射只认同名属性和 `[MapPath]`；不会把 `CompanyName` 自动拆成 `Company.Name`。
+- DTO 自动映射只认同名属性和 `[MapPath]`，不按名字猜导航路径（`CompanyName` 不会自动对应 `Company.Name`，与 Java 的 `selectAutoInclude` 一致）：平铺的属性要写 `[MapPath("Company.Name")]`。
 
 ## 对应 Java
 
