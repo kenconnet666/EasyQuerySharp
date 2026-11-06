@@ -98,6 +98,8 @@ public class PostgreSqlDialect : SqlDialect
         f[SqlFunctionNames.Ceiling] = Call("CEILING");
         // PostgreSQL 没有 INSTR；C# 的 IndexOf 是 0 起点，翻译时再减 1（与 Java 的 PgSQLIndexOfSQLFunction 一致）
         f[SqlFunctionNames.IndexOf] = Call("STRPOS");
+        // PG 只有 log(numeric, numeric)，没有双精度的两参数版本
+        f[SqlFunctionNames.LogBase] = Template("LOG(({1})::numeric,({0})::numeric)");
         // JSON：列须是 json / jsonb（与 Java 的 PgSQLJSON*SQLFunction 一致）
         f[SqlFunctionNames.JsonGet] = Template("({0} -> '{1}')");
         f[SqlFunctionNames.JsonGetIndex] = Template("({0} -> {1})");

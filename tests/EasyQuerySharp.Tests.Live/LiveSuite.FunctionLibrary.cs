@@ -58,8 +58,8 @@ public abstract partial class LiveSuite
         Assert.Equal(10m, await db.Query<Post>().Where(p => p.Title == "orm tips").Select(p => Math.Truncate(p.Amount)).SingleAsync(Ct));
     }
 
-    // C# 的 Math.Log(x, newBase) 与 SQL 的 LOG(base, x) 参数顺序相反：10.5 - 2.5 = 8 的以 2 为底的对数应是 3
-    [Fact(Skip = "疑似缺陷：Math.Log(x, newBase) 原样渲染成 LOG(x, newBase)，各库的 LOG 都是底数在前（SQLite 上得到 0.333 而不是 3）")]
+    // C# 的 Math.Log(x, newBase) 与多数库的 LOG(base, x) 参数顺序相反：10.5 - 2.5 = 8 的以 2 为底的对数是 3
+    [Fact]
     public async Task ComputesLogarithmsWithABase()
     {
         var db = await SeededAsync();
@@ -122,8 +122,8 @@ public abstract partial class LiveSuite
         Assert.Equal(["orm tips,sql 100%", "orm_v2,hello", null], users.Select(r => r.Value1));
     }
 
-    // 倒序拼接：ORDER BY 要写进聚合函数里才能决定拼接顺序
-    [Fact(Skip = "疑似缺陷：集合导航上的 string.Join 把 ORDER BY 写在聚合子查询末尾（SQLite 渲染成 SELECT GROUP_CONCAT(..) FROM .. ORDER BY ..），不影响拼接顺序")]
+    // 倒序拼接：ORDER BY 写进聚合函数里才能决定拼接顺序
+    [Fact]
     public async Task JoinsStringsInDescendingOrderOnNavigations()
     {
         var db = await SeededAsync();
@@ -137,6 +137,7 @@ public abstract partial class LiveSuite
     [Fact]
     public async Task RunsJsonFunctions()
     {
+        SkipUnless(Options.JsonOnTextColumn, "在文本列上用 JSON 函数");
         var db = await SeededAsync();
         var rows = await db.Query<User>().OrderBy(u => u.Id)
             .Select(u => new Draft<string?, bool, int>(Sql.Json(u.Attrs).Get("tags").Text(0), Sql.Json(u.Attrs).ContainsKey("tags"), Sql.Json(u.Attrs).Get("tags").Length()))

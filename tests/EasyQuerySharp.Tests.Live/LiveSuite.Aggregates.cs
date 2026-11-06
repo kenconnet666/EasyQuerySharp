@@ -27,12 +27,13 @@ public abstract partial class LiveSuite
         Assert.Equal(0L, await none.Select(p => Sql.CountDistinct(p.UserId)).SingleAsync(Ct));
     }
 
-    // 限条数的查询做聚合：聚合先于 LIMIT 算完，结果是整表的和而不是前两行的和，TS 版直接拒绝这种写法
-    [Fact(Skip = "疑似缺陷：Query.Take(2).SumAsync(..) 渲染成 SELECT SUM(amount) FROM t_post LIMIT 2，静默返回整表的和（2014.75）；既不拒绝，也不先限条数再聚合（2010.50）")]
-    public async Task RefusesAggregatesCombinedWithTake()
+    // 限条数的查询做聚合：先取出前两行再求和（TS 版直接拒绝这种写法），不是整表的和
+    [Fact]
+    public async Task AggregatesOnlyTheTakenRows()
     {
         var db = await SeededAsync();
-        await Assert.ThrowsAnyAsync<Exception>(() => db.Query<Post>().OrderBy(p => p.Id).Take(2).SumAsync(p => p.Amount, Ct));
+        Assert.Equal(2010.50m, await db.Query<Post>().OrderBy(p => p.Id).Take(2).SumAsync(p => p.Amount, Ct));
+        Assert.Equal(2, await db.Query<Post>().OrderBy(p => p.Id).Take(2).CountAsync(Ct));
     }
 
     // decimal 列与数字、小数字面量、别的列做运算；也能用在更新的 SET 里

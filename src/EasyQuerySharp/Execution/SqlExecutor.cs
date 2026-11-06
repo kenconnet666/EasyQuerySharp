@@ -236,6 +236,8 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
         {
             e.Exception = ex;
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            // 取消原样抛出，调用方照常按 OperationCanceledException 处理；其余失败包上语句
+            if (ex is OperationCanceledException) throw;
             var batch = statements.Count > 1 ? $"（批量 {statements.Count} 条）" : "";
             throw new EasyQueryException($"执行 SQL 失败{batch}：{ex.Message}{Environment.NewLine}{statement.Text}", statement, ex);
         }
@@ -284,6 +286,7 @@ internal sealed class SqlSession(EasyDb db, DbConnection connection, DbTransacti
             e.Exception = ex;
             e.Elapsed = stopwatch.Elapsed;
             foreach (var l in db.Options.Listeners) l.OnExecuted(e);
+            if (ex is OperationCanceledException) throw;
             throw new EasyQueryException($"执行 SQL 失败：{ex.Message}{Environment.NewLine}{statement.Text}", statement, ex);
         }
         long rows = 0;

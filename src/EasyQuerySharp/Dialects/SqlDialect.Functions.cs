@@ -67,6 +67,7 @@ public abstract partial class SqlDialect
         f[SqlFunctionNames.IndexOf] = Call("INSTR");
         f[SqlFunctionNames.Ceiling] = Call("CEIL");
         f[SqlFunctionNames.Ln] = Call("LN");
+        f[SqlFunctionNames.LogBase] = Reordered("LOG", 1, 0);
         f[SqlFunctionNames.Truncate] = WithDigits("TRUNC");
         f[SqlFunctionNames.CountDistinct] = Distinct("COUNT");
         f[SqlFunctionNames.SumDistinct] = Distinct("SUM");
@@ -87,7 +88,8 @@ public abstract partial class SqlDialect
                 DatePart.IsoDayOfWeek => "(CASE WHEN extract(dow from ({0})::timestamp) = 0 THEN 7 ELSE extract(dow from ({0})::timestamp) END)",
                 _ => "extract(" + Lower(part) + " from ({0})::timestamp)",
             },
-            unit => "(extract(epoch from ({1})::timestamp-({0})::timestamp)" + unit switch
+            // Java 写 (…)::int，::int 是四舍五入；这里先 trunc，与其余方言一样截断（5.5 小时算 5）
+            unit => "trunc(extract(epoch from ({1})::timestamp-({0})::timestamp)" + unit switch
             {
                 DateUnit.Day => "/86400", DateUnit.Hour => "/3600", DateUnit.Minute => "/60", DateUnit.Second => "", _ => "*1000",
             } + ")::int");

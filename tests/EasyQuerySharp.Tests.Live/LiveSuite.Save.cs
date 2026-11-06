@@ -102,8 +102,8 @@ public abstract partial class LiveSuite
         Assert.Equal(0, await db.Query<MemberNote>().CountAsync(Ct));
     }
 
-    // 自关联的导航（部门的下级部门）：新根带着同类型的子对象保存，子对象应当一并插入
-    [Fact(Skip = "疑似缺陷：根与子对象同类型的导航（Dept.Children，Cascade.Delete）保存新根时只插入根，Children 里的新部门被静默丢弃（SQLite 上只发出一条 INSERT）")]
+    // 自关联的导航（部门的下级部门）：新根带着同类型的子对象保存，子对象一并插入（再往下一层不级联，与 Java 一致）
+    [Fact]
     public async Task SavesNewChildrenOfTheSameEntityType()
     {
         var db = await SeededAsync();

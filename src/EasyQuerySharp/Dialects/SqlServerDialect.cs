@@ -61,6 +61,14 @@ public class SqlServerDialect : SqlDialect
         _ => base.ClrColumnType(type, column),
     };
 
+    /// <summary>带组内排序的字符串聚合：<c>STRING_AGG(x, ?) WITHIN GROUP (ORDER BY …)</c>（与 Java 一致）。</summary>
+    public override void WriteOrderedStringJoin(SqlRenderer renderer, OrderedStringJoinExpr join)
+    {
+        renderer.Append(join.Distinct ? "STRING_AGG(DISTINCT " : "STRING_AGG(").Write(join.Value).Append(", ").Write(join.Separator).Append(") WITHIN GROUP (");
+        WriteOrderBy(renderer, join.Orders);
+        renderer.Append(")");
+    }
+
     /// <summary>SQL Server 没有 FOR UPDATE（用表提示 WITH (UPDLOCK, ROWLOCK)），NOWAIT / SKIP LOCKED 也一样，不能悄悄忽略（与 Java 一致）。</summary>
     public override void WriteLock(SqlRenderer renderer, RowLock rowLock) =>
         throw new NotSupportedException("SQL Server 不支持 FOR UPDATE 语法，请改用表提示 WITH (UPDLOCK, ROWLOCK)");
@@ -261,6 +269,7 @@ public class SqlServerDialect : SqlDialect
         f[SqlFunctionNames.IndexOf] = Reordered("CHARINDEX", 1, 0);
         f[SqlFunctionNames.Ceiling] = Call("CEILING");
         f[SqlFunctionNames.Ln] = Call("LOG");
+        f[SqlFunctionNames.LogBase] = Call("LOG");
         f[SqlFunctionNames.MaxColumns] = ValuesExtreme("MAX");
         f[SqlFunctionNames.MinColumns] = ValuesExtreme("MIN");
         f[SqlFunctionNames.DateFormat] = WriteDateFormat;

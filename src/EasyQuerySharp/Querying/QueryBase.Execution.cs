@@ -195,7 +195,7 @@ public abstract partial class QueryBase<TSelf, TElement>
                 return select;
             }
         }
-        var state = State.Distinct || State.Offset is not null || State.Limit is not null ? State.Wrap() : ForAggregate();
+        var state = Aggregated();
         var frame = QueryCompiler.Build(state with { OrderBys = [] });
         // 排序、投影里的导航在 Java 里已经建了表（隐式 JOIN、分组合并）：计数去掉排序与投影后主表仍带别名 t。
         // 是否建表要看完整查询翻译出的 JOIN，只在确实去掉了东西时多翻译一次
@@ -271,10 +271,13 @@ public abstract partial class QueryBase<TSelf, TElement>
         ? State.Wrap()
         : State with { Selector = null };
 
+    // 计数与聚合：去重、取段之后的行先包成派生表再算（SELECT SUM(..) FROM (… LIMIT n) t1），否则 LIMIT 作用在聚合结果上
+    private QueryState Aggregated() => State.Distinct || State.Offset is not null || State.Limit is not null ? State.Wrap() : ForAggregate();
+
     /// <summary>执行一个只取一个值的聚合：<c>SELECT FUNC(expr) …</c>。</summary>
     private protected async Task<TResult> AggregateAsync<TResult>(string function, LambdaExpression selector, CancellationToken ct)
     {
-        var frame = QueryCompiler.Build(ForAggregate() with { OrderBys = [] });
+        var frame = QueryCompiler.Build(Aggregated() with { OrderBys = [] });
         frame.Translator.Bind(selector, frame.Bindings);
         var value = frame.Translator.Translate(selector.Body);
         frame.Query.Columns.Add(new SelectColumn(new FunctionExpr(function, [value]), null));

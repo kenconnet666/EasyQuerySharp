@@ -71,6 +71,14 @@ public class OracleDialect : SqlDialect
     /// <inheritdoc />
     public override string RecursiveWith => "WITH ";
 
+    /// <summary>带组内排序的字符串聚合：<c>LISTAGG(TO_CHAR(x), ?) WITHIN GROUP(ORDER BY …)</c>（与 Java 一致）。</summary>
+    public override void WriteOrderedStringJoin(SqlRenderer renderer, OrderedStringJoinExpr join)
+    {
+        renderer.Append(join.Distinct ? "LISTAGG(DISTINCT TO_CHAR(" : "LISTAGG(TO_CHAR(").Write(join.Value).Append("), ").Write(join.Separator).Append(") WITHIN GROUP(");
+        WriteOrderBy(renderer, join.Orders);
+        renderer.Append(")");
+    }
+
     /// <summary>递归 CTE 必须写列名清单（否则 ORA-32039）。</summary>
     public override bool RecursiveCteColumnList => true;
 

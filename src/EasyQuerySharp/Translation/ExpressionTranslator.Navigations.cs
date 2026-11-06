@@ -45,6 +45,8 @@ internal sealed partial class ExpressionTranslator
         // 起点可以是实体表，也可以是整行实体的派生表（如集合导航的 First() 行）
         if (m.Expression is null || BindingOf(m.Expression) is not { OwnerEntity: { } entity } owner) return null;
         if (Context?.Metadata.FindNavigation(entity, m.Member.Name) is not { IsCollection: false } nav) return null;
+        if (nav.Limit is not null && nav.DirectPath.Count == 0)
+            return options == default ? LimitedToOne(owner, nav) : throw Unsupported(m, $"声明了条数的导航 {nav} 不支持 Sql.DisableLogicDelete / Sql.AsTable / Sql.AsAlias / Sql.AsTableSegment");
         if (nav.DirectPath.Count == 0) return Context!.JoinFor(owner, nav, options);
         if (options != default) throw Unsupported(m, $"直达导航 {nav} 不支持 Sql.DisableLogicDelete / Sql.AsTable / Sql.AsAlias / Sql.AsTableSegment");
         // 直达导航：沿路径逐级 JOIN（与手写 x.A.B 共用同一组 JOIN）
@@ -192,8 +194,13 @@ internal sealed partial class ExpressionTranslator
         foreach (var op in chain) scope.Apply(op);
         if (scope.Selector is not { } selector) throw Unsupported(call, "string.Join 需要先 Select 出字符串");
         scope.Translator.Bind(selector, [scope.Element]);
-        scope.Query.Columns.Add(new SelectColumn(new FunctionExpr(scope.Distinct ? SqlFunctionNames.StringJoinDistinct : SqlFunctionNames.StringJoin,
-            [scope.Translator.Translate(StripConvert(selector.Body)), separator]), null));
+        var value = scope.Translator.Translate(StripConvert(selector.Body));
+        // 集合上的排序决定拼接顺序，写进聚合函数（子查询自己的 ORDER BY 不影响聚合）
+        SqlExpr joined = scope.Query.OrderBy.Count > 0
+            ? new OrderedStringJoinExpr(value, separator, scope.Distinct, [.. scope.Query.OrderBy])
+            : new FunctionExpr(scope.Distinct ? SqlFunctionNames.StringJoinDistinct : SqlFunctionNames.StringJoin, [value, separator]);
+        scope.Query.OrderBy.Clear();
+        scope.Query.Columns.Add(new SelectColumn(joined, null));
         result = new SubQueryExpr(scope.Query);
         return true;
     }

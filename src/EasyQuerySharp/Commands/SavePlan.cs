@@ -68,9 +68,15 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
             var nav = db.Metadata.FindNavigation(meta, name)!;
             var kind = KindOf(nav, meta);
             if (kind == NavigationKind.Other) continue;
-            // 防环：深度大于 0 时不再回到根类型
-            if (nav.Target.Type == rootType) continue;
             var value = nav.Property.GetValue(entity);
+            // 防环：根以下的对象不再沿回到根类型的导航保存（Java 的 circulateCheck，根自己的这类导航照常保存）；
+            // 里面有新对象时明确报错，不悄悄丢掉
+            if (nav.Target.Type == rootType && depth > 1)
+            {
+                if (Items(value).Any(child => db.Tracker.Find(child) is null))
+                    throw new NotSupportedException($"{meta.Type.Name}.{name} 回到聚合根的类型 {rootType.Name}，只有根上的这条导航随聚合保存：更深层的新对象要单独保存");
+                continue;
+            }
             if (paths is not null)
             {
                 if (depth > paths.Count || !paths[depth - 1].Contains(name)) continue;

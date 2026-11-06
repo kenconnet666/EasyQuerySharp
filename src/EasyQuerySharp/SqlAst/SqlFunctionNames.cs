@@ -153,6 +153,9 @@ public static class SqlFunctionNames
     /// <summary>(x)：以 10 为底的对数。</summary>
     public const string Log10 = "LOG10";
 
+    /// <summary>(x, base)：以 base 为底的对数（C# 的 Math.Log(x, newBase)）。SQL Server 写成 <c>LOG(x, base)</c>，其余底数在前 <c>LOG(base, x)</c>。</summary>
+    public const string LogBase = "LogBase";
+
     /// <summary>(x, [digits])：截断。</summary>
     public const string Truncate = "Truncate";
 

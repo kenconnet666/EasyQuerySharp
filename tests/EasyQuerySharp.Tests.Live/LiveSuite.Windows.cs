@@ -25,7 +25,7 @@ public abstract partial class LiveSuite
     }
 
     // 不带任何列引用的窗口函数（COUNT(*) OVER ()）写在投影里：翻译器按"没有查询参数"在客户端求值，抛出"只能写在查询表达式里"
-    [Fact(Skip = "疑似缺陷：ClientEvaluator 只把声明在 Sql 上的方法当标记，Sql.Over.Count(w => w) 这类没有列引用的调用被当成客户端常量求值")]
+    [Fact]
     public async Task CountsAllRowsWithAWindowThatReferencesNoColumn()
     {
         var db = await SeededAsync();

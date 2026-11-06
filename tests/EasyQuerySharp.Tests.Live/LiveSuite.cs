@@ -34,6 +34,9 @@ public sealed record LiveSuiteOptions
 
     /// <summary>MariaDB 11.4 的 bug：ROW_NUMBER()（倒序）、COUNT(*) OVER () 与 LAG() 在同一条语句里时 LAG 算错。</summary>
     public bool MixedWindowLag { get; init; } = true;
+
+    /// <summary>JSON 函数直接用在文本列上（模型里 JSON 列统一是 VARCHAR）：PostgreSQL 的 -&gt; / JSONB_EXISTS 要求 json / jsonb 列（与 Java 一样不加转换）。</summary>
+    public bool JsonOnTextColumn { get; init; } = true;
 }
 
 /// <summary>

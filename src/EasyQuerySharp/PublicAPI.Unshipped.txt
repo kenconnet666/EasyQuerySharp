@@ -1690,6 +1690,7 @@ const EasyQuerySharp.SqlAst.SqlFunctionNames.JsonTextIndex = "JsonTextIndex" -> 
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Length = "Length" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Ln = "Ln" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Log10 = "LOG10" -> string!
+const EasyQuerySharp.SqlAst.SqlFunctionNames.LogBase = "LogBase" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Lower = "LOWER" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Max = "MAX" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.MaxColumns = "MaxColumns" -> string!
@@ -1761,6 +1762,7 @@ override EasyQuerySharp.Dialects.OracleDialect.WriteJoinedDelete(EasyQuerySharp.
 override EasyQuerySharp.Dialects.OracleDialect.WriteJoinedUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
 override EasyQuerySharp.Dialects.OracleDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
 override EasyQuerySharp.Dialects.OracleDialect.WriteOrderByItem(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderByItem! item) -> void
+override EasyQuerySharp.Dialects.OracleDialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
 override EasyQuerySharp.Dialects.OracleDialect.WritePagedSelect(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query, System.Action! writeUnpaged) -> void
 override EasyQuerySharp.Dialects.PostgreSqlDialect.CastTemplate(System.Type! targetType) -> string!
 override EasyQuerySharp.Dialects.PostgreSqlDialect.ClrColumnType(System.Type! type, EasyQuerySharp.Metadata.ColumnMetadata! column) -> string!
@@ -1791,6 +1793,7 @@ override EasyQuerySharp.Dialects.SqlServerDialect.WriteJoinedDelete(EasyQuerySha
 override EasyQuerySharp.Dialects.SqlServerDialect.WriteJoinedUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
 override EasyQuerySharp.Dialects.SqlServerDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
 override EasyQuerySharp.Dialects.SqlServerDialect.WriteLock(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.RowLock rowLock) -> void
+override EasyQuerySharp.Dialects.SqlServerDialect.WriteOrderedStringJoin(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.OrderedStringJoinExpr! join) -> void
 override EasyQuerySharp.Dialects.SqlServerDialect.WritePaging(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
 override EasyQuerySharp.Dialects.SqlServerDialect.WriteSelectHead(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! query) -> void
 override EasyQuerySharp.Dialects.SqliteDialect.CastTemplate(System.Type! targetType) -> string!

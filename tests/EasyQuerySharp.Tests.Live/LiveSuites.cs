@@ -55,6 +55,7 @@ public sealed class PostgreSqlLiveSuite : LiveSuite
 {
     protected override TestDatabase Database => TestDatabases.PostgreSql;
     protected override SqlDialect Dialect => PostgreSqlDialect.Instance;
+    protected override LiveSuiteOptions Options { get; } = new() { JsonOnTextColumn = false };
     protected override Task<string> ConnectionStringAsync() =>
         LiveDatabase.EnsureAsync(Database, "SELECT 1", "SELECT 1 FROM pg_database WHERE datname = 'eqs_live'", "CREATE DATABASE eqs_live");
 }

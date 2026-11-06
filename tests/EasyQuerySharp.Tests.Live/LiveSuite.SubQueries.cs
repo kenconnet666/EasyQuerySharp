@@ -55,7 +55,7 @@ public abstract partial class LiveSuite
     }
 
     // 同一个导航写在查询里（隐式 JOIN）：应当读起来像对一，每个用户一行
-    [Fact(Skip = "疑似缺陷：一对一导航上的 OrderBy + Limit 只在 Include 里生效，隐式 JOIN 仍是普通 LEFT JOIN，u.LatestPost.Title 让每个有多篇帖子的用户出现多行")]
+    [Fact]
     public async Task ReadsTheLatestRowOfAToManyRelationInQueries()
     {
         var db = await SeededAsync();

@@ -117,6 +117,8 @@ public class DuckDbDialect : PostgreSqlDialect
         f[SqlFunctionNames.PadRight] = Pad("RPAD", "' '");
         // C# 的 IndexOf 是 0 起点，翻译时再减 1（与 Java 的 DuckDBSQLIndexOfSQLFunction 一致）
         f[SqlFunctionNames.IndexOf] = Call("STRPOS");
+        // DuckDB 的 numeric 默认是 DECIMAL(18,3)，不沿用 PostgreSQL 的 ::numeric 写法
+        f[SqlFunctionNames.LogBase] = Reordered("LOG", 1, 0);
         // JSON：DuckDB 的 JSON 扩展没有 PostgreSQL 的 jsonb_*，用 json_array_length / json_exists（Java 照搬了 jsonb 函数，在 DuckDB 上不存在）
         f[SqlFunctionNames.JsonLength] = Call("json_array_length");
         f[SqlFunctionNames.JsonContainsKey] = Template("json_exists({0}, '$.{1}')");

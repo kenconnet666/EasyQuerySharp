@@ -96,7 +96,9 @@ internal static class ClientEvaluator
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            if (node.Method.DeclaringType == typeof(Sql)) _found = true;
+            // Sql 与它的嵌套类（Sql.Over、Sql.MySql …）上的方法都只能翻译成 SQL
+            for (var type = node.Method.DeclaringType; type is not null && !_found; type = type.DeclaringType)
+                _found = type == typeof(Sql);
             return base.VisitMethodCall(node);
         }
     }

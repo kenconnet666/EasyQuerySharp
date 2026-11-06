@@ -33,7 +33,20 @@ internal sealed partial class ExpressionTranslator
         var predicate = !elementAt && call.Arguments.Count > 1 ? Lambda(call.Arguments[1]) : null;
         var key = string.Join("|", chain.Select(op => op.Method.Name + ":" + (op.Arguments.Count > 1 ? GroupJoinKey(Lambda(op.Arguments[1])) : "")))
                   + "|" + (predicate is null ? "" : GroupJoinKey(predicate)) + "|" + nav.Property.Name + "#" + index;
-        return Context.ElementJoinFor(owner, key, nav.Required, context =>
+        return PartitionedRow(owner, nav, chain, predicate, index, key);
+    }
+
+    /// <summary>
+    /// 声明了条数的对一导航（<c>[Navigate(OneToOne, OrderBy = …, Limit = 1)]</c>，Java 的 OneToOne + orderByProps + limit，如“最新的一条”）
+    /// 在查询里：与 <c>First()</c> 一样按所属行分区取第 Offset + 1 行，每个所属行最多连上一行（与 Java 一致）。
+    /// </summary>
+    private DerivedBinding LimitedToOne(SourceBinding owner, NavigationMetadata nav) =>
+        PartitionedRow(owner, nav, [], null, nav.Offset ?? 0, nav.Property.Name + "#navigate");
+
+    // 按所属行分区编行号、取第 index + 1 行的派生表；chain 是取行之前的 Where / OrderBy，key 区分同一所属行上的不同取法
+    private DerivedBinding PartitionedRow(SourceBinding owner, NavigationMetadata nav, IReadOnlyList<MethodCallExpression> chain, LambdaExpression? predicate, int index, string key)
+    {
+        return Context!.ElementJoinFor(owner, key, nav.Required, context =>
         {
             var element = new EntityTableSource(nav.Target);
             var inner = new SelectQuery(element);
