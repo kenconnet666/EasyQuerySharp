@@ -15,7 +15,7 @@
 
 ## 现状（2026-11-06）
 
-- 对标：已移植 1814、偏离 140、不适用 137、骨架 6、待做 307。
+- 对标：已移植 1815、偏离 140、不适用 136、骨架 6、待做 307。
 - 待做的分布：方言 206，平台能力 82（分库分表 48、code-first 14、表名 / schema / link 14、按对象筛选 6），其余零散 19。
 - 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
 
@@ -84,7 +84,7 @@ R → 1 → 2 → 3 → 4 → 5。
 - [x] 1.4 不追踪时的差异更新 `db.Update(after).Changes(before)`：只写两份之间不同的列，没有不同就不发语句；`WhereColumns` 的定位值取修改前的。
 - [x] 1.5 批量写入 `.Batch()`（实体与字典的插入、更新、删除）：按 SQL 分组，组按首次出现的顺序、每组最多 1000 条（与 Java 一致）；驱动支持 `DbBatch` 时交给它（Npgsql 一组一个往返；MySqlConnector 对 MySQL 不省往返），否则同连接逐条执行（SQLite）；监听器每组一次，`SqlExecutionEvent.Statements` 是整组。不在事务里时每组在自己的事务里执行，整组成败一致，MySQL 也免了逐条提交的刷盘（1.8 万行回填自增键从 2 分 40 秒降到 5 秒）。回填自增键：语句自带 RETURNING / OUTPUT 的直接读，MySQL 在每条插入后跟一条 `LAST_INSERT_ID()`。5 条批量偏离改回已移植，InsertTest1 testInsert 移植；insertBatch 仍是偏离（Java 返回 JDBC 的 -3）。
 - [x] 1.6 `Returning()`：按条件的更新 / 删除加 `.Returning()`（整行，`RETURNING *`）或 `.Returning(选择器)`（只取选择器用到的列，读回后在内存里投影），得到 `ReturningCommand`（`ToSql` / `ExecuteAsync`）；逻辑删除返回被标记的行。PostgreSQL、SQLite 支持，其余方言、走导航连接、按实体写入都拒绝。fork ReturningSqlTest ×2、ReturningLiveTest 移植。
-- [ ] 1.7 窗口取值函数省略排序时，沿用查询的 ORDER BY；做完后 MySQL8Test3 nextTest3 的偏离改回已移植。
+- [x] 1.7 窗口取值函数（Lag / Lead / FirstValue / LastValue / NthValue）不带窗口或窗口没写排序时，沿用所在查询的 ORDER BY（翻译时的快照，与 Java 的 `offset()` 一致），查询没有排序时报错；这类查询深分页时不反转排序。nextTest3 改回已移植，nextTest2 由不适用改为偏离（只差异常文本）。
 - [ ] 1.8 零散用例：
   - RelationTest testOneToOne（include2 按路径带出多段、各段带条件，再 select 到 VO）；
   - QueryTestRelationTest testRelation（Include 的配置并入平铺带出、分页后再按段取）；

@@ -32,7 +32,7 @@
 | JSON 函数 | `func.json` | 12 | `Sql.Json(u.Attrs).Get / Text / Value<T> / Length / ContainsKey`；方言专属的在 `Sql.MySql.Json(..)` / `Sql.Pg.Jsonb(..)` 下 | 完成 |
 | 数学函数 | `func.math` | 4 | 映射 `Math.Abs` / `Round` / `Floor` / `Ceiling` / `Pow` / `Sqrt` / `Sign` / `Log` / `Exp` / `Truncate` | 完成 |
 | CASE WHEN | `expr.case` | 27 | 三元表达式（多分支写成嵌套三元），渲染成 `CASE WHEN … THEN … ELSE … END`；聚合加过滤：`g.Count(p => p.Paid)` | 完成 |
-| 窗口函数 | `window` | 44 | `Sql.Over.RowNumber(w => w.PartitionBy(p.UserId).OrderBy(p.Id))`；`Lag` / `Lead` / `FirstValue` / `NthValue` / `Ntile` / `PercentRank` / `CumeDist`，支持 frame；取值函数省略排序时沿用查询的 ORDER BY 在阶段 1 | 阶段 1 |
+| 窗口函数 | `window` | 44 | `Sql.Over.RowNumber(w => w.PartitionBy(p.UserId).OrderBy(p.Id))`；`Lag` / `Lead` / `FirstValue` / `NthValue` / `Ntile` / `PercentRank` / `CumeDist`，支持 frame；取值函数不带窗口或窗口没写排序时沿用查询的 ORDER BY（`Sql.Over.Lag(p.Views, 1)`），查询没有排序时报错 | 完成 |
 | 行锁 | `lock` | 28 | `.ForUpdate()` / `.ForUpdateNoWait()` / `.ForUpdateSkipLocked()`：只能在事务里、对单表调用；SQL Server、SQLite 渲染时抛 NotSupportedException。Java 没有 FOR SHARE，不做；其余方言的冒烟用例随阶段 2、3 | 阶段 2、3 |
 
 ## 导航与对象树（[0002](decisions/0002-object-tree-and-dto.md)）

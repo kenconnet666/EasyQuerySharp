@@ -202,20 +202,31 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
         listen.AssertSql("SELECT t.`type` AS `value1`,LAG(t.`type`, 1) OVER (ORDER BY t.`type` ASC,t.`code` DESC) AS `value2`,FIRST_VALUE(t.`open_time`) OVER (ORDER BY t.`type` ASC,t.`code` DESC) AS `value3`,LAST_VALUE(t.`open_time`) OVER (PARTITION BY t.`bank_id` ORDER BY t.`type` ASC,t.`code` DESC) AS `value4`,NTH_VALUE(t.`open_time`, 2) OVER (PARTITION BY t.`bank_id` ORDER BY t.`type` ASC,t.`code` DESC) AS `value5` FROM `t_bank_card` t");
     }
 
-    [Fact, Upstream("mysql8/MySQL8Test3.java#nextTest2", NotApplicable = "Java 的 offset() 可以不写窗口、沿用查询的排序，没有排序时运行期报错；C# 的 Sql.Over.Lag / Lead 必须传窗口，编译期就要求写出排序")]
+    // 不带窗口的取值函数沿用查询的 ORDER BY，查询没有排序时报错
+    [Fact, Upstream("mysql8/MySQL8Test3.java#nextTest2", Deviation = "异常类型与文本不同：Java 是 EasyQueryInvalidOperationException 的英文提示")]
     public void NextTest2()
     {
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            Db.Query<SysBankCard>().Select(c => new Draft<string?, string?>(c.Type, Sql.Over.Lag(c.Type, 1))).ToSql());
+        Assert.Contains("所在查询也没有 ORDER BY", ex.Message);
     }
 
-    // Java 的 offset() 不写窗口时沿用查询的 ORDER BY；C# 显式写出同样的窗口
-    [Fact, Upstream("mysql8/MySQL8Test3.java#nextTest3", Deviation = "Java 的 offset() 不写窗口时沿用查询的排序；C# 的 Sql.Over.Lag 显式传同样的窗口，SQL 相同")]
+    [Fact, Upstream("mysql8/MySQL8Test3.java#nextTest3")]
     public async Task NextTest3()
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<SysBankCard>().OrderBy(c => c.OpenTime)
-            .Select(c => new Draft<string?, string?>(c.Type, Sql.Over.Lag(c.Type, 1, w => w.OrderBy(c.OpenTime)))).ToListAsync(Ct);
+            .Select(c => new Draft<string?, string?>(c.Type, Sql.Over.Lag(c.Type, 1))).ToListAsync(Ct);
         listen.AssertSql("SELECT t.`type` AS `value1`,LAG(t.`type`, 1) OVER (ORDER BY t.`open_time` ASC) AS `value2` FROM `t_bank_card` t ORDER BY t.`open_time` ASC");
     }
+
+    // 窗口只写分区时也沿用查询的排序；写了排序就只用窗口自己的
+    [Fact]
+    public void ValueFunctionsInheritTheQueryOrderUnlessTheWindowHasOne() =>
+        Assert.Equal("SELECT FIRST_VALUE(t.`code`) OVER (PARTITION BY t.`bank_id` ORDER BY t.`open_time` DESC) AS `value1`,NTH_VALUE(t.`code`, 2) OVER (ORDER BY t.`open_time` DESC) AS `value2`,LEAD(t.`code`, 1) OVER (ORDER BY t.`code` ASC) AS `value3` FROM `t_bank_card` t ORDER BY t.`open_time` DESC",
+            Db.Query<SysBankCard>().OrderByDescending(c => c.OpenTime)
+                .Select(c => new Draft<string?, string?, string?>(Sql.Over.FirstValue(c.Code, w => w.PartitionBy(c.BankId)), Sql.Over.NthValue(c.Code, 2), Sql.Over.Lead(c.Code, 1, w => w.OrderBy(c.Code))))
+                .ToSql());
 
     // 写法与 Java 不同、SQL 一致：Java 的 firstCard 是 OneToOne + limit 1 + orderByProps 的导航；C# 写成 BankCards.OrderBy(c => c.OpenTime).First()，SQL 相同
     [Fact, Upstream("mysql8/MySQL8Test3.java#testQueryFirstLimit3")]

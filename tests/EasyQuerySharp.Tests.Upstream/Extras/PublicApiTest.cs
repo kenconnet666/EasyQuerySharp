@@ -82,6 +82,18 @@ public sealed class PublicApiTest(MySqlFixture fixture) : MySqlTest(fixture)
         Assert.Contains("ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING", listen.Last.Statement.Text);
     }
 
+    // 沿用查询排序的 LAG 不能随深分页把排序整体反转，否则取到的是下一行
+    [Fact]
+    public async Task InheritedWindowOrderIsNotReversedForDeepPages()
+    {
+        var query = Db.Query<Topic>().OrderBy(t => t.Id).Select(t => new Draft<string?, string?>(t.Id, Sql.Over.Lag(t.Id, 1)));
+        var total = await query.CountAsync(Ct);
+        using var listen = SqlCapture.Listen();
+        var page = await query.ToPageAsync(total / 5, 5, Ct);
+        Assert.EndsWith("ORDER BY t.`id` ASC LIMIT 5 OFFSET " + (total / 5 - 1) * 5, listen.Last.Statement.Text);
+        for (var i = 1; i < page.Rows.Count; i++) Assert.Equal(page.Rows[i - 1].Value1, page.Rows[i].Value2);
+    }
+
     [Fact]
     public void OptionsAreFrozenOnceAnEasyDbUsesThem()
     {

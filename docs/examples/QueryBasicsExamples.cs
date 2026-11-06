@@ -73,6 +73,14 @@ public static class QueryBasicsExamples
             .Select(p => new PostWithAuthor(p.Title, p.Views, p.Author!.Name, p.Author!.Company!.Name))
             .ToListAsync();
 
+    /// <summary>帖子的浏览量与上一篇的浏览量（第一篇是 0）。</summary>
+    public sealed record ViewsChange(string Title, int Views, int PreviousViews);
+
+    [Example("query/basics", "窗口函数：按查询的排序取上一行")]
+    public static Task<List<ViewsChange>> PreviousRow(EasyDb db) =>
+        db.Query<Post>().OrderBy(p => p.PublishedAt).ThenBy(p => p.Id)
+            .Select(p => new ViewsChange(p.Title, p.Views, Sql.Over.Lag(p.Views, 1, 0))).ToListAsync();
+
     /// <summary>门店与它的坐标。</summary>
     public sealed record ShopPoint(string Name, GeoPoint Geo);
 

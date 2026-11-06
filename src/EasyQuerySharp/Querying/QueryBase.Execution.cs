@@ -255,7 +255,8 @@ public abstract partial class QueryBase<TSelf, TElement>
         var take = Math.Min(total - offset, size);
         var threshold = Db.Options.ReverseOffsetThreshold;
         var reverse = threshold > 0 && offset >= threshold && offset > total / 2 && !State.NoReversePaging
-                      && !State.OrderBys.IsEmpty && State.OrderBys.All(Reversible);
+                      && !State.OrderBys.IsEmpty && State.OrderBys.All(Reversible)
+                      && !Translation.ExpressionTranslator.InheritsQueryOrder(State.Selector?.Body);
         return reverse
             ? (State with { OrderBys = [.. State.OrderBys.Select(o => o with { Descending = !o.Descending })], Offset = total - offset - take, Limit = take }, true)
             : (State with { Offset = offset, Limit = take }, false);

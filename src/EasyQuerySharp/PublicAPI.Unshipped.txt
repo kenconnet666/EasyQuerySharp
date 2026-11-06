@@ -1967,14 +1967,21 @@ static EasyQuerySharp.Sql.Over.Count(System.Func<EasyQuerySharp.Window!, EasyQue
 static EasyQuerySharp.Sql.Over.Count<T>(T value, System.Func<EasyQuerySharp.Window!, EasyQuerySharp.Window!>! window) -> long
 static EasyQuerySharp.Sql.Over.CumeDist(System.Func<EasyQuerySharp.Window!, EasyQuerySharp.Window!>! window) -> double
 static EasyQuerySharp.Sql.Over.DenseRank(System.Func<EasyQuerySharp.Window!, EasyQuerySharp.Window!>! window) -> long
+static EasyQuerySharp.Sql.Over.FirstValue<T>(T value) -> T
 static EasyQuerySharp.Sql.Over.FirstValue<T>(T value, System.Func<EasyQuerySharp.Window!, EasyQuerySharp.Window!>! window) -> T
+static EasyQuerySharp.Sql.Over.Lag<T>(T value, int offset) -> T
 static EasyQuerySharp.Sql.Over.Lag<T>(T value, int offset, System.Func<EasyQuerySharp.Window!, EasyQuerySharp.Window!>! window) -> T
+static EasyQuerySharp.Sql.Over.Lag<T>(T value, int offset, T defaultValue) -> T
 static EasyQuerySharp.Sql.Over.Lag<T>(T value, int offset, T defaultValue, System.Func<EasyQuerySharp.Window!, EasyQuerySharp.Window!>! window) -> T
+static EasyQuerySharp.Sql.Over.LastValue<T>(T value) -> T
 static EasyQuerySharp.Sql.Over.LastValue<T>(T value, System.Func<EasyQuerySharp.Window!, EasyQuerySharp.Window!>! window) -> T
+static EasyQuerySharp.Sql.Over.Lead<T>(T value, int offset) -> T
 static EasyQuerySharp.Sql.Over.Lead<T>(T value, int offset, System.Func<EasyQuerySharp.Window!, EasyQuerySharp.Window!>! window) -> T
+static EasyQuerySharp.Sql.Over.Lead<T>(T value, int offset, T defaultValue) -> T
 static EasyQuerySharp.Sql.Over.Lead<T>(T value, int offset, T defaultValue, System.Func<EasyQuerySharp.Window!, EasyQuerySharp.Window!>! window) -> T
 static EasyQuerySharp.Sql.Over.Max<T>(T value, System.Func<EasyQuerySharp.Window!, EasyQuerySharp.Window!>! window) -> T
 static EasyQuerySharp.Sql.Over.Min<T>(T value, System.Func<EasyQuerySharp.Window!, EasyQuerySharp.Window!>! window) -> T
+static EasyQuerySharp.Sql.Over.NthValue<T>(T value, int n) -> T
 static EasyQuerySharp.Sql.Over.NthValue<T>(T value, int n, System.Func<EasyQuerySharp.Window!, EasyQuerySharp.Window!>! window) -> T
 static EasyQuerySharp.Sql.Over.Ntile(int buckets, System.Func<EasyQuerySharp.Window!, EasyQuerySharp.Window!>! window) -> long
 static EasyQuerySharp.Sql.Over.PercentRank(System.Func<EasyQuerySharp.Window!, EasyQuerySharp.Window!>! window) -> double

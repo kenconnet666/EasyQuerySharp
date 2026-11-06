@@ -10,7 +10,8 @@ public static partial class Sql
     ///     .Rows(WindowBound.UnboundedPreceding, WindowBound.CurrentRow))           // 累计
     /// Sql.Over.Lag(b.Star, 1, w =&gt; w.OrderBy(b.CreateTime))                        // 上一行，没有为 NULL
     /// </code>
-    /// 不带窗口参数的重载是整表一个窗口 <c>OVER ()</c>。
+    /// 取值函数（Lag / Lead / FirstValue / LastValue / NthValue）的窗口没写排序、或者用不带窗口的重载时，沿用所在查询的 ORDER BY
+    /// （与 Java 的 <c>offset()</c> 一致，取翻译时的排序）；所在查询没有排序时报错。
     /// </summary>
     public static class Over
     {
@@ -53,11 +54,23 @@ public static partial class Sql
         /// <summary>往前第 <paramref name="offset"/> 行的值，没有时为 NULL（<c>LAG</c>）。</summary>
         public static T Lag<T>(T value, int offset, Func<Window, Window> window) => throw OnlyInQuery();
 
+        /// <summary>按所在查询的排序，往前第 <paramref name="offset"/> 行的值，没有时为 NULL。</summary>
+        public static T Lag<T>(T value, int offset) => throw OnlyInQuery();
+
+        /// <summary>按所在查询的排序，往前第 <paramref name="offset"/> 行的值，没有时取 <paramref name="defaultValue"/>。</summary>
+        public static T Lag<T>(T value, int offset, T defaultValue) => throw OnlyInQuery();
+
         /// <summary>往前第 <paramref name="offset"/> 行的值，没有时取 <paramref name="defaultValue"/>。</summary>
         public static T Lag<T>(T value, int offset, T defaultValue, Func<Window, Window> window) => throw OnlyInQuery();
 
         /// <summary>往后第 <paramref name="offset"/> 行的值，没有时为 NULL（<c>LEAD</c>）。</summary>
         public static T Lead<T>(T value, int offset, Func<Window, Window> window) => throw OnlyInQuery();
+
+        /// <summary>按所在查询的排序，往后第 <paramref name="offset"/> 行的值，没有时为 NULL。</summary>
+        public static T Lead<T>(T value, int offset) => throw OnlyInQuery();
+
+        /// <summary>按所在查询的排序，往后第 <paramref name="offset"/> 行的值，没有时取 <paramref name="defaultValue"/>。</summary>
+        public static T Lead<T>(T value, int offset, T defaultValue) => throw OnlyInQuery();
 
         /// <summary>往后第 <paramref name="offset"/> 行的值，没有时取 <paramref name="defaultValue"/>。</summary>
         public static T Lead<T>(T value, int offset, T defaultValue, Func<Window, Window> window) => throw OnlyInQuery();
@@ -65,10 +78,19 @@ public static partial class Sql
         /// <summary>窗口第一行的值（<c>FIRST_VALUE</c>）。</summary>
         public static T FirstValue<T>(T value, Func<Window, Window> window) => throw OnlyInQuery();
 
+        /// <summary>按所在查询的排序，第一行的值。</summary>
+        public static T FirstValue<T>(T value) => throw OnlyInQuery();
+
         /// <summary>窗口最后一行的值（<c>LAST_VALUE</c>；默认 frame 只到当前行，要整个分区需写 Rows）。</summary>
         public static T LastValue<T>(T value, Func<Window, Window> window) => throw OnlyInQuery();
 
+        /// <summary>按所在查询的排序，到当前行为止最后一行的值（默认 frame）。</summary>
+        public static T LastValue<T>(T value) => throw OnlyInQuery();
+
         /// <summary>窗口第 <paramref name="n"/> 行的值（<c>NTH_VALUE</c>）。</summary>
         public static T NthValue<T>(T value, int n, Func<Window, Window> window) => throw OnlyInQuery();
+
+        /// <summary>按所在查询的排序，第 <paramref name="n"/> 行的值。</summary>
+        public static T NthValue<T>(T value, int n) => throw OnlyInQuery();
     }
 }

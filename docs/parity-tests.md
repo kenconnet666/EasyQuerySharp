@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1814、偏离 140、不适用 137、骨架 6、待做 307。
+合计：已移植 1815、偏离 140、不适用 136、骨架 6、待做 307。
 
 ## 按能力
 
@@ -25,7 +25,7 @@
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
 | 字符串函数 | `func.string` | M2 | 131 | 122 | 4 | 4 | 1 | 0 |
 | 行锁 | `lock` | M2 | 28 | 20 | 1 | 1 | 0 | 6 |
-| 窗口函数 | `window` | M2 | 44 | 42 | 1 | 1 | 0 | 0 |
+| 窗口函数 | `window` | M2 | 44 | 43 | 1 | 0 | 0 | 0 |
 | CTE | `query.cte` | M3 | 11 | 8 | 3 | 0 | 0 | 0 |
 | 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 75 | 6 | 2 | 0 | 0 |
 | 显式 join | `query.join` | M3 | 88 | 83 | 4 | 1 | 0 | 0 |
@@ -485,8 +485,8 @@
 | mysql8/MySQL8Test2.java#testOrderCaseWhen1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:100 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
 | mysql8/MySQL8Test2.java#testOrderCaseWhen2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:110 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
 | mysql8/MySQL8Test2.java#testParentNull | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:120 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
-| mysql8/MySQL8Test3.java#testQueryFirstLimit3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:221 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
-| mysql8/MySQL8Test3.java#testQueryFirstLimit4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:231 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
+| mysql8/MySQL8Test3.java#testQueryFirstLimit3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:232 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
+| mysql8/MySQL8Test3.java#testQueryFirstLimit4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:242 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'i…` |
 | mysql8/MySQL8Test4.java#includeOneTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:268 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
 | mysql8/MySQL8Test4.java#testAll4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:217 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE (EXISTS(SELECT 1 …` |
 | mysql8/MySQL8Test4.java#testAll5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:229 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t LEFT JOIN (SELECT t1.'u…` |
@@ -1201,8 +1201,8 @@
 | mysql8/ManyJoinTest.java#test111 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:484 |  |
 | mysql8/MySQL8Test3.java#nextTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:171 | `SELECT t.'type' AS 'value1',LAG(t.'type', 1) OVER (ORDER BY t.'type' ASC,t.'code' DESC) AS 'value2',…` |
 | mysql8/MySQL8Test3.java#nextTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:190 | `SELECT t.'type' AS 'value1',LAG(t.'type', 1) OVER (ORDER BY t.'type' ASC,t.'code' DESC) AS 'value2',…` |
-| mysql8/MySQL8Test3.java#nextTest2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:205：Java 的 offset() 可以不写窗口、沿用查询的排序，没有排序时运行期报错；C# 的 Sql.Over.Lag / Lead 必须传窗口，编译期就要求写出排序 |  |
-| mysql8/MySQL8Test3.java#nextTest3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:211：Java 的 offset() 不写窗口时沿用查询的排序；C# 的 Sql.Over.Lag 显式传同样的窗口，SQL 相同 | `SELECT t.'type' AS 'value1',LAG(t.'type', 1) OVER (ORDER BY t.'open_time' ASC) AS 'value2' FROM 't_b…` |
+| mysql8/MySQL8Test3.java#nextTest2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:206：异常类型与文本不同：Java 是 EasyQueryInvalidOperationException 的英文提示 |  |
+| mysql8/MySQL8Test3.java#nextTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:214 | `SELECT t.'type' AS 'value1',LAG(t.'type', 1) OVER (ORDER BY t.'open_time' ASC) AS 'value2' FROM 't_b…` |
 | mysql8/MySQL8Test5.java#testOffsetChunk | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:171 |  |
 | pgsql/PartitionByTest.java#testPartitionBy16_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PartitionByTest.cs:18 | `SELECT t1."__part__column1" AS "value1",t1."__part__column2" AS "value2",t1."id" AS "value3" FROM (S…` |
 | pgsql/PartitionByTest.java#testPartitionBy16_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PartitionByTest.cs:31 | `SELECT t1."__part__column1" AS "value1",t1."__part__column2" AS "value2",t1."id" AS "value3" FROM (S…` |
@@ -1414,14 +1414,14 @@
 | QueryTest9.java#selectThrow9 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest9.cs:66：Java 按方法分 First / Single / Find / Required 四种异常，C# 都是 NotFoundException；多于一行时 C# 抛 InvalidOperationException，消息不同 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'del…` |
 | UpdateTest.java#aaaa | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:459：Java 把 BlogEntity 全部列映射到 SysMenuDto（类型并不匹配）；C# 只投影用到的两列 |  |
 | mysql8/CTETest.java#cteTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:77 | `WITH 'm8_user_temp' AS (SELECT t.'id',t.'name' FROM 'm8_user' t WHERE t.'age' IS NULL) SELECT t2.'na…` |
-| mysql8/CrossJoinTest.java#crossJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:369 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t CROSS JOIN 't…` |
+| mysql8/CrossJoinTest.java#crossJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:380 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t CROSS JOIN 't…` |
 | mysql8/MySQL8Test2.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:13 | `SELECT t2.'id',t2.'name',t2.'create_time',t2.'__part__column1' AS '__part__column1' FROM (SELECT t.'…` |
 | mysql8/MySQL8Test2.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:26 | `SELECT t3.'id',t3.'name',t3.'create_time',t3.'__part__column1' AS '__part__column1' FROM (SELECT t.'…` |
 | mysql8/MySQL8Test2.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:46 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t LEFT JOIN (SE…` |
 | mysql8/MySQL8Test2.java#test4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:57 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t LEFT JOIN (SE…` |
 | mysql8/MySQL8Test2.java#test5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:67 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t LEFT JOIN (SE…` |
-| mysql8/MySQL8Test3.java#testDTOWhereToTableWhere | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:349 | `SELECT t2.'name' AS 'name',t2.'phone' AS 'phone',t2.'code2' AS 'code2' FROM (SELECT t.'name' AS 'nam…` |
-| mysql8/MySQL8Test3.java#testDTOWhereToTableWhere1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:359 | `SELECT t2.'name' AS 'name',t2.'phone' AS 'phone',t2.'code2' AS 'code2' FROM (SELECT t.'name' AS 'nam…` |
+| mysql8/MySQL8Test3.java#testDTOWhereToTableWhere | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:360 | `SELECT t2.'name' AS 'name',t2.'phone' AS 'phone',t2.'code2' AS 'code2' FROM (SELECT t.'name' AS 'nam…` |
+| mysql8/MySQL8Test3.java#testDTOWhereToTableWhere1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:370 | `SELECT t2.'name' AS 'name',t2.'phone' AS 'phone',t2.'code2' AS 'code2' FROM (SELECT t.'name' AS 'nam…` |
 | mysql8/MySQL8Test5.java#testWhereJoin | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:157 |  |
 
 ### 无实体的 Map 查询、toMap（`query.map`，M3）
@@ -1515,11 +1515,11 @@
 | mysql8/ManyJoinTest.java#testFlatMenuOwnerFlatValueConverter | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.Flat.cs:129 |  |
 | mysql8/MySQL8Test2.java#includePartitionBy | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:473 | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t` |
 | mysql8/MySQL8Test2.java#includePartitionBy1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:486 | `SELECT t.'id',t.'name',t.'create_time' FROM 't_bank' t` |
-| mysql8/MySQL8Test3.java#testQueryFirstLimit2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:414 | `SELECT t2.'code',t2.'type',t2.'open_time',t2.'uid' AS '__relation__uid' FROM (SELECT t1.'id' AS 'id'…` |
-| mysql8/MySQL8Test3.java#testTree2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:274 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'deep',t1.'id',t1.'parent_id',t1.'content',t1.'user_i…` |
-| mysql8/MySQL8Test3.java#testTree3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:306 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'deep',t1.'id',t1.'parent_id',t1.'content',t1.'user_i…` |
-| mysql8/MySQL8Test3.java#testTree4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:316 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'deep',t1.'id',t1.'parent_id',t1.'content',t1.'user_i…` |
-| mysql8/MySQL8Test3.java#testTree5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:326：异常信息用中文，说明缺的是哪个属性 |  |
+| mysql8/MySQL8Test3.java#testQueryFirstLimit2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:425 | `SELECT t2.'code',t2.'type',t2.'open_time',t2.'uid' AS '__relation__uid' FROM (SELECT t1.'id' AS 'id'…` |
+| mysql8/MySQL8Test3.java#testTree2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:285 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'deep',t1.'id',t1.'parent_id',t1.'content',t1.'user_i…` |
+| mysql8/MySQL8Test3.java#testTree3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:317 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'deep',t1.'id',t1.'parent_id',t1.'content',t1.'user_i…` |
+| mysql8/MySQL8Test3.java#testTree4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:327 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'deep',t1.'id',t1.'parent_id',t1.'content',t1.'user_i…` |
+| mysql8/MySQL8Test3.java#testTree5 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:337：异常信息用中文，说明缺的是哪个属性 |  |
 | mysql8/MySQL8Test5.java#testSysDeptCTE | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test5.cs:312 |  |
 | pgsql/QueryCteTest.java#tree7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:128 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "deep1",t1."id",t1."parent_id",t1."name" FROM "public…` |
 | pgsql/QueryTest19.java#tree7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:128 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "deep1",t1."id",t1."parent_id",t1."name" FROM "catego…` |
@@ -1692,7 +1692,7 @@
 | mysql8/M8IncludeOrderTest.java#testOrder | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8IncludeOrderTest.cs:7 |  |
 | mysql8/M8Test1.java#testRelationColumns1 | 待做 |  | `SELECT 'user_id','user_name','user_age','create_time','book_ids' FROM 'm8_user_book_ids'` |
 | mysql8/M8Test1.java#testSelfTargetTypeDiff | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Test1.cs:67：Java 的异常来自 MySQL 驱动（Cannot determine value type from string 'u1'）；C# 在把父键转成目标列的类型时就抛出 FormatException |  |
-| mysql8/MySQL8Test3.java#testQueryFirstLimit1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:380 | `SELECT t2.'id' AS 'id',t2.'uid' AS 'uid',t2.'code' AS 'code',t2.'type' AS 'type',t2.'bank_id' AS 'ba…` |
+| mysql8/MySQL8Test3.java#testQueryFirstLimit1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:391 | `SELECT t2.'id' AS 'id',t2.'uid' AS 'uid',t2.'code' AS 'code',t2.'type' AS 'type',t2.'bank_id' AS 'ba…` |
 | mysql8/MySQL8Test4.java#includeOneTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:254 | `SELECT 'id','name','phone','age','create_time' FROM 't_sys_user'` |
 | mysql8/MySQL8Test4.java#testAll | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:154 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE NOT (EXISTS(SELEC…` |
 | mysql8/MySQL8Test4.java#testAll1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test4.cs:167 | `SELECT t.'id',t.'name',t.'phone',t.'age',t.'create_time' FROM 't_sys_user' t WHERE NOT (EXISTS(SELEC…` |
@@ -1871,8 +1871,8 @@
 | QueryTest7.java#testCTE7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest7.cs:189 | `WITH RECURSIVE 'abc' AS ( (SELECT 0 AS 'xyz',t1.'id',t1.'stars',t1.'title',t1.'create_time' FROM 't_…` |
 | mysql8/MySQL8Test2.java#cteViewTree1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:383 |  |
 | mysql8/MySQL8Test2.java#cteViewTree2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:394 |  |
-| mysql8/MySQL8Test3.java#testTree | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:245 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'parent_id',t1.'content',t1.'us…` |
-| mysql8/MySQL8Test3.java#testTree_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:265 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'parent_id',t1.'content',t1.'us…` |
+| mysql8/MySQL8Test3.java#testTree | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:256 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'parent_id',t1.'content',t1.'us…` |
+| mysql8/MySQL8Test3.java#testTree_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:276 | `WITH RECURSIVE 'as_tree_cte' AS ( (SELECT 0 AS 'cte_deep',t1.'id',t1.'parent_id',t1.'content',t1.'us…` |
 | pgsql/QueryTest19.java#cteViewTree1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:383：PostgreSQL 版的同一用例（只执行不断言）；视图实体的表只建在 MySQL 夹具里，在这里一并验证 |  |
 | pgsql/QueryTest19.java#testToTreeList | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:21 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |
 | pgsql/QueryTest19.java#testToTreeList2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19.cs:33 | `WITH RECURSIVE "as_tree_cte" AS ( (SELECT 0 AS "cte_deep",t1."id",t1."parent_id",t1."name" FROM "cat…` |

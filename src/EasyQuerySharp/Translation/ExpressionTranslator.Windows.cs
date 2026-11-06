@@ -6,12 +6,12 @@ namespace EasyQuerySharp.Translation;
 
 internal sealed partial class ExpressionTranslator
 {
-    // Sql.Over.Xxx(..., w => w.PartitionBy(...).OrderBy(...)) → WindowExpr
+    // Sql.Over.Xxx(..., w => w.PartitionBy(...).OrderBy(...)) → WindowExpr；取值函数可以不带窗口
     private WindowExpr TranslateWindow(MethodCallExpression call)
     {
         var args = call.Arguments;
-        var spec = (LambdaExpression)StripConvert(args[^1]);
-        var values = args.Take(args.Count - 1).ToList();
+        var spec = HasWindow(call) ? (LambdaExpression)StripConvert(args[^1]) : null;
+        var values = args.Take(args.Count - (spec is null ? 0 : 1)).ToList();
         var (function, compact) = call.Method.Name switch
         {
             nameof(Sql.Over.RowNumber) => (Head("ROW_NUMBER()"), false),
@@ -35,7 +35,7 @@ internal sealed partial class ExpressionTranslator
         var partitions = new List<SqlExpr>();
         var orders = new List<OrderByItem>();
         string? frame = null;
-        foreach (var step in WindowSteps(spec))
+        foreach (var step in spec is null ? [] : WindowSteps(spec))
         {
             switch (step.Method.Name)
             {
@@ -58,9 +58,41 @@ internal sealed partial class ExpressionTranslator
                     throw Unsupported(step);
             }
         }
+        // 取值函数的窗口没有排序时沿用所在查询的 ORDER BY（Java 的 offset()）：取翻译时的快照
+        if (compact && orders.Count == 0)
+            orders = Context is { Query.OrderBy.Count: > 0 } context
+                ? [.. context.Query.OrderBy]
+                : throw new InvalidOperationException($"{call.Method.Name} 的窗口没有排序，所在查询也没有 ORDER BY：请在窗口里写 OrderBy，或先给查询排序");
         return new WindowExpr(function, partitions, orders, frame, compact);
 
         FragmentExpr Head(string template, params Expression[] arguments) => new(template, arguments.Select(a => Translate(StripConvert(a))).ToList());
+    }
+
+    private static bool HasWindow(MethodCallExpression call) => call.Method.GetParameters()[^1].ParameterType == typeof(Func<Window, Window>);
+
+    /// <summary>
+    /// 表达式里有没有沿用查询排序的取值函数（不带窗口，或窗口里没写排序）：这种查询的排序不能为深分页整体反转，否则 LAG 会变成 LEAD。
+    /// </summary>
+    internal static bool InheritsQueryOrder(Expression? expression) => expression is not null && new QueryOrderFinder().Find(expression);
+
+    private sealed class QueryOrderFinder : ExpressionVisitor
+    {
+        private bool _found;
+
+        public bool Find(Expression expression)
+        {
+            Visit(expression);
+            return _found;
+        }
+
+        protected override Expression VisitMethodCall(MethodCallExpression node)
+        {
+            if (node.Method.DeclaringType == typeof(Sql.Over)
+                && node.Method.Name is nameof(Sql.Over.Lag) or nameof(Sql.Over.Lead) or nameof(Sql.Over.FirstValue) or nameof(Sql.Over.LastValue) or nameof(Sql.Over.NthValue)
+                && (!HasWindow(node) || !WindowSteps((LambdaExpression)StripConvert(node.Arguments[^1])).Any(s => s.Method.Name is nameof(Window.OrderBy) or nameof(Window.OrderByDescending))))
+                _found = true;
+            return base.VisitMethodCall(node);
+        }
     }
 
     // w => w.A().B().C()：从参数往外依次返回 A、B、C
