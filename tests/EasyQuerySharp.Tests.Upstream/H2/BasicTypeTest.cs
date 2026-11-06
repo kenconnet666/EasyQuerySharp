@@ -35,8 +35,7 @@ public sealed class BasicTypeTest(H2Fixture fixture) : H2Test(fixture)
     public async Task BooleanTest1()
     {
         using var listen = SqlCapture.Listen();
-        var value = true;
-        Assert.True(await Db.Query<ALLTYPE>().Select(t => value).FirstAsync(Ct));
+        Assert.True(await Db.Query<ALLTYPE>().Select(t => true).FirstAsync(Ct));
         listen.AssertSql("SELECT ? FROM t_all_type t LIMIT 1");
         listen.AssertParams("true(Boolean)");
     }
@@ -54,8 +53,7 @@ public sealed class BasicTypeTest(H2Fixture fixture) : H2Test(fixture)
     public async Task BooleanTest3()
     {
         using var listen = SqlCapture.Listen();
-        var enable = true;
-        Assert.True(await Db.Query<ALLTYPE>().Where(a => a.EnableBasic == enable).Select(t => t.EnableBasic).FirstAsync(Ct));
+        Assert.True(await Db.Query<ALLTYPE>().Where(a => a.EnableBasic == true).Select(t => t.EnableBasic).FirstAsync(Ct));
         listen.AssertSql("SELECT t.enable_basic FROM t_all_type t WHERE t.enable_basic = ? LIMIT 1");
         listen.AssertParams("true(Boolean)");
     }

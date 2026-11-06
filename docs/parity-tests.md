@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1859、偏离 143、不适用 136、骨架 2、待做 264。
+合计：已移植 1922、偏离 147、不适用 140、骨架 5、待做 190。
 
 ## 按能力
 
@@ -54,7 +54,7 @@
 | 达梦方言 | `dialect.dameng` | M6 | 51 | 0 | 0 | 0 | 0 | 51 |
 | DuckDB 方言 | `dialect.duckdb` | M6 | 16 | 0 | 0 | 0 | 0 | 16 |
 | 方言静态入口与专属函数 | `dialect.functions` | M6 | 25 | 22 | 0 | 0 | 0 | 3 |
-| H2 方言 | `dialect.h2` | M6 | 74 | 0 | 0 | 0 | 0 | 74 |
+| H2 方言 | `dialect.h2` | M6 | 74 | 63 | 4 | 4 | 3 | 0 |
 | SAP HANA 方言 | `dialect.hana` | M6 | 18 | 0 | 0 | 0 | 0 | 18 |
 | 人大金仓方言 | `dialect.kingbase` | M6 | 2 | 0 | 0 | 0 | 0 | 2 |
 | SQL Server 方言 | `dialect.mssql` | M6 | 38 | 37 | 1 | 0 | 0 | 0 |
@@ -2249,80 +2249,80 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| h2/BasicTypeTest.java#booleanTest1 | 待做 |  | `SELECT ? FROM t_all_type t LIMIT 1` |
-| h2/BasicTypeTest.java#booleanTest2 | 待做 |  | `SELECT t.enable FROM t_all_type t WHERE t.enable = ? LIMIT 1` |
-| h2/BasicTypeTest.java#booleanTest3 | 待做 |  | `SELECT t.enable_basic FROM t_all_type t WHERE t.enable_basic = ? LIMIT 1` |
-| h2/BasicTypeTest.java#byteTest1 | 待做 |  | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#byteTest2 | 待做 |  | `SELECT t.number_byte FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#byteTest3 | 待做 |  | `SELECT t.number_byte_basic FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#doubleTest1 | 待做 |  | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#doubleTest2 | 待做 |  | `SELECT t.number_double FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#doubleTest3 | 待做 |  | `SELECT t.number_double_basic FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#floatTest1 | 待做 |  | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#floatTest2 | 待做 |  | `SELECT t.number_float FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#floatTest3 | 待做 |  | `SELECT t.number_float_basic FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#intTest1 | 待做 |  | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#intTest2 | 待做 |  | `SELECT t.number_integer FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#intTest3 | 待做 |  | `SELECT t.number_integer_basic FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#localDateTest1 | 待做 |  | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#localDateTest2 | 待做 |  | `SELECT t.time_local_date FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#localDateTimeTest1 | 待做 |  | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#localDateTimeTest2 | 待做 |  | `SELECT t.time_local_date_time FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#localTimeTest1 | 待做 |  | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#localTimeTest2 | 待做 |  | `SELECT t.time_local_time FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#longTest1 | 待做 |  | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#longTest2 | 待做 |  | `SELECT t.number_long FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#longTest3 | 待做 |  | `SELECT t.number_long_basic FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#shortTest1 | 待做 |  | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#shortTest2 | 待做 |  | `SELECT t.number_short FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#shortTest3 | 待做 |  | `SELECT t.number_short_basic FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#timeTest1 | 待做 |  | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/BasicTypeTest.java#timeTest2 | 待做 |  | `SELECT t.only_time FROM t_all_type t WHERE t.id = ? LIMIT 1` |
-| h2/H2DocTest.java#selectClassTest1 | 待做 |  | `SELECT t.id,t.uid,t.code,t.type,t1.name AS user_name,t2.name AS bank_name FROM doc_bank_card t LEFT …` |
-| h2/H2DocTest.java#selectClassTest2 | 待做 |  | `SELECT t.id,t.uid,t.code,t.type,t1.name AS user_name,t2.name AS bank_name FROM doc_bank_card t LEFT …` |
-| h2/H2DocTest.java#selectClassTest3 | 待做 |  | `SELECT t.id,t.name,t.phone,t.age,(SELECT COUNT(*) FROM doc_bank_card t1 WHERE t1.uid = t.id) AS card…` |
-| h2/H2DocTest.java#selectClassTest4 | 待做 |  | `SELECT t.id,t.name,t.phone,t.age,(SELECT COUNT(*) FROM doc_bank_card t1 WHERE t1.uid = t.id) AS card…` |
-| h2/H2DocTest.java#selectClassTest5 | 待做 |  | `SELECT t.id,t.name,t.phone,t.age,IFNULL(t.age,1) AS card_count FROM doc_user t WHERE t.name LIKE ?` |
-| h2/H2DocTest.java#selectProxyTest1 | 待做 |  | `SELECT t.id,t.uid,t.code,t.type,t1.name AS user_name,t2.name AS bank_name FROM doc_bank_card t LEFT …` |
-| h2/H2DocTest.java#selectProxyTest1_1 | 待做 |  | `SELECT t.id,t.code FROM doc_bank_card t WHERE t.type = ?` |
-| h2/H2DocTest.java#selectProxyTest2 | 待做 |  | `SELECT t.id,t.uid,t.code,t.type,t1.name AS user_name,t2.name AS bank_name FROM doc_bank_card t LEFT …` |
-| h2/H2DocTest.java#selectProxyTest3 | 待做 |  | `SELECT t.id,t.name,t.phone,t.age,(SELECT COUNT(*) FROM doc_bank_card t1 WHERE t1.uid = t.id) AS card…` |
-| h2/H2DocTest.java#selectProxyTest4 | 待做 |  | `SELECT t.id,t.name,t.phone,t.age,(SELECT COUNT(*) FROM doc_bank_card t1 WHERE t1.uid = t.id) AS card…` |
-| h2/H2DocTest.java#selectProxyTest5 | 待做 |  | `SELECT t.id,t.name,t.phone,t.age,IFNULL(t.age,1) AS card_count FROM doc_user t WHERE t.name LIKE ?` |
-| h2/H2DocTest.java#testToOne | 待做 |  | `SELECT id,name,phone,age FROM doc_user WHERE name LIKE ? AND id IS NULL AND id IS NOT NULL` |
-| h2/H2DocTest.java#testToOne1 | 待做 |  | `SELECT t.id,t.uid,t.code,t.type,t.bank_id FROM doc_bank_card t LEFT JOIN doc_user t1 ON t1.id = t.ui…` |
-| h2/H2ForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery | 待做 |  |  |
-| h2/H2ForUpdateTest.java#testForUpdateBlocksConcurrentTransaction | 待做 |  |  |
-| h2/H2ForUpdateTest.java#testForUpdateDerivedCountAndExistsSqlBehaviorConsistent | 待做 |  |  |
-| h2/H2ForUpdateTest.java#testForUpdateDuplicateCallThrows | 待做 |  |  |
-| h2/H2ForUpdateTest.java#testForUpdateJoinNotSupported | 待做 |  |  |
-| h2/H2ForUpdateTest.java#testForUpdateSqlAppendInTransaction | 待做 |  |  |
-| h2/H2ForUpdateTest.java#testForUpdateWithoutTransactionThrows | 待做 |  |  |
-| h2/H2OrderTest.java#test1 | 待做 |  |  |
-| h2/H2OrderTest.java#test2 | 待做 |  |  |
-| h2/H2QueryRelationTest.java#tbTest1 | 待做 |  | `SELECT id,uid,uname,price FROM t_tb_order` |
-| h2/H2QueryTest.java#allTypeTest1 | 待做 |  |  |
-| h2/H2QueryTest.java#allTypeTest1_1 | 待做 |  |  |
-| h2/H2QueryTest.java#allTypeTest1_1_proxy | 待做 |  |  |
-| h2/H2QueryTest.java#allTypeTest1_2 | 待做 |  |  |
-| h2/H2QueryTest.java#allTypeTest1_2_proxy | 待做 |  |  |
-| h2/H2QueryTest.java#allTypeTest1_proxy | 待做 |  |  |
-| h2/H2QueryTest.java#allTypeTestSharding1 | 待做 |  |  |
-| h2/H2QueryTest.java#conditionTest1 | 待做 |  | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
-| h2/H2QueryTest.java#leftJoin1 | 待做 |  | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
-| h2/H2QueryTest.java#leftJoin1_1 | 待做 |  | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
-| h2/H2QueryTest.java#leftJoin2 | 待做 |  | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
-| h2/H2QueryTest.java#leftJoin2_1 | 待做 |  | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
-| h2/H2QueryTest.java#leftJoin3 | 待做 |  | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
-| h2/H2QueryTest.java#leftJoin3_1 | 待做 |  | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
-| h2/H2QueryTest.java#leftJoin4 | 待做 |  | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
-| h2/H2QueryTest.java#leftJoin4_1 | 待做 |  | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
-| h2/H2QueryTest.java#testDDL | 待做 |  | `CREATE TABLE IF NOT EXISTS t_topic ( id VARCHAR(255) NOT NULL , stars INT NULL , title VARCHAR(255) …` |
-| h2/H2QueryTest.java#testDDL2 | 待做 |  | `CREATE TABLE IF NOT EXISTS t_multi_primary ( id1 VARCHAR(255) NOT NULL , id2 VARCHAR(255) NOT NULL ,…` |
-| h2/H2QueryTest.java#testTableCommentDDL | 待做 |  | `CREATE TABLE IF NOT EXISTS t_h2_table_comment ( id VARCHAR(255) NOT NULL COMMENT '主键ID', name VARCHA…` |
-| h2/TreeCTETest.java#tree8 | 待做 |  | `WITH RECURSIVE as_tree_cte(cte_deep,id,parent_id,name) AS ( (SELECT 0 AS cte_deep,t1.id,t1.parent_id…` |
-| h2/v2/H2V2Test.java#testAllType | 待做 |  |  |
-| h2/v2/H2V2Test.java#testAllType1 | 待做 |  |  |
+| h2/BasicTypeTest.java#booleanTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:34 | `SELECT ? FROM t_all_type t LIMIT 1` |
+| h2/BasicTypeTest.java#booleanTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:43 | `SELECT t.enable FROM t_all_type t WHERE t.enable = ? LIMIT 1` |
+| h2/BasicTypeTest.java#booleanTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:52 | `SELECT t.enable_basic FROM t_all_type t WHERE t.enable_basic = ? LIMIT 1` |
+| h2/BasicTypeTest.java#byteTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:130 | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#byteTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:133 | `SELECT t.number_byte FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#byteTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:136 | `SELECT t.number_byte_basic FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#doubleTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:61 | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#doubleTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:64 | `SELECT t.number_double FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#doubleTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:67 | `SELECT t.number_double_basic FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#floatTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:70 | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#floatTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:73 | `SELECT t.number_float FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#floatTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:76 | `SELECT t.number_float_basic FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#intTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:79 | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#intTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:82 | `SELECT t.number_integer FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#intTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:85 | `SELECT t.number_integer_basic FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#localDateTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:112 | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#localDateTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:115 | `SELECT t.time_local_date FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#localDateTimeTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:106 | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#localDateTimeTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:109 | `SELECT t.time_local_date_time FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#localTimeTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:118 | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#localTimeTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:121 | `SELECT t.time_local_time FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#longTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:88 | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#longTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:91 | `SELECT t.number_long FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#longTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:94 | `SELECT t.number_long_basic FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#shortTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:97 | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#shortTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:100 | `SELECT t.number_short FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#shortTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:103 | `SELECT t.number_short_basic FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#timeTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:124 | `SELECT ? FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/BasicTypeTest.java#timeTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/BasicTypeTest.cs:127 | `SELECT t.only_time FROM t_all_type t WHERE t.id = ? LIMIT 1` |
+| h2/H2DocTest.java#selectClassTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2DocTest.cs:13 | `SELECT t.id,t.uid,t.code,t.type,t1.name AS user_name,t2.name AS bank_name FROM doc_bank_card t LEFT …` |
+| h2/H2DocTest.java#selectClassTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2DocTest.cs:39 | `SELECT t.id,t.uid,t.code,t.type,t1.name AS user_name,t2.name AS bank_name FROM doc_bank_card t LEFT …` |
+| h2/H2DocTest.java#selectClassTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2DocTest.cs:52 | `SELECT t.id,t.name,t.phone,t.age,(SELECT COUNT(*) FROM doc_bank_card t1 WHERE t1.uid = t.id) AS card…` |
+| h2/H2DocTest.java#selectClassTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2DocTest.cs:65 | `SELECT t.id,t.name,t.phone,t.age,(SELECT COUNT(*) FROM doc_bank_card t1 WHERE t1.uid = t.id) AS card…` |
+| h2/H2DocTest.java#selectClassTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2DocTest.cs:82 | `SELECT t.id,t.name,t.phone,t.age,IFNULL(t.age,1) AS card_count FROM doc_user t WHERE t.name LIKE ?` |
+| h2/H2DocTest.java#selectProxyTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2DocTest.cs:13 | `SELECT t.id,t.uid,t.code,t.type,t1.name AS user_name,t2.name AS bank_name FROM doc_bank_card t LEFT …` |
+| h2/H2DocTest.java#selectProxyTest1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2DocTest.cs:27 | `SELECT t.id,t.code FROM doc_bank_card t WHERE t.type = ?` |
+| h2/H2DocTest.java#selectProxyTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2DocTest.cs:39 | `SELECT t.id,t.uid,t.code,t.type,t1.name AS user_name,t2.name AS bank_name FROM doc_bank_card t LEFT …` |
+| h2/H2DocTest.java#selectProxyTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2DocTest.cs:52 | `SELECT t.id,t.name,t.phone,t.age,(SELECT COUNT(*) FROM doc_bank_card t1 WHERE t1.uid = t.id) AS card…` |
+| h2/H2DocTest.java#selectProxyTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2DocTest.cs:65 | `SELECT t.id,t.name,t.phone,t.age,(SELECT COUNT(*) FROM doc_bank_card t1 WHERE t1.uid = t.id) AS card…` |
+| h2/H2DocTest.java#selectProxyTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2DocTest.cs:82 | `SELECT t.id,t.name,t.phone,t.age,IFNULL(t.age,1) AS card_count FROM doc_user t WHERE t.name LIKE ?` |
+| h2/H2DocTest.java#testToOne | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2DocTest.cs:95 | `SELECT id,name,phone,age FROM doc_user WHERE name LIKE ? AND id IS NULL AND id IS NOT NULL` |
+| h2/H2DocTest.java#testToOne1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2DocTest.cs:105 | `SELECT t.id,t.uid,t.code,t.type,t.bank_id FROM doc_bank_card t LEFT JOIN doc_user t1 ON t1.id = t.ui…` |
+| h2/H2ForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery | 不适用 | tests/EasyQuerySharp.Tests.Upstream/H2/H2ForUpdateTest.cs:45：测 H2 渲染的 FOR UPDATE 与行锁；SQLite 没有行锁语法，同样的用例在 mysql8/ForUpdateTest、pgsql/PgSQLForUpdateTest 已移植 |  |
+| h2/H2ForUpdateTest.java#testForUpdateBlocksConcurrentTransaction | 不适用 | tests/EasyQuerySharp.Tests.Upstream/H2/H2ForUpdateTest.cs:40：测 H2 渲染的 FOR UPDATE 与行锁；SQLite 没有行锁语法，同样的用例在 mysql8/ForUpdateTest、pgsql/PgSQLForUpdateTest 已移植 |  |
+| h2/H2ForUpdateTest.java#testForUpdateDerivedCountAndExistsSqlBehaviorConsistent | 不适用 | tests/EasyQuerySharp.Tests.Upstream/H2/H2ForUpdateTest.cs:50：测 H2 渲染的 FOR UPDATE 与行锁；SQLite 没有行锁语法，同样的用例在 mysql8/ForUpdateTest、pgsql/PgSQLForUpdateTest 已移植 |  |
+| h2/H2ForUpdateTest.java#testForUpdateDuplicateCallThrows | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2ForUpdateTest.cs:32 |  |
+| h2/H2ForUpdateTest.java#testForUpdateJoinNotSupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2ForUpdateTest.cs:24 |  |
+| h2/H2ForUpdateTest.java#testForUpdateSqlAppendInTransaction | 不适用 | tests/EasyQuerySharp.Tests.Upstream/H2/H2ForUpdateTest.cs:12：测 H2 渲染的 FOR UPDATE 与行锁；SQLite 没有行锁语法，同样的用例在 mysql8/ForUpdateTest、pgsql/PgSQLForUpdateTest 已移植 |  |
+| h2/H2ForUpdateTest.java#testForUpdateWithoutTransactionThrows | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2ForUpdateTest.cs:17 |  |
+| h2/H2OrderTest.java#test1 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/H2/H2OrderTest.cs:10 |  |
+| h2/H2OrderTest.java#test2 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/H2/H2OrderTest.cs:14 |  |
+| h2/H2QueryRelationTest.java#tbTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryRelationTest.cs:11 | `SELECT id,uid,uname,price FROM t_tb_order` |
+| h2/H2QueryTest.java#allTypeTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:110 |  |
+| h2/H2QueryTest.java#allTypeTest1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:113 |  |
+| h2/H2QueryTest.java#allTypeTest1_1_proxy | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:122 |  |
+| h2/H2QueryTest.java#allTypeTest1_2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:116 |  |
+| h2/H2QueryTest.java#allTypeTest1_2_proxy | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:125 |  |
+| h2/H2QueryTest.java#allTypeTest1_proxy | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:119 |  |
+| h2/H2QueryTest.java#allTypeTestSharding1 | 骨架 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:129 |  |
+| h2/H2QueryTest.java#conditionTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:134 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
+| h2/H2QueryTest.java#leftJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:18 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
+| h2/H2QueryTest.java#leftJoin1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:26 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
+| h2/H2QueryTest.java#leftJoin2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:34 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
+| h2/H2QueryTest.java#leftJoin2_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:43 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
+| h2/H2QueryTest.java#leftJoin3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:52 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
+| h2/H2QueryTest.java#leftJoin3_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:61 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
+| h2/H2QueryTest.java#leftJoin4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:70 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
+| h2/H2QueryTest.java#leftJoin4_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:80 | `SELECT t.id,t.user_name,t.nickname,t.enable,t.score,t.mobile,t.avatar,t.number,t.status,t.created,t.…` |
+| h2/H2QueryTest.java#testDDL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:158：建表语句由 SQLite 方言生成（单行、INTEGER / TIMESTAMP 等标准类型名）；Java 是 H2 的多行格式（INT、TIMESTAMP(3)） | `CREATE TABLE IF NOT EXISTS t_topic ( id VARCHAR(255) NOT NULL , stars INT NULL , title VARCHAR(255) …` |
+| h2/H2QueryTest.java#testDDL2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:167：建表语句由 SQLite 方言生成（单行、INTEGER / TIMESTAMP 等标准类型名）；Java 是 H2 的多行格式（INT、TIMESTAMP(3)） | `CREATE TABLE IF NOT EXISTS t_multi_primary ( id1 VARCHAR(255) NOT NULL , id2 VARCHAR(255) NOT NULL ,…` |
+| h2/H2QueryTest.java#testTableCommentDDL | 偏离 | tests/EasyQuerySharp.Tests.Upstream/H2/H2QueryTest.cs:177：SQLite 不支持表注释与列注释，建表语句里没有 COMMENT；Java 断言 H2 的 COMMENT ON TABLE 语句 | `CREATE TABLE IF NOT EXISTS t_h2_table_comment ( id VARCHAR(255) NOT NULL COMMENT '主键ID', name VARCHA…` |
+| h2/TreeCTETest.java#tree8 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/H2/TreeCTETest.cs:9：SQLite 的复合查询分支不能加括号，递归 CTE 也不写列名清单；Java 的 H2 写成 as_tree_cte(cte_deep,id,parent_id,name) AS ( (…)  UNION ALL  (…) ) | `WITH RECURSIVE as_tree_cte(cte_deep,id,parent_id,name) AS ( (SELECT 0 AS cte_deep,t1.id,t1.parent_id…` |
+| h2/v2/H2V2Test.java#testAllType | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2V2Test.cs:29 |  |
+| h2/v2/H2V2Test.java#testAllType1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/H2/H2V2Test.cs:40 |  |
 
 ### SAP HANA 方言（`dialect.hana`，M6）
 
