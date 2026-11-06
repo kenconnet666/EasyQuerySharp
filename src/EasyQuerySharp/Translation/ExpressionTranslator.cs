@@ -51,9 +51,16 @@ internal sealed partial class ExpressionTranslator
             ConditionalExpression c => TranslateConditional(c),
             MethodCallExpression call => TranslateCall(call),
             LambdaExpression l => Translate(l.Body),
+            ParameterExpression p => TranslateScalarRow(p),
             _ => throw Unsupported(expression),
         };
     }
+
+    // 投影成一个值的查询再作来源（q.Select(u => u.Name) 之后排序、合并后排序）：参数本身就是那一列
+    private SqlExpr TranslateScalarRow(ParameterExpression p) =>
+        BindingOf(p) is DerivedBinding { MemberColumns: { Count: 1 } columns } derived && columns.TryGetValue(Querying.ProjectionCompiler.ScalarMember, out var column)
+            ? new ColumnExpr(derived.Table, column)
+            : throw Unsupported(p);
 
     /// <summary>计算列：表达式的参数绑定到所在的表，就地展开。</summary>
     public SqlExpr TranslateComputed(LambdaExpression computed, SourceBinding owner)

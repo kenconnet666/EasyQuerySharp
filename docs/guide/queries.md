@@ -545,6 +545,22 @@ SELECT t2.`name`,t2.`kind` AS `kind` FROM ( (SELECT t.`name`,? AS `kind` FROM `t
 ```
 <!-- /card -->
 
+只投影了一个值（`Select(u => u.Name)`、分组的 `Keys()`）时，之后的 lambda 参数就是这个值：
+
+<!-- card: query/UnionValues sql=mysql -->
+```csharp
+db.Query<User>().Where(u => u.Age < 25).Select(u => u.Name)
+    .UnionAll(db.Query<Company>().Where(c => c.City == "北京").Select(c => c.Name))
+    .OrderBy(name => name).ToListAsync();
+```
+
+```sql
+-- MySQL
+SELECT t2.`name` FROM ( (SELECT t.`name` FROM `t_user` t WHERE t.`age` < ?)  UNION ALL  (SELECT t1.`name` FROM `t_company` t1 WHERE t1.`city` = ?) ) t2 ORDER BY t2.`name` ASC;
+-- params: [25, '北京']
+```
+<!-- /card -->
+
 <!-- card: query/Cte sql=mysql -->
 ```csharp
 var hot = db.Query<Post>().Where(p => p.Views >= 1000).AsCte("hot_posts");
@@ -614,7 +630,6 @@ SELECT `id`,`name` FROM `t_tag` ORDER BY `id` ASC LIMIT 4 OFFSET 4;
 ## 限制
 
 - 投影里有带出（集合导航、`Select<TDto>()` 的嵌套 DTO）时不能 `AsAsyncEnumerable()`，要用 `ToListAsync()`。
-- 标量结果的查询（如 `Select(u => u.Name)`）合并之后不能再按元素本身排序：`q1.UnionAll(q2).OrderBy(n => n)` 报不支持，先投影成带属性的类型再排。
 - `MaxResultSize(n)`：结果超过 n 行时抛 `ResultSizeLimitException`，防止误查整张大表。
 - `SelectMany` 之外的 LINQ 方法（`Zip`、`Aggregate` 等）不支持；不支持的写法在翻译时抛 `NotSupportedException`，消息里带原表达式。
 - DTO 自动映射只认同名属性和 `[MapPath]`；不会把 `CompanyName` 自动拆成 `Company.Name`。

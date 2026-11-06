@@ -158,6 +158,12 @@ public static partial class QueryExamples
             .UnionAll(db.Query<Company>().Where(c => c.City == "北京").Select(c => new NamedRow(c.Name, "公司")))
             .OrderBy(r => r.Name).Take(3).ToListAsync();
 
+    [Example("query", "合并单列：按值本身排序")]
+    public static Task<List<string>> UnionValues(EasyDb db) =>
+        db.Query<User>().Where(u => u.Age < 25).Select(u => u.Name)
+            .UnionAll(db.Query<Company>().Where(c => c.City == "北京").Select(c => c.Name))
+            .OrderBy(name => name).ToListAsync();
+
     /// <summary>作者与热门帖数。</summary>
     public sealed record AuthorHot(long AuthorId, long Hot);
 

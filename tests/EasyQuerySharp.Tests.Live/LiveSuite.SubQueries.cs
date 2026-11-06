@@ -117,6 +117,17 @@ public abstract partial class LiveSuite
         Assert.Equal(["alice", "carol"], names.Select(r => r.Value1));
     }
 
+    // 投影成一个值的查询合并、分组之后，按值本身过滤、排序、取段
+    [Fact]
+    public async Task OrdersScalarResultsByTheValueItself()
+    {
+        var db = await SeededAsync();
+        var names = db.Query<User>().Select(u => u.Name);
+        var titles = db.Query<Post>().Where(p => p.UserId == 2).Select(p => p.Title);
+        Assert.Equal(["alice", "bob", "carol", "hello", "orm_v2"], await names.UnionAll(titles).OrderBy(n => n).ToListAsync(Ct));
+        Assert.Equal([2L, 1L], await db.Query<Post>().GroupBy(p => p.UserId).Keys().Where(k => k > 0).OrderByDescending(k => k).Take(2).ToListAsync(Ct));
+    }
+
     // 分支自己排序、取段（SQLite 不允许分支带 ORDER BY / LIMIT，包一层再合并）
     [Fact]
     public async Task UnionsBranchesThatAreOrderedAndLimited()
