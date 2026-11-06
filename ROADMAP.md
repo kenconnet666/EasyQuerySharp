@@ -17,7 +17,8 @@
 
 - 对标：已移植 2071、偏离 191、不适用 142、骨架 0、待做 0。
 - 待做与骨架都已清零。
-- 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17、DuckDB（进程内）；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle、达梦、openGauss、HANA 任务（HANA 任务 2026-11-07 新加，还没在 CI 上跑过）。master 的 CI 全绿。
+- 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17、DuckDB（进程内）；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle、达梦、openGauss、HANA、ClickHouse、Db2、TDengine 任务，全部通过（2026-11-07）。没有实库验证的只剩 Kingbase（没有可用的容器镜像）。
+- 剩下的：3.4 的 Kingbase 实库冒烟（`[!]`），5.4 发布到 nuget.org（暂缓）。
 
 ## 已定的取舍
 
