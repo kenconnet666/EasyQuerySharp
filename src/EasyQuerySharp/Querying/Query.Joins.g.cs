@@ -74,6 +74,9 @@ public sealed class Query<T1, T2> : QueryBase<Query<T1, T2>, T1>
     /// <summary>把最近连接的实体表换成 <paramref name="tableName"/>（对应 Java 的 asTable）。</summary>
     public Query<T1, T2> AsTable(string tableName) => new(QueryStates.WithLast(State, s => s is EntitySource e ? e with { TableName = tableName } : s));
 
+    /// <summary>自定义最近连接的实体表的整个引用写法（对应 Java 的 asTableSegment），见 <see cref="Query{T}.AsTableSegment"/>。</summary>
+    public Query<T1, T2> AsTableSegment(Func<string, string?, string> segment) => new(QueryStates.WithTableSegment(State, segment));
+
     /// <summary>把某张表上的集合导航聚合合并成分组 LEFT JOIN（对应 Java 的 subQueryToGroupJoin），见 <see cref="Query{T}.GroupJoin{TChild}"/>。</summary>
     public Query<T1, T2> GroupJoin<TChild>(Expression<Func<T1, T2, IEnumerable<TChild>?>> navigation, Func<Query<TChild>, Query<TChild>>? configure = null) => new(GroupJoinSpecs.Add(State, navigation, true, configure));
 
@@ -193,6 +196,9 @@ public sealed class Query<T1, T2, T3> : QueryBase<Query<T1, T2, T3>, T1>
 
     /// <summary>把最近连接的实体表换成 <paramref name="tableName"/>（对应 Java 的 asTable）。</summary>
     public Query<T1, T2, T3> AsTable(string tableName) => new(QueryStates.WithLast(State, s => s is EntitySource e ? e with { TableName = tableName } : s));
+
+    /// <summary>自定义最近连接的实体表的整个引用写法（对应 Java 的 asTableSegment），见 <see cref="Query{T}.AsTableSegment"/>。</summary>
+    public Query<T1, T2, T3> AsTableSegment(Func<string, string?, string> segment) => new(QueryStates.WithTableSegment(State, segment));
 
     /// <summary>把某张表上的集合导航聚合合并成分组 LEFT JOIN（对应 Java 的 subQueryToGroupJoin），见 <see cref="Query{T}.GroupJoin{TChild}"/>。</summary>
     public Query<T1, T2, T3> GroupJoin<TChild>(Expression<Func<T1, T2, T3, IEnumerable<TChild>?>> navigation, Func<Query<TChild>, Query<TChild>>? configure = null) => new(GroupJoinSpecs.Add(State, navigation, true, configure));
@@ -314,6 +320,9 @@ public sealed class Query<T1, T2, T3, T4> : QueryBase<Query<T1, T2, T3, T4>, T1>
     /// <summary>把最近连接的实体表换成 <paramref name="tableName"/>（对应 Java 的 asTable）。</summary>
     public Query<T1, T2, T3, T4> AsTable(string tableName) => new(QueryStates.WithLast(State, s => s is EntitySource e ? e with { TableName = tableName } : s));
 
+    /// <summary>自定义最近连接的实体表的整个引用写法（对应 Java 的 asTableSegment），见 <see cref="Query{T}.AsTableSegment"/>。</summary>
+    public Query<T1, T2, T3, T4> AsTableSegment(Func<string, string?, string> segment) => new(QueryStates.WithTableSegment(State, segment));
+
     /// <summary>把某张表上的集合导航聚合合并成分组 LEFT JOIN（对应 Java 的 subQueryToGroupJoin），见 <see cref="Query{T}.GroupJoin{TChild}"/>。</summary>
     public Query<T1, T2, T3, T4> GroupJoin<TChild>(Expression<Func<T1, T2, T3, T4, IEnumerable<TChild>?>> navigation, Func<Query<TChild>, Query<TChild>>? configure = null) => new(GroupJoinSpecs.Add(State, navigation, true, configure));
 
@@ -433,6 +442,9 @@ public sealed class Query<T1, T2, T3, T4, T5> : QueryBase<Query<T1, T2, T3, T4, 
 
     /// <summary>把最近连接的实体表换成 <paramref name="tableName"/>（对应 Java 的 asTable）。</summary>
     public Query<T1, T2, T3, T4, T5> AsTable(string tableName) => new(QueryStates.WithLast(State, s => s is EntitySource e ? e with { TableName = tableName } : s));
+
+    /// <summary>自定义最近连接的实体表的整个引用写法（对应 Java 的 asTableSegment），见 <see cref="Query{T}.AsTableSegment"/>。</summary>
+    public Query<T1, T2, T3, T4, T5> AsTableSegment(Func<string, string?, string> segment) => new(QueryStates.WithTableSegment(State, segment));
 
     /// <summary>把某张表上的集合导航聚合合并成分组 LEFT JOIN（对应 Java 的 subQueryToGroupJoin），见 <see cref="Query{T}.GroupJoin{TChild}"/>。</summary>
     public Query<T1, T2, T3, T4, T5> GroupJoin<TChild>(Expression<Func<T1, T2, T3, T4, T5, IEnumerable<TChild>?>> navigation, Func<Query<TChild>, Query<TChild>>? configure = null) => new(GroupJoinSpecs.Add(State, navigation, true, configure));
@@ -554,6 +566,9 @@ public sealed class Query<T1, T2, T3, T4, T5, T6> : QueryBase<Query<T1, T2, T3, 
     /// <summary>把最近连接的实体表换成 <paramref name="tableName"/>（对应 Java 的 asTable）。</summary>
     public Query<T1, T2, T3, T4, T5, T6> AsTable(string tableName) => new(QueryStates.WithLast(State, s => s is EntitySource e ? e with { TableName = tableName } : s));
 
+    /// <summary>自定义最近连接的实体表的整个引用写法（对应 Java 的 asTableSegment），见 <see cref="Query{T}.AsTableSegment"/>。</summary>
+    public Query<T1, T2, T3, T4, T5, T6> AsTableSegment(Func<string, string?, string> segment) => new(QueryStates.WithTableSegment(State, segment));
+
     /// <summary>把某张表上的集合导航聚合合并成分组 LEFT JOIN（对应 Java 的 subQueryToGroupJoin），见 <see cref="Query{T}.GroupJoin{TChild}"/>。</summary>
     public Query<T1, T2, T3, T4, T5, T6> GroupJoin<TChild>(Expression<Func<T1, T2, T3, T4, T5, T6, IEnumerable<TChild>?>> navigation, Func<Query<TChild>, Query<TChild>>? configure = null) => new(GroupJoinSpecs.Add(State, navigation, true, configure));
 
@@ -673,6 +688,9 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7> : QueryBase<Query<T1, T2, 
 
     /// <summary>把最近连接的实体表换成 <paramref name="tableName"/>（对应 Java 的 asTable）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7> AsTable(string tableName) => new(QueryStates.WithLast(State, s => s is EntitySource e ? e with { TableName = tableName } : s));
+
+    /// <summary>自定义最近连接的实体表的整个引用写法（对应 Java 的 asTableSegment），见 <see cref="Query{T}.AsTableSegment"/>。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7> AsTableSegment(Func<string, string?, string> segment) => new(QueryStates.WithTableSegment(State, segment));
 
     /// <summary>把某张表上的集合导航聚合合并成分组 LEFT JOIN（对应 Java 的 subQueryToGroupJoin），见 <see cref="Query{T}.GroupJoin{TChild}"/>。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7> GroupJoin<TChild>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, IEnumerable<TChild>?>> navigation, Func<Query<TChild>, Query<TChild>>? configure = null) => new(GroupJoinSpecs.Add(State, navigation, true, configure));
@@ -794,6 +812,9 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8> : QueryBase<Query<T1, 
     /// <summary>把最近连接的实体表换成 <paramref name="tableName"/>（对应 Java 的 asTable）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8> AsTable(string tableName) => new(QueryStates.WithLast(State, s => s is EntitySource e ? e with { TableName = tableName } : s));
 
+    /// <summary>自定义最近连接的实体表的整个引用写法（对应 Java 的 asTableSegment），见 <see cref="Query{T}.AsTableSegment"/>。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8> AsTableSegment(Func<string, string?, string> segment) => new(QueryStates.WithTableSegment(State, segment));
+
     /// <summary>把某张表上的集合导航聚合合并成分组 LEFT JOIN（对应 Java 的 subQueryToGroupJoin），见 <see cref="Query{T}.GroupJoin{TChild}"/>。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8> GroupJoin<TChild>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, IEnumerable<TChild>?>> navigation, Func<Query<TChild>, Query<TChild>>? configure = null) => new(GroupJoinSpecs.Add(State, navigation, true, configure));
 
@@ -914,6 +935,9 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> : QueryBase<Query<
     /// <summary>把最近连接的实体表换成 <paramref name="tableName"/>（对应 Java 的 asTable）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> AsTable(string tableName) => new(QueryStates.WithLast(State, s => s is EntitySource e ? e with { TableName = tableName } : s));
 
+    /// <summary>自定义最近连接的实体表的整个引用写法（对应 Java 的 asTableSegment），见 <see cref="Query{T}.AsTableSegment"/>。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> AsTableSegment(Func<string, string?, string> segment) => new(QueryStates.WithTableSegment(State, segment));
+
     /// <summary>把某张表上的集合导航聚合合并成分组 LEFT JOIN（对应 Java 的 subQueryToGroupJoin），见 <see cref="Query{T}.GroupJoin{TChild}"/>。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9> GroupJoin<TChild>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, IEnumerable<TChild>?>> navigation, Func<Query<TChild>, Query<TChild>>? configure = null) => new(GroupJoinSpecs.Add(State, navigation, true, configure));
 
@@ -1033,6 +1057,9 @@ public sealed class Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> : QueryBase<Q
 
     /// <summary>把最近连接的实体表换成 <paramref name="tableName"/>（对应 Java 的 asTable）。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> AsTable(string tableName) => new(QueryStates.WithLast(State, s => s is EntitySource e ? e with { TableName = tableName } : s));
+
+    /// <summary>自定义最近连接的实体表的整个引用写法（对应 Java 的 asTableSegment），见 <see cref="Query{T}.AsTableSegment"/>。</summary>
+    public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> AsTableSegment(Func<string, string?, string> segment) => new(QueryStates.WithTableSegment(State, segment));
 
     /// <summary>把某张表上的集合导航聚合合并成分组 LEFT JOIN（对应 Java 的 subQueryToGroupJoin），见 <see cref="Query{T}.GroupJoin{TChild}"/>。</summary>
     public Query<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> GroupJoin<TChild>(Expression<Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, IEnumerable<TChild>?>> navigation, Func<Query<TChild>, Query<TChild>>? configure = null) => new(GroupJoinSpecs.Add(State, navigation, true, configure));

@@ -225,15 +225,30 @@ public sealed partial class MsSQLQueryTest(MsSqlFixture fixture) : MsSqlTest(fix
         Assert.Equal("ab", rows[0]["aa"]);
     }
 
+    // Java 的 WITHNOLOCK / TABLEINDEX：整个表引用的写法，参数是带引号的表名和别名
+    internal static string WithNoLock(string table, string? alias) => alias is null ? table + " WITH(NOLOCK)" : table + " " + alias + " WITH(NOLOCK)";
+
+    private static Func<string, string?, string> WithIndex(string indexName) =>
+        (table, alias) => alias is null ? table + " WITH(INDEX(" + indexName + "))" : table + " " + alias + " WITH(INDEX(" + indexName + "))";
+
     // 表提示指向不存在的索引，SQL Server 报错；SQL 已发出并被监听器记下，对应 Java 的 try / catch
     [Fact, Upstream("mssql/MsSQLQueryTest.java#testWithIndex")]
     public async Task TestWithIndex()
     {
         using var listen = SqlCapture.Listen();
-        var query = Db.Query<SysUser>()
-            .AsTableSegment((table, alias) => alias is null ? table + " WITH(INDEX(myIndex))" : table + " " + alias + " WITH(INDEX(myIndex))")
-            .LeftJoin<SysBankCard>((user, card) => user.Id == card.Uid);
+        var query = Db.Query<SysUser>().AsTableSegment(WithIndex("myIndex")).LeftJoin<SysBankCard>((user, card) => user.Id == card.Uid);
         await Assert.ThrowsAnyAsync<Exception>(() => query.ToListAsync(Ct));
         listen.AssertSql("SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t WITH(INDEX(myIndex)) LEFT JOIN [t_bank_card] t1 ON t.[Id] = t1.[Uid]");
+    }
+
+    // 联表前后各自指定表提示：AsTableSegment 作用于最近的一张表
+    [Fact, Upstream("mssql/MsSQLQueryTest.java#testWithNolock2")]
+    public async Task TestWithNolock2()
+    {
+        using var listen = SqlCapture.Listen();
+        await Db.Query<SysUser>().AsTableSegment(WithNoLock)
+            .LeftJoin<SysBankCard>((user, card) => user.Id == card.Uid).AsTableSegment(WithNoLock)
+            .ToListAsync(Ct);
+        listen.AssertSql("SELECT t.[Id],t.[Name],t.[Phone],t.[Age],t.[CreateTime] FROM [t_sys_user] t WITH(NOLOCK) LEFT JOIN [t_bank_card] t1 WITH(NOLOCK) ON t.[Id] = t1.[Uid]");
     }
 }
