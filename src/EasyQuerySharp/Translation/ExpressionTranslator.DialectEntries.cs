@@ -170,7 +170,8 @@ internal sealed partial class ExpressionTranslator
     // 编辑的 lambda：e => e.A().B()，从参数往外依次返回各步
     private static List<MethodCallExpression> EditSteps(MethodCallExpression call, Type editType)
     {
-        var lambda = (LambdaExpression)StripConvert(call.Arguments[0]);
+        if (StripConvert(call.Arguments[0]) is not LambdaExpression lambda)
+            throw Unsupported(call, "编辑要在查询里直接写成 lambda：e => e.Set(..).Remove(..)，不能传委托变量（委托里的调用读不出来）");
         var steps = new List<MethodCallExpression>();
         var e = lambda.Body;
         while (e is MethodCallExpression step && step.Method.DeclaringType == editType)

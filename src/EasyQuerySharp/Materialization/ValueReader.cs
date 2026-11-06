@@ -94,6 +94,13 @@ public static class ValueReader
                 string s => TimeSpan.Parse(s, ci),
                 _ => throw Mismatch(value, target),
             };
+        // DuckDB.NET 把 BLOB 读成流
+        if (target == typeof(byte[]) && value is Stream stream)
+        {
+            using var buffer = new MemoryStream();
+            stream.CopyTo(buffer);
+            return buffer.ToArray();
+        }
         if (target == typeof(string))
             return value switch
             {
