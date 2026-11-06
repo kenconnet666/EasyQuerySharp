@@ -75,7 +75,7 @@ public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> wh
     public string ToSql() => ToStatement().Text;
 
     /// <summary>同 <see cref="ToSql"/>，连同参数。</summary>
-    public SqlStatement ToStatement() => Render(_entities.Count > 0 ? _entities[0] : throw new InvalidOperationException("没有要插入的实体")).Statement;
+    public SqlStatement ToStatement() => Render(_entities.Count > 0 ? _entities[0] : throw new InvalidOperationException("没有要插入的实体"));
 
     /// <summary>执行，返回受影响的行数（冲突更新时 MySQL 对更新的行计 2，与驱动的返回值一致）。</summary>
     public async Task<long> ExecuteAsync(CancellationToken cancellationToken = default)
@@ -85,33 +85,28 @@ public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> wh
             FillKeys(e);
             Db.Interceptors.BeforeWrite(e, insert: true, Interceptors);
         }
+        var rendered = _entities.Select(e => (Entity: e, Statement: Render(e))).ToList();
         return await Db.Executor.SessionAsync(async session =>
         {
             long rows = 0;
-            foreach (var entity in _entities)
+            foreach (var batch in WriteBatches.Of(rendered, r => r.Statement, UseBatch))
             {
-                var (statement, keyColumn) = Render(entity);
-                if (keyColumn is null)
+                List<SqlStatement> statements = [.. batch.Select(r => r.Statement)];
+                if (FilledKey is not { } keyColumn)
                 {
-                    rows += await session.ExecuteAsync(statement, cancellationToken).ConfigureAwait(false);
+                    rows += (await session.ExecuteBatchAsync(statements, cancellationToken).ConfigureAwait(false)).Total;
                     continue;
                 }
-                object? key;
-                if (Db.Options.Dialect.LastInsertIdQuery is { } query)
-                {
-                    rows += await session.ExecuteAsync(statement, cancellationToken).ConfigureAwait(false);
-                    key = await session.ScalarAsync(new SqlStatement(query, query, []), cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    key = await session.ScalarAsync(statement, cancellationToken).ConfigureAwait(false);
-                    rows++;
-                }
-                keyColumn.Setter?.Invoke(entity, ValueReader.ConvertTo(key, keyColumn.ClrType));
+                var (affected, keys) = await session.InsertBatchAsync(statements, Db.Options.Dialect.LastInsertIdQuery, cancellationToken).ConfigureAwait(false);
+                for (var i = 0; i < batch.Count; i++) keyColumn.Setter?.Invoke(batch[i].Entity, ValueReader.ConvertTo(keys[i], keyColumn.ClrType));
+                rows += affected;
             }
             return rows;
         }, cancellationToken).ConfigureAwait(false);
     }
+
+    // 需要回填的生成键列，不回填时为 null
+    private ColumnMetadata? FilledKey => _fillKeys ? Entity.KeyColumns.FirstOrDefault(k => k.IsGenerated) : null;
 
     // 主键为 null 且配置了生成器时先生成主键（与 Java 一致：在执行之前写回实体）
     private void FillKeys(T entity)
@@ -120,8 +115,7 @@ public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> wh
             if (key.KeyGenerator is { } generator && key.Getter(entity) is null) key.Setter?.Invoke(entity, generator.NewKey(key));
     }
 
-    // 返回语句，以及需要回填的生成键列（不需要时为 null）
-    private (SqlStatement Statement, ColumnMetadata? KeyColumn) Render(T entity)
+    private SqlStatement Render(T entity)
     {
         var table = NewTable();
         var written = new List<ColumnMetadata>();
@@ -151,13 +145,12 @@ public sealed class InsertCommand<T> : EntityCommandBase<InsertCommand<T>, T> wh
         }
 
         if (columns.Count == 0) throw new InvalidOperationException($"{typeof(T).Name} 的插入没有要写的列");
-        var keyColumn = _fillKeys ? Entity.KeyColumns.FirstOrDefault(k => k.IsGenerated) : null;
         var insert = new InsertStatement(table, columns, [values])
         {
-            Returning = keyColumn is not null && Db.Options.Dialect.LastInsertIdQuery is null ? [table.Column(keyColumn)] : [],
+            Returning = FilledKey is { } keyColumn && Db.Options.Dialect.LastInsertIdQuery is null ? [table.Column(keyColumn)] : [],
             Conflict = _conflict is null ? null : BuildConflict(table, written),
         };
-        return (SqlRenderer.Render(Db.Options.Dialect, insert), keyColumn);
+        return SqlRenderer.Render(Db.Options.Dialect, insert);
     }
 
     // 约束列：显式指定且写入了的（自增主键不写入，不算），否则是非自增主键（忽略时不指定就不写约束列）；更新列：写入的列去掉主键和约束列（与 Java 一致）

@@ -97,7 +97,7 @@ public sealed class InsertTest(MySqlFixture fixture) : MySqlTest(fixture)
         await Db.Delete<BlogEntity>().WhereById("200").ExecuteAsync(Ct);
     }
 
-    [Fact, Upstream("InsertTest.java#insertBatch", Deviation = "Java 的 batch() 返回 JDBC 的 SUCCESS_NO_INFO（-3）；C# 每个实体一条语句，返回真实行数")]
+    [Fact, Upstream("InsertTest.java#insertBatch", Deviation = "Java 的 batch() 在 rewriteBatchedStatements 下返回 JDBC 的 SUCCESS_NO_INFO（-3）；C# 的批量返回真实行数")]
     public async Task InsertBatch()
     {
         string[] ids = ["500", "300", "400"];
@@ -105,7 +105,7 @@ public sealed class InsertTest(MySqlFixture fixture) : MySqlTest(fixture)
         List<BlogEntity> blogs = [Blog("500", 500, withUrl: false), Blog("300", 300), Blog("400", 400)];
         Assert.Equal(3, await Db.Insert(blogs).ExecuteAsync(Ct));
         await Db.Delete<BlogEntity>().Hard().WhereByIds(ids).ExecuteAsync(Ct);
-        Assert.Equal(3, await Db.Insert(blogs).ExecuteAsync(Ct));
+        Assert.Equal(3, await Db.Insert(blogs).Batch().ExecuteAsync(Ct));
         await Db.Delete<BlogEntity>().Hard().WhereByIds(ids).ExecuteAsync(Ct);
     }
 
@@ -148,16 +148,16 @@ public sealed class InsertTest(MySqlFixture fixture) : MySqlTest(fixture)
         Assert.Equal("INSERT INTO `aaaaa` (`id`,`name`,`name1`,`name2`) VALUES (?,?,?,?)", await FailedSql(() =>
             Db.InsertMap("aaaaa", Map(("id", 123), ("name", "小明"), ("name1", "小明"), ("name2", null))).Columns(ColumnStrategy.All).ExecuteAsync(Ct)));
 
-    // 回填自增键：每批的键接着上一批递增
-    [Fact, Upstream("InsertTest.java#testIncrement", Deviation = "批量规模缩小（Java 共 1.8 万行，验证的是自增键逐行回填）；C# 每行一条语句，批量写入见 M5.7")]
+    // 批量插入回填自增键：每次的键接着上一次递增，超过 1000 行的跨多批
+    [Fact, Upstream("InsertTest.java#testIncrement")]
     public async Task TestIncrement()
     {
         await Db.ExecuteSqlAsync("truncate table t_test_inc;", cancellationToken: Ct);
         var expected = 1;
-        foreach (var size in new[] { 100, 191, 299 })
+        foreach (var size in new[] { 100, 1191, 2991, 2999, 1000, 10000 })
         {
             var rows = Enumerable.Range(0, size).Select(_ => new TestInc { CreateTime = DateTime.Now, Stars = 1, Title = "" }).ToList();
-            await Db.Insert(rows).FillGeneratedKeys().ExecuteAsync(Ct);
+            await Db.Insert(rows).Batch().FillGeneratedKeys().ExecuteAsync(Ct);
             foreach (var row in rows) Assert.Equal(expected++, row.Id);
         }
     }

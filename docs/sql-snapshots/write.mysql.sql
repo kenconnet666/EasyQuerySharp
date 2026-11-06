@@ -2,11 +2,17 @@
 INSERT INTO `t_tag` (`name`) VALUES (?);
 -- params: ['性能']
 
--- InsertMany：批量插入
+-- InsertMany：插入多行：每行一条语句
 INSERT INTO `t_tag` (`name`) VALUES (?);
 -- params: ['测试']
 INSERT INTO `t_tag` (`name`) VALUES (?);
 -- params: ['运维']
+
+-- InsertBatch：批量写入：同一 SQL 的多行一次发出，整批在一个事务里
+INSERT INTO `t_tag` (`name`) VALUES (?);
+-- params: ['前端']
+-- params: ['后端']
+-- params: ['数据']
 
 -- UpdateWithExpression：按条件更新：值可以引用原列
 UPDATE `t_post` SET `views` = (`views` + ?),`title` = CONCAT(`title`,?) WHERE `id` = ?;

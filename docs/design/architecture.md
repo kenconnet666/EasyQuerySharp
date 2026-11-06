@@ -67,7 +67,7 @@ db.Query<User>().Where(..).Select(..).ToListAsync()
    ├─ 4. 规划       ProjectionCompiler：投影里的对多集合、带出拆成按键批量的子查询（见 0002）
    ├─ 5. 渲染       SqlRenderer + SqlDialect → SqlStatement { Text, Parameters }
    │                  标识符引用、分页、upsert、函数表；参数到这一步才绑定
-   ├─ 6. 执行       SqlExecutor → DbCommand；环境事务、执行监听（IExecutionListener）、ActivitySource
+   ├─ 6. 执行       SqlExecutor → DbCommand / DbBatch（批量写入）；环境事务、执行监听（IExecutionListener）、ActivitySource
    └─ 7. 物化       读取委托：按读取树的结构缓存（ShaperCache），同形状只编译一次；值转换器在这里生效
 ```
 
@@ -82,7 +82,7 @@ db.Query<User>().Where(..).Select(..).ToListAsync()
 | `Query<T>`、`Query<T1, T2>` … `Query<T1..T10>` | 查询构建，不可变 | `EntityQueryable` / `Queryable` |
 | `SqlExpr` / `SelectQuery` / `InsertStatement` / `UpdateStatement` / `DeleteStatement` | SQL AST，与方言无关 | `SQLExpression` / `ast.ts` |
 | `SqlDialect` | AST 渲染成文本、函数表、标识符引用、分页、upsert、建表类型 | `ExpressionFactory` + `SQLFunc` / `Dialect` |
-| `SqlExecutor` / `EasyTransaction` | 执行 SQL、环境事务（每个库一个，不能嵌套）、取消 | `JdbcExecutor` / `session.ts` |
+| `SqlExecutor` / `EasyTransaction` | 执行 SQL、批量写入（按 SQL 分组，有 `DbBatch` 时交给它）、环境事务（每个库一个，不能嵌套）、取消 | `JdbcExecutor` / `session.ts` |
 | `QueryFilter<T>` / `EntityInterceptor<T>` | 查询条件过滤、写入前改实体、按条件更新追加 SET | `EntityInterceptor` 等 / `interceptor.ts` |
 | `ValueConverter<TModel, TProvider>` | 属性值和数据库值互转 | `ValueConverter` |
 | `ColumnSqlConversion` | 在 SQL 侧包一层，例如库端加解密 | `ColumnValueSQLConverter` |

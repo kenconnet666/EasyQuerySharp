@@ -41,7 +41,8 @@ public sealed class DeleteCommand<T> : WriteCommandBase<DeleteCommand<T>, T> whe
         await Db.Executor.SessionAsync(async session =>
         {
             long rows = 0;
-            foreach (var statement in Statements()) rows += await session.ExecuteAsync(statement, cancellationToken).ConfigureAwait(false);
+            foreach (var batch in WriteBatches.Of(Statements(), s => s, UseBatch))
+                rows += (await session.ExecuteBatchAsync(batch, cancellationToken).ConfigureAwait(false)).Total;
             return rows;
         }, cancellationToken).ConfigureAwait(false);
 

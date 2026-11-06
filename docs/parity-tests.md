@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1805、偏离 145、不适用 137、骨架 6、待做 311。
+合计：已移植 1811、偏离 140、不适用 137、骨架 6、待做 310。
 
 ## 按能力
 
@@ -48,7 +48,7 @@
 | 追踪与差异更新 | `tracking` | M5 | 62 | 58 | 3 | 0 | 0 | 1 |
 | 乐观锁版本 | `version` | M5 | 13 | 13 | 0 | 0 | 0 | 0 |
 | UPDATE / DELETE 里用导航 | `write.join` | M5 | 10 | 10 | 0 | 0 | 0 | 0 |
-| 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 20 | 6 | 0 | 0 | 0 |
+| 写哪些列、批量执行 | `write.strategy` | M5 | 26 | 25 | 1 | 0 | 0 | 0 |
 | upsert | `write.upsert` | M5 | 13 | 11 | 0 | 0 | 2 | 0 |
 | ClickHouse 方言 | `dialect.clickhouse` | M6 | 4 | 0 | 0 | 0 | 0 | 4 |
 | 达梦方言 | `dialect.dameng` | M6 | 51 | 0 | 0 | 0 | 0 | 51 |
@@ -60,7 +60,7 @@
 | SQL Server 方言 | `dialect.mssql` | M6 | 38 | 0 | 0 | 0 | 0 | 38 |
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | M6 | 13 | 0 | 0 | 13 | 0 | 0 |
 | UPDATE / DELETE … RETURNING | `write.returning` | M6 | 3 | 0 | 0 | 0 | 0 | 3 |
-| 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 2 | 0 | 0 | 0 | 15 |
+| 建表与迁移（code-first） | `codeFirst` | M7 | 17 | 3 | 0 | 0 | 0 | 14 |
 | 按对象筛选排序（whereObject / orderByObject） | `dto.object` | M7 | 101 | 92 | 3 | 0 | 0 | 6 |
 | search 扩展 | `search` | M7 | 45 | 0 | 0 | 45 | 0 | 0 |
 | 分库分表 | `sharding` | M7 | 48 | 0 | 0 | 0 | 0 | 48 |
@@ -169,7 +169,7 @@
 | InjectTest.java#injectTest1 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/InjectTest.cs:11：测的是 Java 自带的依赖注入容器；C# 用 Microsoft.Extensions.DependencyInjection，没有对应的内部容器 |  |
 | InjectTest.java#injectTest2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/InjectTest.cs:13：测的是 Java 自带的依赖注入容器；C# 用 Microsoft.Extensions.DependencyInjection，没有对应的内部容器 |  |
 | InjectTest.java#injectTest3 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Features/InjectTest.cs:15：测的是 Java 自带的依赖注入容器；C# 用 Microsoft.Extensions.DependencyInjection，没有对应的内部容器 |  |
-| InsertTest1.java#testColumnConfigure | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:14：Java 用例体是空的 |  |
+| InsertTest1.java#testColumnConfigure | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:42：Java 用例体是空的 |  |
 | MyTest1.java#testDraft3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:59 | `SELECT date_add(t.'create_time', interval (?) day) AS 'value1' FROM 't_blog' t WHERE t.'deleted' = ?…` |
 | MyTest1.java#testSelect1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:152 | `SELECT ? AS 'title',t.'title' AS 'id' FROM 't_topic' t WHERE t.'title' IS NOT NULL` |
 | MyTest1.java#testSelect10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:254 | `SELECT t.'id',t.'stars',t.'title',t.'create_time',(SELECT COUNT(*) FROM 't_blog' t1 WHERE t1.'delete…` |
@@ -602,7 +602,7 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| DeleteTest.java#delete | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:119：检查的是 Java 删除命令的内部构建器，C# 没有对应的公开状态 |  |
+| DeleteTest.java#delete | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:118：检查的是 Java 删除命令的内部构建器，C# 没有对应的公开状态 |  |
 | DeleteTest.java#deleteTest13 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:52：检查的是 Java 表达式上下文里的行为标志位，C# 没有对应的内部状态 |  |
 | DeleteTest.java#deleteTest14 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:55：Java 的 deletable(null) 用空集合表达；ToSql 同样返回 null |  |
 | DeleteTest.java#deleteTest19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:65 | `UPDATE 't_blog' SET 'deleted' = ? WHERE 'deleted' = ? AND 'id' = ?` |
@@ -610,8 +610,8 @@
 | DeleteTest.java#deleteTest21 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:90 | `DELETE FROM 't_topic123abc' WHERE 'id' = ?` |
 | DeleteTest.java#deleteTest22 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:99 | `UPDATE 't_blog123abc' SET 'deleted' = ? WHERE 'deleted' = ? AND 'id' = ?` |
 | DeleteTest.java#deleteTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:65 | `UPDATE 't_blog' SET 'deleted' = ? WHERE 'deleted' = ? AND 'id' = ?` |
-| DeleteTest.java#deletex | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:122 | `DELETE FROM 't_blog' WHERE 'id' = ?` |
-| DeleteTest.java#deletex1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:122 | `UPDATE 't_blog' SET 'deleted' = ? WHERE 'deleted' = ? AND 'id' = ?` |
+| DeleteTest.java#deletex | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:121 | `DELETE FROM 't_blog' WHERE 'id' = ?` |
+| DeleteTest.java#deletex1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:121 | `UPDATE 't_blog' SET 'deleted' = ? WHERE 'deleted' = ? AND 'id' = ?` |
 | GenericWithDatabaseTest.java#deleteTest13 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:69 | `DELETE FROM 'query_large_column_test' WHERE 'id' = ?` |
 | GenericWithDatabaseTest.java#deleteTest14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:73 | `DELETE FROM 'aaa' WHERE 'id' = ?` |
 | GenericWithDatabaseTest.java#queryLargeColumnTest14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:87 |  |
@@ -649,7 +649,7 @@
 | InsertTest.java#insertSQLConvert2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:23 |  |
 | InsertTest.java#insertSQLConvert3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/SqlConversionTest.cs:32 |  |
 | InsertTest.java#insertTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:21 |  |
-| InsertTest1.java#inertTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:17 | `INSERT INTO 't_topic_abc' ('id','stars','title','create_time') VALUES (?,?,?,?)` |
+| InsertTest1.java#inertTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:45 | `INSERT INTO 't_topic_abc' ('id','stars','title','create_time') VALUES (?,?,?,?)` |
 | MyTest1.java#testDraft11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:123 | `SELECT timestampdiff(DAY, t.'create_time', t.'update_time') AS 'value1',timestampdiff(HOUR, t.'creat…` |
 | MyTest1.java#testDraft6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:78 | `SELECT date_add(date_add(t.'create_time', interval (?) month), interval (?) day) AS 'value1',date_ad…` |
 | MyTest1.java#testDraft7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/MyTest1.cs:91 | `SELECT YEAR(t.'create_time') AS 'value1',MONTH(t.'create_time') AS 'value2',DAYOFMONTH(t.'create_tim…` |
@@ -711,13 +711,13 @@
 | TestUpdateFlatAndPredicate.java#testExpressionKey6 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/FlatAndPredicateTest.cs:17：测的是 Java 表达式树的内部结构（getFlatAndPredicates 提取主键值），C# 不暴露 SQL 表达式树 |  |
 | TestUpdateFlatAndPredicate.java#testExpressionKey7 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/FlatAndPredicateTest.cs:18：测的是 Java 表达式树的内部结构（getFlatAndPredicates 提取主键值），C# 不暴露 SQL 表达式树 |  |
 | TestUpdateFlatAndPredicate.java#testExpressionKey8 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/FlatAndPredicateTest.cs:19：测的是 Java 表达式树的内部结构（getFlatAndPredicates 提取主键值），C# 不暴露 SQL 表达式树 |  |
-| UpdateTest.java#testUpdateIdNull1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:426：C# 的主键为 null 时按 C# 语义写成 IS NULL，Java 写 'id' = ? 并传 null | `UPDATE 't_topic' SET 'title' = CONCAT(SUBSTR('title',2,10),LOWER('id')) WHERE 'id' = ?` |
-| UpdateTest.java#updateEntityWhere | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:470 | `UPDATE 't_blog' SET 'create_time' = ?,'update_time' = ?,'create_by' = ?,'update_by' = ?,'title' = ?,…` |
-| UpdateTest.java#updateSet1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:335 | `UPDATE 't_topic' SET 'stars' = ?,'stars' = CAST('title' AS SIGNED),'title' = ?,'title' = DATE_FORMAT…` |
-| UpdateTest.java#updateSetFuncTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:404 | `UPDATE 'a123123' SET 'title' = CONCAT(SUBSTR('title',2,10),'id') WHERE 'id' = ?` |
-| UpdateTest.java#updateSetFuncTest1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:404 | `UPDATE 'a123123' SET 'title' = CONCAT('id',SUBSTR('title',2,10)) WHERE 'id' = ?` |
-| UpdateTest.java#updateSetFuncTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:405 | `UPDATE 'a123123' SET 'title' = CONCAT(SUBSTR('title',2,10),?) WHERE 'id' = ?` |
-| UpdateTest.java#updateSetFuncTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:405 | `UPDATE 'a123123' SET 'title' = CONCAT(SUBSTR('title',2,10),LOWER('id')) WHERE 'id' = ?` |
+| UpdateTest.java#testUpdateIdNull1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:428：C# 的主键为 null 时按 C# 语义写成 IS NULL，Java 写 'id' = ? 并传 null | `UPDATE 't_topic' SET 'title' = CONCAT(SUBSTR('title',2,10),LOWER('id')) WHERE 'id' = ?` |
+| UpdateTest.java#updateEntityWhere | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:472 | `UPDATE 't_blog' SET 'create_time' = ?,'update_time' = ?,'create_by' = ?,'update_by' = ?,'title' = ?,…` |
+| UpdateTest.java#updateSet1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:337 | `UPDATE 't_topic' SET 'stars' = ?,'stars' = CAST('title' AS SIGNED),'title' = ?,'title' = DATE_FORMAT…` |
+| UpdateTest.java#updateSetFuncTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:406 | `UPDATE 'a123123' SET 'title' = CONCAT(SUBSTR('title',2,10),'id') WHERE 'id' = ?` |
+| UpdateTest.java#updateSetFuncTest1_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:406 | `UPDATE 'a123123' SET 'title' = CONCAT('id',SUBSTR('title',2,10)) WHERE 'id' = ?` |
+| UpdateTest.java#updateSetFuncTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:407 | `UPDATE 'a123123' SET 'title' = CONCAT(SUBSTR('title',2,10),?) WHERE 'id' = ?` |
+| UpdateTest.java#updateSetFuncTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:407 | `UPDATE 'a123123' SET 'title' = CONCAT(SUBSTR('title',2,10),LOWER('id')) WHERE 'id' = ?` |
 | UpdateTest.java#updateTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:14 | `UPDATE 't_topic' SET 'stars' = ? WHERE 'id' = ? AND 'title' = ?` |
 | UpdateTest.java#updateTest10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:100 |  |
 | UpdateTest.java#updateTest11 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:110：参数文本：C# 枚举按底层整数参数化为 9(Integer)，Java 输出 CLASSER(TopicTypeEnum) | `UPDATE 't_topic_type' SET 'stars' = ? WHERE 'topic_type' = ?` |
@@ -1412,7 +1412,7 @@
 | QueryTest9.java#selectThrow6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest9.cs:58 |  |
 | QueryTest9.java#selectThrow7 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest9.cs:62：Java 抛 EasyQuerySingleMoreElementException；C# 多于一行时抛 InvalidOperationException（与 LINQ 的 Single 一致） |  |
 | QueryTest9.java#selectThrow9 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest9.cs:66：Java 按方法分 First / Single / Find / Required 四种异常，C# 都是 NotFoundException；多于一行时 C# 抛 InvalidOperationException，消息不同 | `SELECT t.'id',t.'stars',t.'title',t.'create_time' FROM 't_topic' t INNER JOIN 't_blog' t1 ON t1.'del…` |
-| UpdateTest.java#aaaa | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:457：Java 把 BlogEntity 全部列映射到 SysMenuDto（类型并不匹配）；C# 只投影用到的两列 |  |
+| UpdateTest.java#aaaa | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:459：Java 把 BlogEntity 全部列映射到 SysMenuDto（类型并不匹配）；C# 只投影用到的两列 |  |
 | mysql8/CTETest.java#cteTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:77 | `WITH 'm8_user_temp' AS (SELECT t.'id',t.'name' FROM 'm8_user' t WHERE t.'age' IS NULL) SELECT t2.'na…` |
 | mysql8/CrossJoinTest.java#crossJoin1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:369 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t CROSS JOIN 't…` |
 | mysql8/MySQL8Test2.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.cs:13 | `SELECT t2.'id',t2.'name',t2.'create_time',t2.'__part__column1' AS '__part__column1' FROM (SELECT t.'…` |
@@ -2040,9 +2040,9 @@
 | UpdateTest.java#updateTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:64 | `UPDATE 't_topic' SET 'title' = ? WHERE 'id' = ?` |
 | UpdateTest.java#updateTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:64 | `UPDATE 't_topic' SET 'title' = ? WHERE 'id' = ?` |
 | UpdateTest.java#updateTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:64 | `UPDATE 't_topic' SET 'title' = ? WHERE 'id' = ?` |
-| UpdateTest.java#updateTrackParameterTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:353 | `UPDATE 'aaaxxx' SET 'title' = ? WHERE 'id' = ? AND 'title' = ?` |
-| UpdateTest.java#updateTrackParameterTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:371 | `UPDATE 'aaaxxx' SET 'title' = ? WHERE 'id' = ? AND 'title' = ?` |
-| UpdateTest.java#updateTrackParameterTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:371 | `UPDATE 'aaaxxx' SET 'stars' = ?,'create_time' = ? WHERE 'id' = ? AND 'title' = ?` |
+| UpdateTest.java#updateTrackParameterTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:355 | `UPDATE 'aaaxxx' SET 'title' = ? WHERE 'id' = ? AND 'title' = ?` |
+| UpdateTest.java#updateTrackParameterTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:373 | `UPDATE 'aaaxxx' SET 'title' = ? WHERE 'id' = ? AND 'title' = ?` |
+| UpdateTest.java#updateTrackParameterTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:373 | `UPDATE 'aaaxxx' SET 'stars' = ?,'create_time' = ? WHERE 'id' = ? AND 'title' = ?` |
 | UpdateTest1.java#updateTest51 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest1.cs:75 |  |
 | UpdateTest1.java#updateTestUpdate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest1.cs:108 | `UPDATE 't_topic' SET 'title' = ?,'create_time' = ? WHERE 'id' = ?` |
 | mysql8/ManyJoinTest.java#testManyJoinGroup1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:184 |  |
@@ -2084,7 +2084,7 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| DeleteTest.java#testBatchDelete | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:108：批量：Java 一条语句两组参数，C# 每个实体一条语句 | `DELETE FROM 't_topic' WHERE 'id' = ?` |
+| DeleteTest.java#testBatchDelete | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:108 | `DELETE FROM 't_topic' WHERE 'id' = ?` |
 | GenericWithDatabaseTest.java#queryLargeColumnTest10 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:55 | `UPDATE 'query_large_column_test' SET 'name' = ? WHERE 'id' = ?` |
 | GenericWithDatabaseTest.java#queryLargeColumnTest11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:60 | `UPDATE 'query_large_column_test' SET 'content' = ? WHERE 'id' = ?` |
 | GenericWithDatabaseTest.java#queryLargeColumnTest12 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:65 |  |
@@ -2092,23 +2092,23 @@
 | GenericWithDatabaseTest.java#queryLargeColumnTest6 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:32 | `INSERT INTO 'query_large_column_test' ('id','name','content') VALUES (?,?,?)` |
 | GenericWithDatabaseTest.java#queryLargeColumnTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:37 | `INSERT INTO 'query_large_column_test' ('name','content') VALUES (?,?)` |
 | GenericWithDatabaseTest.java#queryLargeColumnTest9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:47 |  |
-| InsertTest.java#insertBatch | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:100：Java 的 batch() 返回 JDBC 的 SUCCESS_NO_INFO（-3）；C# 每个实体一条语句，返回真实行数 |  |
+| InsertTest.java#insertBatch | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:100：Java 的 batch() 在 rewriteBatchedStatements 下返回 JDBC 的 SUCCESS_NO_INFO（-3）；C# 的批量返回真实行数 |  |
 | InsertTest.java#mapInsertTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:133 | `INSERT INTO 'aaaaa' ('id','name') VALUES (?,?)` |
 | InsertTest.java#mapInsertTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:141 | `INSERT INTO 'aaaaa' ('id','name','name1') VALUES (?,?,?)` |
 | InsertTest.java#mapInsertTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:146 | `INSERT INTO 'aaaaa' ('id','name','name1','name2') VALUES (?,?,?,?)` |
-| InsertTest.java#testIncrement | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:152：批量规模缩小（Java 共 1.8 万行，验证的是自增键逐行回填）；C# 每行一条语句，批量写入见 M5.7 | `truncate table t_test_inc;` |
-| InsertTest1.java#tesInsertMapKey2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:45 | `INSERT INTO "xxx" ("ID","STARS","USERNAME") VALUES (?,ifnull("STARS",0)+?,?)` |
+| InsertTest.java#testIncrement | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:152 | `truncate table t_test_inc;` |
+| InsertTest1.java#tesInsertMapKey2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:73 | `INSERT INTO "xxx" ("ID","STARS","USERNAME") VALUES (?,ifnull("STARS",0)+?,?)` |
 | UpdateTest.java#mapUpdateTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:267 | `UPDATE 'aaa' SET 'name' = ? WHERE 'id' = ?` |
 | UpdateTest.java#mapUpdateTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:272 | `UPDATE 'aaa' SET 'name' = ?,'name1' = ? WHERE 'id' = ?` |
 | UpdateTest.java#mapUpdateTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:277 |  |
 | UpdateTest.java#mapUpdateTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:284 | `UPDATE 't_topic' SET 'stars' = ? WHERE 'id' = ?` |
 | UpdateTest.java#mapUpdateTest511 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:296 |  |
-| UpdateTest.java#testColumnConfigure1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:434 | `INSERT INTO 'xxxxx' ('id','stars','title','create_time') VALUES (?,ifnull('stars',0)+?,?,?)` |
+| UpdateTest.java#testColumnConfigure1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:436 | `INSERT INTO 'xxxxx' ('id','stars','title','create_time') VALUES (?,ifnull('stars',0)+?,?,?)` |
 | UpdateTest.java#updateTest8 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:82 | `UPDATE 't_topic' SET 'title' = ? WHERE 'id' = ?` |
 | UpdateTest.java#updateTest9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:91 | `UPDATE 't_topic' SET 'stars' = ?,'create_time' = ? WHERE 'id' = ?` |
-| UpdateTest.java#updateTestBatch | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:310：批量：Java 用 JDBC batch 一条语句多组参数，C# 每个实体一条语句；Java 的 ignoreVersion 留到版本号（M5.3） |  |
-| UpdateTest.java#updateTestBatch1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:318：同 updateTestBatch |  |
-| UpdateTest.java#updateTestBatch2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:326：同 updateTestBatch |  |
+| UpdateTest.java#updateTestBatch | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:310 |  |
+| UpdateTest.java#updateTestBatch1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:318 |  |
+| UpdateTest.java#updateTestBatch2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:326 |  |
 | mysql8/MySQL8Test3.java#batchTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test3.cs:133 |  |
 
 ### upsert（`write.upsert`，M5）
@@ -2121,7 +2121,7 @@
 | InsertTest.java#insertDuplicateKeyUpdate1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:62 | `INSERT INTO 't_topic_auto' ('stars','title','create_time') VALUES (?,?,?) ON DUPLICATE KEY UPDATE 's…` |
 | InsertTest.java#insertDuplicateKeyUpdate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:67 | `INSERT INTO 't_topic_auto' ('stars','title','create_time') VALUES (?,?,?) ON DUPLICATE KEY UPDATE 's…` |
 | InsertTest.java#insertTestx | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest.cs:84 |  |
-| InsertTest1.java#inertTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:26 | `INSERT INTO 't_topic_abc' ('id','stars','title','create_time') VALUES (?,?,?,?) ON DUPLICATE KEY UPD…` |
+| InsertTest1.java#inertTest2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:54 | `INSERT INTO 't_topic_abc' ('id','stars','title','create_time') VALUES (?,?,?,?) ON DUPLICATE KEY UPD…` |
 | QueryTest14.java#testxxxxx | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertOrUpdateTest.cs:35 | `MERGE INTO "t_topic" t1 USING (SELECT ? AS "id",? AS "stars",? AS "title",? AS "create_time" FROM DU…` |
 | pgsql/InsertTest.java#insertDuplicateKeyIgnore2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgInsertTest.cs:12 | `INSERT INTO "t_topic_auto" ("stars","title","create_time") VALUES (?,?,?) ON CONFLICT DO NOTHING` |
 | pgsql/InsertTest.java#insertDuplicateKeyUpdate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgInsertTest.cs:17 | `INSERT INTO "t_topic_auto" ("stars","title","create_time") VALUES (?,?,?) ON CONFLICT ("title") DO U…` |
@@ -2427,7 +2427,7 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| InsertTest1.java#testInsert | 待做 |  | `INSERT INTO 't_test_insert' ('id','column1','column2') VALUES (?,?,?)` |
+| InsertTest1.java#testInsert | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:15 | `INSERT INTO 't_test_insert' ('id','column1','column2') VALUES (?,?,?)` |
 | MigrationTest.java#createTableSQLTest1 | 待做 |  | `CREATE TABLE IF NOT EXISTS 'my_migration_blog' ( 'id' VARCHAR(255) NOT NULL , 'create_time' DATETIME…` |
 | MigrationTest.java#createTableSQLTest2 | 待做 |  | `ALTER TABLE 't_topic' RENAME TO 't_topic2';` |
 | MigrationTest.java#createTableSQLTest3 | 待做 |  | `ALTER TABLE 't_topic' CHANGE 'title' 'abc' varchar(200) NULL;` |
@@ -2676,7 +2676,7 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| InsertTest1.java#testColumnConfigure2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:36 | `INSERT INTO 'xxx' ('id','stars') VALUES (?,ifnull('stars',0)+?)` |
+| InsertTest1.java#testColumnConfigure2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/InsertTest1.cs:64 | `INSERT INTO 'xxx' ('id','stars') VALUES (?,ifnull('stars',0)+?)` |
 | QueryAggregateTest1.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:250 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
 | QueryAggregateTest1.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:269 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
 | QueryAggregateTest1.java#test3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/EntityQueryAggregateTest.cs:288 | `SELECT SUM(t.'stars') FROM 't_topic' t RIGHT JOIN 't_topic' t1 ON t.'id' = t1.'id' RIGHT JOIN 't_top…` |
@@ -2717,8 +2717,8 @@
 | QueryTest5.java#joinTest1_9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:40 | `SELECT AVG(t2.'stars') FROM 't_topic' t LEFT JOIN 't_topic' t1 ON t.'id' = t1.'id' LEFT JOIN 't_topi…` |
 | QueryTest5.java#joinTestx1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest5.cs:169 | `SELECT t.'title',t.'content',t.'url',t.'star',t.'publish_time',t.'score',t.'status',t.'order',t.'is_…` |
 | UpdateTest.java#mapUpdateTest1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:262 | `UPDATE 'aaa' SET 'name' = ? WHERE 'id' = ?` |
-| UpdateTest.java#testColumnConfigure2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:439 | `UPDATE 'xxxxx' SET 'stars' = ifnull('stars',0)+? WHERE 'id' = ?` |
-| UpdateTest.java#testColumnConfigure3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:448 | `UPDATE 'xxxxx' SET 'id' = ?,'stars' = ? WHERE 'id' = ?` |
+| UpdateTest.java#testColumnConfigure2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:441 | `UPDATE 'xxxxx' SET 'stars' = ifnull('stars',0)+? WHERE 'id' = ?` |
+| UpdateTest.java#testColumnConfigure3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest.cs:450 | `UPDATE 'xxxxx' SET 'id' = ?,'stars' = ? WHERE 'id' = ?` |
 | UpdateTest.java#updateTest26 | 待做 |  | `SELECT 'id','username',AES_DECRYPT(from_base64('phone'),?) AS 'phone','id_card','address','create_ti…` |
 | UpdateTest.java#updateTest26_1 | 待做 |  | `SELECT 'id','username',AES_DECRYPT(from_base64('phone'),?) AS 'phone','id_card','address','create_ti…` |
 | fork/live/TableNameMappingLiveTest.java#includeAndImplicitSubqueryReadArchiveTables | 待做 |  |  |
@@ -2733,7 +2733,7 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| DeleteTest.java#deletex2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:135 | `UPDATE 'asv'.'t_blog' xx SET xx.'deleted' = ? WHERE xx.'deleted' = ? AND xx.'id' = ?` |
+| DeleteTest.java#deletex2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/DeleteTest.cs:134 | `UPDATE 'asv'.'t_blog' xx SET xx.'deleted' = ? WHERE xx.'deleted' = ? AND xx.'id' = ?` |
 | GenericWithDatabaseTest.java#deleteTest15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:77 | `DELETE FROM 'xxx'.'query_large_column_testaaa' WHERE 'id' = ?` |
 | GenericWithDatabaseTest.java#deleteTest16 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:77 | `DELETE FROM 'xxx'.'query_large_column_testaaa' WHERE 'id' = ?` |
 | GenericWithDatabaseTest.java#queryLargeColumnTest19 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:95 | `UPDATE 'xxx'.'abc' SET 'content' = ? WHERE 'id' = ?` |

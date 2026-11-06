@@ -41,3 +41,15 @@ public class TestInc
 
     public DateTime? CreateTime { get; set; }
 }
+
+/// <summary>对应 Java：entity/TestInsert（批量插入时按写入的列分组）。</summary>
+[Table("t_test_insert")]
+public class TestInsert
+{
+    [Column(PrimaryKey = true)]
+    public string? Id { get; set; }
+
+    public string? Column1 { get; set; }
+
+    public string? Column2 { get; set; }
+}

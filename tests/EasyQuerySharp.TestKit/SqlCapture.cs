@@ -58,6 +58,14 @@ public sealed class SqlCapture : IExecutionListener
         /// <summary>断言第 <paramref name="index"/> 条 SQL 的参数。</summary>
         public void AssertParams(int index, string expected) => Assert.Equal(expected, JavaParams.Format(Events[index].Statement));
 
+        /// <summary>断言最后一次执行（批量时是一批）每条语句的参数，对应 Java 的 <c>getSqlParameters().get(i)</c>。</summary>
+        public void AssertBatchParams(params string[] expected) => AssertBatchParams(Last, expected);
+
+        /// <summary>断言第 <paramref name="index"/> 次执行每条语句的参数。</summary>
+        public void AssertBatchParams(int index, params string[] expected) => AssertBatchParams(Events[index], expected);
+
+        private static void AssertBatchParams(SqlExecutionEvent e, string[] expected) => Assert.Equal(expected, e.Statements.Select(JavaParams.Format));
+
         internal void Add(SqlExecutionEvent e)
         {
             lock (_lock) _events.Add(e);

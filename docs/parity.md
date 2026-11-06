@@ -55,7 +55,7 @@
 | 更新 | `write.update` | 59 | `db.Update<T>().Set(u => new T { Age = u.Age + 1 }).Where(..).ExecuteAsync()`；`db.Update(entity)` 按主键整行更新；`.Columns(..)` 限定列、`.WhereColumns(..)` 换定位列；字典 `db.UpdateMap(..)`；没有任何 SET 时抛异常（Java 是静默返回 0） | 完成 |
 | 删除 | `write.delete` | 25 | `db.Delete<T>().Where(..).ExecuteAsync()`；没有条件时必须写 `.All()`；逻辑删除的实体要真删时用 `.Hard()`；条件里可以用集合导航和对一导航 | 阶段 1 |
 | upsert | `write.upsert` | 13 | `.OnConflictIgnore(冲突列?)` / `.OnConflictUpdate(更新列?, 冲突列?)`：MySQL（INSERT IGNORE / ON DUPLICATE KEY UPDATE）、PG 与 SQLite（ON CONFLICT）、SQL Server 与 Oracle（单行 MERGE） | 阶段 1 |
-| 写哪些列、批量执行 | `write.strategy` | 26 | `.Columns(ColumnStrategy.OnlyNotNull)`，全局默认 `EasyDbOptions.UpdateStrategy`；批量写入走 `DbBatch`（阶段 1） | 阶段 1 |
+| 写哪些列、批量执行 | `write.strategy` | 26 | `.Columns(ColumnStrategy.OnlyNotNull)`，全局默认 `EasyDbOptions.UpdateStrategy`；`.Batch()` 按 SQL 分组一次发出（驱动支持时走 `DbBatch`），不在事务里时每组一个事务 | 完成 |
 | UPDATE / DELETE 里用导航 | `write.join` | 10 | `db.Update<Card>().Set(c => new Card { Type = c.User!.Name }).Where(c => c.User!.Name!.Contains("x"))`：对一导航生成 JOIN。MySQL：`UPDATE t INNER JOIN … SET` / `DELETE t FROM … JOIN`；PostgreSQL：`UPDATE … FROM` / `DELETE … USING`；SQL Server、Oracle、SQLite 在阶段 2 | 阶段 2 |
 | 追踪与差异更新 | `tracking` | 62 | `using var tracking = db.BeginTracking();` 后查出的实体被追踪，`db.Update(entity)` 只更新改过的列；`AsTracking()` / `AsNoTracking()`；`db.GetTrackedChanges(entity)`；不追踪时 `db.Update(after).Changes(before)` 只写两份之间不同的列 | 完成 |
 | 聚合根保存 | `save.aggregate` | 39 | `db.Save(root).ExecuteAsync()`（必须在追踪作用域与事务里）；级联声明 `[Navigate(Cascade = Cascade.Delete)]`；`.With(SaveBehavior.X)`、`.SavePath(..)`、`.RemoveRoot()`、`[SaveKey]`，见 [0004](decisions/0004-aggregate-save.md) | 完成 |

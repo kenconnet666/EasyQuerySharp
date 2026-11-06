@@ -278,7 +278,7 @@ public sealed class UpdateTest(MySqlFixture fixture) : MySqlTest(fixture)
     public async Task MapUpdateTest4()
     {
         Assert.Equal(1, await Db.Update<Topic>().Set(t => t.Stars, 12).Where(o => o.Id == "2").ExecuteAsync(Ct));
-        Assert.Equal(2, await Db.UpdateMap("t_topic", Map(("id", "2"), ("stars", 12)), Map(("id", "2"), ("stars", 12))).WhereColumns("id").ExecuteAsync(Ct));
+        Assert.Equal(2, await Db.UpdateMap("t_topic", Map(("id", "2"), ("stars", 12)), Map(("id", "2"), ("stars", 12))).WhereColumns("id").Batch().ExecuteAsync(Ct));
     }
 
     [Fact, Upstream("UpdateTest.java#mapUpdateTest5")]
@@ -286,11 +286,11 @@ public sealed class UpdateTest(MySqlFixture fixture) : MySqlTest(fixture)
     {
         // stars 不允许为 null，执行失败
         Assert.Equal("UPDATE `t_topic` SET `stars` = ? WHERE `id` = ?",
-            await FailedSql(() => Db.UpdateMap("t_topic", Map(("id", "2"), ("stars", null))).WhereColumns("id").ExecuteAsync(Ct)));
+            await FailedSql(() => Db.UpdateMap("t_topic", Map(("id", "2"), ("stars", null))).WhereColumns("id").Batch().ExecuteAsync(Ct)));
         using var listen = SqlCapture.Listen();
-        await Db.UpdateMap("t_topic", Map(("id", "2"), ("stars", 12))).WhereColumns("id").ExecuteAsync(Ct);
+        await Db.UpdateMap("t_topic", Map(("id", "2"), ("stars", 12))).WhereColumns("id").Batch().ExecuteAsync(Ct);
         listen.AssertSql("UPDATE `t_topic` SET `stars` = ? WHERE `id` = ?");
-        listen.AssertParams("12(Integer),2(String)");
+        listen.AssertBatchParams("12(Integer),2(String)");
     }
 
     [Fact, Upstream("UpdateTest.java#mapUpdateTest511")]
@@ -298,7 +298,7 @@ public sealed class UpdateTest(MySqlFixture fixture) : MySqlTest(fixture)
     {
         // 键区分大小写：字典里是 ID，定位列是 id
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Db.UpdateMap("t_topic", Map(("ID", "2"), ("stars", null))).WhereColumns("id").ExecuteAsync(Ct));
+            Db.UpdateMap("t_topic", Map(("ID", "2"), ("stars", null))).WhereColumns("id").Batch().ExecuteAsync(Ct));
         Assert.Equal("WHERE 列 id 在字典里不存在", ex.Message);
     }
 
@@ -306,30 +306,32 @@ public sealed class UpdateTest(MySqlFixture fixture) : MySqlTest(fixture)
         .Select(i => new Topic { Id = "1234567890x" + i, Stars = 1, Title = titleWithIndex ? "1234567890x" + i : "1234567890x", CreateTime = null })
         .ToList();
 
-    // Java 的 batch() 是一条语句多组参数；这里每个实体一条语句，逐条核对参数
-    [Fact, Upstream("UpdateTest.java#updateTestBatch", Deviation = "批量：Java 用 JDBC batch 一条语句多组参数，C# 每个实体一条语句；Java 的 ignoreVersion 留到版本号（M5.3）")]
+    // 一条语句、100 组参数
+    [Fact, Upstream("UpdateTest.java#updateTestBatch")]
     public async Task UpdateTestBatch()
     {
         using var listen = SqlCapture.Listen();
-        await Db.Update(BatchTopics(false)).ExecuteAsync(Ct);
-        for (var i = 0; i < 100; i++) listen.AssertParams(i, $"1(Integer),1234567890x(String),null(null),1234567890x{i}(String)");
+        await Db.Update(BatchTopics(false)).Batch().IgnoreVersion().ExecuteAsync(Ct);
+        listen.AssertBatchParams([.. Enumerable.Range(0, 100).Select(i => $"1(Integer),1234567890x(String),null(null),1234567890x{i}(String)")]);
     }
 
-    [Fact, Upstream("UpdateTest.java#updateTestBatch1", Deviation = "同 updateTestBatch")]
+    [Fact, Upstream("UpdateTest.java#updateTestBatch1")]
     public async Task UpdateTestBatch1()
     {
         using var listen = SqlCapture.Listen();
-        await Db.Update(BatchTopics(false)).SetColumns(o => o.Stars).ExecuteAsync(Ct);
-        for (var i = 0; i < 100; i++) listen.AssertParams(i, $"1(Integer),1234567890x{i}(String)");
+        await Db.Update(BatchTopics(false)).SetColumns(o => o.Stars).Batch().IgnoreVersion().ExecuteAsync(Ct);
+        listen.AssertBatchParams([.. Enumerable.Range(0, 100).Select(i => $"1(Integer),1234567890x{i}(String)")]);
     }
 
-    [Fact, Upstream("UpdateTest.java#updateTestBatch2", Deviation = "同 updateTestBatch")]
+    [Fact, Upstream("UpdateTest.java#updateTestBatch2")]
     public async Task UpdateTestBatch2()
     {
         using var listen = SqlCapture.Listen();
-        await Db.Update(BatchTopics(true)).SetColumns(o => o.Title).ExecuteAsync(Ct);
-        await Db.Update(BatchTopics(true)).SetColumns(o => new { o.Title }).ExecuteAsync(Ct);
-        for (var i = 0; i < 200; i++) listen.AssertParams(i, $"1234567890x{i % 100}(String),1234567890x{i % 100}(String)");
+        await Db.Update(BatchTopics(true)).SetColumns(o => o.Title).Batch().IgnoreVersion().ExecuteAsync(Ct);
+        await Db.Update(BatchTopics(true)).SetColumns(o => new { o.Title }).Batch().IgnoreVersion().ExecuteAsync(Ct);
+        string[] expected = [.. Enumerable.Range(0, 100).Select(i => $"1234567890x{i}(String),1234567890x{i}(String)")];
+        listen.AssertBatchParams(0, expected);
+        listen.AssertBatchParams(1, expected);
     }
 
     [Fact, Upstream("UpdateTest.java#updateSet1")]

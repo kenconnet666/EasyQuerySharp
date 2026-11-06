@@ -135,7 +135,7 @@ public sealed class MySQL8Test3(Mysql8Fixture fixture) : Mysql8Test(fixture)
     {
         var rows = Enumerable.Range(0, 10).Select(i => new BatchInsert { Name = i.ToString(System.Globalization.CultureInfo.InvariantCulture) })
             .OrderBy(_ => Guid.NewGuid()).ToList();
-        await Db.Insert<BatchInsert>(rows).FillGeneratedKeys().ExecuteAsync(Ct);
+        await Db.Insert<BatchInsert>(rows).Batch().FillGeneratedKeys().ExecuteAsync(Ct);
         var saved = await Db.Query<BatchInsert>().Where(b => rows.Select(r => r.Id).Contains(b.Id)).ToListAsync(Ct);
         Assert.Equal(rows.Count, saved.Count);
         foreach (var row in saved) Assert.Equal(rows.Single(r => r.Name == row.Name).Id, row.Id);

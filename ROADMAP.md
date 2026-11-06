@@ -1,6 +1,6 @@
 # ROADMAP
 
-状态标记：`[ ]` 未开始、`[~]` 进行中、`[x]` 完成、`[!]` 待决（原因写在该项下面）。每项一个分支一个 PR，规则见 [CLAUDE.md](CLAUDE.md)。
+状态标记：`[ ]` 未开始、`[~]` 进行中、`[x]` 完成、`[!]` 待决（原因写在该项下面）。每项直接在 master 上做，做完提交推送，规则见 [CLAUDE.md](CLAUDE.md)。
 
 本文只列还没做完的事。已完成能力的写法与限制见 [能力对照总表](docs/parity.md) 和各能力文档；2026-11-06 重新规划之前的版本见 git `0f0b76f:ROADMAP.md`。
 
@@ -15,8 +15,8 @@
 
 ## 现状（2026-11-06）
 
-- 对标：已移植 1726、偏离 224、不适用 78、骨架 6、待做 370。
-- 待做的分布：方言 222，平台能力 128（分库分表 48、search 45、code-first 15、表名 / schema / link 14、按对象筛选 6），其余零散 20。
+- 对标：已移植 1811、偏离 140、不适用 137、骨架 6、待做 310。
+- 待做的分布：方言 206，平台能力 82（分库分表 48、code-first 14、表名 / schema / link 14、按对象筛选 6），其余零散 22。
 - 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle 任务。master 的 CI 全绿。
 
 ## 已定的取舍
@@ -82,7 +82,7 @@ R → 1 → 2 → 3 → 4 → 5。
 - [x] 1.2 沿集合导航展开 `SelectMany`：按 LINQ 语义写成 INNER JOIN（多对多经中间表，导航的固定条件与逻辑删除写进 ON，保留重复），连着写的 SelectMany 和之后的 Where / OrderBy / Select 直接作用在最后连接的表上；父查询分页、去重、分组、投影过时先包成派生表；支持查询语法 `from a in q from b in a.Bs`。Java 的 testToListFlat1 记为偏离（Java 逐层带出再去重）。
 - [x] 1.3 值对象 `[ValueObject]`（对应 TS 的 `embed()`；Java 的 `@ValueObject` 已弃用，没有用例）：几列合成实体上的嵌套对象，可嵌套、可换前缀；条件、隐式子查询、整体投影、按结构映射到 DTO、插入、`Set` 整个或部分写入、建表都支持。
 - [x] 1.4 不追踪时的差异更新 `db.Update(after).Changes(before)`：只写两份之间不同的列，没有不同就不发语句；`WhereColumns` 的定位值取修改前的。
-- [ ] 1.5 批量写入走 `DbBatch`。做完后复核按"每个实体一条语句"记的偏离：DeleteTest testBatchDelete、InsertTest testIncrement、UpdateTest updateTestBatch / updateTestBatch1 / updateTestBatch2。
+- [x] 1.5 批量写入 `.Batch()`（实体与字典的插入、更新、删除）：按 SQL 分组，组按首次出现的顺序、每组最多 1000 条（与 Java 一致）；驱动支持 `DbBatch` 时交给它（Npgsql 一组一个往返；MySqlConnector 对 MySQL 不省往返），否则同连接逐条执行（SQLite）；监听器每组一次，`SqlExecutionEvent.Statements` 是整组。不在事务里时每组在自己的事务里执行，整组成败一致，MySQL 也免了逐条提交的刷盘（1.8 万行回填自增键从 2 分 40 秒降到 5 秒）。回填自增键：语句自带 RETURNING / OUTPUT 的直接读，MySQL 在每条插入后跟一条 `LAST_INSERT_ID()`。5 条批量偏离改回已移植，InsertTest1 testInsert 移植；insertBatch 仍是偏离（Java 返回 JDBC 的 -3）。
 - [ ] 1.6 `Returning()`：PG 的 UPDATE / DELETE … RETURNING，其余方言在渲染期报错（fork ReturningSqlTest、ReturningLiveTest）。
 - [ ] 1.7 窗口取值函数省略排序时，沿用查询的 ORDER BY；做完后 MySQL8Test3 nextTest3 的偏离改回已移植。
 - [ ] 1.8 零散用例：

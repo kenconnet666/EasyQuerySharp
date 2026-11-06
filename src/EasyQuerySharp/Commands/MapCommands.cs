@@ -37,6 +37,15 @@ public abstract class MapCommandBase<TSelf> where TSelf : MapCommandBase<TSelf>
 
     private TSelf Self => (TSelf)this;
 
+    private bool _batch;
+
+    /// <summary>批量执行（对应 Java 的 batch()）：各行的语句按 SQL 分组一次发出，同实体写入的 <c>Batch()</c>。</summary>
+    public TSelf Batch(bool use = true)
+    {
+        _batch = use;
+        return Self;
+    }
+
     /// <summary>写哪些列（对应 Java 的 setSQLStrategy）。</summary>
     public TSelf Columns(ColumnStrategy strategy)
     {
@@ -58,12 +67,13 @@ public abstract class MapCommandBase<TSelf> where TSelf : MapCommandBase<TSelf>
     /// <summary>同 <see cref="ToSql"/>，连同参数。</summary>
     public SqlStatement ToStatement() => Render(Rows.Count > 0 ? Rows[0] : throw new InvalidOperationException("没有要写入的行"));
 
-    /// <summary>执行，返回受影响的总行数（每行一条语句，在同一连接上依次执行）。</summary>
+    /// <summary>执行，返回受影响的总行数（每行一条语句，在同一连接上依次执行；批量见 <see cref="Batch"/>）。</summary>
     public Task<long> ExecuteAsync(CancellationToken cancellationToken = default) =>
         Db.Executor.SessionAsync(async session =>
         {
             long total = 0;
-            foreach (var row in Rows) total += await session.ExecuteAsync(Render(row), cancellationToken).ConfigureAwait(false);
+            foreach (var batch in WriteBatches.Of(Rows.Select(Render), s => s, _batch))
+                total += (await session.ExecuteBatchAsync(batch, cancellationToken).ConfigureAwait(false)).Total;
             return total;
         }, cancellationToken);
 

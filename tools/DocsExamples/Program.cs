@@ -103,23 +103,24 @@ static async Task<CardRun> RunAsync(MethodInfo method, SqlDialect dialect, Tape 
     {
         var task = (Task)method.Invoke(null, [db])!;
         await task;
-        return new CardRun(capture.Statements, null);
+        return new CardRun(capture.Executions, null);
     }
     catch (Exception ex)
     {
         var inner = ex is TargetInvocationException { InnerException: { } e } ? e : ex;
-        return new CardRun(capture.Statements, inner.Message.ReplaceLineEndings(" "));
+        return new CardRun(capture.Executions, inner.Message.ReplaceLineEndings(" "));
     }
 }
 
-// 每张卡片：-- 名字：标题，然后每条语句和参数；出错时最后一行写 -- error
+// 每张卡片：-- 名字：标题，然后每次执行的语句和参数（批量执行写一次语句、每条一行参数）；出错时最后一行写 -- error
 static void Append(StringBuilder text, string name, string title, CardRun run)
 {
     text.Append("-- ").Append(name).Append('：').Append(title).Append('\n');
-    foreach (var statement in run.Statements)
+    foreach (var statements in run.Executions)
     {
-        text.Append(statement.Text).Append(";\n");
-        if (statement.Parameters.Count > 0) text.Append("-- params: [").AppendJoin(", ", statement.Parameters.Select(p => Format(p.Value))).Append("]\n");
+        text.Append(statements[0].Text).Append(";\n");
+        foreach (var statement in statements.Where(s => s.Parameters.Count > 0))
+            text.Append("-- params: [").AppendJoin(", ", statement.Parameters.Select(p => Format(p.Value))).Append("]\n");
     }
     if (run.Error is not null) text.Append("-- error: ").Append(run.Error).Append('\n');
     text.Append('\n');
@@ -143,13 +144,13 @@ static string FindRepositoryRoot()
     throw new InvalidOperationException("找不到仓库根目录（EasyQuerySharp.slnx）");
 }
 
-/// <summary>一张卡片在一种方言上的执行：发出的语句，出错时的消息。</summary>
-internal sealed record CardRun(IReadOnlyList<SqlStatement> Statements, string? Error);
+/// <summary>一张卡片在一种方言上的执行：每次执行的语句（批量时是一批），出错时的消息。</summary>
+internal sealed record CardRun(IReadOnlyList<IReadOnlyList<SqlStatement>> Executions, string? Error);
 
-/// <summary>记下执行的每条语句。</summary>
+/// <summary>记下每次执行的语句。</summary>
 internal sealed class Capture : IExecutionListener
 {
-    public List<SqlStatement> Statements { get; } = [];
+    public List<IReadOnlyList<SqlStatement>> Executions { get; } = [];
 
-    public void OnExecuting(SqlExecutionEvent e) => Statements.Add(e.Statement);
+    public void OnExecuting(SqlExecutionEvent e) => Executions.Add(e.Statements);
 }

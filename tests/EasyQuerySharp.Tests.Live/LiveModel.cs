@@ -91,6 +91,19 @@ public class Setting
     public string? Value { get; set; }
 }
 
+/// <summary>带乐观锁版本的便签：验证批量更新后新版本写回实体。</summary>
+[Table("t_live_note")]
+public class Note
+{
+    [Column(PrimaryKey = true, Generated = true)]
+    public long Id { get; set; }
+
+    public string Text { get; set; } = "";
+
+    [Version]
+    public long? Version { get; set; }
+}
+
 /// <summary>JSON 列：地址列表与扩展字段（对应 Java fork 的 ForkProfile）。</summary>
 [Table("t_live_profile")]
 public class Profile

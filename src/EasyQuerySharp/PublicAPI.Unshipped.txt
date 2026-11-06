@@ -14,6 +14,7 @@ EasyQuerySharp.Commands.EntityCommandBase<TSelf, T>.AsSchema(System.Func<string!
 EasyQuerySharp.Commands.EntityCommandBase<TSelf, T>.AsSchema(string! schema) -> TSelf!
 EasyQuerySharp.Commands.EntityCommandBase<TSelf, T>.AsTable(System.Func<string!, string!>! rename) -> TSelf!
 EasyQuerySharp.Commands.EntityCommandBase<TSelf, T>.AsTable(string! tableName) -> TSelf!
+EasyQuerySharp.Commands.EntityCommandBase<TSelf, T>.Batch(bool use = true) -> TSelf!
 EasyQuerySharp.Commands.EntityCommandBase<TSelf, T>.Db.get -> EasyQuerySharp.EasyDb!
 EasyQuerySharp.Commands.EntityCommandBase<TSelf, T>.DisableInterceptor(string! name) -> TSelf!
 EasyQuerySharp.Commands.EntityCommandBase<TSelf, T>.DisableInterceptors() -> TSelf!
@@ -34,6 +35,7 @@ EasyQuerySharp.Commands.InsertSelectCommand<T>.ExecuteAsync(System.Threading.Can
 EasyQuerySharp.Commands.InsertSelectCommand<T>.ToSql() -> string!
 EasyQuerySharp.Commands.InsertSelectCommand<T>.ToStatement() -> EasyQuerySharp.SqlStatement!
 EasyQuerySharp.Commands.MapCommandBase<TSelf>
+EasyQuerySharp.Commands.MapCommandBase<TSelf>.Batch(bool use = true) -> TSelf!
 EasyQuerySharp.Commands.MapCommandBase<TSelf>.ColumnSql(string! column, string! template) -> TSelf!
 EasyQuerySharp.Commands.MapCommandBase<TSelf>.Columns(EasyQuerySharp.Commands.ColumnStrategy strategy) -> TSelf!
 EasyQuerySharp.Commands.MapCommandBase<TSelf>.Db.get -> EasyQuerySharp.EasyDb!
@@ -396,6 +398,7 @@ EasyQuerySharp.Execution.SqlExecutionEvent.Elapsed.get -> System.TimeSpan
 EasyQuerySharp.Execution.SqlExecutionEvent.Exception.get -> System.Exception?
 EasyQuerySharp.Execution.SqlExecutionEvent.Rows.get -> long?
 EasyQuerySharp.Execution.SqlExecutionEvent.Statement.get -> EasyQuerySharp.SqlStatement!
+EasyQuerySharp.Execution.SqlExecutionEvent.Statements.get -> System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlStatement!>!
 EasyQuerySharp.Filtering.FilterAttribute
 EasyQuerySharp.Filtering.FilterAttribute.AllowEmptyStrings.get -> bool
 EasyQuerySharp.Filtering.FilterAttribute.AllowEmptyStrings.init -> void

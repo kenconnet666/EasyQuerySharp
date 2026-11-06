@@ -20,7 +20,7 @@ public sealed record LiveSuiteOptions
 public abstract partial class LiveSuite
 {
     // 删表顺序：子表在前
-    private static readonly Type[] Tables = [typeof(Profile), typeof(Setting), typeof(Comment), typeof(Post), typeof(User), typeof(Company)];
+    private static readonly Type[] Tables = [typeof(Profile), typeof(Setting), typeof(Note), typeof(Comment), typeof(Post), typeof(User), typeof(Company)];
 
     /// <summary>种子数据里用户的创建时间（毫秒精度，各库都要原样读回）。</summary>
     protected static readonly DateTime CreatedAt = new(2026, 1, 2, 3, 4, 5, 6);

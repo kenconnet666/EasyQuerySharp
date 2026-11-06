@@ -1,8 +1,40 @@
 namespace EasyQuerySharp.Tests.Live;
 
-// 写入：表达式更新、经集合导航的更新删除、整行更新、整表删除的保护、事务、行锁串行化、期望行数
+// 写入：表达式更新、经集合导航的更新删除、整行更新、整表删除的保护、批量写入、事务、行锁串行化、期望行数
 public abstract partial class LiveSuite
 {
+    // 同一 SQL 的多条一次执行：插入回填自增键，带版本的更新把新版本写回实体
+    [Fact]
+    public async Task BatchesWritesWithTheSameSql()
+    {
+        var db = await SeededAsync();
+        List<Note> notes = [new() { Text = "a", Version = 1 }, new() { Text = "b", Version = 1 }, new() { Text = "c", Version = 1 }];
+        using var listen = SqlCapture.Listen();
+        Assert.Equal(3, await db.Insert(notes).Batch().FillGeneratedKeys().ExecuteAsync(Ct));
+        Assert.Equal(3, listen.Last.Statements.Count);
+        Assert.Equal(notes.Select(n => n.Id).Order().Distinct(), notes.Select(n => n.Id));
+
+        foreach (var note in notes) note.Text += "!";
+        Assert.Equal(3, await db.Update(notes).Batch().ExecuteAsync(Ct));
+        Assert.Equal(3, listen.Last.Statements.Count);
+        Assert.All(notes, n => Assert.Equal(2, n.Version));
+        Assert.Equal(["a!", "b!", "c!"], await db.Query<Note>().OrderBy(n => n.Id).Select(n => n.Text).ToListAsync(Ct));
+
+        Assert.Equal(3, await db.Delete(notes).Batch().ExecuteAsync(Ct));
+        Assert.Equal(3, listen.Last.Statements.Count);
+        Assert.Equal(0, await db.Query<Note>().CountAsync(Ct));
+    }
+
+    // 不在事务里时一批在自己的事务里执行：其中一条失败，整批都不生效
+    [Fact]
+    public async Task FailedBatchWritesNothing()
+    {
+        var db = await SeededAsync();
+        List<Setting> settings = [new() { Code = "a", Value = "1" }, new() { Code = "b", Value = "2" }, new() { Code = "a", Value = "3" }];
+        await Assert.ThrowsAsync<EasyQueryException>(() => db.Insert(settings).Batch().ExecuteAsync(Ct));
+        Assert.Equal(0, await db.Query<Setting>().CountAsync(Ct));
+    }
+
     [Fact]
     public async Task UpdatesWithExpressionsAndConditions()
     {

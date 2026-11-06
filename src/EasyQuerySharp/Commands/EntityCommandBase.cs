@@ -31,6 +31,20 @@ public abstract class EntityCommandBase<TSelf, T>
 
     private protected TSelf Self => (TSelf)this;
 
+    private protected bool UseBatch { get; private set; }
+
+    /// <summary>
+    /// 批量执行（对应 Java 的 batch()）：多个实体的语句按 SQL 分组，每组（最多 1000 条）一次发出，监听器每组收到一次执行。
+    /// 驱动支持 <see cref="System.Data.Common.DbBatch"/> 时一组是一个往返，否则在同一连接上逐条执行。
+    /// 组按首次出现的顺序执行，组内保持原顺序（与 Java 一致）。不在事务里时每组在自己的事务里执行，整组成功或整组不生效。
+    /// 驱动不逐条报告行数时（MySqlConnector），带版本的更新只有整组都写到才把新版本写回实体。
+    /// </summary>
+    public TSelf Batch(bool use = true)
+    {
+        UseBatch = use;
+        return Self;
+    }
+
     /// <summary>写入到另一张同结构的表（对应 Java 的 asTable）。</summary>
     public TSelf AsTable(string tableName)
     {

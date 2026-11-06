@@ -3,14 +3,20 @@ namespace EasyQuerySharp.Execution;
 /// <summary>一次 SQL 执行的信息，交给 <see cref="IExecutionListener"/>。</summary>
 public sealed class SqlExecutionEvent
 {
-    internal SqlExecutionEvent(SqlStatement statement, EasyDb db)
+    internal SqlExecutionEvent(IReadOnlyList<SqlStatement> statements, EasyDb db)
     {
-        Statement = statement;
+        Statements = statements;
         Db = db;
     }
 
-    /// <summary>执行的语句。</summary>
-    public SqlStatement Statement { get; }
+    /// <summary>执行的语句；批量执行时是这一批的第一条。</summary>
+    public SqlStatement Statement => Statements[0];
+
+    /// <summary>
+    /// 这次执行的全部语句：通常只有 <see cref="Statement"/> 一条；批量写入（<c>Batch()</c>）时是 SQL 相同、参数不同的一批，
+    /// 对应 Java 监听里的多组参数。
+    /// </summary>
+    public IReadOnlyList<SqlStatement> Statements { get; }
 
     /// <summary>所属的 <see cref="EasyDb"/>。</summary>
     public EasyDb Db { get; }

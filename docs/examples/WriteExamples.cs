@@ -9,9 +9,13 @@ public static class WriteExamples
     public static Task<long> InsertOne(EasyDb db) =>
         db.Insert(new Tag { Name = "性能" }).ExecuteAsync();
 
-    [Example("write", "批量插入")]
+    [Example("write", "插入多行：每行一条语句")]
     public static Task<long> InsertMany(EasyDb db) =>
         db.Insert(new Tag { Name = "测试" }, new Tag { Name = "运维" }).ExecuteAsync();
+
+    [Example("write", "批量写入：同一 SQL 的多行一次发出，整批在一个事务里")]
+    public static Task<long> InsertBatch(EasyDb db) =>
+        db.Insert(new Tag { Name = "前端" }, new Tag { Name = "后端" }, new Tag { Name = "数据" }).Batch().ExecuteAsync();
 
     [Example("write", "按条件更新：值可以引用原列")]
     public static Task<long> UpdateWithExpression(EasyDb db) =>

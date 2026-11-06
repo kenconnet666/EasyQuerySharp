@@ -105,15 +105,14 @@ public sealed class DeleteTest(MySqlFixture fixture) : MySqlTest(fixture)
         listen.AssertParams("true(Boolean),false(Boolean),1(String)");
     }
 
-    [Fact, Upstream("DeleteTest.java#testBatchDelete", Deviation = "批量：Java 一条语句两组参数，C# 每个实体一条语句")]
+    [Fact, Upstream("DeleteTest.java#testBatchDelete")]
     public async Task TestBatchDelete()
     {
         List<Topic> topics = [new() { Id = "123pppxxx", Title = "123123", Stars = 2 }, new() { Id = "123pppxxx1", Title = "1231231", Stars = 1 }];
         using var listen = SqlCapture.Listen();
-        await Db.Delete(topics).ExecuteAsync(Ct);
-        listen.AssertSql(0, "DELETE FROM `t_topic` WHERE `id` = ?");
-        listen.AssertParams(0, "123pppxxx(String)");
-        listen.AssertParams(1, "123pppxxx1(String)");
+        await Db.Delete(topics).Batch().ExecuteAsync(Ct);
+        listen.AssertSql("DELETE FROM `t_topic` WHERE `id` = ?");
+        listen.AssertBatchParams("123pppxxx(String)", "123pppxxx1(String)");
     }
 
     [Fact, Upstream("DeleteTest.java#delete", NotApplicable = "检查的是 Java 删除命令的内部构建器，C# 没有对应的公开状态")]

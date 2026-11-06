@@ -201,12 +201,13 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         var rows = await Db.Executor.SessionAsync(async session =>
         {
             long total = 0;
-            foreach (var s in statements)
+            foreach (var batch in WriteBatches.Of(statements, s => s.Statement, UseBatch))
             {
-                var affected = await session.ExecuteAsync(s.Statement, cancellationToken).ConfigureAwait(false);
+                var rows = await session.ExecuteBatchAsync([.. batch.Select(s => s.Statement)], cancellationToken).ConfigureAwait(false);
                 // 乐观锁：写成功才把新版本写回实体，冲突（0 行）时实体保持原版本
-                if (affected > 0 && s is { Entity: { } written, NewVersion: { } version }) Entity.VersionColumn!.Setter?.Invoke(written, version);
-                total += affected;
+                for (var i = 0; i < batch.Count; i++)
+                    if (rows.Wrote(i) && batch[i] is { Entity: { } written, NewVersion: { } version }) Entity.VersionColumn!.Setter?.Invoke(written, version);
+                total += rows.Total;
             }
             return total;
         }, cancellationToken).ConfigureAwait(false);
