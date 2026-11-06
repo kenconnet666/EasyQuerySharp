@@ -26,6 +26,16 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
     // RemoveRoot 的根：它已加载的子对象在规划完后按级联删除
     private readonly List<object> _removedRoots = [];
 
+    // 留在原父对象上的子对象：同一实例不能再挂到别处
+    private readonly HashSet<object> _kept = new(ReferenceEqualityComparer.Instance);
+
+    private void Keep(object child)
+    {
+        if (_inserted.ContainsKey(child))
+            throw new InvalidOperationException($"{child.GetType().Name} 的同一个对象既挂到了新的父对象，又留在原来的父对象上：一个子对象只能属于一个父对象");
+        _kept.Add(child);
+    }
+
     private bool Has(SaveBehavior flag) => (behavior & flag) != 0;
 
     public void AddRoot(object root, bool remove)
@@ -85,7 +95,7 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
                 continue;
             }
             if (kind == NavigationKind.AggregateRoot) SaveReference(entity, nav, value, tracked);
-            else if (nav.Mapping is not null) SaveMappings(entity, nav, Items(value), original, depth);
+            else if (nav.Mapping is not null) { if (!(tracked && Skipped(nav, value))) SaveMappings(entity, nav, Items(value), original, depth); }
             else SaveOwned(entity, nav, value, original, tracked, depth);
         }
     }
@@ -126,9 +136,8 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
     private void SaveOwned(object parent, NavigationMetadata nav, object? value, IReadOnlyList<object> original, bool parentTracked, int depth)
     {
         if (nav.Cascade == Cascade.NoAction) return;
-        if (parentTracked && value is null && !nav.IsCollection && Has(SaveBehavior.IgnoreNull)) return;
+        if (parentTracked && Skipped(nav, value)) return;
         var current = Items(value);
-        if (parentTracked && nav.IsCollection && current.Count == 0 && Has(SaveBehavior.IgnoreEmpty)) return;
 
         var work = Work(depth, nav);
         var originalByKey = new Dictionary<string, object>(StringComparer.Ordinal);
@@ -144,6 +153,7 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
                 // 两个新对象配上了同一个原对象（业务键相同）：分不清该保留哪个
                 if (!matched.Add(existing))
                     throw new InvalidOperationException($"{nav} 里有多个对象的 [SaveKey] 相同，配到了同一个原有对象");
+                Keep(existing);
                 if (nav.Cascade != Cascade.Delete) continue;
                 // 新建的同主键对象：把值合并到已追踪的实例上，按快照差异更新
                 if (!ReferenceEquals(existing, child)) Merge(child, existing);
@@ -167,6 +177,10 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
         }
     }
 
+    // 已追踪父对象上的 null 导航（IgnoreNull）、空集合（IgnoreEmpty）按开关跳过，不把原来的子对象当孤儿
+    private bool Skipped(NavigationMetadata nav, object? value) =>
+        value is null ? Has(SaveBehavior.IgnoreNull) : nav.IsCollection && !HasValue(value) && Has(SaveBehavior.IgnoreEmpty);
+
     // 挂上一个原来不在这条导航里的子对象：Delete 级联时插入（或是从别处移过来的改外键），引用时只改外键
     private void Attach(object parent, NavigationMetadata nav, object child, NavigationWork work, int depth)
     {
@@ -178,6 +192,8 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
             work.ForeignKeyUpdates.Add((child, parent));
             return;
         }
+        if (_kept.Contains(child))
+            throw new InvalidOperationException($"{child.GetType().Name} 的同一个对象既留在原来的父对象上，又挂到了 {nav}：一个子对象只能属于一个父对象");
         work.Inserts.Add((child, parent));
         _inserted[child] = work;
         SaveChildren(child, tracked, depth + 1);

@@ -19,7 +19,7 @@ public enum SaveBehavior
     /// <summary>允许把子对象挂到别的父对象（改写外键）；默认外键已指向别的父对象时报错。</summary>
     AllowOwnershipChange = 4,
 
-    /// <summary>已追踪父对象上为 null 的对一导航跳过，不把原来的子对象当孤儿。</summary>
+    /// <summary>已追踪父对象上为 null 的导航（对一或集合）跳过，不把原来的子对象当孤儿。</summary>
     IgnoreNull = 8,
 
     /// <summary>空集合跳过，不把原来的子对象当孤儿。</summary>
