@@ -98,6 +98,13 @@ jobs:
       # 文档卡片：在 SQLite 上实跑、各方言渲染的 SQL 快照必须是最新的（改了渲染器就要重新生成并提交快照）
       - name: Docs examples check
         run: dotnet run --project tools/DocsExamples -c Release --no-build -- --check
+      # 本地数据库容器的内存上限只写在 compose 里一处：每个服务都要有 mem_limit，且 memswap_limit 与它相同（不许用交换区）
+      - name: Dev compose memory limits
+        run: |
+          grep -o 'EQS_DEV_[A-Z0-9]*_PASSWORD' infra/dev/compose.yaml | sort -u | sed 's/$/=check/' > "$RUNNER_TEMP/db.env"
+          docker compose -f infra/dev/compose.yaml --env-file "$RUNNER_TEMP/db.env" --profile '*' config --format json \
+            | jq -e '[.services | to_entries[] | select(.value.mem_limit == null or .value.memswap_limit != .value.mem_limit) | .key] as $bad
+                     | if $bad == [] then true else ("mem_limit / memswap_limit 缺失或不相等：" + ($bad | join(", ")) | halt_error) end'
 
   # 打包：只打可打包的项目（核心带生成器、依赖注入、二级缓存），版本追加构建号（见 src/Directory.Build.props）；GITHUB_ACTIONS 下按正式构建（ContinuousIntegrationBuild）
   pack:
