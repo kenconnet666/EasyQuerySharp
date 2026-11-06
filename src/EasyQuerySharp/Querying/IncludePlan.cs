@@ -100,11 +100,15 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     /// <summary>
     /// 读一行时调用：登记这一行的父键，返回挂到父对象上的初始值（集合是空 List，之后填充；单值先返回 null，之后通过 setter 回填）。
     /// </summary>
-    public object? Register(DbDataReader reader, Action<object?>? assign)
+    public object? Register(DbDataReader reader, Action<object?>? assign) => Register(reader, assign, owner: null);
+
+    /// <summary>实体的 Include：同 <see cref="Register(DbDataReader, Action{object?})"/>，另外记下父实体（追踪查询据此登记"已加载的导航"，见 0004）。</summary>
+    public object? Register(DbDataReader reader, Action<object?>? assign, object? owner)
     {
         // 不满足带出条件的父对象：导航保持 null（与 Java 一致，集合也不给空列表）
         if (ConditionOrdinal is { } ordinal && !Applies(reader.IsDBNull(ordinal) ? null : reader.GetValue(ordinal))) return null;
         var key = CompositeKey.Read(reader, ParentKeyOrdinals);
+        if (owner is not null && key is not null) AddOwner(key.Value, owner);
         if (IsCollection)
         {
             var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(ChildType))!;
@@ -120,6 +124,7 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     {
         if (Navigation.IncludeOn is { } on && !Applies(on.Column.Getter(entity))) return;
         var key = CompositeKey.Of(ParentColumns.Select(c => c.Property.GetValue(entity)));
+        if (key is not null) AddOwner(key.Value, entity);
         if (IsCollection)
         {
             var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(ChildType))!;
@@ -127,6 +132,15 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
             if (key is not null) Add(key.Value, child => list.Add(child));
         }
         else if (key is not null) Add(key.Value, child => property.SetValue(entity, child));
+    }
+
+    /// <summary>本次执行收集到的父键 → 父实体（只有实体的 Include 记录）。</summary>
+    internal Dictionary<CompositeKey, List<object>> Owners { get; } = [];
+
+    private void AddOwner(CompositeKey key, object owner)
+    {
+        if (!Owners.TryGetValue(key, out var owners)) Owners[key] = owners = [];
+        owners.Add(owner);
     }
 
     private void Add(CompositeKey key, Action<object?> sink)

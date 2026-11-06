@@ -75,7 +75,7 @@ public sealed class EasyDb
         var plan = IncludePlan.ForNavigation(Metadata, nav, configure);
         foreach (var entity in entities)
             if (entity is not null) plan.RegisterLoaded(entity, property);
-        return IncludeRunner.RunAsync(this, [plan], IncludeContext.Default, cancellationToken);
+        return IncludeRunner.RunAsync(this, [plan], IncludeContext.Default with { Track = Tracker.Active }, cancellationToken);
     }
 
     /// <summary>
@@ -147,6 +147,11 @@ public sealed class EasyDb
 
     /// <summary>按主键删除一个或多个实体。</summary>
     public DeleteCommand<T> Delete<T>(params IEnumerable<T> entities) where T : class => new(this, entities.ToList());
+
+    /// <summary>
+    /// 聚合保存（对应 Java 的 savable(root)，见 0004）：按追踪快照的差异一次写出整个聚合；必须在追踪作用域与事务里执行。
+    /// </summary>
+    public Commands.SaveCommand<T> Save<T>(params IEnumerable<T> roots) where T : class => new(this, roots.ToList());
 
     /// <summary>
     /// 开启追踪作用域（见 <see cref="Tracking.TrackingScope"/>）：作用域内查出的实体被追踪，按实体更新时只写变化的列。

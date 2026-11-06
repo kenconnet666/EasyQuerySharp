@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
 using EasyQuerySharp.Materialization;
@@ -9,6 +10,9 @@ namespace EasyQuerySharp.Querying;
 // 投影里的带出：集合导航、对一导航整个对象、平铺值与经中间导航的路径，登记成 IncludePlan，主查询读完后由 IncludeRunner 执行
 internal sealed partial class ProjectionCompiler
 {
+    private static readonly MethodInfo RegisterMethod = typeof(IncludePlan).GetMethod(nameof(IncludePlan.Register), [typeof(DbDataReader), typeof(Action<object?>)])!;
+    private static readonly MethodInfo RegisterOwnedMethod = typeof(IncludePlan).GetMethod(nameof(IncludePlan.Register), [typeof(DbDataReader), typeof(Action<object?>), typeof(object)])!;
+
     /// <summary>
     /// 一个成员的值：集合导航（<c>u.Cards</c>、<c>u.Cards.Where(…).Select(…).ToList()</c>）是带出，先放一个空 List，主查询后填充；
     /// 整个对一导航对象（<c>c.Bank</c>）也是带出（单独的 IN 查询），构造完父对象后回填；其余照常翻译。
@@ -24,7 +28,7 @@ internal sealed partial class ProjectionCompiler
         if (member is not null && TryInclude(value) is { } plan)
         {
             if (plan.IsCollection)
-                return Expression.Call(Expression.Constant(plan), typeof(IncludePlan).GetMethod(nameof(IncludePlan.Register))!, _reader,
+                return Expression.Call(Expression.Constant(plan), RegisterMethod, _reader,
                     Expression.Constant(null, typeof(Action<object?>)));
             toOne.Add((plan, member, null));
             return Expression.Default(value.Type);
@@ -146,16 +150,18 @@ internal sealed partial class ProjectionCompiler
             var plan = IncludePlan.ForNavigation(translator.Context!.Metadata, nav, spec.Configure);
             _includes.Add((plan, owner));
             var property = owner.Entity.Type.GetProperty(spec.Member)!;
-            var register = typeof(IncludePlan).GetMethod(nameof(IncludePlan.Register))!;
+            // 带上父实体：追踪查询据此登记"已加载的导航"（聚合保存只处理加载过的导航，见 0004）
+            var register = RegisterOwnedMethod;
+            var owned = Expression.Convert(instance, typeof(object));
             if (nav.IsCollection)
             {
                 body.Add(Expression.Assign(Expression.Property(instance, property),
-                    Expression.Convert(Expression.Call(Expression.Constant(plan), register, _reader, Expression.Constant(null, typeof(Action<object?>))), property.PropertyType)));
+                    Expression.Convert(Expression.Call(Expression.Constant(plan), register, _reader, Expression.Constant(null, typeof(Action<object?>)), owned), property.PropertyType)));
                 continue;
             }
             var child = Expression.Parameter(typeof(object), "child");
             var assign = Expression.Lambda<Action<object?>>(Expression.Assign(Expression.Property(instance, property), Expression.Convert(child, property.PropertyType)), child);
-            body.Add(Expression.Call(Expression.Constant(plan), register, _reader, assign));
+            body.Add(Expression.Call(Expression.Constant(plan), register, _reader, assign, owned));
         }
         body.Add(instance);
         return Expression.Block([instance], body);
@@ -180,7 +186,7 @@ internal sealed partial class ProjectionCompiler
                 Expression.Call(Expression.Constant(property), typeof(PropertyInfo).GetMethod(nameof(PropertyInfo.SetValue), [typeof(object), typeof(object)])!,
                     Expression.Convert(instance, typeof(object)), assigned),
                 value);
-            body.Add(Expression.Call(Expression.Constant(plan), typeof(IncludePlan).GetMethod(nameof(IncludePlan.Register))!, _reader, assign));
+            body.Add(Expression.Call(Expression.Constant(plan), RegisterMethod, _reader, assign));
         }
         body.Add(instance);
         return Expression.Block([instance], body);

@@ -27,8 +27,12 @@ public sealed class NavigationMetadata
         GroupJoin = attribute.GroupJoin;
         PartitionOrder = attribute.PartitionOrder;
         Limit = attribute.Limit > 0 ? attribute.Limit : null;
+        Cascade = attribute.Cascade;
         DefaultOrder = ParseOrder(attribute.OrderBy, target.Type);
     }
+
+    /// <summary>聚合保存时的级联方式（<see cref="NavigateAttribute.Cascade"/>）。</summary>
+    public Cascade Cascade { get; }
 
     /// <summary>带出时每个父对象最多取几条（<see cref="NavigateAttribute.Limit"/>）；不限时为 null。</summary>
     public int? Limit { get; }

@@ -61,6 +61,12 @@ internal static partial class IncludeRunner
                 }
                 nested.Add(compiled.Query.Includes);
             }
+            // 追踪查询：子实体一并追踪（同一主键已追踪时用已追踪的实例）
+            var track = context.Track && db.Tracker.CanTrack(plan.ChildType);
+            if (track)
+                foreach (var children in childrenByKey.Values)
+                    for (var i = 0; i < children.Count; i++)
+                        if (children[i] is { } child) children[i] = db.Tracker.AttachQueried(child);
             foreach (var (parent, target) in links)
             {
                 if (!plan.Pending.TryGetValue(parent, out var sinks) || !childrenByKey.TryGetValue(target, out var children)) continue;
@@ -68,8 +74,21 @@ internal static partial class IncludeRunner
                 foreach (var sink in sinks)
                     sink(child);
             }
+            if (track && plan.Via.Count == 0) RecordLoaded(db, plan, links, childrenByKey);
             plan.Pending.Clear();
+            plan.Owners.Clear();
             foreach (var includes in nested) await RunAsync(db, includes, context, ct).ConfigureAwait(false);
+        }
+    }
+
+    // 每个父实体的这条导航加载了哪些子对象（没有子对象的父实体记空），聚合保存据此算孤儿（见 0004）
+    private static void RecordLoaded(EasyDb db, IncludePlan plan, List<(CompositeKey Parent, CompositeKey Target)> links, Dictionary<CompositeKey, List<object?>> childrenByKey)
+    {
+        var targetsByParent = links.ToLookup(l => l.Parent, l => l.Target);
+        foreach (var (parent, owners) in plan.Owners)
+        {
+            List<object> children = [.. targetsByParent[parent].SelectMany(t => childrenByKey.TryGetValue(t, out var c) ? c : []).OfType<object>().Distinct(ReferenceEqualityComparer.Instance)];
+            foreach (var owner in owners) db.Tracker.RecordLoaded(owner, plan.Navigation.Property.Name, children);
         }
     }
 
@@ -134,12 +153,13 @@ internal static partial class IncludeRunner
     }
 }
 
-/// <summary>带出查询从主查询沿用的设置：拦截器选择、分组大小、配置参数。</summary>
-internal sealed record IncludeContext(InterceptorSelection Interceptors, int? GroupSize, object? ConfigureArgument)
+/// <summary>带出查询从主查询沿用的设置：拦截器选择、分组大小、配置参数，以及子实体是否一并追踪。</summary>
+internal sealed record IncludeContext(InterceptorSelection Interceptors, int? GroupSize, object? ConfigureArgument, bool Track = false)
 {
     /// <summary>不带主查询时（LoadIncludeAsync）：默认拦截器、全局分组大小、没有参数。</summary>
     public static IncludeContext Default { get; } = new(InterceptorSelection.Default, null, null);
 
     /// <summary>取主查询上的设置。</summary>
-    public static IncludeContext Of(QueryState state) => new(state.Interceptors, state.IncludeGroupSize, state.ConfigureArgument);
+    public static IncludeContext Of(QueryState state) =>
+        new(state.Interceptors, state.IncludeGroupSize, state.ConfigureArgument, !state.NoTracking && state.Db.Tracker.Active);
 }

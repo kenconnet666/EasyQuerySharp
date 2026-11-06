@@ -107,4 +107,7 @@ public sealed class NavigateAttribute(RelationType relation) : Attribute
     /// 常用于一对一取"第一张卡"：<c>[Navigate(RelationType.OneToOne, TargetProperties = [nameof(Card.Uid)], OrderBy = nameof(Card.OpenTime), Limit = 1)]</c>。
     /// </summary>
     public int Limit { get; init; }
+
+    /// <summary>聚合保存（<c>db.Save(root)</c>）时这条导航怎样级联，见 <see cref="Metadata.Cascade"/> 与 0004；默认 <see cref="Cascade.Auto"/>。</summary>
+    public Cascade Cascade { get; init; }
 }
