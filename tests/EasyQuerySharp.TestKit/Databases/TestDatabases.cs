@@ -1,4 +1,5 @@
 using System.Data.Common;
+using DuckDB.NET.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using MySqlConnector;
@@ -14,7 +15,7 @@ namespace EasyQuerySharp.TestKit.Databases;
 /// <param name="Key">短名，用于环境变量名与 <c>EQS_REQUIRE_DBS</c>。</param>
 /// <param name="DisplayName">测试输出里显示的名字。</param>
 /// <param name="Factory">ADO.NET 驱动工厂。</param>
-/// <param name="ParameterPrefix">驱动认的命名参数前缀，Oracle 是 <c>:</c>，其余是 <c>@</c>。</param>
+/// <param name="ParameterPrefix">驱动认的命名参数前缀，Oracle 是 <c>:</c>，DuckDB 是 <c>$</c>，其余是 <c>@</c>。</param>
 /// <param name="InProcessConnectionString">进程内数据库的固定连接串；为 null 表示要从环境读。</param>
 public sealed record TestDatabase(
     string Key,
@@ -106,8 +107,11 @@ public static class TestDatabases
     /// <summary>Oracle 23ai Free。</summary>
     public static readonly TestDatabase Oracle = new("oracle", "Oracle 23ai Free", OracleClientFactory.Instance, ParameterPrefix: ":");
 
+    /// <summary>DuckDB（进程内）：连接串里的 <c>:memory:</c> 每条连接各是一个库，用例要共享数据时自己指定临时文件。</summary>
+    public static readonly TestDatabase DuckDb = new("duckdb", "DuckDB", DuckDBClientFactory.Instance, ParameterPrefix: "$", InProcessConnectionString: "Data Source=:memory:");
+
     /// <summary>全部登记的数据库。</summary>
-    public static IReadOnlyList<TestDatabase> All { get; } = [Sqlite, MySql, MySql8018, MariaDb, PostgreSql, SqlServer, Oracle];
+    public static IReadOnlyList<TestDatabase> All { get; } = [Sqlite, MySql, MySql8018, MariaDb, PostgreSql, SqlServer, Oracle, DuckDb];
 
     /// <summary><c>EQS_REQUIRE_DBS</c>（逗号分隔的 Key）里列出的必须可用的数据库。</summary>
     public static IReadOnlySet<string> RequiredKeys { get; } =

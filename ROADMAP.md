@@ -111,7 +111,11 @@ R → 1 → 2 → 3 → 4 → 5。
   - `Sql.Hana.Text`；
   - fork 的 HanaSqlTest、HanaTextSqlTest、三个 live 用例，以及 InsertSelect / JsonValueConverter 的 HANA 用例；
   - HANA Express 压低内存后进 CI，跑不起来就退回本地验证。
-- [ ] 3.3 DuckDB（进程内运行，CI 直接跑）：DuckDBQueryTest、AllTypeTest、DuckDBMathQueryTest，以及 duckdb 版的 M8Save4Test。
+- [x] 3.3 DuckDB（进程内运行，CI 直接跑）：`DuckDbDialect` 继承 PostgreSQL 方言只覆盖差异，`options.UseDuckDb(..)`；驱动 DuckDB.NET.Data.Full 只在 TestKit 里引用，核心仍零依赖。
+  - 方言：参数写 `$p0`（DuckDB.NET 不认 `@`）；含 `%` / `_` 的 LIKE 值用 `STRPOS`；日期格式 `strftime`、加减 `date_add`、相差 `DATEDIFF`；`TRUNC` 不带位数；JSON 用 `json_array_length` / `json_exists`；没有行锁（`FOR UPDATE` 抛 NotSupportedException）；DuckDB 没有 IDENTITY，自增列建表时先 `CREATE SEQUENCE`、列默认 `nextval`，删表时一并删序列。
+  - 顺手：PostgreSQL 的 `IndexOf` 原来写 `INSTR`（PG 没有这个函数），改成 `STRPOS`；`SqlDialect.ColumnDefinition` 多传所属实体。
+  - 用例：Upstream 的 `DuckDb` 命名空间移植 17 个（`duckdb/` 的 16 个加 ForUpdateDialectToSQLSmokeTest 的 duckDB 一条）。readExcel1–4 只核对 SQL、记为偏离（read_xlsx 在 excel 扩展里，要联网安装，还要有 xlsx 文件；表函数用 `AsTableSegment` 替换表引用）；DuckDBMathQueryTest 与 PG 同样因 `Math.Pow` / `Atan2` 的参数是 Double 记为偏离；其余已移植。另有 `DuckDbDialectTest` 验证 Java 没覆盖到的写法（LIKE、序列、upsert、JSON）。
+  - 实库：`DuckDbLiveSuite` 36 组通过（行锁一组跳过）；固件和套件都用临时文件并留一个连接不关（DuckDB.NET 在最后一个连接关闭时关库，反复开关慢 4 倍）。进程内运行，随 core 任务一起跑，不需要新的 CI 任务。
 - [ ] 3.4 PG 家族：Kingbase（MyKingbaseESTest，骨架 testKingbaseCte、GeneralFunctionsTest testDoubleConcat）、openGauss。
 - [ ] 3.5 ClickHouse（ClickHouseTest）、TDengine、Db2：Java 用例很少或没有，主要靠裁剪后的 L3 套件验证。
 - [ ] 3.6 H2 的 74 个用例：与方言无关的改到 SQLite 上移植，标为偏离；只测 H2 方言本身的标为不适用。

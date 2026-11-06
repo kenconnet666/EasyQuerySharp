@@ -77,6 +77,25 @@ public sealed class OracleLiveSuite : LiveSuite
     protected override SqlDialect Dialect => OracleDialect.Instance;
 }
 
+/// <summary>DuckDB（进程内）：临时文件库（内存库每条连接各是一个库，跨连接看不到表）；没有行锁。</summary>
+public sealed class DuckDbLiveSuite : LiveSuite
+{
+    private static readonly string File = Path.Combine(Path.GetTempPath(), $"eqs_live_{Environment.ProcessId}.duckdb");
+
+    protected override TestDatabase Database => TestDatabases.DuckDb;
+    protected override SqlDialect Dialect => DuckDbDialect.Instance;
+    protected override LiveSuiteOptions Options { get; } = new() { RowLocks = false };
+    // DuckDB.NET 在最后一个连接关闭时关库（落盘），每条语句都重新开关会慢得多：整个进程里留一个连接不关
+    private static readonly Lazy<DuckDB.NET.Data.DuckDBConnection> Anchor = new(() =>
+    {
+        var connection = new DuckDB.NET.Data.DuckDBConnection($"Data Source={File}");
+        connection.Open();
+        return connection;
+    });
+
+    protected override Task<string> ConnectionStringAsync() => Task.FromResult(Anchor.Value.ConnectionString);
+}
+
 /// <summary>按库建一次独立的测试库 <c>eqs_live</c>，返回连到它的连接串。</summary>
 internal static class LiveDatabase
 {

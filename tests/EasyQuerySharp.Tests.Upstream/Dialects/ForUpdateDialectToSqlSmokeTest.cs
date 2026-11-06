@@ -3,7 +3,7 @@ namespace EasyQuerySharp.Tests.Upstream.Dialects;
 /// <summary>
 /// 对应 Java：ForUpdateDialectToSQLSmokeTest.java。同一条分页查询加 FOR UPDATE 在各方言下只渲染、不连库：
 /// 锁子句写在整条语句（含 Oracle 的 ROWNUM 外层）的末尾；不支持行锁的方言抛出 <see cref="NotSupportedException"/>。
-/// 还没有对应方言的用例（H2、GaussDB、达梦、DB2、ClickHouse、DuckDB）随方言一起移植。
+/// 还没有对应方言的用例（H2、GaussDB、达梦、DB2、ClickHouse）随方言一起移植；DuckDB 的在 DuckDb/DuckDbDialectTest。
 /// </summary>
 public sealed class ForUpdateDialectToSqlSmokeTest
 {

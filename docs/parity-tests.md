@@ -4,7 +4,7 @@
 对照的是 easy-query 的 `sql-test`（上游）与 `sql-fork-test`（fork，Id 以 `fork/` 开头），共 2404 个用例。
 基准冻结在 `tools/ParityTests/java-tests.json`，取自：easy-query fork at an unrecorded commit (sql-test 2315 + sql-fork-test 89), scanned 2026-11-05。
 
-合计：已移植 1859、偏离 143、不适用 136、骨架 2、待做 264。
+合计：已移植 1870、偏离 149、不适用 136、骨架 2、待做 247。
 
 ## 按能力
 
@@ -24,7 +24,7 @@
 | JSON 函数 | `func.json` | M2 | 12 | 12 | 0 | 0 | 0 | 0 |
 | 数学函数 | `func.math` | M2 | 4 | 1 | 2 | 1 | 0 | 0 |
 | 字符串函数 | `func.string` | M2 | 131 | 122 | 4 | 4 | 1 | 0 |
-| 行锁 | `lock` | M2 | 28 | 20 | 1 | 1 | 0 | 6 |
+| 行锁 | `lock` | M2 | 28 | 21 | 1 | 1 | 0 | 5 |
 | 窗口函数 | `window` | M2 | 44 | 43 | 1 | 0 | 0 | 0 |
 | CTE | `query.cte` | M3 | 11 | 8 | 3 | 0 | 0 | 0 |
 | 分组与 having（含 rollup / cube） | `query.group` | M3 | 83 | 75 | 6 | 2 | 0 | 0 |
@@ -52,7 +52,7 @@
 | upsert | `write.upsert` | M5 | 13 | 12 | 1 | 0 | 0 | 0 |
 | ClickHouse 方言 | `dialect.clickhouse` | M6 | 4 | 0 | 0 | 0 | 0 | 4 |
 | 达梦方言 | `dialect.dameng` | M6 | 51 | 0 | 0 | 0 | 0 | 51 |
-| DuckDB 方言 | `dialect.duckdb` | M6 | 16 | 0 | 0 | 0 | 0 | 16 |
+| DuckDB 方言 | `dialect.duckdb` | M6 | 16 | 10 | 6 | 0 | 0 | 0 |
 | 方言静态入口与专属函数 | `dialect.functions` | M6 | 25 | 22 | 0 | 0 | 0 | 3 |
 | H2 方言 | `dialect.h2` | M6 | 74 | 0 | 0 | 0 | 0 | 74 |
 | SAP HANA 方言 | `dialect.hana` | M6 | 18 | 0 | 0 | 0 | 0 | 18 |
@@ -1152,7 +1152,7 @@
 | ForUpdateDialectToSQLSmokeTest.java#clickHouseForUpdateThrowsUnsupported | 待做 |  |  |
 | ForUpdateDialectToSQLSmokeTest.java#damengForUpdateToSQLSmoke | 待做 |  |  |
 | ForUpdateDialectToSQLSmokeTest.java#db2ForUpdateToSQLSmoke | 待做 |  |  |
-| ForUpdateDialectToSQLSmokeTest.java#duckDBForUpdateThrowsUnsupported | 待做 |  |  |
+| ForUpdateDialectToSQLSmokeTest.java#duckDBForUpdateThrowsUnsupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDbDialectTest.cs:13 |  |
 | ForUpdateDialectToSQLSmokeTest.java#gaussDBForUpdateToSQLSmoke | 待做 |  |  |
 | ForUpdateDialectToSQLSmokeTest.java#h2ForUpdateToSQLSmoke | 待做 |  |  |
 | ForUpdateDialectToSQLSmokeTest.java#kingbaseESForUpdateToSQLSmoke | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ForUpdateDialectToSqlSmokeTest.cs:21 |  |
@@ -2198,22 +2198,22 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| duckdb/AllTypeTest.java#testAllType | 待做 |  |  |
-| duckdb/AllTypeTest.java#testAllType1 | 待做 |  |  |
-| duckdb/DuckDBMathQueryTest.java#testPropertyMath | 待做 |  | `SELECT t."test_value" AS "test_value",ABS(t."test_value") AS "test_abs",SIGN(t."test_value") AS "tes…` |
-| duckdb/DuckDBQueryTest.java#datetimeformat | 待做 |  | `SELECT t."create_time" AS "value1",strftime(t."create_time", '%Y年%m-01 %H:%M分%S秒') AS "value2" FROM …` |
-| duckdb/DuckDBQueryTest.java#datetimeformat1 | 待做 |  | `SELECT t."create_time" AS "value1",strftime(t."create_time", '%Y年%m-01 %H:%M分%S秒') AS "value2" FROM …` |
-| duckdb/DuckDBQueryTest.java#formatMySQL | 待做 |  | `SELECT t."create_time" AS "value1",strftime(t."create_time", '%Y年%m-01 %H:%M分%S秒') AS "value2",strft…` |
-| duckdb/DuckDBQueryTest.java#readExcel1 | 待做 |  | `SELECT "id","name","age" FROM read_xlsx('./ducktest.xlsx',sheet='Sheet1') WHERE "name" = ?` |
-| duckdb/DuckDBQueryTest.java#readExcel2 | 待做 |  | `SELECT t."id",t."name",t."age" FROM read_xlsx('./ducktest.xlsx',sheet='Sheet1') t WHERE EXISTS(SELEC…` |
-| duckdb/DuckDBQueryTest.java#readExcel3 | 待做 |  | `SELECT t."id",t."name",t."age" FROM read_xlsx('./ducktest.xlsx',sheet='Sheet1') t LEFT JOIN (SELECT …` |
-| duckdb/DuckDBQueryTest.java#readExcel4 | 待做 |  | `SELECT t."name" AS "value1",SUBSTR(t."name",5,1) AS "value2" FROM read_xlsx('./ducktest.xlsx',sheet=…` |
-| duckdb/DuckDBQueryTest.java#testConcat | 待做 |  | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
-| duckdb/DuckDBQueryTest.java#testConcat2 | 待做 |  |  |
-| duckdb/DuckDBQueryTest.java#testConcat3 | 待做 |  | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
-| duckdb/DuckDBQueryTest.java#testDraft9 | 待做 |  |  |
-| duckdb/DuckDBQueryTest.java#testDraft9_1 | 待做 |  |  |
-| duckdb/M8Save4Test.java#testToManyToMany1 | 待做 |  |  |
+| duckdb/AllTypeTest.java#testAllType | 已移植 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/AllTypeTest.cs:41 |  |
+| duckdb/AllTypeTest.java#testAllType1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/AllTypeTest.cs:75 |  |
+| duckdb/DuckDBMathQueryTest.java#testPropertyMath | 偏离 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDBMathQueryTest.cs:13：C# 的 Math.Pow / Atan2 只有 double 重载，pow 与 atan2 的参数是 Double（Java 是 BigDecimal）；Java 的 DTO 代理 set() 同名列也写 AS，C# 同名不写 | `SELECT t."test_value" AS "test_value",ABS(t."test_value") AS "test_abs",SIGN(t."test_value") AS "tes…` |
+| duckdb/DuckDBQueryTest.java#datetimeformat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDBQueryTest.cs:60 | `SELECT t."create_time" AS "value1",strftime(t."create_time", '%Y年%m-01 %H:%M分%S秒') AS "value2" FROM …` |
+| duckdb/DuckDBQueryTest.java#datetimeformat1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDBQueryTest.cs:60 | `SELECT t."create_time" AS "value1",strftime(t."create_time", '%Y年%m-01 %H:%M分%S秒') AS "value2" FROM …` |
+| duckdb/DuckDBQueryTest.java#formatMySQL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDBQueryTest.cs:72 | `SELECT t."create_time" AS "value1",strftime(t."create_time", '%Y年%m-01 %H:%M分%S秒') AS "value2",strft…` |
+| duckdb/DuckDBQueryTest.java#readExcel1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDBQueryTest.cs:124：只核对 SQL、不执行：read_xlsx 在 excel 扩展里（要联网安装），还要有 ducktest.xlsx；Java 的表函数写在 @Table 里，C# 用 AsTableSegment 替换表引用 | `SELECT "id","name","age" FROM read_xlsx('./ducktest.xlsx',sheet='Sheet1') WHERE "name" = ?` |
+| duckdb/DuckDBQueryTest.java#readExcel2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDBQueryTest.cs:131：只核对 SQL、不执行：read_xlsx 在 excel 扩展里（要联网安装），还要有 ducktest.xlsx；Java 的表函数写在 @Table 里，C# 用 AsTableSegment 替换表引用 | `SELECT t."id",t."name",t."age" FROM read_xlsx('./ducktest.xlsx',sheet='Sheet1') t WHERE EXISTS(SELEC…` |
+| duckdb/DuckDBQueryTest.java#readExcel3 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDBQueryTest.cs:141：只核对 SQL、不执行：read_xlsx 在 excel 扩展里（要联网安装），还要有 ducktest.xlsx；Java 的表函数写在 @Table 里，C# 用 AsTableSegment 替换表引用 | `SELECT t."id",t."name",t."age" FROM read_xlsx('./ducktest.xlsx',sheet='Sheet1') t LEFT JOIN (SELECT …` |
+| duckdb/DuckDBQueryTest.java#readExcel4 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDBQueryTest.cs:152：只核对 SQL、不执行：read_xlsx 在 excel 扩展里（要联网安装），还要有 ducktest.xlsx；Java 的表函数写在 @Table 里，C# 用 AsTableSegment 替换表引用 | `SELECT t."name" AS "value1",SUBSTR(t."name",5,1) AS "value2" FROM read_xlsx('./ducktest.xlsx',sheet=…` |
+| duckdb/DuckDBQueryTest.java#testConcat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDBQueryTest.cs:94 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
+| duckdb/DuckDBQueryTest.java#testConcat2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDBQueryTest.cs:107：Java 断言 EasyQueryInvalidOperationException 和它的文本（Mismatch: provided 3 arguments…），C# 只核对翻译时抛出异常 |  |
+| duckdb/DuckDBQueryTest.java#testConcat3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDBQueryTest.cs:94 | `SELECT "id","create_time","update_time","create_by","update_by","deleted","title","content","url","s…` |
+| duckdb/DuckDBQueryTest.java#testDraft9 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDBQueryTest.cs:10 |  |
+| duckdb/DuckDBQueryTest.java#testDraft9_1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDBQueryTest.cs:10 |  |
+| duckdb/M8Save4Test.java#testToManyToMany1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/DuckDb/DuckDBM8Save4Test.cs:29 |  |
 
 ### 方言静态入口与专属函数（`dialect.functions`，M6）
 
