@@ -3,7 +3,7 @@ namespace EasyQuerySharp.Tests.Upstream.Dialects;
 /// <summary>
 /// 对应 Java：ForUpdateDialectToSQLSmokeTest.java。同一条分页查询加 FOR UPDATE 在各方言下只渲染、不连库：
 /// 锁子句写在整条语句（含 Oracle 的 ROWNUM 外层）的末尾；不支持行锁的方言抛出 <see cref="NotSupportedException"/>。
-/// 还没有对应方言的用例（H2、GaussDB、达梦、DB2、ClickHouse、DuckDB）随方言一起移植。
+/// 还没有对应方言的用例（H2、GaussDB、DB2、ClickHouse、DuckDB）随方言一起移植。
 /// </summary>
 public sealed class ForUpdateDialectToSqlSmokeTest
 {
@@ -21,10 +21,13 @@ public sealed class ForUpdateDialectToSqlSmokeTest
     [Upstream("ForUpdateDialectToSQLSmokeTest.java#kingbaseESForUpdateToSQLSmoke")]
     public void ForUpdateAppendsAtEnd(string dialect) => RowLockAssert.EndsWithSingleForUpdate(LockedPageSql(dialect));
 
-    [Fact, Upstream("ForUpdateDialectToSQLSmokeTest.java#oracleForUpdateToSQLSmoke")]
-    public void OracleForUpdateToSqlSmoke()
+    // 达梦与 Oracle 一样用 ROWNUM 分页，锁子句写在最外层之后
+    [Theory]
+    [InlineData("oracle"), Upstream("ForUpdateDialectToSQLSmokeTest.java#oracleForUpdateToSQLSmoke")]
+    [InlineData("dameng"), Upstream("ForUpdateDialectToSQLSmokeTest.java#damengForUpdateToSQLSmoke")]
+    public void RowNumForUpdateToSqlSmoke(string dialect)
     {
-        var sql = LockedPageSql("oracle");
+        var sql = LockedPageSql(dialect);
         Assert.Contains("ROWNUM", sql, StringComparison.OrdinalIgnoreCase);
         RowLockAssert.EndsWithSingleForUpdate(sql);
     }

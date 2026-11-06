@@ -212,6 +212,13 @@ public sealed class QueryTest26(MySqlFixture fixture) : MySqlTest(fixture)
             db.Query<Topic>().Where(t => Sql.Group(ids.Contains(t.Id!) && (t.Title!.Contains("123") || ids.Contains(t.Id!) || ids.Contains(t.Id!)))).ToSql());
     }
 
+    // 达梦方言下删除的条件经过对一导航（只比对 SQL）：沿用 Oracle 的写法，先连接查出要删的 ROWID
+    [Fact, Upstream("QueryTest26.java#testAAA", Deviation = "Java 的达梦删除不支持连接（抛 UnsupportedOperationException，用例吞掉异常）；C# 沿用 Oracle 按 ROWID 删除的写法，实库验证在 3.1 冒烟里做")]
+    public void TestAAA() =>
+        SqlOnly.AssertStatement(SqlOnly.Db("dameng").Delete<Mysql8.SysBankCard>().Where(c => c.User!.Id == "123").ToStatement()!,
+            "DELETE FROM \"t_bank_card\" WHERE ROWID IN (SELECT t.ROWID FROM \"t_bank_card\" t INNER JOIN \"t_sys_user\" t1 ON t1.\"id\" = t.\"uid\" WHERE t1.\"id\" = ?)",
+            "123(String)");
+
     [Fact, Upstream("QueryTest26.java#test", NotApplicable = "测的是 Java 的 Linq / Stream 在内存里分组，与查询无关")]
     public void Test() => Assert.Empty(Array.Empty<int>().GroupBy(x => x));
 
