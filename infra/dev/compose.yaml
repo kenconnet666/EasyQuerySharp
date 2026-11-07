@@ -2,11 +2,12 @@
 # compose 项目名与端口（统一 4xxxx）都和 easy-query-ts-dev（3xxxx）、vue-tsx-pro-dev（2xxxx）、easy-query-dev 错开，几个项目可以同时运行。
 # 镜像版本与 digest 跟 easy-query-ts 的 infra/dev 保持一致，两边的实库结果可以直接对比。
 #
-# 默认只起本地必测的 MySQL 8.4 与 PostgreSQL 17（SQLite 是进程内的，不需要容器）；其余数据库在 CI 里测，要在本机复现时按 profile 启动，
-# 并在 .local/db.env 里取消对应 EQS_*_CS 一行的注释。
+# 默认只起本地必测的 PostgreSQL 17（SQLite、DuckDB 是进程内的，不需要容器）；其余数据库（含 MySQL 8.4）交给 CI，
+# 要在本机复现时按 profile 启动，并在 .local/db.env 里取消对应 EQS_*_CS 一行的注释。
 #
 # 用法：在仓库根目录执行（Windows 下前面加 `wsl -d Debian --`）
-#   bash infra/dev/db.sh up -d                       # MySQL 8.4（43306）、PG 17（45432）
+#   bash infra/dev/db.sh up -d                       # PG 17（45432）
+#   bash infra/dev/db.sh --profile mysql up -d       # 再加 MySQL 8.4（43306）
 #   bash infra/dev/db.sh --profile polardb up -d     # 再加 MySQL 8.0.18（PolarDB 基线，43318）
 #   bash infra/dev/db.sh --profile mariadb up -d     # MariaDB 11.4（43307）
 #   bash infra/dev/db.sh --profile mssql up -d       # SQL Server 2022（41433）
@@ -43,6 +44,7 @@ x-mysql: &mysql
 services:
   mysql84:
     <<: *mysql
+    profiles: [mysql]
     image: mysql:8.4.11@sha256:1f8411cc085d2f2f92060fca926746cbf97f87b76c3008e9741ad62e604c4ffa
     command:
       - --character-set-server=utf8mb4

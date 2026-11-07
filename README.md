@@ -60,6 +60,6 @@ var db = new EasyDb(o => o
 ## 开发
 
 - 需要 .NET 10 SDK，以及 WSL 里的 Docker（实库测试用）。
-- 本地数据库：`bash infra/dev/db.sh up -d`，启动 MySQL 8.4 和 PostgreSQL 17。
+- 本地数据库：`bash infra/dev/db.sh up -d`，只启动 PostgreSQL 17（SQLite、DuckDB 在进程内）；MySQL 等其余 13 种数据库由 CI 测，要在本机复现时按 profile 启动。
 - 构建和测试：`dotnet build`、`dotnet test`；文档卡片与 SQL 快照：`dotnet run --project tools/DocsExamples`（`-- --check` 只校验）。
 - 工作约定见 [CLAUDE.md](CLAUDE.md)。

@@ -21,10 +21,10 @@ EQS_DEV_MYSQL_PASSWORD=$mysql_password
 EQS_DEV_PG_PASSWORD=$pg_password
 
 # 本地必测：默认启动的容器
-EQS_MYSQL_CS='Server=127.0.0.1;Port=43306;User ID=root;Password=$mysql_password;Database=eqs'
 EQS_PG_CS='Host=127.0.0.1;Port=45432;Username=postgres;Password=$pg_password;Database=eqs'
 
 # 按 profile 启动的容器：启动后取消对应 EQS_*_CS 的注释（没启动时留着注释，测试会跳过而不是连接失败）
+#EQS_MYSQL_CS='Server=127.0.0.1;Port=43306;User ID=root;Password=$mysql_password;Database=eqs'
 # MySQL 8.0.18 与 8.4 共用 compose 里 x-mysql 的 root 密码
 #EQS_MYSQL8018_CS='Server=127.0.0.1;Port=43318;User ID=root;Password=$mysql_password;Database=eqs'
 EOF
@@ -62,7 +62,7 @@ if [[ ! -f $local_dir/connections.md ]]; then
 
 | 库 | profile | 地址 | 库名 / 服务名 | 用户 |
 |---|---|---|---|---|
-| MySQL 8.4 | 默认 | 127.0.0.1:43306 | eqs | root |
+| MySQL 8.4 | mysql | 127.0.0.1:43306 | eqs | root |
 | PostgreSQL 17 | 默认 | 127.0.0.1:45432 | eqs | postgres |
 | MySQL 8.0.18（PolarDB 基线） | polardb | 127.0.0.1:43318 | eqs | root |
 | MariaDB 11.4 | mariadb | 127.0.0.1:43307 | eqs | root |
@@ -75,7 +75,7 @@ if [[ ! -f $local_dir/connections.md ]]; then
 | TDengine 3.3 | tdengine | 127.0.0.1:46041 | - | root / taosdata |
 | HANA 2.00.088（租户 HXE） | hana | 127.0.0.1:49041 | - | SYSTEM |
 
-启停：bash infra/dev/db.sh up -d ｜ bash infra/dev/db.sh --profile mssql up -d ｜ bash infra/dev/db.sh stop
+启停：bash infra/dev/db.sh up -d（只起 PG）｜ bash infra/dev/db.sh --profile mysql up -d ｜ bash infra/dev/db.sh stop
 EOF
 fi
 

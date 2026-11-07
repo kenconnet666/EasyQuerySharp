@@ -40,17 +40,17 @@ easy-query（Java，`C:\Users\Administrator\IdeaProjects\easy-query`，软 fork�
 ## 常用命令
 
 ```powershell
-# 构建与全部测试（本地必测 SQLite / MySQL 8.4 / PG 17，其余数据库没配置就跳过）
+# 构建与全部测试（本地必测 SQLite / DuckDB / PG 17，其余数据库没配置就跳过，交给 CI）
 & "$HOME\.dotnet\dotnet.exe" build
 & "$HOME\.dotnet\dotnet.exe" test
 # 像 CI 一样要求某些库必须连上
-$env:EQS_REQUIRE_DBS='sqlite,mysql,pg'; & "$HOME\.dotnet\dotnet.exe" test
+$env:EQS_REQUIRE_DBS='sqlite,pg'; & "$HOME\.dotnet\dotnet.exe" test
 ```
 
 ```bash
 # 数据库（在 WSL 里执行；Windows 下前面加 wsl -d Debian --）
-bash infra/dev/db.sh up -d                    # MySQL 8.4 + PG 17
-bash infra/dev/db.sh --profile mssql up -d    # 按需：polardb / mariadb / mssql / oracle / dameng / opengauss / clickhouse / db2 / tdengine / hana
+bash infra/dev/db.sh up -d                    # 只起 PG 17
+bash infra/dev/db.sh --profile mysql up -d    # 按需复现 CI 的失败：mysql / polardb / mariadb / mssql / oracle / dameng / opengauss / clickhouse / db2 / tdengine / hana
 bash infra/dev/db.sh stop
 ```
 

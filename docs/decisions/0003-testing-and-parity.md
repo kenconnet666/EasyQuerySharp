@@ -112,11 +112,11 @@ L2 的组织方式：
 | 数据库 | 本地 | CI |
 |---|---|---|
 | SQLite（进程内） | 必测 | `core` 任务 |
-| MySQL 8.4 | 必测，`infra/dev` 默认启动 | `core` 任务 |
+| MySQL 8.4 | 按需：`--profile mysql`（2026-11-07 起本地只起 PG） | `core` 任务 |
 | PostgreSQL 17 | 必测，`infra/dev` 默认启动 | `core` 任务 |
 | MySQL 8.0.18（PolarDB 基线）、MariaDB 11.4、SQL Server 2022、Oracle 23ai（第一档其余的库） | 按需：`--profile polardb / mariadb / mssql / oracle` | 各自一个任务；阶段 2 起跑全部实库用例 |
-| 达梦、openGauss、Kingbase、DuckDB、ClickHouse、Db2、TDengine（第二档） | 按需：对应 profile（DuckDB 进程内） | 比对 SQL 文本随 `core` 任务；容器起得来的再加一个冒烟任务 |
-| HANA（第二档） | 按需：`--profile hana`，要 12 GB 内存 | 先试 HANA Express 压低内存进 CI，跑不起来就只在本地验证 |
+| 达梦、openGauss、Kingbase、DuckDB、ClickHouse、Db2、TDengine（第二档） | 按需：对应 profile（DuckDB 进程内，必测） | 比对 SQL 文本随 `core` 任务；除 Kingbase（没有镜像）外各有一个实库任务 |
+| HANA（第二档） | 按需：`--profile hana`（7 GB），还要装 SAP 的 HANA 客户端 | `hana` 任务（下载 Linux 客户端并缓存） |
 
 - 本地容器：仓库自带 `infra/dev/compose.yaml`，compose 项目名是 `easy-query-sharp-dev`，端口统一用 4xxxx，和 `easy-query-ts-dev`（3xxxx）、`vue-tsx-pro-dev`（2xxxx）错开，几个项目可以同时运行。
   - 镜像版本和 digest 跟 TS 仓库一致，两边的实库结果可以直接对比。
