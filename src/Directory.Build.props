@@ -7,7 +7,7 @@
       CI 打包时传 -p:CiBuildNumber=N，版本成为 1.0.0-ci.N（预览版，排在 1.0.0 之前，不会被当成稳定版装上）。
     -->
     <PropertyGroup>
-        <VersionPrefix>1.0.0</VersionPrefix>
+        <VersionPrefix>1.0.1</VersionPrefix>
         <VersionSuffix Condition="'$(CiBuildNumber)' != ''">ci.$(CiBuildNumber)</VersionSuffix>
     </PropertyGroup>
 

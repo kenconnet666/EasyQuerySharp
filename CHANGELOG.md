@@ -2,6 +2,8 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循[语义化版本](https://semver.org/lang/zh-CN/)。发布流程（`.github/workflows/release.yml`）取这里对应版本的一节作为 GitHub Release 的说明。
 
+## [Unreleased]
+
 ## [1.0.0] - 2026-11-09
 
 首个正式版本：[easy-query](https://github.com/dromara/easy-query)（Java）的 C# 实现，公共 API 自此冻结。
@@ -25,4 +27,5 @@
 - 对标 Java 版的 2404 个用例：已移植 2071、偏离 191、不适用 142，每条偏离与不适用都写了理由（见 [docs/parity-tests.md](https://github.com/kenconnet666/EasyQuerySharp/blob/master/docs/parity-tests.md)）。
 - CI 在 14 种数据库上跑实库测试：SQLite、DuckDB、MySQL 8.4 / 8.0.18、MariaDB、PostgreSQL、SQL Server、Oracle、达梦、openGauss、SAP HANA、ClickHouse、Db2、TDengine。人大金仓没有可用的容器镜像，只比对 SQL 文本。
 
+[Unreleased]: https://github.com/kenconnet666/EasyQuerySharp/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/kenconnet666/EasyQuerySharp/releases/tag/v1.0.0
