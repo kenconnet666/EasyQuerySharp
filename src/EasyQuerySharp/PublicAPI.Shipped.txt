@@ -2010,6 +2010,7 @@ override EasyQuerySharp.Dialects.DamengDialect.DateDiffInterval.get -> string!
 override EasyQuerySharp.Dialects.DamengDialect.IdentityClause.get -> string!
 override EasyQuerySharp.Dialects.DamengDialect.Name.get -> string!
 override EasyQuerySharp.Dialects.DamengDialect.NativeNullsOrder.get -> bool
+override EasyQuerySharp.Dialects.DamengDialect.ParameterValue(EasyQuerySharp.SqlParameterValue! parameter) -> object?
 override EasyQuerySharp.Dialects.DamengDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
 override EasyQuerySharp.Dialects.DamengDialect.WriteJoinedUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
 override EasyQuerySharp.Dialects.Db2Dialect.CastTemplate(System.Type! targetType) -> string!
@@ -2020,6 +2021,7 @@ override EasyQuerySharp.Dialects.Db2Dialect.InsertConflictUsesMerge.get -> bool
 override EasyQuerySharp.Dialects.Db2Dialect.LastInsertIdQuery.get -> string?
 override EasyQuerySharp.Dialects.Db2Dialect.Name.get -> string!
 override EasyQuerySharp.Dialects.Db2Dialect.ParameterPlaceholder(int index, EasyQuerySharp.SqlParameterValue! parameter) -> string!
+override EasyQuerySharp.Dialects.Db2Dialect.ParameterValue(EasyQuerySharp.SqlParameterValue! parameter) -> object?
 override EasyQuerySharp.Dialects.Db2Dialect.QualifySetColumns.get -> bool
 override EasyQuerySharp.Dialects.Db2Dialect.RecursiveCteColumnList.get -> bool
 override EasyQuerySharp.Dialects.Db2Dialect.RecursiveCteCommaJoin.get -> bool
@@ -2094,6 +2096,7 @@ override EasyQuerySharp.Dialects.OracleDialect.MergeSourceSuffix.get -> string!
 override EasyQuerySharp.Dialects.OracleDialect.Name.get -> string!
 override EasyQuerySharp.Dialects.OracleDialect.NativeNullsOrder.get -> bool
 override EasyQuerySharp.Dialects.OracleDialect.ParameterPlaceholder(int index, EasyQuerySharp.SqlParameterValue! parameter) -> string!
+override EasyQuerySharp.Dialects.OracleDialect.ParameterValue(EasyQuerySharp.SqlParameterValue! parameter) -> object?
 override EasyQuerySharp.Dialects.OracleDialect.RecursiveCteColumnList.get -> bool
 override EasyQuerySharp.Dialects.OracleDialect.RecursiveWith.get -> string!
 override EasyQuerySharp.Dialects.OracleDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
@@ -2539,6 +2542,7 @@ virtual EasyQuerySharp.Dialects.SqlDialect.NativeNullsOrder.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.OffsetOnlyLimit.get -> string?
 virtual EasyQuerySharp.Dialects.SqlDialect.ParameterName(int index) -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.ParameterPlaceholder(int index, EasyQuerySharp.SqlParameterValue! parameter) -> string!
+virtual EasyQuerySharp.Dialects.SqlDialect.ParameterValue(EasyQuerySharp.SqlParameterValue! parameter) -> object?
 virtual EasyQuerySharp.Dialects.SqlDialect.ParameterWrap(string? columnDbType) -> (string! Before, string! After)?
 virtual EasyQuerySharp.Dialects.SqlDialect.QualifySetColumns.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.QuoteIdentifier(string! identifier) -> string!

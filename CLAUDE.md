@@ -10,7 +10,7 @@ easy-query（Java，`C:\Users\Administrator\IdeaProjects\easy-query`，软 fork�
 - **API 用 C# 的方式写**：POCO 实体加表达式树，不复刻 Java 的 Proxy，见 [0001](docs/decisions/0001-query-api-route.md)。函数做成扩展方法，不用扩展属性（扩展属性写不进表达式树）。
 - **对象树只走一条管线**：Include、DTO、VO、树最后都归一成投影表达式，交给同一个规划器，见 [0002](docs/decisions/0002-object-tree-and-dto.md)。
 - **核心零第三方依赖**：驱动只在方言包里引用。新增第三方依赖要先说明理由。
-- **公共 API 已冻结**（ROADMAP 5.1）：新增的公开成员记进 `PublicAPI.Unshipped.txt`；改动或删除 `PublicAPI.Shipped.txt` 里已有的成员要先说明理由。
+- **公共 API 已冻结**（1.0.0 起）：新增的公开成员记进 `PublicAPI.Unshipped.txt`；改动或删除 `PublicAPI.Shipped.txt` 里已有的成员要先说明理由。
 - **新能力必须在三种场景下都能用**：普通 where、隐式子查询（any / count）、投影到 DTO（对齐 Java fork 的原则）。
 
 ## 每个工作项的流程
@@ -19,8 +19,10 @@ easy-query（Java，`C:\Users\Administrator\IdeaProjects\easy-query`，软 fork�
 2. 先看 Java 用例和 TS 实现：用 `tools/ParityTests` 列出这一项对应的 Java 用例，读 TS 的同名能力和它的 ROADMAP 记录。
 3. 先写测试：用 `--scaffold` 生成骨架，期望 SQL 用 Java 原文，再补上 C# 查询。
 4. 实现。
-5. 写文档：能力页加示例卡片，然后重新生成 SQL 快照。
+5. 写文档：能力页加示例卡片，然后重新生成 SQL 快照。用户看得到的变化（新能力、行为变化、修掉的 bug）在 `CHANGELOG.md` 的 `## [Unreleased]` 下记一行。
 6. 重新生成 `docs/parity-tests.md`，更新 ROADMAP 的状态；一项做完提交到 master 并推送，CI 在 master 上跑。
+
+发版（推到 nuget.org）按 `.claude/skills/release` 的步骤做。
 
 本地只跑和改动相关的测试，全量交给 CI。推送后不用等，下次提交前先用 `gh run list --limit 1` 看上一次的结果，有失败先修。
 
