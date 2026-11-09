@@ -1,7 +1,7 @@
 namespace EasyQuerySharp.Tests.Upstream.Extras;
 
 /// <summary>
-/// LINQ 查询语法（<c>from … where … orderby … join … group … select</c>）的支持测试（ROADMAP 3.6，没有对应的 Java 用例）：
+/// LINQ 查询语法（<c>from … where … orderby … join … group … select</c>）的支持测试（没有对应的 Java 用例）：
 /// 每种写法都与等价的方法链生成同样的 SQL，并在实库上能执行。
 /// </summary>
 public sealed class QuerySyntaxTest(MySqlFixture fixture) : MySqlTest(fixture)

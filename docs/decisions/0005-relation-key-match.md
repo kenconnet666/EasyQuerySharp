@@ -1,6 +1,6 @@
 # 0005 关联键的匹配方式
 
-状态：已定（2026-11），对应 ROADMAP 1.1。
+状态：已定（2026-11）。
 
 ## 背景
 
@@ -33,7 +33,7 @@ public List<Book>? Books { get; set; }
 | SQL Server | `(CHARINDEX(',' + CAST(值 AS NVARCHAR(MAX)) + ',', ',' + 列表 + ',') > 0)` |
 | Oracle | `(INSTR(',' \|\| 列表 \|\| ',', ',' \|\| 值 \|\| ',') > 0)` |
 
-SQLite 没按 ROADMAP 原先写的"拼逗号后用 LIKE"：SQLite 的 LIKE 对 ASCII 不区分大小写，键里的 `%`、`_` 还会被当成通配符，`instr` 是精确匹配。SQL Server 用 `+` 拼接，列表为 NULL 时整体为 NULL，不会误匹配。
+SQLite 没用"拼逗号后用 LIKE"：SQLite 的 LIKE 对 ASCII 不区分大小写，键里的 `%`、`_` 还会被当成通配符，`instr` 是精确匹配。SQL Server 用 `+` 拼接，列表为 NULL 时整体为 NULL，不会误匹配。
 
 ### 三种场景
 

@@ -6,7 +6,8 @@
 
 | 文档 | 内容 |
 |---|---|
-| [ROADMAP.md](../ROADMAP.md) | 到 1.0 的剩余工作：已定的取舍、整理轮 R 与阶段 1–5、完成标准 |
+| [ROADMAP.md](../ROADMAP.md) | 现状、待做的事、仍然有效的取舍 |
+| [CHANGELOG.md](../CHANGELOG.md) | 各版本的变化；发版步骤见 `.claude/skills/release` |
 | [parity.md](parity.md) | 能力对照总表：Java 的每种能力、用例数、C# 写法 |
 | [parity-tests.md](parity-tests.md) | 逐条用例对照，由 `tools/ParityTests` 生成，不要手改 |
 | [BACKLOG.md](BACKLOG.md) | 记下但暂时不做的事 |
@@ -51,7 +52,8 @@
 ## 设计
 
 - [架构](design/architecture.md)：模块、查询管线、核心抽象、用到的 C# 特性、分析器、扩展点。
-- [文档站](design/docs-site.md)：示例模型、卡片写法、各方言 SQL 的生成方式和快照。
+- [示例卡片与 SQL 快照](design/examples.md)：示例模型、卡片写法、`tools/DocsExamples` 怎样生成指南里的代码和各方言的 SQL 快照。
+- [分析器](design/analyzers.md)：EQ0001–EQ0007 的内容与改法，`[Projection]` 生成器。
 
 ## 性能
 

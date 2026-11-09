@@ -436,7 +436,7 @@ SELECT t."title" FROM "t_post" t WHERE ((t."id")::text = ANY(string_to_array(?,'
 - 集合导航上只支持 `Where` / `Select` / `OrderBy` / `ThenBy` / `Skip` / `Take` / `Distinct` 和终结的聚合方法；`GroupBy`、`Join` 等写在导航上报不支持。
 - 显式 JOIN 最多 10 张表；更多时用导航或派生表。
 - LINQ 查询语法的 `join` 会先把两张表的列包成一个派生表，再在外层投影；写成方法调用 `InnerJoin<T2>(..)` 时没有这一层。
-- 集合导航取段之后再聚合（`string.Join(",", u.Cards.OrderBy(..).Take(2).Select(..))`）的写法与 Java 一致、语义存疑，见 ROADMAP 2.4。
+- 集合导航取段之后再聚合（`string.Join(",", u.Cards.OrderBy(..).Take(2).Select(..))`）按 C# 的语义先取段再聚合；Java 把 LIMIT 写在聚合外面、聚合的是全部行，SQL 与 Java 不同。
 
 ## 对应 Java
 

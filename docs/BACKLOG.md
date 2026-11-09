@@ -10,14 +10,13 @@
 - 插值或拼接的字符串传给 `FromSqlRaw` / `SqlQueryRawAsync` / `ExecuteSqlRawAsync` 时编译期警告（EF Core 10 的 EF1002）：现在靠方法名区分两组 API，插值字符串不会落到 Raw 一组；有人误把插值写进 Raw 方法时再加分析器。
 - 一条 SQL 用 JSON 聚合出整棵对象树：不做，理由见 [0002](decisions/0002-object-tree-and-dto.md)。
 - 标量投影之后再聚合（`q.Select(x => x.Score ?? 0m).SumAsync(v => v)`）：选择器参数绑定到单列派生表还不支持，多表时直接用 `SumAsync((a, b) => …)`；有真实需求时再补。
-- 对象树按批流式读取（`AsAsyncEnumerable(batchSize)`）与 `.AsSnapshot()`（旧 ROADMAP 4.11）：没有对应的 Java 用例，有真实需求时再做。
-- 文档站（旧 M8：`apps/docs` 读 examples.json，方言切换、结果表格，约 500 张卡片）：1.0 先用 `docs/guide` 下的 Markdown 指南，要对外发布时再做站点。
+- 对象树按批流式读取（`AsAsyncEnumerable(batchSize)`）与 `.AsSnapshot()`：没有对应的 Java 用例，有真实需求时再做。
+- 文档站（`apps/docs` 读卡片生成的 examples.json，方言切换、结果表格，可复用 TS 文档站的组件）：现在用 `docs/guide` 下的 Markdown 指南，要做站点时再做。
 - AOT 与裁剪（旧 1.1 / 9.4 / 10.3）：元数据与物化器的 Source Generator、用 interceptors 在编译期预翻译查询。表达式树查询在 NativeAOT 下只能解释执行；JIT 下一条 10 行查询已与 EF Core 预编译查询相当（见 [基准对比](benchmarks.md)）。等有 AOT 部署需求、且 interceptors 不再标为实验性时再做。
 - 逐列读取不装箱：现在每列都走 `ValueReader.Read`（`GetValue` 再 `ConvertTo`），读 1000 行的耗时是手写 ADO.NET 的 1.4–2.2 倍、落后 EF Core 和 Dapper（见 [基准对比](benchmarks.md)）。可以在生成读取委托时按列的 CLR 类型直接调 `GetInt64` / `GetDouble` / `GetString` / `GetFieldValue<T>`，读到的类型对不上（SQLite 的整数布尔、文本日期，各驱动的数值类型）时再退回 `ValueReader`。有大结果集的性能需求时做，改完重跑物化和对象树基准。
 - TS 版独有的能力（旧 M9）：多态（判别列加子类）、只读库 `AsReadOnly()`、开发期 N+1 检测、`dotnet eqs pull` 从库反向生成实体、多个模型程序集注册到同一个库。不在 Java 对标范围内，有真实需求时再做。
-- 跟进上游新增的用例：对标基准冻结在 `sql-test` 2315 个（上游 main 3.3.1 已到 2410 个）。1.0 之后另起工作项，用 `ParityTests --rescan` 对比差异。
-- 带出查询的父键在 PG 上写成 `= ANY(?)`，只占一个参数（旧 ROADMAP 4.4）：现在按 `IncludeGroupSize` 分批 IN，够用；基准显示参数绑定是瓶颈时再做。
-- 投影里直接写非导航的关联查询（`Select(o => new { o.No, Lines = db.Query<Line>().Where(l => l.OrderNo == o.No).ToList() })`），规划器自动按键批量（旧 ROADMAP 4.9）：现在用 `FillMany` / `FillOne` 表达，Java 的 fill 用例都已覆盖。
+- 带出查询的父键在 PG 上写成 `= ANY(?)`，只占一个参数：现在按 `IncludeGroupSize` 分批 IN，够用；基准显示参数绑定是瓶颈时再做。
+- 投影里直接写非导航的关联查询（`Select(o => new { o.No, Lines = db.Query<Line>().Where(l => l.OrderNo == o.No).ToList() })`），规划器自动按键批量：现在用 `FillMany` / `FillOne` 表达，Java 的 fill 用例都已覆盖。
 - 任意关联条件的导航（TS 的 `r.manyOn(.., (a, b) => b.id.inCsv(a.ids))`）：查询时本表自连接成派生表按主键对上，带出要在内存里求逆；现在只有 `KeyMatch.SelfCsv`（0005）。
 - 逗号列表键的带出在 MySQL 上是 `FIND_IN_SET(列,?)`，用不上索引：目标表大时可以改成拆好的 `IN (…)`；现在与 Java 一致。
 - SQL Server 的 `Sql.LikeContains` / `LikeStartsWith` / `LikeEndsWith` 遇到含 `%` 或 `_` 的常量值：Java 的 MsSQLLikeSQLFunction 写成 `CHARINDEX(值,列) > 0` 一类，C# 沿用 `LIKE ? ESCAPE '\'`（语义相同、SQL 不同，没有 Java 用例覆盖）；要逐字对齐时再改。

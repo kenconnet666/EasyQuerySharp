@@ -2,7 +2,7 @@
 
 EasyQuerySharp 是 [easy-query](https://github.com/dromara/easy-query)（Java）的 C# 实现：实体是普通的 C# 类，查询写成表达式树，导航属性直接写在条件和投影里，生成隐式 JOIN、隐式子查询和对象树。本页从安装到第一条查询、第一次写入走一遍，其余能力见[指南索引](../README.md#指南)。
 
-本页和其余指南里的代码都来自 `docs/examples` 下的示例卡片：卡片在 SQLite 示例库上实际执行，各方言的 SQL 由 `tools/DocsExamples` 生成，不手写（见[文档站与示例 SQL](../design/docs-site.md)）。示例模型是一个技术社区（公司、用户、帖子、评论、标签、订单……），定义在 `samples/EasyQuerySharp.Samples/SampleModel.cs`。
+本页和其余指南里的代码都来自 `docs/examples` 下的示例卡片：卡片在 SQLite 示例库上实际执行，各方言的 SQL 由 `tools/DocsExamples` 生成，不手写（见[示例卡片与 SQL 快照](../design/examples.md)）。示例模型是一个技术社区（公司、用户、帖子、评论、标签、订单……），定义在 `samples/EasyQuerySharp.Samples/SampleModel.cs`。
 
 ## 安装
 

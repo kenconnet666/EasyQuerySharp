@@ -4,7 +4,7 @@ using EasyQuerySharp.Tests.Upstream.Mysql8;
 namespace EasyQuerySharp.Tests.Upstream.Extras;
 
 /// <summary>
-/// 可复用投影（ROADMAP 4.6，没有对应的 Java 用例）：<c>Project(map)</c> 与 <c>[Projection]</c> 方法内联成方法体，
+/// 可复用投影（没有对应的 Java 用例）：<c>Project(map)</c> 与 <c>[Projection]</c> 方法内联成方法体，
 /// 生成的 SQL 与把投影写在原地完全相同；对多的投影照常走带出查询。
 /// </summary>
 public sealed class ProjectionTest(Mysql8Fixture fixture) : Mysql8Test(fixture)

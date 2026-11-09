@@ -124,17 +124,7 @@ db.Query<User>().Where(..).Select(..).ToListAsync()
 
 ### 分析器
 
-生成器包里同时带上 Roslyn 分析器，在编译期报出运行时才会失败的写法，完整说明见 [analyzers.md](analyzers.md)：
-
-| 编号 | 内容 |
-|---|---|
-| EQ0001 | 查询表达式里调用了用到查询参数、又不能翻译成 SQL 的方法 |
-| EQ0002 | 查询表达式里用了 `?.`，给出改成 `!.` 的写法 |
-| EQ0003 | `[MapFrom<T>]` 的 DTO 成员在实体上对不上 |
-| EQ0004 | `[Navigate]` 的 `ExtraFilter` / `ExtraMappingFilter` 引用的成员不存在或类型不对 |
-| EQ0005 | `[MapFrom<T>]` 的 DTO 把可空的对一导航映射成了非空成员 |
-| EQ0006 | `[Projection]` 方法的写法生成器处理不了 |
-| EQ0007 | 只能在查询表达式里调用的方法（`Sql.*`、`[SqlFunction]`）在普通代码里被调用 |
+生成器程序集里同时带上 Roslyn 分析器（EQ0001–EQ0007），在编译期报出运行时才会失败的写法，见 [analyzers.md](analyzers.md)。
 
 ## 扩展点
 

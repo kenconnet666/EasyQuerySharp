@@ -3,15 +3,15 @@
 本表按能力列出 easy-query（Java）的全部能力和 C# 的写法。逐条用例的对照见 [parity-tests.md](parity-tests.md)，由 `tools/ParityTests` 生成。
 
 - **用例数**：上游 `sql-test` 共 2315 个用例，分类规则沿用 TS 版的 `tools/capabilities.mjs`，每个用例按方法体里用到的 API 归到一种能力。fork 的 `sql-fork-test` 还有 89 个用例，单独列在最后。基准冻结在 `tools/ParityTests/java-tests.json`。
-- **C# 写法**：已经做好的写的是实际 API；还没做的标"（计划）"。
-- **状态**：`完成` 表示这个能力本身已经做好（个别依赖方言或别的阶段的用例可能还没移植，见 parity-tests.md）；`阶段 N` 是 [ROADMAP](../ROADMAP.md) 里剩余工作所在的阶段；`不做` 与 `BACKLOG` 的理由见 ROADMAP 的"已定的取舍"和 [BACKLOG](BACKLOG.md)。
+- **C# 写法**：实际的 API。
+- **状态**：1.0 起 Java 的能力都已`完成`（逐条用例的移植、偏离与不适用见 parity-tests.md）；`不做` 与 `BACKLOG` 的理由见 [ROADMAP](../ROADMAP.md) 的"已定的取舍"和 [BACKLOG](BACKLOG.md)。
 
 ## 查询
 
 | 能力 | key | 用例数 | C# 写法 | 状态 |
 |---|---|---|---|---|
-| 基本查询：条件、排序、选列、分页 | `query.basic` | 435 | `db.Query<T>().Where(..).OrderBy(..).Select(..).Skip(n).Take(n).ToListAsync()`；`FirstAsync` / `SingleAsync` / `FindAsync(id)` / `AnyAsync` / `CountAsync`；要求有结果：`FirstAsync` / `SingleAsync` / `FindOrThrowAsync(id)` / `EnsureAnyAsync` 查不到时抛 `NotFoundException`（可传消息或异常工厂，默认消息取 `[Table(NotFoundMessage = ..)]`，对应 firstNotNull / singleNotNull / findNotNull / required 与 @EasyAssertMessage）；`WhereIf`；值过滤 `UseValueFilter(ValueFilter.NotNullOrBlank)`（对应 filterConfigure；`includeNavigations: true` 对应 DEFAULT_PROPAGATION_SUPPORTS）；投影里读出后在客户端换算 `Sql.ClientSide(x, v => ..)`（对应 valueConvert）；IN 列表按 `EasyDbOptions.MaxInClauseSize` 拆成 OR 组；实体去掉几列 `Sql.Without(u, u.Password)`（selectIgnores） | 阶段 1 |
-| 分页结果 | `query.page` | 22 | `ToPageAsync(page, size)` 返回 `Page<T> { Rows, Total, PageIndex, PageSize }`；`ToPageAsync(page, size, selector)` 先分页再投影；`EasyDbOptions.ReverseOffsetThreshold` 开启深分页反向排序，单条查询 `DisableReversePaging()` 关闭 | 阶段 1 |
+| 基本查询：条件、排序、选列、分页 | `query.basic` | 435 | `db.Query<T>().Where(..).OrderBy(..).Select(..).Skip(n).Take(n).ToListAsync()`；`FirstAsync` / `SingleAsync` / `FindAsync(id)` / `AnyAsync` / `CountAsync`；要求有结果：`FirstAsync` / `SingleAsync` / `FindOrThrowAsync(id)` / `EnsureAnyAsync` 查不到时抛 `NotFoundException`（可传消息或异常工厂，默认消息取 `[Table(NotFoundMessage = ..)]`，对应 firstNotNull / singleNotNull / findNotNull / required 与 @EasyAssertMessage）；`WhereIf`；值过滤 `UseValueFilter(ValueFilter.NotNullOrBlank)`（对应 filterConfigure；`includeNavigations: true` 对应 DEFAULT_PROPAGATION_SUPPORTS）；投影里读出后在客户端换算 `Sql.ClientSide(x, v => ..)`（对应 valueConvert）；IN 列表按 `EasyDbOptions.MaxInClauseSize` 拆成 OR 组；实体去掉几列 `Sql.Without(u, u.Password)`（selectIgnores） | 完成 |
+| 分页结果 | `query.page` | 22 | `ToPageAsync(page, size)` 返回 `Page<T> { Rows, Total, PageIndex, PageSize }`；`ToPageAsync(page, size, selector)` 先分页再投影；`EasyDbOptions.ReverseOffsetThreshold` 开启深分页反向排序，单条查询 `DisableReversePaging()` 关闭 | 完成 |
 | 原生 SQL | `sql.native` | 50 | `db.SqlQueryAsync<T>($"...{param}")` / `db.ExecuteSqlAsync($"...")`，插值的值自动参数化，集合展开成 `?,?,?`（空集合报错），`Sql.Identifier("t_user")` 按方言加引号；可以继续组合的原生 SQL 来源 `db.FromSql<T>($"...")`；Java 的 `?` 位置参数写法对应 `SqlQueryRawAsync` / `ExecuteSqlRawAsync` / `FromSqlRaw`；行内片段 `Sql.Raw<T>("... {0} ...", u.Col)`；自定义模板函数：静态方法标 `[SqlFunction("FIND_IN_SET({0},{1})")]` | 完成 |
 | 显式 join | `query.join` | 88 | `.LeftJoin<Post>((u, p) => p.UserId == u.Id)`，后续 lambda 依次收到各表 `(u, p)`；`InnerJoin` / `RightJoin` / `CrossJoin` / `From<T2>()`；JOIN 子查询 `LeftJoin(subQuery, on)`；LINQ 查询语法 `join … equals …` | 完成 |
 | 分组与 having | `query.group` | 83 | `.GroupBy(p => new { p.UserId }).Having(g => g.Count() > 3).Select(g => new { g.Key.UserId, Total = g.Sum(p => p.Amount) })`；按条件计数 `g.Count(p => p.Paid)`；`Rollup()` / `Cube()` / `g.Grouping(键)` | 完成 |
@@ -25,15 +25,15 @@
 
 | 能力 | key | 用例数 | C# 写法 | 状态 |
 |---|---|---|---|---|
-| 字符串函数 | `func.string` | 131 | 优先映射 BCL：`Contains` / `StartsWith` / `Trim` / `ToUpper` / `Substring` / `IndexOf` / `Length` / `Replace` / `PadLeft`；没有 BCL 对应的用扩展方法：`Like` / `NotLike`；`Contains` 等对应 Java 的 like（`LIKE ?`，% 在参数里），`LikeContains` / `LikeStartsWith` / `LikeEndsWith` 对应 Java 的 contains / startsWith / endsWith（`LIKE CONCAT('%',?,'%')`） | 阶段 1 |
+| 字符串函数 | `func.string` | 131 | 优先映射 BCL：`Contains` / `StartsWith` / `Trim` / `ToUpper` / `Substring` / `IndexOf` / `Length` / `Replace` / `PadLeft`；没有 BCL 对应的用扩展方法：`Like` / `NotLike`；`Contains` 等对应 Java 的 like（`LIKE ?`，% 在参数里），`LikeContains` / `LikeStartsWith` / `LikeEndsWith` 对应 Java 的 contains / startsWith / endsWith（`LIKE CONCAT('%',?,'%')`） | 完成 |
 | 日期函数 | `func.date` | 101 | `AddDays` / `AddMonths` / `.Year` / `.DayOfWeek` / `ToString("yyyy-MM")`（格式串按方言翻译）/ `Sql.Now()`；日期相减 `(end - start).TotalDays` / `.Days` / `.TotalHours`（对应 Java 的 duration）；`DateTime` / `DateOnly` / `DateTimeOffset`；日期截断 `p.CreatedAt.DateTrunc(DateTruncUnit.Month)`（MySQL、PG、SQLite、SQL Server 2022 的 DATETRUNC、Oracle 的 TRUNC、HANA 按格式取出起点再 TO_TIMESTAMP；周从周一起） | 完成 |
-| 通用函数 | `func.general` | 59 | `??`（nullOrDefault）/ `x.NullIf(y)` / `x.EqualsNullSafe(y)`（按方言写 `<=>` / `IS NOT DISTINCT FROM` / `IS`）/ `Sql.Random()` / `Sql.MaxColumns(a, b, c)`、`Sql.MinColumns(..)`（一行里几个值取最大 / 最小：MySQL、PG、HANA 的 GREATEST / LEAST，SQLite 的多参数 MAX / MIN，SQL Server 的 VALUES，Oracle / 达梦的 UNION ALL 派生表） | 阶段 3 |
+| 通用函数 | `func.general` | 59 | `??`（nullOrDefault）/ `x.NullIf(y)` / `x.EqualsNullSafe(y)`（按方言写 `<=>` / `IS NOT DISTINCT FROM` / `IS`）/ `Sql.Random()` / `Sql.MaxColumns(a, b, c)`、`Sql.MinColumns(..)`（一行里几个值取最大 / 最小：MySQL、PG、HANA 的 GREATEST / LEAST，SQLite 的多参数 MAX / MIN，SQL Server 的 VALUES，Oracle / 达梦的 UNION ALL 派生表） | 完成 |
 | 字符串聚合 | `func.joining` | 29 | `g.StringJoin(p => p.Name, ",")`，集合导航上写 `string.Join(",", u.Posts.Select(p => p.Name))`；链上的 `OrderBy` / `ThenBy` 写进聚合 | 完成 |
 | JSON 函数 | `func.json` | 12 | `Sql.Json(u.Attrs).Get / Text / Value<T> / Length / ContainsKey`；方言专属的在 `Sql.MySql.Json(..)` / `Sql.Pg.Jsonb(..)` 下 | 完成 |
 | 数学函数 | `func.math` | 4 | 映射 `Math.Abs` / `Round` / `Floor` / `Ceiling` / `Pow` / `Sqrt` / `Sign` / `Log` / `Exp` / `Truncate` | 完成 |
 | CASE WHEN | `expr.case` | 27 | 三元表达式（多分支写成嵌套三元），渲染成 `CASE WHEN … THEN … ELSE … END`；聚合加过滤：`g.Count(p => p.Paid)` | 完成 |
 | 窗口函数 | `window` | 44 | `Sql.Over.RowNumber(w => w.PartitionBy(p.UserId).OrderBy(p.Id))`；`Lag` / `Lead` / `FirstValue` / `NthValue` / `Ntile` / `PercentRank` / `CumeDist`，支持 frame；取值函数不带窗口或窗口没写排序时沿用查询的 ORDER BY（`Sql.Over.Lag(p.Views, 1)`），查询没有排序时报错 | 完成 |
-| 行锁 | `lock` | 28 | `.ForUpdate()` / `.ForUpdateNoWait()` / `.ForUpdateSkipLocked()`：只能在事务里、对单表调用；SQL Server、SQLite 渲染时抛 NotSupportedException；HANA 的 SkipLocked 写 `FOR UPDATE IGNORE LOCKED`。Java 没有 FOR SHARE，不做；其余方言的冒烟用例随阶段 2、3 | 阶段 2、3 |
+| 行锁 | `lock` | 28 | `.ForUpdate()` / `.ForUpdateNoWait()` / `.ForUpdateSkipLocked()`：只能在事务里、对单表调用；SQL Server、SQLite 渲染时抛 NotSupportedException；HANA 的 SkipLocked 写 `FOR UPDATE IGNORE LOCKED`。Java 没有 FOR SHARE，不做；其余方言的冒烟用例随阶段 2、3 | 完成 |
 
 ## 导航与对象树（[0002](decisions/0002-object-tree-and-dto.md)）
 
@@ -43,7 +43,7 @@
 | 子查询改成分组 join | `nav.groupJoin` | 67 | `Query.GroupJoin(u => u.Posts, q => …)` 或导航上 `[Navigate(GroupJoin = true)]`；`GroupJoinAll()`；`GroupJoinNoMerge()`；多对多、嵌套、Required 导航；主查询里对关联列的等值 / IN 条件下推进分组子查询 | 完成 |
 | 一对多展开 flatElement / elements | `nav.flat` | 56 | `flatElement()` 写成 `Any(..)`；`elements(i, j)` 写成 `OrderBy(..).Skip(i).Take(j - i + 1)`；取第 i 个元素 `ElementAt(i)` / `First()`；没写排序时按导航的 `PartitionOrder`；沿集合导航展开 `q.SelectMany(a => a.Bs).SelectMany(b => b.Cs)`（INNER JOIN，多对多经中间表，保留重复；对应 Java 的 `toList(a -> a.bs().flatElement()…)`，Java 逐层带出再去重） | 完成 |
 | include | `nav.include` | 37 | `.Include(o => o.Lines, q => q.Where(..).Include(l => l.Product))`；`db.LoadIncludeAsync(entities, nav)`；`IncludeLimitMode`、`IncludeGroupSize`；导航声明的 `OrderBy` / `Limit` / `Offset`；`[IncludeOn(property, value)]`；`Include` 之后再投影时配置并入投影里同名导航的带出 | 完成 |
-| 按 DTO 结构自动带出 | `dto.autoInclude` | 36 | `Select<UserVo>()`：同名属性取列，与导航同名的属性按导航带出；`[MapPath("A.B")]` 平铺（`Join = true` 走主查询 JOIN）、`[MapExpression]` 额外列、嵌套 DTO 实现 `IAutoIncludeConfigure<T>` 配置带出查询、`WithConfigureArgument(arg)`；DTO 属性上的 `[Navigate(OrderBy / Limit / Offset)]` 覆盖实体导航的排序与条数；先分页再投影 `ToPageAsync(page, size, q => q.Select<TDto>())`；`[MapFrom<User>]` 让分析器在编译期校验成员 | 阶段 1 |
+| 按 DTO 结构自动带出 | `dto.autoInclude` | 36 | `Select<UserVo>()`：同名属性取列，与导航同名的属性按导航带出；`[MapPath("A.B")]` 平铺（`Join = true` 走主查询 JOIN）、`[MapExpression]` 额外列、嵌套 DTO 实现 `IAutoIncludeConfigure<T>` 配置带出查询、`WithConfigureArgument(arg)`；DTO 属性上的 `[Navigate(OrderBy / Limit / Offset)]` 覆盖实体导航的排序与条数；先分页再投影 `ToPageAsync(page, size, q => q.Select<TDto>())`；`[MapFrom<User>]` 让分析器在编译期校验成员 | 完成 |
 | 按键填充 fillMany / fillOne | `fill` | 4 | `FillMany(() => db.Query<Line>(), l => l.OrderNo, o => o.No, ..)` / `FillOne(..)`：按键批量查询，带 Take 时按键 UNION ALL | 完成 |
 | 树 toTreeList / asTreeCTE | `tree` | 25 | `q.AsTreeCte(o => { o.Up = true; o.LimitDeep = 2; }, childFilter: c => ..)`、`AsTreeCte(c => c.Id, c => c.ParentId)`（asTreeCTECustom）；`ToTreeAsync()` 拼成树 | 完成 |
 
@@ -53,7 +53,7 @@
 |---|---|---|---|---|
 | 插入 | `write.insert` | 50 | `db.Insert(entities).ExecuteAsync()`，`.FillGeneratedKeys()` 回填自增键；字典写入 `db.InsertMap(table, rows)`；INSERT … SELECT：`q.InsertInto(table).Column(name, value)` | 完成 |
 | 更新 | `write.update` | 59 | `db.Update<T>().Set(u => new T { Age = u.Age + 1 }).Where(..).ExecuteAsync()`；`db.Update(entity)` 按主键整行更新；`.Columns(..)` 限定列、`.WhereColumns(..)` 换定位列；字典 `db.UpdateMap(..)`；没有任何 SET 时抛异常（Java 是静默返回 0） | 完成 |
-| 删除 | `write.delete` | 25 | `db.Delete<T>().Where(..).ExecuteAsync()`；没有条件时必须写 `.All()`；逻辑删除的实体要真删时用 `.Hard()`；条件里可以用集合导航和对一导航 | 阶段 1 |
+| 删除 | `write.delete` | 25 | `db.Delete<T>().Where(..).ExecuteAsync()`；没有条件时必须写 `.All()`；逻辑删除的实体要真删时用 `.Hard()`；条件里可以用集合导航和对一导航 | 完成 |
 | upsert | `write.upsert` | 13 | `.OnConflictIgnore(冲突列?)` / `.OnConflictUpdate(更新列?, 冲突列?)`：MySQL（INSERT IGNORE / ON DUPLICATE KEY UPDATE）、PG 与 SQLite（ON CONFLICT）、GaussDB / openGauss（ON DUPLICATE KEY UPDATE，openGauss 没有 ON CONFLICT）、SQL Server、Oracle 与达梦（单行 MERGE）；MySQL 上忽略冲突也可以写成 `ON DUPLICATE KEY UPDATE 主键 = VALUES(主键)`（`new MySqlDialect { IgnoreConflictAsKeyUpdate = true }`） | 完成 |
 | 写哪些列、批量执行 | `write.strategy` | 26 | `.Columns(ColumnStrategy.OnlyNotNull)`，全局默认 `EasyDbOptions.UpdateStrategy`；`.Batch()` 按 SQL 分组一次发出（驱动支持时走 `DbBatch`），不在事务里时每组一个事务 | 完成 |
 | UPDATE / DELETE 里用导航 | `write.join` | 10 | `db.Update<Card>().Set(c => new Card { Type = c.User!.Name }).Where(c => c.User!.Name!.Contains("x"))`：对一导航生成 JOIN。MySQL：`UPDATE t INNER JOIN … SET` / `DELETE t FROM … JOIN`；PostgreSQL：`UPDATE … FROM` / `DELETE … USING`；SQL Server：`UPDATE t SET … FROM … JOIN` / `DELETE t FROM … JOIN`；SQLite：`UPDATE … AS t … FROM` / `DELETE … AS t WHERE EXISTS(…)`；Oracle：按 ROWID 的 `MERGE` / `DELETE … WHERE ROWID IN (…)`；达梦：`UPDATE t INNER JOIN … SET`，删除同 Oracle | 完成 |
@@ -68,7 +68,7 @@
 | 逻辑删除 | `logicDelete` | 10 | `[LogicDelete(LogicDeleteStrategy.Boolean)]` / `DeletedTime` / `DeletedTimestamp`；自定义策略实现 `ILogicDeleteStrategy`，`options.AddLogicDeleteStrategy("名字", 策略)`；不改实体时 `options.ApplyLogicDelete(..)` | 完成 |
 | 乐观锁 | `version` | 13 | `[Version]`（整数列 +1；`VersionStrategy.NewGuid`）；按条件写入必须 `.WithVersion(v)` 或 `.IgnoreVersion()`；冲突时影响 0 行，用 `ExecuteAsync(1, "msg")` 抛 `ConcurrencyException` | 完成 |
 | 列加密 | `column.encryption` | 8 | `[Encryption(typeof(AesBase64EncryptionStrategy))]` / `Sm4HexEncryptionStrategy`，与 Java 的密文兼容，支持分段 LIKE；库端加解密用 `[Column(SqlConversion = typeof(…))]` | 完成 |
-| 值转换、枚举 | `column.converter` | 9 | `[Column(Converter = typeof(JsonValueConverter<Attrs>))]`；枚举默认按数字存，`[StoreAsName]` 或 `EnumNameConverter<T>` 按名字存；值对象 `[ValueObject]` 见下面 TS 版独有的能力 | 阶段 3 |
+| 值转换、枚举 | `column.converter` | 9 | `[Column(Converter = typeof(JsonValueConverter<Attrs>))]`；枚举默认按数字存，`[StoreAsName]` 或 `EnumNameConverter<T>` 按名字存；值对象 `[ValueObject]` 见下面 TS 版独有的能力 | 完成 |
 | 自增、生成列 | `column.generated` | 0 | `[Column(Generated = true)]` / `[Column(KeyGenerator = typeof(…))]` / `GeneratedSql` | 完成 |
 
 用例数为 0 的一项，是因为 TS 的分类规则里，对应 Java 的目录在 `sql-test` 下没有用例，能力本身仍要做。
@@ -77,14 +77,14 @@
 
 | 能力 | key | 用例数 | C# 写法 | 状态 |
 |---|---|---|---|---|
-| 建表与迁移（code-first） | `codeFirst` | 17 | `db.CodeFirst.CreateTablesAsync(..)` / `DropTablesIfExistsAsync(..)` / `CreateTableSql(type)`（注释、`[TableIndex]` 索引、对一导航上 `[ForeignKey]` 的外键）；只增不删的同步 `PlanSyncAsync(..)` → `CodeFirstCommand`（`Statements` / `ToSql()` / `Differences` / `ExecuteAsync()`）、`SyncTablesAsync(..)`、离线的 `PlanSync(types, tables)`；`[RenamedFrom("旧名")]` 改表名列名；读库结构 `ReadTablesAsync()` / `TableExistsAsync(type)`（TDengine 不支持）。库端默认值 `[Column(DbDefault = "…")]`（Java 的 `dbDefault`）。MySQL、PG、SQLite、DuckDB 的建表语句与 Java 逐字一致。见[建表与同步](guide/code-first.md) | 阶段 4（4.1） |
+| 建表与迁移（code-first） | `codeFirst` | 17 | `db.CodeFirst.CreateTablesAsync(..)` / `DropTablesIfExistsAsync(..)` / `CreateTableSql(type)`（注释、`[TableIndex]` 索引、对一导航上 `[ForeignKey]` 的外键）；只增不删的同步 `PlanSyncAsync(..)` → `CodeFirstCommand`（`Statements` / `ToSql()` / `Differences` / `ExecuteAsync()`）、`SyncTablesAsync(..)`、离线的 `PlanSync(types, tables)`；`[RenamedFrom("旧名")]` 改表名列名；读库结构 `ReadTablesAsync()` / `TableExistsAsync(type)`（TDengine 不支持）。库端默认值 `[Column(DbDefault = "…")]`（Java 的 `dbDefault`）。MySQL、PG、SQLite、DuckDB 的建表语句与 Java 逐字一致。见[建表与同步](guide/code-first.md) | 完成 |
 | 换表名 asTable | `table.rename` | 52 | `.AsTable("t_post_2025")` / `.AsTable(name => name + "_2025")` / `AsTableSegment(..)`（整个表引用的写法，如 SQL Server 的 `WITH(NOLOCK)`；单表、联表后最近的一张表、导航上的 `Sql.AsTableSegment(u.User, ..)` 都能用）；写入同样 `AsTable` / `AsSchema`；查询级的 `.MapTable<Post>("t_post_2025")` / `.MapTable<Post>(name => name + "_archive")`（fork 的 TableNameMapping：主表、联表、隐式 JOIN、集合导航的子查询与分组合并、中间表、Include 与 DTO 自动带出、嵌在里面的子查询都跟着换，显式的 `AsTable` 优先） | 完成 |
 | 换 schema | `table.schema` | 25 | 写入 `.AsSchema("tenant_a")`；查询级的 `.InSchema("archive_2025")`（整条查询的实体表都换，范围同 `MapTable`） | 完成 |
 | 跨库链接 | `table.link` | 13 | `.WithTableLink(join => join + " LATERAL")` / `.WithTableLink("LEFT OUTER JOIN")`：改写最近一张表前面的连接符（Java 的 asTableLink，查询与联表都能用）；写入时写在目标表名前面 | 完成 |
 | 分库分表 | `sharding` | 48 | `options.Shard<T>(r => r.Mod(t => t.Id, 3))` / `r.ByMonth(t => t.CreateTime, from, to).ExtraKey(..).DefaultOrder(..)`、自定义 `IShardRule`；`AddDataSource("ds2021", ..)` / `WithDefaultDataSourceName(..)`；按 WHERE 裁剪，同一数据源的分表写成 `(SELECT * FROM a UNION ALL SELECT * FROM b) t`（`MaxUnionTables`），跨数据源并行执行后归并排序、分页、合并 count / sum / min / max；写入按 `NodeOf` 或裁剪出的节点逐个执行；`ToShardingPageAsync`；`db.GetShardRule<T>()`；见 [分库分表指南](guide/sharding.md) | 完成 |
 | 按对象筛选排序 | `dto.object` | 101 | `.FilterBy(request)`（属性上的 `[Filter]` 说明条件类型、多属性 OR、区间、导航路径、集合 EXISTS）/ `.SortBy(sort)`（允许排序的属性）；按路径动态取列 `Sql.Column<T>(c, "user.age")`（对应 anyColumn）；列表页请求 `ToPageAsync(TableRequest.Parse(queryString))`（TS 的 table(request)：`filter.列` IN、`search.列` 包含、`sort=-a,b`，只认结果里的列，带了 `total` 不再计数） | 完成 |
 | search 扩展 | `search` | 45 | — | 不做 |
-| 二级缓存（`sql-extension/sql-cache`） | 没有单独的 key（QueryTest25 的 test11a、test11a1、topicIntegerTest、xxx，按方法体归在 `query.basic` 等） | 4 | 包 `EasyQuerySharp.Caching`：`new EasyCache(hybridCache, o => o.Cache<T>())` + `options.UseCache(cache)`；`cache.Of(db).Kv<T>()`（kvStorage：`FindAsync` / `FindManyAsync` / `ExistsAsync`，`Where` 与拦截器开关进缓存键，`Filter` 在内存里筛）、`All<T>()`（allStorage：主键索引 + 按主键取行，`OrderBy`、`ToListAsync`、`ToIdsAsync`、`CountAsync`、`ToPageAsync`）；经本库的写入按表自动失效（事务里在提交后），核心的写入监听 `IWriteListener` / `AddWriteListener`；Multi 与 `toMap` 不做。见 [二级缓存指南](guide/caching.md) | 完成（4.5） |
+| 二级缓存（`sql-extension/sql-cache`） | 没有单独的 key（QueryTest25 的 test11a、test11a1、topicIntegerTest、xxx，按方法体归在 `query.basic` 等） | 4 | 包 `EasyQuerySharp.Caching`：`new EasyCache(hybridCache, o => o.Cache<T>())` + `options.UseCache(cache)`；`cache.Of(db).Kv<T>()`（kvStorage：`FindAsync` / `FindManyAsync` / `ExistsAsync`，`Where` 与拦截器开关进缓存键，`Filter` 在内存里筛）、`All<T>()`（allStorage：主键索引 + 按主键取行，`OrderBy`、`ToListAsync`、`ToIdsAsync`、`CountAsync`、`ToPageAsync`）；经本库的写入按表自动失效（事务里在提交后），核心的写入监听 `IWriteListener` / `AddWriteListener`；Multi 与 `toMap` 不做。见 [二级缓存指南](guide/caching.md) | 完成 |
 | 依赖注入（Spring Boot starter、Solon 插件） | 没有用例 | — | `services.AddEasyQuery(o => ..)`，多个库 `AddEasyQuery("name", ..)` 加 `[FromKeyedServices("name")]`；容器里的 `DbDataSource`、`IExecutionListener`、`IInterceptor` 自动接上，见 [依赖注入指南](guide/dependency-injection.md) | 完成 |
 
 ## 方言
@@ -94,16 +94,16 @@
 | MySQL（8.0.18 / 8.4、PolarDB、MariaDB） | 归在上面各项 | — | MySqlConnector；`options.UseMySql(..)` | 第一档，完成 |
 | SQLite | 归在上面各项 | — | Microsoft.Data.Sqlite；`options.UseSqlite(..)` | 第一档，完成 |
 | PostgreSQL 17 | 归在上面各项（Java `pgsql/` 目录约 100 个） | — | Npgsql；`options.UsePostgreSql(..)` | 第一档，完成 |
-| SQL Server | `dialect.mssql` | 38 | Microsoft.Data.SqlClient；`options.UseSqlServer(..)`；Upstream 的 38 个 mssql 用例（库 `mssql_eq`）在实库跑通，CI 有独立的 upstream 分片；日期格式按 Java 写成 CONVERT / SUBSTRING 段，拼接式 LIKE 先 `CAST(.. AS NVARCHAR(MAX))`，`Math.Round` / `Atan2` / `Truncate` 按 SQL Server 改写 | 第一档，阶段 2（2.1 完成） |
-| Oracle | 归在上面各项 | — | Oracle.ManagedDataAccess.Core；`options.UseOracle(..)` | 第一档，阶段 2 |
+| SQL Server | `dialect.mssql` | 38 | Microsoft.Data.SqlClient；`options.UseSqlServer(..)`；Upstream 的 38 个 mssql 用例（库 `mssql_eq`）在实库跑通，CI 有独立的 upstream 分片；日期格式按 Java 写成 CONVERT / SUBSTRING 段，拼接式 LIKE 先 `CAST(.. AS NVARCHAR(MAX))`，`Math.Round` / `Atan2` / `Truncate` 按 SQL Server 改写 | 第一档，完成 |
+| Oracle | 归在上面各项 | — | Oracle.ManagedDataAccess.Core；`options.UseOracle(..)` | 第一档，完成 |
 | SQL Server 2008（ROW_NUMBER 分页） | `dialect.mssql2008` | 13 | — | 不做 |
-| 达梦 | `dialect.dameng` | 51 | DM.DmProvider；`options.UseDameng(..)`；方言继承 Oracle（ROWNUM 分页、MERGE、LISTAGG、FROM DUAL），覆盖带连接的更新（`UPDATE t INNER JOIN … SET`）、转布尔 `CAST(x AS BIT)`、日期相差、不排序的 LISTAGG 不写 WITHIN GROUP、NULL 位置用 CASE、截断到秒、UTC 时间、加年 / 月用 DATEADD（ADD_MONTHS 丢时间）与建表类型；50 个用例只比对 SQL（Java 只断言结果的记偏离），并发行锁 1 个连实库移植；实库套件 `DamengLiveSuite` 在 DM8 上通过（本地与 CI） | 第二档，阶段 3（3.1 完成） |
-| 人大金仓 / GaussDB（openGauss） | `dialect.kingbase` | 2 | 驱动由调用方传入；`options.UseKingbase(..)` / `options.UseGaussDb(..)`，`KingbaseDialect` / `GaussDbDialect` 继承 PG 方言，只覆盖 Java 两个模块与 PG 不同的写法（STRPOS 式 LIKE、条件当值写 CASE；Kingbase 另有两两嵌套的 CONCAT、日期加减与相差、树查询起点 `0+0`）。GaussDB 另按 openGauss 7 实测改写自增列（SERIAL / BIGSERIAL）、upsert（ON DUPLICATE KEY UPDATE）与 LOG10。MyKingbaseESTest 实为 MySQL 上的多对多带出排序用例，改在 SQLite 上移植（偏离）；实库套件 `OpenGaussLiveSuite` 在 openGauss 7 上通过（本地与 CI，驱动 Npgsql），Kingbase 没有容器镜像，只比对 SQL | 第二档，阶段 3（3.4 openGauss 完成，Kingbase 实库冒烟待定） |
+| 达梦 | `dialect.dameng` | 51 | DM.DmProvider；`options.UseDameng(..)`；方言继承 Oracle（ROWNUM 分页、MERGE、LISTAGG、FROM DUAL），覆盖带连接的更新（`UPDATE t INNER JOIN … SET`）、转布尔 `CAST(x AS BIT)`、日期相差、不排序的 LISTAGG 不写 WITHIN GROUP、NULL 位置用 CASE、截断到秒、UTC 时间、加年 / 月用 DATEADD（ADD_MONTHS 丢时间）与建表类型；50 个用例只比对 SQL（Java 只断言结果的记偏离），并发行锁 1 个连实库移植；实库套件 `DamengLiveSuite` 在 DM8 上通过（本地与 CI） | 第二档，完成 |
+| 人大金仓 / GaussDB（openGauss） | `dialect.kingbase` | 2 | 驱动由调用方传入；`options.UseKingbase(..)` / `options.UseGaussDb(..)`，`KingbaseDialect` / `GaussDbDialect` 继承 PG 方言，只覆盖 Java 两个模块与 PG 不同的写法（STRPOS 式 LIKE、条件当值写 CASE；Kingbase 另有两两嵌套的 CONCAT、日期加减与相差、树查询起点 `0+0`）。GaussDB 另按 openGauss 7 实测改写自增列（SERIAL / BIGSERIAL）、upsert（ON DUPLICATE KEY UPDATE）与 LOG10。MyKingbaseESTest 实为 MySQL 上的多对多带出排序用例，改在 SQLite 上移植（偏离）；实库套件 `OpenGaussLiveSuite` 在 openGauss 7 上通过（本地与 CI，驱动 Npgsql），Kingbase 没有容器镜像，只比对 SQL | 第二档，完成（Kingbase 只比对 SQL） |
 | DuckDB | `dialect.duckdb` | 16 | DuckDB.NET.Data.Full（只在测试项目里引用）；`options.UseDuckDb(..)` | 第二档，完成 |
-| ClickHouse | `dialect.clickhouse` | 4 | ClickHouse.Driver（官方）；`options.UseClickHouse(..)`；更新、删除写成 `ALTER TABLE` 的 mutation，没有 upsert、自增列、行锁、事务；4 个用例只渲染、已移植；`ClickHouseLiveSuite` 在实库上跑分析型冒烟（本地与 CI） | 第二档，阶段 3（3.5 完成） |
-| SAP HANA | `dialect.hana` | 18 | HANA 客户端自带的 Sap.Data.Hana（不在 nuget.org）；`options.UseHana(..)`；位置参数 `?`，`LIMIT … OFFSET`，拼接逐对写 `||`，日期格式化用 `TO_NVARCHAR`（格式串里的文字单独拼接），条件当值写三值 CASE，upsert 写 `MERGE … FROM DUMMY`，带导航的更新写按主键对上的 MERGE、删除写 EXISTS，EXISTS 子查询不带 LIMIT，自增键取 `CURRENT_IDENTITY_VALUE()`，建表 `CREATE COLUMN TABLE`；没有递归 CTE、`STRING_AGG` 不能去重、`Sql.Json` 未实现。SQL 文本按 fork 用例核对，实库冒烟未做 | 第二档，阶段 3 |
-| Db2 / TDengine | 没有用例 | — | Net.IBM.Data.Db2 / TDengine.Connector；`options.UseDb2(..)` / `options.UseTDengine(..)`；Db2 分页 `OFFSET … FETCH`、行锁 `FOR UPDATE WITH RS`、upsert 写成 `MERGE … USING (VALUES …)`、参数写成 `CAST(@p AS 类型)`；TDengine 没有 UPDATE、upsert、行锁、事务，建表时时间戳主键排第一列，值写成字面量；SQL 文本有 C# 用例，Db2 跑共用实库套件、TDengine 跑 `TDengineLiveSuite`（本地与 CI） | 第二档，阶段 3（3.5 完成） |
-| H2 | `dialect.h2` | 74 | 没有 .NET 驱动：和方言无关的用例改在 SQLite 上移植（偏离），只测 H2 方言本身的标不适用 | 阶段 3 |
+| ClickHouse | `dialect.clickhouse` | 4 | ClickHouse.Driver（官方）；`options.UseClickHouse(..)`；更新、删除写成 `ALTER TABLE` 的 mutation，没有 upsert、自增列、行锁、事务；4 个用例只渲染、已移植；`ClickHouseLiveSuite` 在实库上跑分析型冒烟（本地与 CI） | 第二档，完成 |
+| SAP HANA | `dialect.hana` | 18 | HANA 客户端自带的 Sap.Data.Hana（不在 nuget.org）；`options.UseHana(..)`；位置参数 `?`，`LIMIT … OFFSET`，拼接逐对写 `||`，日期格式化用 `TO_NVARCHAR`（格式串里的文字单独拼接），条件当值写三值 CASE，upsert 写 `MERGE … FROM DUMMY`，带导航的更新写按主键对上的 MERGE、删除写 EXISTS，EXISTS 子查询不带 LIMIT，自增键取 `CURRENT_IDENTITY_VALUE()`，建表 `CREATE COLUMN TABLE`；没有递归 CTE、`STRING_AGG` 不能去重、`Sql.Json` 未实现。SQL 文本按 fork 用例核对，实库冒烟未做 | 第二档，完成 |
+| Db2 / TDengine | 没有用例 | — | Net.IBM.Data.Db2 / TDengine.Connector；`options.UseDb2(..)` / `options.UseTDengine(..)`；Db2 分页 `OFFSET … FETCH`、行锁 `FOR UPDATE WITH RS`、upsert 写成 `MERGE … USING (VALUES …)`、参数写成 `CAST(@p AS 类型)`；TDengine 没有 UPDATE、upsert、行锁、事务，建表时时间戳主键排第一列，值写成字面量；SQL 文本有 C# 用例，Db2 跑共用实库套件、TDengine 跑 `TDengineLiveSuite`（本地与 CI） | 第二档，完成 |
+| H2 | `dialect.h2` | 74 | 没有 .NET 驱动：和方言无关的用例改在 SQLite 上移植（偏离），只测 H2 方言本身的标不适用 | 完成 |
 
 ## fork 新增（`sql-fork-test`，89 个用例）
 
@@ -116,12 +116,12 @@
 | 日期截断 dateTrunc | fork 3.7 | `x.DateTrunc(DateTruncUnit.Month)` | 完成 |
 | UPDATE / DELETE … RETURNING | fork 3.8 | `.Where(..).Returning()` / `.Returning(p => new { p.Id, p.Title })` 返回受影响的行（整行时 `RETURNING *`，带选择器只取用到的列）；PostgreSQL、SQLite 支持，其他库渲染时报不支持 | 完成 |
 | forUpdate NoWait / SkipLocked | fork 3.9 | 并入 `lock` | 完成 |
-| 查询级表名映射 | fork 3.1、decisions/0003 | 并入 `table.rename` | 阶段 4 |
+| 查询级表名映射 | fork 3.1、decisions/0003 | 并入 `table.rename` | 完成 |
 | 类型化 INSERT … SELECT | fork 3.2 | 并入 `write.insert` | 完成 |
 | JSON 列转换器 + 编解码接口 | fork 3.3 | `JsonValueConverter<T>`（`System.Text.Json`） | 完成 |
 | `DateTimeOffset` 等带时区的时间类型 | fork 1.4 | 原生支持 | 完成 |
-| SAP HANA 方言 | fork M2 | 见方言表（SQL 文本完成，实库冒烟待做） | 阶段 3 |
-| 实库用例（live） | fork `live/` | 并入 L3 跨方言套件 | 阶段 2、3 |
+| SAP HANA 方言 | fork M2 | 见方言表（SQL 文本与实库冒烟） | 完成 |
+| 实库用例（live） | fork `live/` | 并入 L3 跨方言套件 | 完成 |
 
 ## TS 版独有的能力（不在 Java 用例里）
 

@@ -70,7 +70,7 @@ C# 的渲染规则对齐 Java：
 | L3 跨方言共用套件 | `tests/EasyQuerySharp.Tests.Live` | 每个方言一个薄子类，环境变量启用 | 照 TS 的 `liveSuite`（23 组、138 个用例），乘以方言数 | 本地跑 SQLite、MySQL、PG；CI 每种数据库一个任务 |
 | L4 生成器与分析器 | `tests/EasyQuerySharp.Tests.Generator` | 无 | 生成代码快照、每条诊断的正例和反例 | 每次构建 |
 
-另外，`docs/examples` 的每张示例卡片在 CI 里实跑一次并比对各方言的 SQL 快照，见 [docs-site.md](../design/docs-site.md)。
+另外，`docs/examples` 的每张示例卡片在 CI 里实跑一次并比对各方言的 SQL 快照，见[示例卡片与 SQL 快照](../design/examples.md)。
 
 L2 的组织方式：
 
@@ -114,7 +114,7 @@ L2 的组织方式：
 | SQLite（进程内） | 必测 | `core` 任务 |
 | MySQL 8.4 | 按需：`--profile mysql`（2026-11-07 起本地只起 PG） | `core` 任务 |
 | PostgreSQL 17 | 必测，`infra/dev` 默认启动 | `core` 任务 |
-| MySQL 8.0.18（PolarDB 基线）、MariaDB 11.4、SQL Server 2022、Oracle 23ai（第一档其余的库） | 按需：`--profile polardb / mariadb / mssql / oracle` | 各自一个任务；阶段 2 起跑全部实库用例 |
+| MySQL 8.0.18（PolarDB 基线）、MariaDB 11.4、SQL Server 2022、Oracle 23ai（第一档其余的库） | 按需：`--profile polardb / mariadb / mssql / oracle` | 各自一个任务，跑全部实库用例 |
 | 达梦、openGauss、Kingbase、DuckDB、ClickHouse、Db2、TDengine（第二档） | 按需：对应 profile（DuckDB 进程内，必测） | 比对 SQL 文本随 `core` 任务；除 Kingbase（没有镜像）外各有一个实库任务 |
 | HANA（第二档） | 按需：`--profile hana`（7 GB），还要装 SAP 的 HANA 客户端 | `hana` 任务（下载 Linux 客户端并缓存） |
 

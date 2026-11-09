@@ -3,7 +3,7 @@ using EasyQuerySharp.Encryption;
 
 namespace EasyQuerySharp.Tests.Upstream.Extras;
 
-/// <summary>SM4 的自带实现：国标 GB/T 32907-2016 附录 A 的测试向量，以及 ECB + PKCS7 + 十六进制的往返（ROADMAP 5.5）。</summary>
+/// <summary>SM4 的自带实现：国标 GB/T 32907-2016 附录 A 的测试向量，以及 ECB + PKCS7 + 十六进制的往返。</summary>
 public sealed class Sm4Test
 {
     private static readonly byte[] StandardKey = Convert.FromHexString("0123456789abcdeffedcba9876543210");

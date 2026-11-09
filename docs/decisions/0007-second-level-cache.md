@@ -1,6 +1,6 @@
 # 0007 二级缓存
 
-状态：已定（2026-11-06），对应 ROADMAP 4.5。
+状态：已定（2026-11-06）。
 
 ## 背景
 
@@ -31,7 +31,7 @@
 
 - 新包 `EasyQuerySharp.Caching`，只做 kv 与 all。读缓存是显式 API（`cache.Of(db).Kv<T>()`），不是挂在 `Query` 上的透明缓存。
 - 读库只用公开的 `db.Query<T>()`（拦截器、逻辑删除、租户过滤自然生效），读侧不需要核心钩子。
-- 依赖 `Microsoft.Extensions.Caching.Hybrid`（10.x）。Java 的 Multi 不做，ROADMAP 4.5 的文案同步改为“kv、all 两种”。
+- 依赖 `Microsoft.Extensions.Caching.Hybrid`（10.x）。Java 的 Multi 不做。
 
 ### 2. 核心新增：写入监听
 
@@ -159,7 +159,7 @@ C# 独有的用例覆盖每种写入的失效、主键提取的各种 WHERE 形�
 6. 默认值：`Expiration` 5 分钟、`LocalCacheExpiration` 同 `Expiration`、`NullExpiration` 10 秒、`LateEvictDelay` 关闭。
 7. 缓存的实体集中登记，不加特性；id 用 `object`。
 8. 与 Java 的行为差异照第 5–7 节：All 分页先分页再取行、UPDATE 也清索引、All 增加排序。
-9. ROADMAP 4.5 的文案是“kv、all 两种”（Java 的 Multi 是注释掉的死代码）。
+9. 只做 kv、all 两种（Java 的 Multi 是注释掉的死代码）。
 10. L2 的测试先用内存版 `IDistributedCache` 模拟两实例，不做真 Redis 冒烟。
 
 ## 实现中的补充

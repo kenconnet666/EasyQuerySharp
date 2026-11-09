@@ -1,6 +1,6 @@
 # 基准对比
 
-ROADMAP 5.2：EasyQuerySharp 和 EF Core、Dapper、FreeSql、SqlSugar 在查询翻译、物化、对象树三项上的对比，以及翻译结果要不要缓存的结论。代码在 `benchmarks/EasyQuerySharp.Benchmarks`。
+EasyQuerySharp 和 EF Core、Dapper、FreeSql、SqlSugar 在查询翻译、物化、对象树三项上的对比，以及翻译结果要不要缓存的结论。代码在 `benchmarks/EasyQuerySharp.Benchmarks`。
 
 下面的数字是 2026-11-06 在一台同时跑着其它构建和测试的开发机上测的（CPU 占用 40%–80%），绝对值偏高、有噪声，适合看量级和相对快慢。先跑的一轮只有 3 次迭代、误差很大，这里列的是第二轮（15 次迭代，多数项的 99.9% 置信区间在 ±5%–15%）；两轮的大致排序一致，相差不到 20% 的项（如 1000 行实体里的 Dapper 与 EF Core 预编译、ADO.NET 与 FreeSql）先后有出入。
 

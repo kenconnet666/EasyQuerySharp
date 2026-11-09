@@ -6,24 +6,25 @@
 
 | 数据库 | 配置 | 方言类 | 驱动 | 档位 | 实库验证 |
 |---|---|---|---|---|---|
-| SQLite 3.35+ | `UseSqlite` | `SqliteDialect` | Microsoft.Data.Sqlite | 第一档 | 本地与 CI 跑全部实库用例 |
-| MySQL 8.4 | `UseMySql` | `MySqlDialect` | MySqlConnector | 第一档 | 本地与 CI |
-| MySQL 8.0.18（PolarDB 基线） | `UseMySql` | `MySqlDialect` | MySqlConnector | 第一档 | CI |
-| MariaDB 11.4 | `UseMySql` | `MySqlDialect` | MySqlConnector | 第一档 | CI |
-| PostgreSQL 17 | `UsePostgreSql` | `PostgreSqlDialect` | Npgsql | 第一档 | 本地与 CI |
-| SQL Server 2022 | `UseSqlServer` | `SqlServerDialect` | Microsoft.Data.SqlClient | 第一档 | CI（实库套件与 Java 的 38 个 SQL Server 用例） |
-| Oracle 23ai | `UseOracle` | `OracleDialect` | Oracle.ManagedDataAccess.Core | 第一档 | CI 跑实库套件；Java 用例的实库核对进行中（ROADMAP 2.2） |
-| DuckDB | `UseDuckDb` | `DuckDbDialect`（继承 PG） | DuckDB.NET.Data.Full | 第二档 | 进程内，本地与 CI 跑实库套件 |
-| 达梦 DM8 | `UseDameng` | `DamengDialect`（继承 Oracle） | DM.DmProvider | 第二档 | 本地与 CI 跑实库套件 |
-| SAP HANA 2.0 | `UseHana` | `HanaDialect` | Sap.Data.Hana（随 HANA 客户端安装） | 第二档 | 本地与 CI（HANA Express 2.00.088）跑实库套件与 fork 的 HANA 用例 |
+| SQLite 3.35+ | `UseSqlite` | `SqliteDialect` | Microsoft.Data.Sqlite | 第一档 | 全部实库用例 |
+| MySQL 8.4 | `UseMySql` | `MySqlDialect` | MySqlConnector | 第一档 | 全部实库用例 |
+| MySQL 8.0.18（PolarDB 基线） | `UseMySql` | `MySqlDialect` | MySqlConnector | 第一档 | 全部实库用例 |
+| MariaDB 11.4 | `UseMySql` | `MySqlDialect` | MySqlConnector | 第一档 | 全部实库用例 |
+| PostgreSQL 17 | `UsePostgreSql` | `PostgreSqlDialect` | Npgsql | 第一档 | 全部实库用例 |
+| SQL Server 2022 | `UseSqlServer` | `SqlServerDialect` | Microsoft.Data.SqlClient | 第一档 | 实库套件与 Java 的 38 个 SQL Server 用例 |
+| Oracle 23ai | `UseOracle` | `OracleDialect` | Oracle.ManagedDataAccess.Core | 第一档 | 实库套件（Java 的 Oracle 用例只比对 SQL） |
+| DuckDB | `UseDuckDb` | `DuckDbDialect`（继承 PG） | DuckDB.NET.Data.Full | 第二档 | 实库套件（进程内） |
+| 达梦 DM8 | `UseDameng` | `DamengDialect`（继承 Oracle） | DM.DmProvider | 第二档 | 实库套件 |
+| SAP HANA 2.0 | `UseHana` | `HanaDialect` | Sap.Data.Hana（随 HANA 客户端安装） | 第二档 | 实库套件与 fork 的 HANA 用例（HANA Express 2.00.088） |
 | 人大金仓 Kingbase | `UseKingbase` | `KingbaseDialect`（继承 PG） | 金仓的 ADO.NET 驱动 | 第二档 | 只比对 SQL 文本 |
-| GaussDB / openGauss | `UseGaussDb` | `GaussDbDialect`（继承 PG） | Npgsql（连接串加 `No Reset On Close=true`） | 第二档 | openGauss 7 本地与 CI 跑实库套件；GaussDB 商业版没有实测 |
-| ClickHouse 25.8 | `UseClickHouse` | `ClickHouseDialect` | ClickHouse.Driver（官方，HTTP） | 第二档 | 本地与 CI 跑分析型冒烟（`ClickHouseLiveSuite`） |
-| IBM Db2 12.1 | `UseDb2` | `Db2Dialect` | Net.IBM.Data.Db2（Linux 用 Net.IBM.Data.Db2-lnx） | 第二档 | 本地与 CI 跑实库套件（不支持的能力跳过） |
-| TDengine 3.3 | `UseTDengine` | `TDengineDialect` | TDengine.Connector（WebSocket） | 第二档 | 本地与 CI 跑时序冒烟（`TDengineLiveSuite`） |
+| GaussDB / openGauss | `UseGaussDb` | `GaussDbDialect`（继承 PG） | Npgsql（连接串加 `No Reset On Close=true`） | 第二档 | openGauss 7 跑实库套件；GaussDB 商业版没有实测 |
+| ClickHouse 25.8 | `UseClickHouse` | `ClickHouseDialect` | ClickHouse.Driver（官方，HTTP） | 第二档 | 分析型冒烟（`ClickHouseLiveSuite`） |
+| IBM Db2 12.1 | `UseDb2` | `Db2Dialect` | Net.IBM.Data.Db2（Linux 用 Net.IBM.Data.Db2-lnx） | 第二档 | 实库套件（不支持的能力跳过） |
+| TDengine 3.3 | `UseTDengine` | `TDengineDialect` | TDengine.Connector（WebSocket） | 第二档 | 时序冒烟（`TDengineLiveSuite`） |
 
 - **第一档**：CI 跑全部实库用例（`tests/EasyQuerySharp.Tests.Live` 的跨方言套件，以及对应的 Java 移植用例）。
-- **第二档**：SQL 文本与 Java 用例（有的话）逐字比对，再加实库冒烟；容器起得来的进 CI，起不来的在本地验证。标"只比对 SQL 文本"的还没有实库冒烟，参数占位符、函数写法可能还要按实库修正。
+- **第二档**：SQL 文本与 Java 用例（有的话）逐字比对，再加实库冒烟。标"只比对 SQL 文本"的还没有实库冒烟，参数占位符、函数写法可能还要按实库修正。
+- 表里的实库验证都在 CI 上跑，每次提交和每天一次。
 - MySQL 方言以 8.0.18（PolarDB 基线）为下限，不用更新版本才有的写法；MariaDB 用同一个方言。
 - 指南里的 SQL 和 [`docs/sql-snapshots`](../sql-snapshots) 的快照覆盖 SQLite、MySQL、PostgreSQL、SQL Server、Oracle、达梦六种方言。
 
@@ -177,7 +178,7 @@ var db = new EasyDb(o => o.Use(new MyDialect(), dataSource));
 ## 限制
 
 - 不在列表里的库：H2 没有 .NET 驱动，不支持（Java 的 H2 用例改在 SQLite 上移植）；SQL Server 2008 的 `ROW_NUMBER` 分页不做（已停止支持）；Doris、Neon、PGlite 等 TS 版支持的库没有专门的方言（Neon 用 PostgreSQL 方言即可）。
-- 第二档里 Kingbase 没有实库冒烟（没有可用的容器镜像，ROADMAP 3.4），只比对 SQL 文本。
+- 第二档里 Kingbase 没有实库冒烟（没有可用的容器镜像），只比对 SQL 文本。
 - 方言专属函数（`Sql.MySql`、`Sql.Pg`、`Sql.Hana`）用错方言时在渲染期报错，不在编译期。
 
 ## 对应 Java

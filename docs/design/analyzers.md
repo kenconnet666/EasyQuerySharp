@@ -18,8 +18,8 @@ EQ0001、EQ0002 只检查**查询表达式**：作为表达式树传给 EasyQuer
 
 `ProjectionGenerator` 为每个 `[Projection]` 方法在所在的 partial 类型里生成一个模块初始化方法：把方法体原样写成 `Expression<Func<…>>`（在原来的 using 与类型里编译，名字解析与原方法一致），登记到 `ProjectionRegistry`。查询里调用该方法时内联成这棵表达式；在内存里调用就是普通方法。项目没有运行生成器时，查询里用到 `[Projection]` 方法会在运行时报错并说明怎样引用生成器。
 
-规则的发布记录在 `AnalyzerReleases.Unshipped.md`（发布时挪到 `Shipped`）。
+新规则记进 `AnalyzerReleases.Unshipped.md`，发版时挪到 `AnalyzerReleases.Shipped.md`（1.0.0 起）。
 
 没有做自动修复：代码修复要引用 Roslyn Workspaces，而分析器程序集不能引用它（RS1038），要单独再建一个程序集。等规则多到值得时再拆。
 
-EQ0001 不报 `[Projection]` 方法（它们会内联）。`[MapFrom<T>]` 的映射表达式目前在运行时构造（与其它 DTO 的 `Select<TDto>()` 相同），编译期生成随 1.1 的生成器一起做。
+EQ0001 不报 `[Projection]` 方法（它们会内联）。`[MapFrom<T>]` 的映射表达式在运行时构造（与其它 DTO 的 `Select<TDto>()` 相同），编译期生成随 AOT 一起做，见 [BACKLOG](../BACKLOG.md)。
