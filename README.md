@@ -1,6 +1,6 @@
 # EasyQuerySharp
 
-[easy-query](https://github.com/dromara/easy-query)（Java）的 C# 实现：POCO 实体加表达式树，导航属性直接写在条件和投影里，生成隐式 JOIN、隐式子查询和对象树；带出、DTO、树、聚合保存走同一条管线；13 个数据库方言。以 Java 版的 2404 个用例为对标基准，逐条移植、SQL 逐字比对，进度见[能力对照总表](docs/parity.md)与 [ROADMAP](ROADMAP.md)。
+[easy-query](https://github.com/dromara/easy-query)（Java）的 C# 实现：POCO 实体加表达式树，导航属性直接写在条件和投影里，生成隐式 JOIN、隐式子查询和对象树；带出、DTO、树、聚合保存走同一条管线；13 个数据库方言。以 Java 版的 2404 个用例为对标基准，逐条移植、SQL 逐字比对，进度见[能力对照总表](https://github.com/kenconnet666/EasyQuerySharp/blob/master/docs/parity.md)与 [ROADMAP](https://github.com/kenconnet666/EasyQuerySharp/blob/master/ROADMAP.md)。
 
 <!-- card: start/Readme sql=mysql -->
 ```csharp
@@ -31,8 +31,13 @@ SELECT t.`title`,t.`author_id` AS `__relation__authorId` FROM `t_post` t WHERE t
 
 ## 安装
 
+```bash
+dotnet add package EasyQuerySharp
+```
+
 - 需要 .NET 10。核心包只依赖 BCL，不引用数据库驱动：驱动由你的项目引用，通过 ADO.NET 的 `DbDataSource` 传入。
-- 1.0 之前还没有发布到 nuget.org，以项目引用使用（`src/EasyQuerySharp`，可选 `src/EasyQuerySharp.Generator` 分析器与 `src/EasyQuerySharp.DependencyInjection`），见[入门](docs/guide/getting-started.md#安装)。
+- `[Projection]` 生成器与分析器随核心包分发，不用另装。
+- 可选：`EasyQuerySharp.DependencyInjection`（`services.AddEasyQuery(..)`）、`EasyQuerySharp.Caching`（二级缓存）。详见[入门](https://github.com/kenconnet666/EasyQuerySharp/blob/master/docs/guide/getting-started.md#安装)。
 
 <!-- snippet: start-db -->
 ```csharp
@@ -49,17 +54,21 @@ var db = new EasyDb(o => o
 | 第一档（CI 跑全部实库用例） | SQLite、MySQL 8.0.18+ / 8.4、PolarDB、MariaDB、PostgreSQL、SQL Server、Oracle |
 | 第二档（比对 SQL 文本加实库冒烟） | DuckDB、达梦、SAP HANA、人大金仓、GaussDB / openGauss、ClickHouse、Db2、TDengine |
 
-各方言的能力与验证情况见[方言](docs/guide/dialects.md)。
+各方言的能力与验证情况见[方言](https://github.com/kenconnet666/EasyQuerySharp/blob/master/docs/guide/dialects.md)。
 
 ## 文档
 
-- [入门](docs/guide/getting-started.md)，以及按能力写的[指南](docs/README.md#指南)：实体、查询、导航、对象树、函数、写入、聚合保存、事务、原生 SQL 等。
-- [从 Java / TS 迁移](docs/guide/migration.md)：API 对照表。
-- 设计：[架构](docs/design/architecture.md)、[决策记录](docs/README.md#设计决定)；进度：[ROADMAP](ROADMAP.md)。
+- [入门](https://github.com/kenconnet666/EasyQuerySharp/blob/master/docs/guide/getting-started.md)，以及按能力写的[指南](https://github.com/kenconnet666/EasyQuerySharp/blob/master/docs/README.md#指南)：实体、查询、导航、对象树、函数、写入、聚合保存、事务、原生 SQL 等。
+- [从 Java / TS 迁移](https://github.com/kenconnet666/EasyQuerySharp/blob/master/docs/guide/migration.md)：API 对照表。
+- 设计：[架构](https://github.com/kenconnet666/EasyQuerySharp/blob/master/docs/design/architecture.md)、[决策记录](https://github.com/kenconnet666/EasyQuerySharp/blob/master/docs/README.md#设计决定)；进度：[ROADMAP](https://github.com/kenconnet666/EasyQuerySharp/blob/master/ROADMAP.md)。
 
 ## 开发
 
 - 需要 .NET 10 SDK，以及 WSL 里的 Docker（实库测试用）。
 - 本地数据库：`bash infra/dev/db.sh up -d`，只启动 PostgreSQL 17（SQLite、DuckDB 在进程内）；MySQL 等其余 13 种数据库由 CI 测，要在本机复现时按 profile 启动。
 - 构建和测试：`dotnet build`、`dotnet test`；文档卡片与 SQL 快照：`dotnet run --project tools/DocsExamples`（`-- --check` 只校验）。
-- 工作约定见 [CLAUDE.md](CLAUDE.md)。
+- 工作约定见 [CLAUDE.md](https://github.com/kenconnet666/EasyQuerySharp/blob/master/CLAUDE.md)。
+
+## 许可证
+
+[Apache-2.0](https://github.com/kenconnet666/EasyQuerySharp/blob/master/LICENSE)，与 [easy-query](https://github.com/dromara/easy-query) 相同；测试用例移植自 easy-query，见 [NOTICE](https://github.com/kenconnet666/EasyQuerySharp/blob/master/NOTICE)。

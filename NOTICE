@@ -1,0 +1,7 @@
+EasyQuerySharp
+Copyright 2026 kenconnet666
+
+This product is a C# implementation of easy-query
+(https://github.com/dromara/easy-query), licensed under the Apache License 2.0.
+Its test suite ports the SQL expectations, entities and table scripts of
+easy-query's test cases.

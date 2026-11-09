@@ -18,7 +18,7 @@
 - 对标：已移植 2071、偏离 191、不适用 142、骨架 0、待做 0。
 - 待做与骨架都已清零。
 - 实库：本地和 CI 跑 SQLite、MySQL 8.4、PG 17、DuckDB（进程内）；CI 另有 MySQL 8.0.18、MariaDB、SQL Server、Oracle、达梦、openGauss、HANA、ClickHouse、Db2、TDengine 任务，全部通过（2026-11-07）。没有实库验证的只剩 Kingbase（没有可用的容器镜像）。
-- 剩下的：3.4 的 Kingbase 实库冒烟（`[!]`），5.4 发布到 nuget.org（暂缓）。
+- 剩下的：3.4 的 Kingbase 实库冒烟（`[!]`）。
 
 ## 已定的取舍
 
@@ -29,7 +29,7 @@
   - SQL Server 2008 的 ROW_NUMBER 分页（13 个）：SQL Server 2008 已于 2019 年停止支持。
 - 要做：分库分表、二级缓存、ClickHouse / TDengine / Db2、关联键匹配策略（Java 的 `relationPropertyStrategy`）。
 - 暂不做，记进 [BACKLOG](docs/BACKLOG.md)：文档站、AOT 与元数据 / 物化器的 Source Generator、TS 版独有的能力（原 M9）。
-- 发布到 nuget.org 暂缓（2026-11-06 定）：5.4 的许可证、包名前缀、版本与发布流程先不定，其余各项照常推进。
+- 发布到 nuget.org（2026-11-09 定）：Apache-2.0，首个版本 1.0.0，推 `v*` tag 用可信发布自动发布，见 5.4。
 
 **架构**
 
@@ -196,11 +196,9 @@ R → 1 → 2 → 3 → 4 → 5。
   - [x] 指南与 README 里的代码不手写：`<!-- card: 页面/方法 sql=方言 -->` 区域由 DocsExamples 从卡片（Roslyn 截取方法体）和各方言的 SQL 重写，`<!-- snippet: 名字 -->` 区域取 `docs/examples` 或示例模型里标记的代码，`--check` 时过期或引用不存在都算失败。新增约 130 张卡片（`docs/examples` 下的新文件），卡片随生成器与分析器一起编译。
   - [x] code-first、分库分表、二级缓存的指南：[建表与同步](docs/guide/code-first.md)、[分库分表](docs/guide/sharding.md)、[二级缓存](docs/guide/caching.md)。
   - [x] 写文档时发现的问题都已修完：原生 SQL 分成只收插值字符串的 `SqlQueryAsync` / `ExecuteSqlAsync` / `FromSql` 与收普通字符串的 `*Raw`；聚合保存时外键为默认值的子对象不算已挂到别的父对象；带排序 / 条数的 UNION 分支在 SQLite、SQL Server 上包派生表；投影里集合的 Skip / Take；单值投影按值本身排序；声明了条数的对一导航判空；`PadLeft` / `PadRight` 在 SQLite、SQL Server 上模拟、MySQL 补填充字符（Java 的写法执行不了，记偏离）；`Convert.ToXxx` 的类型化重载；平铺只认 `[MapPath]`（改 0002 的文字）；直达的对多导航写在投影里时链上的条件、排序、取段、投影不再丢掉，经中间导航带出时按根父对象取段（原来按中间父对象）。
-- [~] 5.4 打包：NuGet 元数据、Source Link、确定性构建，生成器和分析器随核心包一起分发。是否发布到 nuget.org 在这一步决定。打包已就绪；发布到 nuget.org 暂缓，下面几项先不定。
-  - 已做：`src/Directory.Build.props` 是唯一的版本来源（`1.0.0-preview.1`，CI 打包传 `CiBuildNumber` 追加成 `-preview.1.ci.N`），统一写包元数据（作者、项目与仓库地址、发布说明链接、README、标签）、`.snupkg` 符号包、`PublishRepositoryUrl`，GitHub Actions 上开 `ContinuousIntegrationBuild`；Source Link、`Deterministic`、`EmbedUntrackedSources` 用 .NET SDK 的默认值。
-  - 出三个包：`EasyQuerySharp`（`lib/net10.0`，生成器在 `analyzers/dotnet/cs`，没有包依赖）、`EasyQuerySharp.DependencyInjection`（依赖核心与 Microsoft.Extensions.DependencyInjection.Abstractions）、`EasyQuerySharp.Caching`（依赖核心与 Microsoft.Extensions.Caching.Hybrid）；核心的分析器随依赖传递，只装扩展包也有生成器。其余项目都不打包。CI 的 pack 任务打包、检查生成器在包里、上传 artifact，不推送。
-  - 发布前待定（暂缓）：
-    - 许可证：仓库还没有 LICENSE。Java 上游与 TS 版都是 Apache-2.0，本仓库搬了 Java 用例的 SQL 与建表脚本，选型要和它兼容。定了之后加 LICENSE 文件和 `PackageLicenseExpression`。
-    - 包名与前缀：`EasyQuerySharp`、`EasyQuerySharp.DependencyInjection` 在 nuget.org 上还没人占用（2026-11-06 查过）。要不要用 nuget.org 账号申请保留 `EasyQuerySharp.*` 前缀；另外 nuget.org 上已有不相干的 `Korzh.EasyQuery.*`，名字相近。`Authors` 现在填的是 GitHub 账号 kenconnet666，要和发布用的 nuget.org 账号对上。
-    - 版本与发布流程：首个公开版本是 `1.0.0-preview.1`，还是等 5.1 冻结 API 后直接发 1.0.0；发布由什么触发（例如打 tag），API key 放进仓库 secret，nupkg 与 snupkg 一起推送。
-    - 包里的 README 用仓库根的 README.md（随 5.3 重写过）；里面的相对链接在 nuget.org 上打不开，发布前改成绝对链接。
+- [x] 5.4 打包与发布：NuGet 元数据、Source Link、确定性构建，生成器和分析器随核心包一起分发；发布到 nuget.org（2026-11-09 定）。
+  - 包：`EasyQuerySharp`（`lib/net10.0`，生成器在 `analyzers/dotnet/cs`，没有包依赖）、`EasyQuerySharp.DependencyInjection`、`EasyQuerySharp.Caching`，各带 `.snupkg` 符号包；核心的分析器随依赖传递。其余项目不打包。
+  - 元数据集中在 `src/Directory.Build.props`：版本（`VersionPrefix` 是下一个要发的版本，CI 打包是 `-ci.N` 预览号）、作者 kenconnet666、Apache-2.0（与 Java 上游相同，`LICENSE` 与 `NOTICE` 在仓库根，NOTICE 随包分发）、README（链接都是绝对地址）。
+  - 发布：推送 `v*` tag 触发 `.github/workflows/release.yml`：核对 tag 与 `VersionPrefix`、`CHANGELOG.md` 一致，等这个提交在 master 上的 CI 全部通过，打包后用 nuget.org 的可信发布（Trusted Publishing，GitHub OIDC 换一次性 API key，不存长期密钥）推送，再建 GitHub Release。nuget.org 的策略锁定本仓库、`release.yml` 与环境 `release`（只允许 `v*` tag 部署，不用人工审批），包名限 `EasyQuerySharp*`。
+  - 发版步骤：`CHANGELOG.md` 写好新版本一节、`VersionPrefix` 对上，提交推到 master，再推 tag；发布后把 `VersionPrefix` 改成下一个版本。
+  - 可选：用 nuget.org 账号写信给 account@nuget.org 申请保留 `EasyQuerySharp.*` 前缀（包页面显示认证标记）。

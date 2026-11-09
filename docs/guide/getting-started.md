@@ -7,15 +7,14 @@ EasyQuerySharp 是 [easy-query](https://github.com/dromara/easy-query)（Java）
 ## 安装
 
 - 需要 .NET 10。核心包只依赖 BCL，**不引用任何数据库驱动**：驱动由你的项目引用，通过 ADO.NET 的 `DbDataSource` 交给 EasyQuerySharp。
-- 1.0 之前还没有发布到 nuget.org（发布方式在 ROADMAP 5.4 决定），目前以项目引用使用：
+- 从 nuget.org 安装；`[Projection]` 生成器与分析器（EQ0001–EQ0007）随核心包分发：
 
-```xml
-<ProjectReference Include="..\EasyQuerySharp\src\EasyQuerySharp\EasyQuerySharp.csproj" />
-<!-- 可选：[Projection] 生成器与分析器（EQ0001–EQ0007），以后随核心包一起分发 -->
-<ProjectReference Include="..\EasyQuerySharp\src\EasyQuerySharp.Generator\EasyQuerySharp.Generator.csproj"
-                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-<!-- 可选：services.AddEasyQuery(..)，见依赖注入指南 -->
-<ProjectReference Include="..\EasyQuerySharp\src\EasyQuerySharp.DependencyInjection\EasyQuerySharp.DependencyInjection.csproj" />
+```bash
+dotnet add package EasyQuerySharp
+# 可选：services.AddEasyQuery(..)，见依赖注入指南
+dotnet add package EasyQuerySharp.DependencyInjection
+# 可选：二级缓存，见二级缓存指南
+dotnet add package EasyQuerySharp.Caching
 ```
 
 ## 选方言和驱动

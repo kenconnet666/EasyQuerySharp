@@ -1,0 +1,107 @@
+# 发布到 nuget.org：推送 v 开头的 tag（如 v1.0.0、v1.1.0-rc.1）时运行。
+#   1. tag 的版本要与 src/Directory.Build.props 的 VersionPrefix 一致（预览版 tag 只比较 - 之前的部分）；
+#   2. 等这个提交在 master 上的 CI 跑完并全部通过（14 种数据库的实库测试都在 CI 里），没通过就不发；
+#   3. 按 tag 的版本打三个包与符号包，用 nuget.org 的可信发布（Trusted Publishing）换一次性 API key 推送，不存长期密钥；
+#   4. 在 GitHub 建 Release，说明取 CHANGELOG.md 里这个版本的一节，附上包。
+# nuget.org 上的策略锁定了这个仓库、这个文件名（release.yml）与环境 release；环境只允许 v* tag 部署。
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+
+jobs:
+  release:
+    name: Publish ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    environment: release
+    permissions:
+      contents: write   # 建 GitHub Release
+      actions: read     # 查 CI 的结果
+      id-token: write   # 可信发布：向 GitHub 要 OIDC 令牌
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Check version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          prefix=$(dotnet msbuild src/EasyQuerySharp/EasyQuerySharp.csproj -getProperty:VersionPrefix)
+          if [[ "${version%%-*}" != "$prefix" ]]; then
+            echo "::error::tag $GITHUB_REF_NAME 与 src/Directory.Build.props 的 VersionPrefix $prefix 不一致"
+            exit 1
+          fi
+          if ! grep -q "^## \[$version\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md 里没有 ## [$version] 一节"
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+
+      # tag 指向的提交必须先在 master 上推过、CI 全部通过；CI 还在跑就等它
+      - name: Wait for CI on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for _ in $(seq 1 100); do
+            run=$(gh run list --workflow CI --branch master --commit "$GITHUB_SHA" --event push --limit 1 --json status,conclusion,url --jq '.[0] // empty')
+            if [[ -z "$run" ]]; then
+              echo "::error::这个提交在 master 上没有 CI 运行：先把它推到 master，再打 tag"
+              exit 1
+            fi
+            if [[ $(jq -r .status <<<"$run") == completed ]]; then
+              conclusion=$(jq -r .conclusion <<<"$run")
+              echo "CI: $conclusion $(jq -r .url <<<"$run")"
+              [[ $conclusion == success ]] && exit 0
+              echo "::error::CI 没有通过，不发布"
+              exit 1
+            fi
+            sleep 60
+          done
+          echo "::error::等 CI 超时"
+          exit 1
+
+      - name: Pack
+        run: dotnet pack -c Release -o artifacts/packages -p:Version="$VERSION"
+
+      # 生成器必须在核心包的 analyzers 目录里，不然使用者的 [Projection] 方法在运行时才报错
+      - name: Check package layout
+        run: |
+          ls -l artifacts/packages
+          unzip -l "artifacts/packages/EasyQuerySharp.$VERSION.nupkg" | grep -F analyzers/dotnet/cs/EasyQuerySharp.Generator.dll
+          test "$(ls artifacts/packages/*.nupkg | wc -l)" -eq 3
+
+      - name: NuGet login (Trusted Publishing)
+        id: nuget
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      # 同目录下的 .snupkg 随 .nupkg 一起推送；--skip-duplicate 让重跑这个任务时跳过已经发上去的包
+      - name: Push to nuget.org
+        run: >-
+          dotnet nuget push "artifacts/packages/*.nupkg"
+          --api-key "${{ steps.nuget.outputs.NUGET_API_KEY }}"
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
+
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          awk -v v="$VERSION" '$0 ~ "^## \\[" v "\\]" {on=1; next} /^## \[/ {on=0} on' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          prerelease=$([[ $VERSION == *-* ]] && echo --prerelease || true)
+          gh release create "$GITHUB_REF_NAME" artifacts/packages/* --title "$GITHUB_REF_NAME" --notes-file "$RUNNER_TEMP/notes.md" $prerelease

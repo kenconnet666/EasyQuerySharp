@@ -3,16 +3,15 @@
     <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 
     <!--
-      版本只在这里改。1.0（API 冻结、对标完成）之前发预览版：NuGet 默认不选预览版，不会被当成稳定版装上；0.x 在 NuGet 上仍算稳定版。
-      CI 打包时传 -p:CiBuildNumber=N，版本成为 1.0.0-preview.1.ci.N（排在 preview.1 之后、preview.2 之前）。
+      VersionPrefix 是下一个要发布的版本，发布后改成再下一个。发布流程（.github/workflows/release.yml）核对 tag 与它一致；
+      CI 打包时传 -p:CiBuildNumber=N，版本成为 1.0.0-ci.N（预览版，排在 1.0.0 之前，不会被当成稳定版装上）。
     -->
     <PropertyGroup>
         <VersionPrefix>1.0.0</VersionPrefix>
-        <VersionSuffix>preview.1</VersionSuffix>
-        <VersionSuffix Condition="'$(CiBuildNumber)' != ''">$(VersionSuffix).ci.$(CiBuildNumber)</VersionSuffix>
+        <VersionSuffix Condition="'$(CiBuildNumber)' != ''">ci.$(CiBuildNumber)</VersionSuffix>
     </PropertyGroup>
 
-    <!-- NuGet 元数据；包名、说明与专属标签写在各项目里。许可证待定（仓库还没有 LICENSE），定了再加 PackageLicenseExpression -->
+    <!-- NuGet 元数据；包名、说明与专属标签写在各项目里。许可证与 Java 上游相同（Apache-2.0），NOTICE 随包分发 -->
     <PropertyGroup>
         <Authors>kenconnet666</Authors>
         <Company>kenconnet666</Company>
@@ -22,10 +21,13 @@
         <PackageReleaseNotes>$(PackageProjectUrl)/releases</PackageReleaseNotes>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageTags>orm;sql;linq;expression-tree;easy-query</PackageTags>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <Copyright>Copyright 2026 kenconnet666</Copyright>
     </PropertyGroup>
 
     <ItemGroup>
         <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" Visible="false" />
+        <None Include="$(MSBuildThisFileDirectory)..\NOTICE" Pack="true" PackagePath="\" Visible="false" />
     </ItemGroup>
 
     <!--
