@@ -470,7 +470,18 @@ SELECT t.`title` FROM `t_post` t WHERE REPLACE(t.`title`, ' ', '') LIKE ?;
 
 ## 限制
 
-- 日期 `ToString(格式)` 只转换 `yyyy` / `MM` / `dd` / `HH` / `mm` / `ss` 六个格式符；`yy`、`M`、`d`、`tt` 等单字母格式符原样当文字输出。
+- 日期 `ToString(格式)` 只接受自定义格式（`"d"`、`"T"` 这类单字母的标准格式依赖区域设置，报不支持）。各方言能转换的格式符不同，用到方言没有的格式符时渲染报 `NotSupportedException`，不会当文字输出；格式串里的文字（引号里的、`\` 转义的、`T` 这类不是格式符的字母）原样输出：
+
+  | 方言 | 支持的格式符（`yyyy` `MM` `dd` `HH` `mm` `ss` 各方言都有） |
+  |---|---|
+  | MySQL / MariaDB | `yy` `M` `d` `H` `hh` `h` `ffffff` `tt` |
+  | PostgreSQL、Kingbase、openGauss | `yy` `M` `d` `H` `hh` `h` `m` `s` `fff` `ffffff` `tt` |
+  | DuckDB | `yy` `M` `d` `H` `hh` `h` `m` `s` `fff` `ffffff` `tt` |
+  | SQLite | `hh` `tt`（要 SQLite 3.44+） |
+  | SQL Server、Oracle、达梦 | `yy` `M` `d` `H` `hh` `h` `m` `s` |
+  | HANA、Db2 | `yy` `hh` `fff` |
+  | ClickHouse | `yy` `hh` `tt` |
+  | TDengine | `yy` `hh` `fff` |
 - 日期相差在 DuckDB 上数的是跨过的边界（03:59 到 04:01 算 1 小时，与 Java 一致），与 .NET 的整段时长不同。
 - `Convert.ToXxx` 只映射一个参数的重载；带进制、`IFormatProvider` 的重载报不支持。
 - 正则（`Regex`）、`string.Format` 的格式说明符（`{0:N2}`）不翻译。

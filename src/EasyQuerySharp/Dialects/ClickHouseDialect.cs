@@ -234,7 +234,7 @@ public class ClickHouseDialect : SqlDialect
         foreach (var unit in Enum.GetValues<DateTruncUnit>())
             f[SqlFunctionNames.DateTrunc(unit)] = Template("toDateTime(date_trunc('" + Lower(unit) + "',{0}))");
         // %i 是分钟（23.4 起 %M 是月份名）
-        f[SqlFunctionNames.DateFormat] = DateFormat("formatDateTime({0},{1})", ("yyyy", "%Y"), ("MM", "%m"), ("dd", "%d"), ("HH", "%H"), ("mm", "%i"), ("ss", "%S"));
+        f[SqlFunctionNames.DateFormat] = DateFormat("formatDateTime({0},{1})", ("yyyy", "%Y"), ("yy", "%y"), ("MM", "%m"), ("dd", "%d"), ("HH", "%H"), ("hh", "%I"), ("mm", "%i"), ("ss", "%S"), ("tt", "%p"));
         DateFunctions(f,
             unit => unit == DateUnit.Millisecond ? "addMilliseconds({0},{1})" : "add" + unit + "s({0},{1})",
             part => part switch

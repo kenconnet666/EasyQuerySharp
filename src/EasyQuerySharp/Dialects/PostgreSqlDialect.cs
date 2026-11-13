@@ -205,7 +205,7 @@ public class PostgreSqlDialect : SqlDialect
         f[SqlFunctionNames.JsonContainsKey] = Template("JSONB_EXISTS({0}, '{1}')");
         foreach (var unit in Enum.GetValues<DateTruncUnit>())
             f[SqlFunctionNames.DateTrunc(unit)] = Template("DATE_TRUNC('" + unit.ToString().ToLowerInvariant() + "', {0})");
-        f[SqlFunctionNames.DateFormat] = DateFormat("TO_CHAR(({0})::TIMESTAMP,{1})", ("yyyy", "YYYY"), ("MM", "MM"), ("dd", "DD"), ("HH", "HH24"), ("mm", "MI"), ("ss", "SS"));
+        f[SqlFunctionNames.DateFormat] = DateFormat("TO_CHAR(({0})::TIMESTAMP,{1})", ("yyyy", "YYYY"), ("yy", "YY"), ("MM", "MM"), ("M", "FMMM"), ("dd", "DD"), ("d", "FMDD"), ("HH", "HH24"), ("H", "FMHH24"), ("hh", "HH12"), ("h", "FMHH12"), ("mm", "MI"), ("m", "FMMI"), ("ss", "SS"), ("s", "FMSS"), ("fff", "MS"), ("ffffff", "US"), ("tt", "AM"));
     }
 
 }

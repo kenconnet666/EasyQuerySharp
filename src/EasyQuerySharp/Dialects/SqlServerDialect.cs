@@ -307,6 +307,7 @@ public class SqlServerDialect : SqlDialect
     private static void WriteDateFormat(SqlRenderer renderer, IReadOnlyList<SqlExpr> args)
     {
         var format = ((LiteralExpr)args[1]).Sql;
+        CheckDateFormat(renderer, format, "yyyy", "yy", "MM", "M", "dd", "d", "HH", "H", "hh", "h", "mm", "m", "ss", "s");
         if (WholeDateFormats.TryGetValue(format, out var whole))
         {
             Template(whole)(renderer, args);

@@ -22,7 +22,6 @@
 - SQL Server 的 `Sql.LikeContains` / `LikeStartsWith` / `LikeEndsWith` 遇到含 `%` 或 `_` 的常量值：Java 的 MsSQLLikeSQLFunction 写成 `CHARINDEX(值,列) > 0` 一类，C# 沿用 `LIKE ? ESCAPE '\'`（语义相同、SQL 不同，没有 Java 用例覆盖）；要逐字对齐时再改。
 - Java 的带出与 DTO 结构校验：一对一带出时关联值重复报错、`@NavigateFlat` 同一路径既取对象又取它的属性报错、自动带出的关联属性要同时出现在 `@Navigate` 与 `@NavigateFlat` 里（RelationTest#testOneToOne 的三段 Skip）。C# 里这些写法各自独立带出、结果正确，有用户被误用坑到时再加校验。
 - 联表查询上投影到 DTO（`Query<T1, T2>.Select<TDto>()`，Java 的 `selectAutoInclude(X.class, (s, t2) -> Select.of(t2.xx().as(..)))`）：现在联表后只能手写投影；RelationTest#testOneToOne 一段 Skip，有真实需求时再做。
-- 日期 `ToString(format)` 在 MySQL、PostgreSQL、SQLite、DuckDB 等方言只转换 `yyyy` / `MM` / `dd` / `HH` / `mm` / `ss` 六个格式符，`yy`、`M`、`d`、`H`、`h`、`m`、`s`、`tt` 等原样当文字输出（Oracle、SQL Server、HANA、Db2 已有更多格式符；Java 的 DuckDB、MySQL 等方言有对应的转换）：结果静默不对，要补的话这几个方言一起补。
 - DuckDB 的日期相差用 `DATEDIFF`（与 Java 一致），数的是跨过的边界：03:59 到 04:01 算 1 小时；`(a - b).TotalHours` 在 .NET 里是整段时长（0 小时）。要对齐 .NET 时改用 `date_sub`。
 - HANA 的 `Sql.Json(..)` 没有登记（渲染时报不支持）：HANA 2.0 有 `JSON_VALUE` / `JSON_QUERY`，没有数组长度函数；fork 只用 NCLOB 存 JSON、没有 HANA 的 JSON 函数用例，有需求时再补。
 - 文档卡片的 SQL 快照（`tools/DocsExamples`）只渲染第一档的 5 个方言加达梦；其余第二档方言（DuckDB 等）的 SQL 文本由 `tests` 里的 `XxxDialectTest` 核对，指南里的方言差异写在各页的"方言差异"表里。第二档的实库冒烟已经做完，要不要进快照等有人按方言查文档时再定（回放的磁带还不支持输出参数，Oracle / 达梦取自增键的卡片标了 Unsupported）。

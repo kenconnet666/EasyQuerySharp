@@ -201,7 +201,7 @@ public class TDengineDialect : SqlDialect
             f[SqlFunctionNames.DateDiff(unit)] = Template("TIMEDIFF({1},{0}," + duration + ")");
             if (unit != DateUnit.Millisecond) f[SqlFunctionNames.DateTrunc(Enum.Parse<DateTruncUnit>(unit.ToString()))] = Template("TIMETRUNCATE({0}," + duration + ")");
         }
-        f[SqlFunctionNames.DateFormat] = DateFormat("TO_CHAR({0},{1})", ("yyyy", "yyyy"), ("MM", "mm"), ("dd", "dd"), ("HH", "hh24"), ("mm", "mi"), ("ss", "ss"));
+        f[SqlFunctionNames.DateFormat] = DateFormat("TO_CHAR({0},{1})", ("yyyy", "yyyy"), ("yy", "yy"), ("MM", "mm"), ("dd", "dd"), ("HH", "hh24"), ("hh", "hh12"), ("mm", "mi"), ("ss", "ss"), ("fff", "ms"));
         foreach (var part in Enum.GetValues<DatePart>())
             f[SqlFunctionNames.DatePartOf(part)] = Template(part switch
             {

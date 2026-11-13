@@ -213,7 +213,8 @@ public class MySqlDialect : SqlDialect
         f[SqlFunctionNames.Power] = Call("POW");
         // MySQL 的 LOG(x) 是自然对数（Java 版也这样写）
         f[SqlFunctionNames.Ln] = Call("LOG");
-        f[SqlFunctionNames.DateFormat] = DateFormat("DATE_FORMAT({0},{1})", ("yyyy", "%Y"), ("MM", "%m"), ("dd", "%d"), ("HH", "%H"), ("mm", "%i"), ("ss", "%s"));
+        f[SqlFunctionNames.DateFormat] = DateFormat("DATE_FORMAT({0},{1})", ("yyyy", "%Y"), ("yy", "%y"), ("MM", "%m"), ("M", "%c"), ("dd", "%d"), ("d", "%e"),
+            ("HH", "%H"), ("H", "%k"), ("hh", "%h"), ("h", "%l"), ("mm", "%i"), ("ss", "%s"), ("ffffff", "%f"), ("tt", "%p"));
         f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("GROUP_CONCAT(").Write(a[0]).Append(" SEPARATOR ").Write(a[1]).Append(")");
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("GROUP_CONCAT(DISTINCT ").Write(a[0]).Append(" SEPARATOR ").Write(a[1]).Append(")");
         f[SqlFunctionNames.Now] = Template("NOW()");

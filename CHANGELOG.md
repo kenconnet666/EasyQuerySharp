@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### 修复
+
+- 日期 `ToString(格式)`：MySQL、PostgreSQL、SQLite、DuckDB 等方言原来只转换 `yyyy` `MM` `dd` `HH` `mm` `ss`，`yy`、`M`、`d`、`tt` 等原样当文字输出，结果静默不对。现在各方言补齐能转换的格式符，转换不了的报 `NotSupportedException`；格式串里的文字按方言转义（`%`、TO_CHAR 里的英文字母），支持 .NET 的引号、`\` 转义与 `%` 前缀。
+
 ## [1.0.0] - 2026-11-09
 
 首个正式版本：[easy-query](https://github.com/dromara/easy-query)（Java）的 C# 实现，公共 API 自此冻结。

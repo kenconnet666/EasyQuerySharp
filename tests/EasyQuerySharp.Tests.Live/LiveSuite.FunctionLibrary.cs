@@ -92,6 +92,37 @@ public abstract partial class LiveSuite
         Assert.InRange(utcNow, DateTime.UtcNow.AddMinutes(-10), DateTime.UtcNow.AddMinutes(10));
     }
 
+    // 方言接受的每个格式符，结果都与 .NET 格式化读回的同一个值一致；不接受的在渲染时报不支持，不当文字输出
+    [Fact]
+    public async Task FormatsDatesLikeDotNetOrRefuses()
+    {
+        var db = await SeededAsync();
+        var alice = db.Query<User>().Where(u => u.Name == "alice");
+        var createdAt = await alice.Select(u => u.CreatedAt).SingleAsync(Ct);
+        string[] formats =
+        [
+            "yyyy", "yy", "MM", "M", "dd", "d", "HH", "H", "hh", "h", "mm", "m", "ss", "s", "fff", "ffffff", "tt",
+            "yyyy-MM-ddTHH:mm", "'at' HH \\h", "yyyy\\%MM", "yyyy%MM", "%d",
+        ];
+        var supported = 0;
+        foreach (var format in formats)
+        {
+            var query = alice.Select(u => u.CreatedAt.ToString(format));
+            string text;
+            try
+            {
+                text = await query.SingleAsync(Ct);
+            }
+            catch (NotSupportedException e) when (e.Message.Contains($"\"{format}\"", StringComparison.Ordinal) || e.Message.Contains("的日期格式不支持", StringComparison.Ordinal))
+            {
+                continue;
+            }
+            Assert.True(createdAt.ToString(format, System.Globalization.CultureInfo.InvariantCulture) == text, $"{format}: {text} ({query.ToSql()})");
+            supported++;
+        }
+        Assert.True(supported >= 6, $"只支持 {supported} 种格式");
+    }
+
     private sealed record DateLibrary(
         int Hour, int Minute, int Second, int DayOfYear, int DayOfWeek, int IsoDayOfWeek, string Text, DateTime Later, DateTime NextYear, DateTime ByColumn, double Hours, double Minutes);
 

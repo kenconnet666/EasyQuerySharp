@@ -156,7 +156,8 @@ public class DuckDbDialect : PostgreSqlDialect
         // JSON：DuckDB 的 JSON 扩展没有 PostgreSQL 的 jsonb_*，用 json_array_length / json_exists（Java 照搬了 jsonb 函数，在 DuckDB 上不存在）
         f[SqlFunctionNames.JsonLength] = Call("json_array_length");
         f[SqlFunctionNames.JsonContainsKey] = Template("json_exists({0}, '$.{1}')");
-        f[SqlFunctionNames.DateFormat] = DateFormat("strftime({0}, {1})", ("yyyy", "%Y"), ("MM", "%m"), ("dd", "%d"), ("HH", "%H"), ("mm", "%M"), ("ss", "%S"));
+        f[SqlFunctionNames.DateFormat] = DateFormat("strftime({0}, {1})", ("yyyy", "%Y"), ("yy", "%y"), ("MM", "%m"), ("M", "%-m"), ("dd", "%d"), ("d", "%-d"),
+            ("HH", "%H"), ("H", "%-H"), ("hh", "%I"), ("h", "%-I"), ("mm", "%M"), ("m", "%-M"), ("ss", "%S"), ("s", "%-S"), ("fff", "%g"), ("ffffff", "%f"), ("tt", "%p"));
         // 日期加减、相差（取部分沿用 PostgreSQL 的 extract）。加减把数量拼上单位转成 interval，毫秒用 milliseconds（Java 写成 microsecond，数量差 1000 倍）；
         // DATEDIFF 数跨过的边界（03:59 到 04:01 算 1 小时），与 Java 一致，不是 .NET 的整段时长
         foreach (var unit in Enum.GetValues<DateUnit>())

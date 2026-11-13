@@ -282,7 +282,12 @@ public class OracleDialect : SqlDialect
         f[SqlFunctionNames.PadRight] = Pad("RPAD", "' '");
         f[SqlFunctionNames.StringJoin] = (r, a) => r.Append("LISTAGG(TO_CHAR(").Write(a[0]).Append("), ").Write(a[1]).Append(") WITHIN GROUP(ORDER BY 1)");
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("LISTAGG(DISTINCT TO_CHAR(").Write(a[0]).Append("), ").Write(a[1]).Append(") WITHIN GROUP(ORDER BY 1)");
-        f[SqlFunctionNames.DateFormat] = (r, a) => r.Append("TO_CHAR(").Write(a[0]).Append(",'").Append(OracleDateFormat(((LiteralExpr)a[1]).Sql)).Append("')");
+        f[SqlFunctionNames.DateFormat] = (r, a) =>
+        {
+            var format = ((LiteralExpr)a[1]).Sql;
+            CheckDateFormat(r, format, "yyyy", "yy", "MM", "M", "dd", "d", "HH", "H", "hh", "h", "mm", "m", "ss", "s");
+            r.Append("TO_CHAR(").Write(a[0]).Append(",'").Append(OracleDateFormat(format)).Append("')");
+        };
         // 相差：两个日期相减得到间隔，再拆成 DAY / HOUR / MINUTE / SECOND 累加（与 Java 一致）
         var interval = DateDiffInterval;
         f[SqlFunctionNames.Now] = Template("SYSTIMESTAMP");
