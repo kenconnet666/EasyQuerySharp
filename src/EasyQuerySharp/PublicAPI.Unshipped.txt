@@ -1,1 +1,2 @@
 #nullable enable
+EasyQuerySharp.EasyDb.TransactionAsync<TResult>(System.Func<System.Threading.Tasks.Task<TResult>!>! work, System.Data.IsolationLevel isolation = System.Data.IsolationLevel.Unspecified, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult>!

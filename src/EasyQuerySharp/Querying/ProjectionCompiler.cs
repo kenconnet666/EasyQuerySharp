@@ -60,6 +60,9 @@ internal sealed partial class ProjectionCompiler(ExpressionTranslator translator
     /// <summary>调用方要求的关联键（作为别人的子查询时，用来把行挂回父对象）在结果里的列序号。</summary>
     public int[] RelationOrdinals { get; private set; } = [];
 
+    /// <summary>与 <see cref="RelationOrdinals"/> 一一对应的关联键列。</summary>
+    public IReadOnlyList<ColumnMetadata> RelationColumns { get; private set; } = [];
+
     /// <summary>
     /// 拆解投影：登记 SELECT 列，并构造（尚未编译的）读取表达式。
     /// 带出需要的父键列、调用方要求的关联键列追加在最后：已经原样选出的列直接复用，否则写成 <c>列 AS __relation__列名</c>（与 Java 版一致）。
@@ -81,7 +84,10 @@ internal sealed partial class ProjectionCompiler(ExpressionTranslator translator
         // 与 Java 一致：导航带出的父键先于关联键，平铺带出（@NavigateFlat：平铺值、经中间表的路径）的父键在关联键之后
         foreach (var (plan, owner) in _includes.Where(i => !i.Plan.IsFlat)) RegisterParentKeys(plan, owner);
         if (relationKeys is not null && root is not null)
+        {
             RelationOrdinals = relationKeys.Select(c => RelationColumn(root.Table, c)).ToArray();
+            RelationColumns = relationKeys;
+        }
         foreach (var (plan, owner) in _includes.Where(i => i.Plan.IsFlat)) RegisterParentKeys(plan, owner);
     }
 

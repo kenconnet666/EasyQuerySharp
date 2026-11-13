@@ -246,6 +246,16 @@ public sealed class EasyDb
         await tx.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>同 <see cref="TransactionAsync(Func{Task}, IsolationLevel, CancellationToken)"/>，返回 <paramref name="work"/> 的结果（提交之后）。</summary>
+    /// <example><code>var orderId = await db.TransactionAsync(async () => { await db.Insert(order).ExecuteAsync(); return order.Id; });</code></example>
+    public async Task<TResult> TransactionAsync<TResult>(Func<Task<TResult>> work, IsolationLevel isolation = IsolationLevel.Unspecified, CancellationToken cancellationToken = default)
+    {
+        await using var tx = BeginTransaction(isolation);
+        var result = await work().ConfigureAwait(false);
+        await tx.CommitAsync(cancellationToken).ConfigureAwait(false);
+        return result;
+    }
+
     /// <summary>在数据源 <paramref name="dataSource"/>（null 是默认数据源）上打开一个新连接（调用方负责释放）。</summary>
     internal async Task<DbConnection> OpenConnectionAsync(string? dataSource, CancellationToken ct)
     {

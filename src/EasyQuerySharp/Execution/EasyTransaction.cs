@@ -95,10 +95,13 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
         if (Writes is not null) await Writes.NotifyAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>回滚（分库时每个用到的数据源都回滚）。</summary>
+    /// <summary>
+    /// 回滚（分库时每个用到的数据源都回滚）。某个数据源回滚失败时其余的照样回滚、连接都释放，最后抛出失败的那个（几个都失败时抛 <see cref="AggregateException"/>）。
+    /// </summary>
     public async Task RollbackAsync(CancellationToken cancellationToken = default)
     {
         if (_completed) return;
+        List<Exception>? errors = null;
         try
         {
             foreach (var branch in _branches)
@@ -107,6 +110,10 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
                 try
                 {
                     await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    (errors ??= []).Add(e);
                 }
                 finally
                 {
@@ -120,15 +127,27 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
             _branches.Clear();
             End();
         }
+        ThrowIfAny(errors);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 没有提交时回滚。释放常在异常展开的途中发生（<c>await using</c>），回滚本身的失败（连接已断、库已自动回滚）不再抛出，免得盖住原来的异常；
+    /// 连接照样释放，没提交的事务由数据库丢弃。
+    /// </summary>
     public async ValueTask DisposeAsync()
     {
-        if (!_completed) await RollbackAsync().ConfigureAwait(false);
+        if (_completed) return;
+        try
+        {
+            await RollbackAsync().ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // 见方法说明：释放时不抛回滚的错误
+        }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc cref="DisposeAsync" />
     public void Dispose()
     {
         if (_completed) return;
@@ -142,6 +161,10 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
                 {
                     transaction.Rollback();
                 }
+                catch (Exception)
+                {
+                    // 见 DisposeAsync：释放时不抛回滚的错误
+                }
                 finally
                 {
                     transaction.Dispose();
@@ -154,6 +177,13 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
             _branches.Clear();
             End();
         }
+    }
+
+    private static void ThrowIfAny(List<Exception>? errors)
+    {
+        if (errors is null) return;
+        if (errors.Count == 1) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Throw(errors[0]);
+        throw new AggregateException("回滚失败", errors);
     }
 
     private void End()

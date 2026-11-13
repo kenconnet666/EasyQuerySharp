@@ -71,7 +71,7 @@ internal static partial class IncludeRunner
             foreach (var targets in chunks)
             {
                 var compiled = CompileChunk(db, nav, state, targets, groupSize, context);
-                var rows = await db.Executor.QueryAsync(compiled.Sql, r => (Child: compiled.Query.Shaper(r), Key: CompositeKey.Read(r, compiled.Query.RelationOrdinals)), ct)
+                var rows = await db.Executor.QueryAsync(compiled.Sql, r => (Child: compiled.Query.Shaper(r), Key: CompositeKey.Read(r, compiled.Query.RelationOrdinals, compiled.Query.RelationColumns)), ct)
                     .ConfigureAwait(false);
                 foreach (var (child, key) in rows)
                 {

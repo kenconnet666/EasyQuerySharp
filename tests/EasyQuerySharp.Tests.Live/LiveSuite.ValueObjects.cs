@@ -27,5 +27,11 @@ public abstract partial class LiveSuite
         var updated = await db.Query<Shop>().Where(s => s.Name == "a").SingleAsync(Ct);
         Assert.Equal(("zj", "sz"), (updated.Address.Province, updated.Address.City));
         Assert.Null(updated.Contact);
+
+        // 列表请求的路径可以走进值对象（address.geo.lat），实体查询与投影里的值对象都行
+        var page = await db.Query<Shop>().ToPageAsync(Filtering.TableRequest.Parse("filter.address.city=nj&sort=-address.geo.lat"), Ct);
+        Assert.Equal(["b"], page.Rows.Select(r => r.Name));
+        var projectedPage = await db.Query<Shop>().Select(s => new { s.Name, s.Address }).ToPageAsync(Filtering.TableRequest.Parse("sort=-address.geo.lat"), Ct);
+        Assert.Equal(["b", "a"], projectedPage.Rows.Select(r => r.Name));
     }
 }

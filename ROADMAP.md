@@ -12,7 +12,7 @@
 
 ## 待做
 
-- [!] Kingbase 实库冒烟：没有可用的容器镜像，要有能用的实例（账号或安装包）。`KingbaseDialect` 的 SQL 文本已按 Java 核对；有了实例后照 openGauss 的做法在 `TestDatabases` 登记、加 `KingbaseLiveSuite`、开 CI 任务。
+- [!] Kingbase 实库冒烟：没有可用的容器镜像（2026-11-13 试过 Docker Hub 上的社区镜像 xuxuclassmate/kingbase:v8r3，内置的试用授权已过期，启动即报 License file expired），要有能用的实例或有效的授权文件。`KingbaseDialect` 的 SQL 文本已按 Java 核对；有了实例后照 openGauss 的做法在 `TestDatabases` 登记、加 `KingbaseLiveSuite`、开 CI 任务。
 - [ ] 跟进上游新增的用例：上游 main（3.3.1）的 `sql-test` 已有 2410 个用例，用 `ParityTests --rescan` 对比差异后另定范围。
 
 其余想做但没排期的事记在 [BACKLOG](docs/BACKLOG.md)。

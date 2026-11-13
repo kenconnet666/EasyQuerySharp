@@ -1,3 +1,4 @@
+using EasyQuerySharp.Materialization;
 using System.Collections;
 using System.Data.Common;
 using System.Linq.Expressions;
@@ -148,7 +149,7 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     {
         // 不满足带出条件的父对象：导航保持 null（与 Java 一致，集合也不给空列表）
         if (ConditionOrdinal is { } ordinal && !Applies(reader.IsDBNull(ordinal) ? null : reader.GetValue(ordinal))) return null;
-        var key = CompositeKey.Read(reader, ParentKeyOrdinals);
+        var key = CompositeKey.Read(reader, ParentKeyOrdinals, ParentColumns);
         if (owner is not null && key is not null) AddOwner(key.Value, owner);
         // 集合没给写回函数时是子对象本身的列表；给了时（平铺的列表）由写回函数逐个收下
         if (IsCollection && assign is null)
@@ -192,16 +193,25 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
     }
 }
 
-/// <summary>由一到多列组成的键，可作字典键；任一列为 NULL 时整个键视为不存在。</summary>
+/// <summary>
+/// 由一到多列组成的键，可作字典键；任一列为 NULL 时整个键视为不存在。
+/// 从结果集读出的值先按列转成属性类型，与内存里实体上的值可比较（SQLite 把 Guid 存成文本、MySQL 的 BINARY(16) 读成字节）。
+/// </summary>
 internal readonly record struct CompositeKey(object First, object? Second, object? Third)
 {
-    public static CompositeKey? Read(DbDataReader reader, int[] ordinals)
+    public static CompositeKey? Read(DbDataReader reader, int[] ordinals, IReadOnlyList<ColumnMetadata> columns)
     {
         var values = new object?[3];
         for (var i = 0; i < ordinals.Length; i++)
         {
             if (reader.IsDBNull(ordinals[i])) return null;
-            values[i] = Normalize(reader.GetValue(ordinals[i]));
+            var raw = reader.GetValue(ordinals[i]);
+            var column = columns[i];
+            var value = column.Converter is null
+                ? ValueReader.ConvertTo(raw, column.ClrType)
+                : column.Converter.FromProvider(ValueReader.ConvertTo(raw, column.Converter.ProviderType));
+            if (value is null) return null;
+            values[i] = Normalize(value);
         }
         return new CompositeKey(values[0]!, values[1], values[2]);
     }
@@ -219,14 +229,31 @@ internal readonly record struct CompositeKey(object First, object? Second, objec
         return new CompositeKey(normalized[0]!, normalized[1], normalized[2]);
     }
 
-    // 父表与子表的同一个键可能被驱动读成不同的整数类型（int / long / decimal），统一成 decimal 再比较
-    private static object Normalize(object value) =>
-        Type.GetTypeCode(value.GetType()) is >= TypeCode.SByte and <= TypeCode.Decimal
-            ? Convert.ToDecimal(value, System.Globalization.CultureInfo.InvariantCulture)
-            : value;
+    // 父表与子表的同一个键可能是不同的整数类型（int / long / decimal），统一成 decimal 再比较；字节数组按内容比较
+    private static object Normalize(object value) => value switch
+    {
+        byte[] bytes => new Bytes(bytes),
+        _ when Type.GetTypeCode(value.GetType()) is >= TypeCode.SByte and <= TypeCode.Decimal => Convert.ToDecimal(value, System.Globalization.CultureInfo.InvariantCulture),
+        _ => value,
+    };
 
-    /// <summary>键的各列值。</summary>
-    public IEnumerable<object> Values(int count) => new[] { First, Second, Third }.Take(count).Select(v => v!);
+    /// <summary>键里的一个值还原成可以作参数的值（字节数组键在字典里包了一层）。</summary>
+    public static object Unwrap(object value) => value is Bytes bytes ? bytes.Value : value;
+
+    /// <summary>键的各列值（可以作参数）。</summary>
+    public IEnumerable<object> Values(int count) => new[] { First, Second, Third }.Take(count).Select(v => Unwrap(v!));
+
+    private sealed class Bytes(byte[] value)
+    {
+        public byte[] Value { get; } = value;
+        public override bool Equals(object? obj) => obj is Bytes other && Value.AsSpan().SequenceEqual(other.Value);
+        public override int GetHashCode()
+        {
+            var hash = new HashCode();
+            hash.AddBytes(Value);
+            return hash.ToHashCode();
+        }
+    }
 }
 
 /// <summary>

@@ -4,8 +4,19 @@
 
 ## [Unreleased]
 
+### 新增
+
+- `db.TransactionAsync<T>(async () => …)`：回调式事务返回回调的结果。
+
+### 改进
+
+- 物化按列类型直接读（`GetInt32`、`GetString` 等），实体与 DTO 不再逐列装箱：读 1000 行的分配减少 20%–30%。
+
 ### 修复
 
+- 带出按关联键把子对象挂回父对象时，从结果集读出的键先转成属性类型再比较：`LoadIncludeAsync` 在 SQLite（Guid 存成文本）上挂不上子对象，字节数组键（MySQL 的 BINARY）按引用比较、永远对不上。
+- `await using var tx = db.BeginTransaction()` 释放时回滚失败（连接已断）不再盖住原来的异常；分库时一个数据源回滚失败，其余数据源照样回滚、连接照样释放。
+- 列表请求（`ToPageAsync(TableRequest)`）的筛选、排序路径不能再顺着导航走到别的表（如实体查询上的 `filter.company.name`），只能走进值对象，与文档的白名单承诺一致。
 - 日期 `ToString(格式)`：MySQL、PostgreSQL、SQLite、DuckDB 等方言原来只转换 `yyyy` `MM` `dd` `HH` `mm` `ss`，`yy`、`M`、`d`、`tt` 等原样当文字输出，结果静默不对。现在各方言补齐能转换的格式符，转换不了的报 `NotSupportedException`；格式串里的文字按方言转义（`%`、TO_CHAR 里的英文字母），支持 .NET 的引号、`\` 转义与 `%` 前缀。
 
 ## [1.0.0] - 2026-11-09

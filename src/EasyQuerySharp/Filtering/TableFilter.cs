@@ -51,16 +51,21 @@ internal static class TableFilter
         return Expression.Lambda(parameters[0], parameters);
     }
 
-    // 结果里的一列：沿成员路径取，投影里的成员折回它的表达式；不是标量时报错，并列出能用的列
+    // 结果里的一列：沿成员路径取，投影里的成员折回它的表达式；不是标量时报错，并列出能用的列。
+    // 路径中间只能经过值对象：经过导航或嵌套对象就碰到了结果以外的表（请求来自地址栏，不能让它探测关联表的列）
     private static Expression Column(LambdaExpression shape, string key, string use)
     {
         var current = shape.Body;
-        foreach (var segment in key.Split('.'))
+        var segments = key.Split('.');
+        for (var i = 0; i < segments.Length; i++)
         {
+            var segment = segments[i];
             var member = current.Type.GetProperty(segment, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase)
                          ?? throw new ArgumentException($"不能按 '{key}' {use}：不是结果里的列（可用：{string.Join(", ", ScalarMembers(shape.Body.Type))}）");
             var access = Expression.MakeMemberAccess(current, member);
             current = ProjectionInliner.FoldMember(access) ?? access;
+            if (i < segments.Length - 1 && !(current is MemberExpression { Member: var folded } && folded.GetCustomAttribute<ValueObjectAttribute>() is not null))
+                throw new ArgumentException($"不能按 '{key}' {use}：{member.Name} 是嵌套对象或导航，不是值对象，只能用结果里的列（可用：{string.Join(", ", ScalarMembers(shape.Body.Type))}）");
         }
         return ScalarTypes.IsScalar(current.Type)
             ? current

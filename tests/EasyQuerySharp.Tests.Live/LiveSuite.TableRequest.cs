@@ -50,4 +50,13 @@ public abstract partial class LiveSuite
         await Assert.ThrowsAsync<ArgumentException>(() => People(db).ToPageAsync(TableRequest.Parse("filter.age=x"), Ct));
         Assert.Equal("carol", Assert.Single((await db.Query<User>().ToPageAsync(TableRequest.Parse("sort=-name&pageSize=1"), Ct)).Rows).Name);
     }
+
+    // 路径不能顺着导航走到别的表：实体查询上的 company.name 是关联表的列，不在结果里（否则请求能逐个探测关联表的列）
+    [Fact]
+    public async Task TableRequestDoesNotFollowNavigations()
+    {
+        var db = await SeededAsync();
+        foreach (var query in new[] { "filter.company.name=acme", "search.company.name=a", "sort=company.name", "sort=-posts.title" })
+            Assert.Contains("不是值对象", (await Assert.ThrowsAsync<ArgumentException>(() => db.Query<User>().ToPageAsync(TableRequest.Parse(query), Ct))).Message);
+    }
 }

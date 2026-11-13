@@ -14,6 +14,9 @@ internal sealed record CompiledQuery<T>(SelectQuery Sql, Func<DbDataReader, T> S
 
     /// <summary>关联键在结果里的列序号（作为带出的子查询时用）。</summary>
     public int[] RelationOrdinals { get; init; } = [];
+
+    /// <summary>与 <see cref="RelationOrdinals"/> 一一对应的关联键列。</summary>
+    public IReadOnlyList<ColumnMetadata> RelationColumns { get; init; } = [];
 }
 
 /// <summary>
@@ -208,6 +211,7 @@ internal static class QueryCompiler
         {
             Includes = projection.Includes,
             RelationOrdinals = projection.RelationOrdinals,
+            RelationColumns = projection.RelationColumns,
         };
     }
 

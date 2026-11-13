@@ -74,7 +74,7 @@ SELECT `id`,`name`,`price`,`stock` FROM `t_product` WHERE `id` = ?;
 | API | 说明 |
 |---|---|
 | `db.BeginTransaction(IsolationLevel.X)` | 返回 `EasyTransaction`：`CommitAsync()` / `RollbackAsync()` / `IsCompleted`，`Dispose` 时未完成就回滚 |
-| `db.TransactionAsync(work, isolation, ct)` | 回调式 |
+| `db.TransactionAsync(work, isolation, ct)` | 回调式；`work` 返回值时（`Func<Task<T>>`）提交后把它返回 |
 | 隔离级别 | ADO.NET 的 `System.Data.IsolationLevel`，不写时用驱动的默认值 |
 
 **不能嵌套**：已经在事务里时再开事务直接抛 `InvalidOperationException`（与 Java 一致）。事务边界放在最外层（服务方法、请求处理），内层代码只发语句、不开事务：

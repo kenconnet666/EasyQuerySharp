@@ -104,6 +104,19 @@ public abstract partial class LiveSuite
 
         [Column(Converter = typeof(EnumNameConverter<TokenLevel>), DbType = "VARCHAR(10)")]
         public TokenLevel? Named { get; set; }
+
+        [Navigate(RelationType.OneToMany, TargetProperties = [nameof(TokenUse.TokenId)])]
+        public List<TokenUse>? Uses { get; set; }
+    }
+
+    /// <summary>按 Guid 外键挂在令牌下的使用记录。</summary>
+    [Table("t_live_token_use")]
+    public sealed class TokenUse
+    {
+        [Column(PrimaryKey = true)]
+        public int Id { get; set; }
+
+        public Guid? TokenId { get; set; }
     }
 
     /// <summary>令牌等级。</summary>
@@ -145,5 +158,24 @@ public abstract partial class LiveSuite
         Assert.Equal([TokenLevel.High], await db.Query<Token>().Where(t => levels.Contains(t.Level)).Select(t => t.Level).ToListAsync(Ct));
         Assert.Equal(1, await db.Query<Token>().Where(t => t.Named == TokenLevel.High).CountAsync(Ct));
         Assert.Empty((await db.CodeFirst.PlanSyncAsync([typeof(Token)], Ct)).Statements);
+    }
+
+    // Guid 键的带出：从结果集读出的键（SQLite 是文本、MySQL 的 CHAR(36) 是字符串）与内存里实体上的 Guid 要对得上
+    [Fact]
+    public async Task IncludesChildrenByGuidKeys()
+    {
+        var db = await SeededAsync();
+        await db.CodeFirst.DropTablesIfExistsAsync([typeof(TokenUse), typeof(Token)], Ct);
+        await db.CodeFirst.CreateTablesAsync([typeof(Token), typeof(TokenUse)], Ct);
+        Token[] tokens = [new() { Hits = 1, Level = TokenLevel.Low }, new() { Hits = 2, Level = TokenLevel.High }];
+        await db.Insert(tokens).ExecuteAsync(Ct);
+        await db.Insert(new TokenUse[] { new() { Id = 1, TokenId = tokens[0].Id }, new() { Id = 2, TokenId = tokens[1].Id }, new() { Id = 3, TokenId = tokens[1].Id } }).ExecuteAsync(Ct);
+
+        var included = await db.Query<Token>().OrderBy(t => t.Hits).Include(t => t.Uses, q => q.OrderBy(u => u.Id)).ToListAsync(Ct);
+        Assert.Equal([[1], [2, 3]], included.Select(t => t.Uses!.Select(u => u.Id)));
+
+        var loaded = await db.Query<Token>().OrderBy(t => t.Hits).ToListAsync(Ct);
+        await db.LoadIncludeAsync(loaded, t => t.Uses, Ct);
+        Assert.Equal([[1], [2, 3]], loaded.Select(t => t.Uses!.Select(u => u.Id).Order().ToArray()));
     }
 }

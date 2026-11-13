@@ -100,7 +100,7 @@ internal static partial class IncludeRunner
             fromOrdinals = step.TargetColumns.Select(c => Select(c, alias: true)).ToArray();
         }
         query.Where.Add(KeysIn(table, step.TargetColumns, keys.Distinct().ToList(), groupSize));
-        var rows = await db.Executor.QueryAsync(query, r => (From: CompositeKey.Read(r, fromOrdinals), To: CompositeKey.Read(r, toOrdinals)), ct)
+        var rows = await db.Executor.QueryAsync(query, r => (From: CompositeKey.Read(r, fromOrdinals, step.TargetColumns), To: CompositeKey.Read(r, toOrdinals, next.SelfColumns)), ct)
             .ConfigureAwait(false);
         return rows.Where(r => r.From is not null && r.To is not null).Select(r => (r.From!.Value, r.To!.Value)).ToList();
     }
@@ -118,7 +118,7 @@ internal static partial class IncludeRunner
         if (columns.Count == 1)
         {
             var column = table.Column(columns[0]);
-            var values = keys.Select(k => k.First).Distinct().Select(v => Value(v, columns[0])).ToList();
+            var values = keys.Select(k => k.First).Distinct().Select(v => Value(CompositeKey.Unwrap(v), columns[0])).ToList();
             return values.Count <= groupSize
                 ? new InExpr(column, values, negated: false)
                 : LogicalExpr.GroupedOr([.. values.Chunk(groupSize).Select(chunk => new InExpr(column, chunk, negated: false))]);
@@ -143,7 +143,7 @@ internal static partial class IncludeRunner
             translator.Bind(mappingFilter, [new EntityBinding(table)]);
             query.Where.Add(translator.TranslatePredicate(mappingFilter.Body));
         }
-        var rows = await db.Executor.QueryAsync(query, r => (Parent: CompositeKey.Read(r, [0]), Target: CompositeKey.Read(r, [1])), ct).ConfigureAwait(false);
+        var rows = await db.Executor.QueryAsync(query, r => (Parent: CompositeKey.Read(r, [0], nav.SelfMappingColumns), Target: CompositeKey.Read(r, [1], nav.TargetMappingColumns)), ct).ConfigureAwait(false);
         return rows.Where(r => r.Parent is not null && r.Target is not null).Select(r => (r.Parent!.Value, r.Target!.Value)).ToList();
     }
 
@@ -159,7 +159,7 @@ internal static partial class IncludeRunner
     private static LambdaExpression KeyEquals(Type entityType, ColumnMetadata column, CompositeKey key)
     {
         var p = Expression.Parameter(entityType, "x");
-        var value = Expression.Constant(ValueReader.ConvertTo(key.First, column.ClrType), column.Property.PropertyType);
+        var value = Expression.Constant(ValueReader.ConvertTo(CompositeKey.Unwrap(key.First), column.ClrType), column.Property.PropertyType);
         return Expression.Lambda(Expression.Equal(Expression.Property(p, column.Property), value), p);
     }
 
@@ -175,7 +175,7 @@ internal static partial class IncludeRunner
             Expression Contains(object[] values)
             {
                 var list = (IList)Activator.CreateInstance(listType)!;
-                foreach (var value in values) list.Add(ValueReader.ConvertTo(value, column.ClrType));
+                foreach (var value in values) list.Add(ValueReader.ConvertTo(CompositeKey.Unwrap(value), column.ClrType));
                 return Expression.Call(Expression.Constant(list), listType.GetMethod("Contains")!, Expression.Property(p, column.Property));
             }
             return Expression.Lambda(keys.Select(k => k.First).Distinct().Chunk(groupSize).Select(Contains).Aggregate(Expression.OrElse), p);
