@@ -1,5 +1,4 @@
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 using EasyQuerySharp;
 using EasyQuerySharp.Execution;
 using EasyQuerySharp.Interceptors;
@@ -23,15 +22,11 @@ namespace Microsoft.Extensions.DependencyInjection;
 /// </summary>
 public static class EasyQueryServiceCollectionExtensions
 {
-    private const string NotAotReady = "EasyQuerySharp 在运行时反射读取实体元数据、编译读取委托，不支持裁剪与 Native AOT（见 BACKLOG）";
-
     /// <summary>注册默认的库，按类型注入（<c>EasyDb db</c>）。</summary>
     /// <example><code>
     /// services.AddNpgsqlDataSource(connectionString);
     /// services.AddEasyQuery(o =&gt; o.UsePostgreSql());   // 数据源取容器里的 DbDataSource
     /// </code></example>
-    [RequiresUnreferencedCode(NotAotReady)]
-    [RequiresDynamicCode(NotAotReady)]
     public static IServiceCollection AddEasyQuery(this IServiceCollection services, Action<EasyDbOptions> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
@@ -42,8 +37,6 @@ public static class EasyQueryServiceCollectionExtensions
     /// <example><code>
     /// services.AddEasyQuery((sp, o) =&gt; o.UseMySql().AddLogicDeleteStrategy("audit", sp.GetRequiredService&lt;AuditDeleteStrategy&gt;()));
     /// </code></example>
-    [RequiresUnreferencedCode(NotAotReady)]
-    [RequiresDynamicCode(NotAotReady)]
     public static IServiceCollection AddEasyQuery(this IServiceCollection services, Action<IServiceProvider, EasyDbOptions> configure)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -56,8 +49,6 @@ public static class EasyQueryServiceCollectionExtensions
     /// services.AddNpgsqlDataSource(reportingConnectionString, serviceKey: "reporting");
     /// services.AddEasyQuery("reporting", o =&gt; o.UsePostgreSql());   // 数据源取键为 "reporting" 的 DbDataSource
     /// </code></example>
-    [RequiresUnreferencedCode(NotAotReady)]
-    [RequiresDynamicCode(NotAotReady)]
     public static IServiceCollection AddEasyQuery(this IServiceCollection services, string name, Action<EasyDbOptions> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
@@ -65,8 +56,6 @@ public static class EasyQueryServiceCollectionExtensions
     }
 
     /// <summary>注册名为 <paramref name="name"/> 的库；配置函数可以从容器取服务（根容器，只能取单例）。</summary>
-    [RequiresUnreferencedCode(NotAotReady)]
-    [RequiresDynamicCode(NotAotReady)]
     public static IServiceCollection AddEasyQuery(this IServiceCollection services, string name, Action<IServiceProvider, EasyDbOptions> configure)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -75,8 +64,6 @@ public static class EasyQueryServiceCollectionExtensions
         return services.AddKeyedSingleton(name, (provider, _) => Create(provider, name, configure));
     }
 
-    [RequiresUnreferencedCode(NotAotReady)]
-    [RequiresDynamicCode(NotAotReady)]
     private static EasyDb Create(IServiceProvider provider, string? name, Action<IServiceProvider, EasyDbOptions> configure)
     {
         var options = new EasyDbOptions();

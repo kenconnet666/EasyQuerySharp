@@ -4,6 +4,8 @@
         <PackageId>EasyQuerySharp</PackageId>
         <Description>easy-query 的 C# 实现：基于表达式树的强类型 ORM，支持隐式 join、隐式子查询与 DTO 对象树。</Description>
         <PackageTags>$(PackageTags);mysql;postgresql;sqlite;sqlserver;oracle</PackageTags>
+        <!-- 裁剪 / Native AOT：分析器在编译期报出本库里的问题；实体与 DTO 的成员由生成器保留，见 docs/decisions/0008-native-aot.md -->
+        <IsAotCompatible>true</IsAotCompatible>
     </PropertyGroup>
 
     <!--

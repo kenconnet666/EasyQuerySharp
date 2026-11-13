@@ -4,6 +4,7 @@
         <PackageId>EasyQuerySharp.DependencyInjection</PackageId>
         <Description>EasyQuerySharp 的依赖注入扩展：services.AddEasyQuery(..) 把 EasyDb 注册成单例，多个库按名字（keyed service）注入。</Description>
         <PackageTags>$(PackageTags);dependency-injection</PackageTags>
+        <IsAotCompatible>true</IsAotCompatible>
     </PropertyGroup>
 
     <!--

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Linq.Expressions;
 using EasyQuerySharp.Materialization;
@@ -13,6 +14,7 @@ internal static class KeyPredicates
     /// <c>t => t.Key == id</c>（主键值先转成主键类型）。id 为 null 时写成 <c>`id` = ?</c>、参数为 null（永不成立，与 Java 的 whereById(null) 一致），
     /// 不改写成 IS NULL：按主键查找不应该查出主键为空的行。
     /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Marker)]
     public static Expression<Func<T, bool>> ById<T>(EntityMetadata entity, object? id)
     {
         var key = entity.SingleKey;
@@ -26,12 +28,8 @@ internal static class KeyPredicates
     /// <summary><c>t => ids.Contains(t.Key)</c>（只有一个值时也是 IN，与 Java 的 whereByIds 一致）。</summary>
     public static Expression<Func<T, bool>> ByIds<T>(EntityMetadata entity, IEnumerable ids)
     {
-        var key = entity.SingleKey;
-        var listType = typeof(List<>).MakeGenericType(key.ClrType);
-        var values = (IList)Activator.CreateInstance(listType)!;
-        foreach (var v in ids) values.Add(ValueReader.ConvertTo(v, key.ClrType));
         var p = Expression.Parameter(typeof(T), "t");
-        var body = Expression.Call(Expression.Constant(values), listType.GetMethod("Contains")!, Expression.Property(p, key.Property));
+        var body = ClientValues.Contains(ids.Cast<object?>(), Expression.Property(p, entity.SingleKey.Property));
         return Expression.Lambda<Func<T, bool>>(body, p);
     }
 

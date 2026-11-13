@@ -8,13 +8,16 @@
         <NoWarn>$(NoWarn);CS1591</NoWarn>
     </PropertyGroup>
 
-    <!-- TestKit 是普通类库，其余都是 xUnit v3 测试项目（本身是可执行程序，由 Microsoft Testing Platform 运行，见 global.json） -->
-    <PropertyGroup Condition="'$(MSBuildProjectName)' != 'EasyQuerySharp.TestKit'">
+    <!--
+      TestKit 是普通类库，Tests.Aot 是 Native AOT 冒烟用的控制台程序（由 CI 的 aot 任务发布后运行），
+      其余都是 xUnit v3 测试项目（本身是可执行程序，由 Microsoft Testing Platform 运行，见 global.json）
+    -->
+    <PropertyGroup Condition="'$(MSBuildProjectName)' != 'EasyQuerySharp.TestKit' and '$(MSBuildProjectName)' != 'EasyQuerySharp.Tests.Aot'">
         <OutputType>Exe</OutputType>
         <IsTestProject>true</IsTestProject>
     </PropertyGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(MSBuildProjectName)' != 'EasyQuerySharp.Tests.Aot'">
         <Using Include="Xunit" />
     </ItemGroup>
 </Project>

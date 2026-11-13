@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -48,6 +49,7 @@ internal static class NavigationUsage
 
         private static bool IsEntity(Type type) => type != typeof(string) && type.IsClass && !type.IsArray && !type.IsGenericType;
 
+        [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = AotJustification.Rooted)]
         private static bool IsEntityCollection(Type type) =>
             type.GetInterfaces().Append(type)
                 .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEnumerable<>))?.GetGenericArguments()[0] is { } element

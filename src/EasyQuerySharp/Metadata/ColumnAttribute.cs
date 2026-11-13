@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace EasyQuerySharp.Metadata;
 
 /// <summary>
@@ -26,12 +28,15 @@ public sealed class ColumnAttribute(string? name = null) : Attribute
     public bool AutoSelect { get; init; } = true;
 
     /// <summary>主键生成器类型，需实现 <see cref="IKeyGenerator"/> 并有无参构造函数；插入时主键为 null 才生成。</summary>
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public Type? KeyGenerator { get; init; }
 
     /// <summary>值转换器类型，需实现 <see cref="IValueConverter"/> 并有无参构造函数。</summary>
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public Type? Converter { get; init; }
 
     /// <summary>列在 SQL 里的读写转换类型，需继承 <see cref="ColumnSqlConversion"/> 并有无参构造函数（如库端加解密）。</summary>
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public Type? SqlConversion { get; init; }
 
     /// <summary>数据库类型，code-first 建表时使用，如 <c>varchar(200)</c>。</summary>

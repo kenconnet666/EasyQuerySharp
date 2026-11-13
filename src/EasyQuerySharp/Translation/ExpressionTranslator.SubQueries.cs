@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using EasyQuerySharp.Querying;
@@ -47,6 +48,7 @@ internal sealed partial class ExpressionTranslator
         value is IQueryStateAccessor q ? q.State : throw Unsupported(source, "需要一个 EasyQuerySharp 查询对象");
 
     // 由状态重建与表达式类型相同的查询对象（各查询类型都有 internal 的 (QueryState) 构造函数）
+    [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = AotJustification.Rooted)]
     private static object QueryObject(QueryState state, Type type) =>
         Activator.CreateInstance(type, BindingFlags.Instance | BindingFlags.NonPublic, null, [state], null)
         ?? throw new InvalidOperationException($"无法创建 {type.Name}");

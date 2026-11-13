@@ -160,8 +160,9 @@ internal static class ShaperCache
             return node;
         }
 
+        // 字段与属性在所属类型里按名字唯一（Native AOT 没有元数据令牌）
         private void AppendMember(System.Reflection.MemberInfo member) =>
-            _key.Append('m').Append(member.Module.ModuleVersionId).Append(member.MetadataToken).Append('@').Append(member.DeclaringType?.TypeHandle.Value);
+            _key.Append('m').Append(member.Name).Append('@').Append(member.DeclaringType?.TypeHandle.Value);
 
         private void AppendMethod(System.Reflection.MethodBase method) =>
             _key.Append('f').Append(method.MethodHandle.Value).Append('@').Append(method.DeclaringType?.TypeHandle.Value);

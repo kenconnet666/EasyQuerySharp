@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -120,6 +121,8 @@ internal sealed partial class ProjectionCompiler(ExpressionTranslator translator
         return Materialization.ShaperCache.Get<T>(Coerce(shaped, typeof(T)), _reader);
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = AotJustification.Rooted)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     private Expression Shape(Expression body, MemberInfo? member, bool topLevel)
     {
         if (translator.BindingOf(body) is { } binding)
@@ -246,6 +249,8 @@ internal sealed partial class ProjectionCompiler(ExpressionTranslator translator
     /// （Java 版的写法 <c>t1.`id` AS `id`</c>）；按无参构造 + 属性赋值，或按参数名匹配的构造函数（record / 匿名类型）重建。
     /// 嵌在外层 DTO 里时（<c>new Part&lt;Dto, long&gt;(o, …)</c> 的 <c>o</c>），成员列以 <c>成员.列</c> 登记，外层仍能经 <c>p.Entity.X</c> 找列。
     /// </summary>
+    [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = AotJustification.Rooted)]
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = AotJustification.Rooted)]
     private Expression ShapeDerivedDto(DerivedBinding binding, Type type, bool topLevel, MemberInfo? member = null)
     {
         var ordinals = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -256,13 +261,12 @@ internal sealed partial class ProjectionCompiler(ExpressionTranslator translator
             foreach (var (name, nested) in binding.NestedEntities) NestedEntities[name] = nested;
         // 内层投影是一个值：直接读这一列
         if (binding.MemberColumns.Count == 1 && binding.MemberColumns.ContainsKey(ScalarMember))
-            return Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(type), _reader,
-                Expression.Constant(ordinals[ScalarMember]), Expression.Constant(null, typeof(IValueConverter)));
+            return ValueReader.ReadExpression(_reader, ordinals[ScalarMember], type, null);
 
         Expression Read(string memberName, Type valueType) =>
             binding.NestedEntities.TryGetValue(memberName, out var nested) ? ReadNested(memberName, nested, valueType)
             : ordinals.TryGetValue(memberName, out var ordinal)
-                ? Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(valueType), _reader, Expression.Constant(ordinal), Expression.Constant(null, typeof(IValueConverter)))
+                ? ValueReader.ReadExpression(_reader, ordinal, valueType, null)
                 : Construct(valueType, memberName + ".");
 
         // 成员是否有值：本身一列、嵌着的实体，或嵌着的 DTO（以 成员. 开头的列）
@@ -351,8 +355,7 @@ internal sealed partial class ProjectionCompiler(ExpressionTranslator translator
             var value = ExpressionTranslator.StripConvert(init.Arguments[1]);
             var sql = ExpressionTranslator.AsValue(translator.Translate(value));
             var ordinal = AddColumn(sql, key, key, forceAlias: true);
-            var read = Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(value.Type), _reader, Expression.Constant(ordinal),
-                Expression.Constant((sql as ColumnExpr)?.Column?.Converter, typeof(IValueConverter)));
+            var read = ValueReader.ReadExpression(_reader, ordinal, value.Type, (sql as ColumnExpr)?.Column?.Converter);
             return Expression.ElementInit(init.AddMethod, Expression.Constant(key), Coerce(read, init.Arguments[1].Type));
         });
         return Expression.ListInit(created, initializers);
@@ -377,8 +380,7 @@ internal sealed partial class ProjectionCompiler(ExpressionTranslator translator
                           && ExpressionTranslator.IsGroupType(call.Method.DeclaringType!);
         if (aliasScalar && topLevel && member is null && sql is not ColumnExpr) conversionAlias = "value";
         var ordinal = AddColumn(sql, member is null ? conversionAlias : ColumnName(member), member?.Name ?? (topLevel ? ScalarMember : null), plainColumn: groupColumn);
-        return Expression.Call(ValueReader.ReadMethod.MakeGenericMethod(body.Type), _reader, Expression.Constant(ordinal),
-            Expression.Constant(converter, typeof(IValueConverter)));
+        return ValueReader.ReadExpression(_reader, ordinal, body.Type, converter);
     }
 
     // 返回列序号；源列与别名同名时不写 AS（分组投影总写 AS；DTO 再投影沿用内层是否写了 AS，与 Java 一致）
@@ -403,6 +405,7 @@ internal sealed partial class ProjectionCompiler(ExpressionTranslator translator
     private static string? OutputName(SelectColumn column) => column.Alias ?? (column.Expr as ColumnExpr)?.Name;
 
     // new 表达式各参数对应的目标成员：匿名类型直接给出；record 主构造函数按参数名找同名属性（忽略大小写）
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = AotJustification.Rooted)]
     private static MemberInfo?[] TargetMembers(NewExpression n)
     {
         if (n.Members is not null) return [.. n.Members];

@@ -1,9 +1,10 @@
-using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using EasyQuerySharp.Materialization;
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.Querying;
+using EasyQuerySharp.Translation;
 
 namespace EasyQuerySharp.Filtering;
 
@@ -14,6 +15,7 @@ namespace EasyQuerySharp.Filtering;
 /// </summary>
 internal static class TableFilter
 {
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     public static QueryState Apply(QueryState state, TableRequest request)
     {
         if (request.Filters.Count == 0 && request.Searches.Count == 0 && request.Sorts.Count == 0) return state;
@@ -22,9 +24,7 @@ internal static class TableFilter
         foreach (var (key, texts) in request.Filters)
         {
             var column = Column(shape, key, "筛选");
-            var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(column.Type))!;
-            foreach (var text in texts) list.Add(Read(column.Type, text, key));
-            predicates.Add(Expression.Call(Expression.Constant(list), list.GetType().GetMethod(nameof(List<object>.Contains))!, column));
+            predicates.Add(ClientValues.Contains([.. texts.Select(text => Read(column.Type, text, key))], column));
         }
         foreach (var (key, text) in request.Searches)
         {
@@ -43,6 +43,7 @@ internal static class TableFilter
     }
 
     // 结果的形状：投影（可复用投影先展开），没有投影时是第一个表来源本身；参数与查询的各个来源（分组后是分组）一一对应
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     private static LambdaExpression Shape(QueryState state)
     {
         if (state.RawSelect is not null) throw new NotSupportedException("原生 SELECT 列表（SelectRaw）的查询不能按列表请求筛选、排序");
@@ -53,6 +54,7 @@ internal static class TableFilter
 
     // 结果里的一列：沿成员路径取，投影里的成员折回它的表达式；不是标量时报错，并列出能用的列。
     // 路径中间只能经过值对象：经过导航或嵌套对象就碰到了结果以外的表（请求来自地址栏，不能让它探测关联表的列）
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = AotJustification.Rooted)]
     private static Expression Column(LambdaExpression shape, string key, string use)
     {
         var current = shape.Body;
@@ -72,6 +74,7 @@ internal static class TableFilter
             : throw new ArgumentException($"不能按 '{key}' {use}：它是嵌套对象或列表，不是列（可用：{string.Join(", ", ScalarMembers(shape.Body.Type))}）");
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = AotJustification.Rooted)]
     private static IEnumerable<string> ScalarMembers(Type type) =>
         type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => ScalarTypes.IsScalar(p.PropertyType)).Select(p => p.Name);
 

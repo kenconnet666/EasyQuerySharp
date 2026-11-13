@@ -1,7 +1,7 @@
-using EasyQuerySharp.Materialization;
-using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Data.Common;
 using System.Linq.Expressions;
+using EasyQuerySharp.Materialization;
 using EasyQuerySharp.Metadata;
 
 namespace EasyQuerySharp.Querying;
@@ -56,6 +56,7 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
         }
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     private LambdaExpression FlatSelector()
     {
         var e = Expression.Parameter(Navigation.Target.Type, "e");
@@ -154,7 +155,7 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
         // 集合没给写回函数时是子对象本身的列表；给了时（平铺的列表）由写回函数逐个收下
         if (IsCollection && assign is null)
         {
-            var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(ChildType))!;
+            var list = TypedLists.New(ChildType);
             if (key is not null) Add(key.Value, child => list.Add(child));
             return list;
         }
@@ -170,7 +171,7 @@ internal sealed class IncludePlan(NavigationMetadata navigation, Type childType,
         if (key is not null) AddOwner(key.Value, entity);
         if (IsCollection)
         {
-            var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(ChildType))!;
+            var list = TypedLists.New(ChildType);
             property.SetValue(entity, list);
             if (key is not null) Add(key.Value, child => list.Add(child));
         }

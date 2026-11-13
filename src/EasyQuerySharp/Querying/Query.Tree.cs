@@ -1,6 +1,7 @@
-using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
+using EasyQuerySharp.Materialization;
 using EasyQuerySharp.Metadata;
 
 namespace EasyQuerySharp.Querying;
@@ -127,6 +128,7 @@ public sealed partial class Query<T>
         return new TreeShape(children, r => selfKeys.Select(p => p.GetValue(r)).ToArray(), r => parentKeys.Select(p => p.GetValue(r)).ToArray());
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2090", Justification = AotJustification.Rooted)]
     private static PropertyInfo DtoProperty(string name) =>
         typeof(T).GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase)
         ?? throw new InvalidOperationException($"{typeof(T).Name} 上没有属性 {name}，拼树时取不到父子键");
@@ -195,7 +197,7 @@ internal static class TreeAssembler
 
     private static void SetChildren(PropertyInfo children, TreeNode parent, List<TreeNode> nodes)
     {
-        var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(MetadataRegistry.ElementType(children.PropertyType)))!;
+        var list = TypedLists.New(MetadataRegistry.ElementType(children.PropertyType));
         foreach (var n in nodes) list.Add(n.Entity);
         children.SetValue(parent.Entity, list);
     }

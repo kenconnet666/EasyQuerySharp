@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -28,11 +29,16 @@ internal static class MethodTranslators
         return false;
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2065", Justification = AotJustification.TrimmedBcl)]
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = AotJustification.TrimmedBcl)]
     private static Dictionary<MethodInfo, MethodTranslator> Build()
     {
         var table = new Dictionary<MethodInfo, MethodTranslator>();
-        void Add(MethodInfo? method, MethodTranslator translator) =>
-            table[method ?? throw new InvalidOperationException("映射表里的方法不存在")] = translator;
+        // 裁剪后（Native AOT）没人调用的 BCL 方法不在了，取到 null：查询里本来也写不出它，跳过即可
+        void Add(MethodInfo? method, MethodTranslator translator)
+        {
+            if (method is not null) table[method] = translator;
+        }
 
         var s = typeof(string);
         // ---------- string 实例方法 ----------

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using EasyQuerySharp.Rendering;
 using EasyQuerySharp.SqlAst;
@@ -109,6 +110,7 @@ public abstract partial class QueryBase<TSelf, TElement> : IQueryStateAccessor
     /// 追加一个原生排序片段，原样写进 ORDER BY（自带方向，对应 Java 的 orderBy 里的 sql(…)）：<c>.OrderByRaw("user_name ASC")</c>。
     /// 片段由调用方拼写，不要把用户输入直接拼进去。
     /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     public TSelf OrderByRaw(string sql)
     {
         ArgumentException.ThrowIfNullOrEmpty(sql);

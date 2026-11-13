@@ -1,6 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Data.Common;
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using EasyQuerySharp.Metadata;
 
 namespace EasyQuerySharp.Materialization;
@@ -30,6 +33,15 @@ public static class ValueReader
                 : null;
             if (typed is not null) return typed(reader, ordinal);
         }
+        return (T)ReadBoxed(reader, ordinal, typeof(T), converter)!;
+    }
+
+    /// <summary>
+    /// 不带泛型的读法：读一个不是 NULL 的列，装箱返回。Native AOT 下按值类型实例化 <see cref="Read{T}"/> 要在运行时生成代码，
+    /// 读取函数改用它（见 <see cref="ReadExpression"/>）；JIT 下是 <see cref="ReadNotNull{T}"/> 没走类型化读法时的退路。
+    /// </summary>
+    internal static object? ReadBoxed(DbDataReader reader, int ordinal, Type type, IValueConverter? converter)
+    {
         object raw;
         try
         {
@@ -37,13 +49,30 @@ public static class ValueReader
         }
         // Oracle 的 NUMBER 运算结果（LOG、LN 等）可能超过 decimal 的 28 位精度，按 decimal 读会溢出：浮点目标改读驱动自己的数值类型，
         // 按文本转成 double（ODP.NET 的 GetDouble 在这里会丢精度）
-        catch (OverflowException) when (converter is null && (Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T)) is var t && (t == typeof(double) || t == typeof(float)))
+        catch (OverflowException) when (converter is null && (Nullable.GetUnderlyingType(type) ?? type) is var t && (t == typeof(double) || t == typeof(float)))
         {
             raw = reader.GetProviderSpecificValue(ordinal);
         }
-        if (converter is not null) return (T)converter.FromProvider(ConvertTo(raw, converter.ProviderType))!;
-        return (T)ConvertTo(raw, typeof(T))!;
+        return converter is null ? ConvertTo(raw, type) : converter.FromProvider(ConvertTo(raw, converter.ProviderType));
     }
+
+    private static readonly MethodInfo ReadBoxedMethod = typeof(ValueReader).GetMethod(nameof(ReadBoxed), BindingFlags.NonPublic | BindingFlags.Static)!;
+
+    /// <summary>
+    /// 读取函数里读一列的表达式（NULL 读成类型的默认值）：JIT 下调 <see cref="Read{T}"/>（按类型直接读、不装箱）；
+    /// Native AOT 下（不能在运行时生成代码）调不带泛型的 <see cref="ReadBoxed"/> 再拆箱，不需要为每个值类型实例化泛型方法。
+    /// </summary>
+    [UnconditionalSuppressMessage("Trimming", "IL2060", Justification = AotJustification.DynamicOnly)]
+    internal static Expression ReadExpression(Expression reader, int ordinal, Type type, IValueConverter? converter)
+    {
+        var index = Expression.Constant(ordinal);
+        var conversion = Expression.Constant(converter, typeof(IValueConverter));
+        if (RuntimeFeature.IsDynamicCodeSupported) return Expression.Call(ReadMethod.MakeGenericMethod(type), reader, index, conversion);
+        var boxed = Expression.Call(ReadBoxedMethod, reader, index, Expression.Constant(type), conversion);
+        return Expression.Condition(Expression.Call(reader, IsDbNullMethod, index), Expression.Default(type), Expression.Convert(boxed, type));
+    }
+
+    private static readonly MethodInfo IsDbNullMethod = typeof(DbDataReader).GetMethod(nameof(DbDataReader.IsDBNull), [typeof(int)])!;
 
     /// <summary>把驱动返回的值转成 <paramref name="type"/>（可空类型按底层类型转）。</summary>
     public static object? ConvertTo(object? value, Type type)
@@ -161,16 +190,16 @@ public static class ValueReader
                 _ => null,
             };
             if (getter is null) return null;
-            var reader = System.Linq.Expressions.Expression.Parameter(typeof(DbDataReader), "reader");
-            var ordinal = System.Linq.Expressions.Expression.Parameter(typeof(int), "ordinal");
-            System.Linq.Expressions.Expression value = System.Linq.Expressions.Expression.Call(reader, typeof(DbDataReader).GetMethod(getter, [typeof(int)])!, ordinal);
+            var reader = Expression.Parameter(typeof(DbDataReader), "reader");
+            var ordinal = Expression.Parameter(typeof(int), "ordinal");
+            Expression value = Expression.Call(reader, typeof(DbDataReader).GetMethod(getter, [typeof(int)])!, ordinal);
             // 整数列读成布尔：非 0 为真（SQLite、MySQL 系的布尔列）
             if (fieldType != Target)
                 value = Target == typeof(bool)
-                    ? System.Linq.Expressions.Expression.NotEqual(value, System.Linq.Expressions.Expression.Default(fieldType))
-                    : System.Linq.Expressions.Expression.ConvertChecked(value, Target);
-            if (Target != typeof(T)) value = System.Linq.Expressions.Expression.Convert(value, typeof(T));
-            return System.Linq.Expressions.Expression.Lambda<Func<DbDataReader, int, T>>(value, reader, ordinal).Compile();
+                    ? Expression.NotEqual(value, Expression.Default(fieldType))
+                    : Expression.ConvertChecked(value, Target);
+            if (Target != typeof(T)) value = Expression.Convert(value, typeof(T));
+            return Expression.Lambda<Func<DbDataReader, int, T>>(value, reader, ordinal).Compile();
         }
     }
 }

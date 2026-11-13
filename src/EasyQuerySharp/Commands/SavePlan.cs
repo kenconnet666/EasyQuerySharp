@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Runtime.CompilerServices;
 using EasyQuerySharp.Metadata;
@@ -228,6 +229,7 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
     }
 
     // 外键没设：null，或非空值类型属性的默认值（long 的 0、Guid.Empty）。Java 的外键是包装类型，没设就是 null
+    [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = AotJustification.Rooted)]
     private static bool IsUnset(ColumnMetadata column, object? value)
     {
         if (value is null) return true;

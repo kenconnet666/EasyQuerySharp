@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Linq.Expressions;
 using EasyQuerySharp.SqlAst;
@@ -251,6 +252,7 @@ internal sealed partial class ExpressionTranslator
     }
 
     // Sql.Column(entity, "a.b")：沿属性路径（忽略大小写）构造 entity.A.B，之后与手写的成员访问走同一条翻译
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = AotJustification.Rooted)]
     private static Expression ColumnPath(Expression entity, string path)
     {
         var current = entity;

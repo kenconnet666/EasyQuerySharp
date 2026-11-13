@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -146,8 +147,15 @@ public sealed class ColumnMetadata
         return Expression.Lambda<Action<object, object?>>(AssignAlongPath(obj, ownerPath, property, Expression.Convert(value, property.PropertyType)), obj, value).Compile();
     }
 
+    // Native AOT 下按属性类型实例化 ReadNotNull<T> 要在运行时生成代码：改为不带泛型地读出装箱的值，再经 Setter 写入
+    [UnconditionalSuppressMessage("Trimming", "IL2060", Justification = AotJustification.DynamicOnly)]
     private Action<object, DbDataReader, int> CompileReadInto()
     {
+        if (!System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported)
+        {
+            var setter = Setter!;
+            return (entity, reader, ordinal) => setter(entity, Materialization.ValueReader.ReadBoxed(reader, ordinal, ClrType, Converter));
+        }
         var obj = Expression.Parameter(typeof(object), "o");
         var reader = Expression.Parameter(typeof(DbDataReader), "reader");
         var ordinal = Expression.Parameter(typeof(int), "ordinal");
@@ -157,6 +165,7 @@ public sealed class ColumnMetadata
     }
 
     // 沿路径赋值，路上的值对象为 null 时先用无参构造函数建出来
+    [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = AotJustification.Rooted)]
     private static BlockExpression AssignAlongPath(ParameterExpression obj, IReadOnlyList<PropertyInfo> ownerPath, PropertyInfo property, Expression value)
     {
         var variables = new List<ParameterExpression>();

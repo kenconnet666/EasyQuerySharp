@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 
 namespace EasyQuerySharp.Querying;
@@ -41,6 +42,8 @@ public sealed class GroupQuery<TKey, TElement> : IQueryStateAccessor
         new(State with { OrderBys = State.OrderBys.Add(new OrderSpec(key, true)) });
 
     /// <summary>只取每组的键（对应 Java 的 groupBy(…) 之后直接 toList）：<c>SELECT 键 FROM … GROUP BY 键</c>。</summary>
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = AotJustification.Rooted)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     public Query<TKey> Keys()
     {
         var group = Expression.Parameter(typeof(IGroup<TKey, TElement>), "g");

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using EasyQuerySharp.SqlAst;
 
@@ -8,6 +9,7 @@ internal sealed partial class ExpressionTranslator
     /// <summary>当前查询的分组绑定；不分组时为 null。参数类型是 <see cref="IGroup{TKey,TElement}"/> 的 lambda 绑定到它。</summary>
     public GroupBinding? Group { get; set; }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = AotJustification.Rooted)]
     internal static bool IsGroupType(Type type) =>
         type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IGroup<,>)
         || type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IGroup<,>));

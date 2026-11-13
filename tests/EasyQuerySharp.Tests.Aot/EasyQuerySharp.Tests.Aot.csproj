@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+      Native AOT 冒烟：把 docs/examples 的文档卡片（不限方言或限 SQLite 的）在 SQLite 示例库上逐张执行，每张卡片输出一行结果。
+      同一个程序先按 JIT 运行、再按 Native AOT 发布后运行，两次的输出逐行一致才算通过（CI 的 aot 任务，见 .github/workflows/ci.yml）。
+      卡片与示例模型按使用者的写法引用核心库：不把示例模型的程序集整体保留，裁剪掉的成员要由 EasyQuerySharp 自己保住。
+    -->
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <IsPackable>false</IsPackable>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+        <PublishAot>true</PublishAot>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <!-- 卡片的结果按反射逐层输出，卡片所在的这个程序集整体保留；示例模型（使用者的实体）不保留 -->
+        <TrimmerSingleWarn>false</TrimmerSingleWarn>
+        <!-- 示例模型的标签列用的是反射版的 JsonValueConverter；源生成版在 Program 末尾单独核对 -->
+        <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+        <!--
+          允许的两类裁剪警告（run.sh 核对发布时的警告只剩这两类）：这个程序自己按反射找卡片、输出结果（程序集整体保留，见下面的 TrimmerRootAssembly）；
+          示例模型与卡片用了反射版的 JsonValueConverter（上面开了反射 JSON）。EasyQuerySharp 自己的警告由它的 IsAotCompatible 在编译时报错。
+        -->
+        <NoWarn>$(NoWarn);IL2070;IL2075</NoWarn>
+        <WarningsNotAsErrors>$(WarningsNotAsErrors);IL2026;IL3050</WarningsNotAsErrors>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\EasyQuerySharp\EasyQuerySharp.csproj" />
+        <ProjectReference Include="..\..\samples\EasyQuerySharp.Samples\EasyQuerySharp.Samples.csproj" />
+        <ProjectReference Include="..\..\src\EasyQuerySharp.Generator\EasyQuerySharp.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Data.Sqlite" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <TrimmerRootAssembly Include="EasyQuerySharp.Tests.Aot" />
+        <Compile Include="..\..\docs\examples\*.cs" Link="Examples\%(Filename)%(Extension)" />
+        <Compile Include="..\..\tools\DocsExamples\ExampleAttribute.cs" Link="Examples\ExampleAttribute.cs" />
+    </ItemGroup>
+
+</Project>

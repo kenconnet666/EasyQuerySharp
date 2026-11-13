@@ -1,6 +1,5 @@
 using System.Data;
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 using EasyQuerySharp.Commands;
 using EasyQuerySharp.Execution;
 using EasyQuerySharp.Interceptors;
@@ -18,21 +17,16 @@ namespace EasyQuerySharp;
 /// </code></example>
 public sealed class EasyDb
 {
-    private const string NotAotReady = "EasyQuerySharp 在运行时反射读取实体元数据、编译读取委托，不支持裁剪与 Native AOT（见 BACKLOG）";
-
     /// <summary>用配置函数创建。</summary>
-    [RequiresUnreferencedCode(NotAotReady)]
-    [RequiresDynamicCode(NotAotReady)]
     public EasyDb(Action<EasyDbOptions> configure) : this(Configure(configure))
     {
     }
 
     /// <summary>用配置对象创建。</summary>
-    [RequiresUnreferencedCode(NotAotReady)]
-    [RequiresDynamicCode(NotAotReady)]
     public EasyDb(EasyDbOptions options)
     {
         if (options.Dialect is null) throw new ArgumentException("必须指定方言，如 options.UseMySql(...)", nameof(options));
+        AotTemplates.Reference();
         options.Freeze();
         Options = options;
         Metadata = new MetadataRegistry(options.NameConversion) { LogicDeleteRules = options.LogicDeleteRules };

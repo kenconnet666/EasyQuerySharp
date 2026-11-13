@@ -39,7 +39,7 @@ internal static class ClientEvaluator
             case BinaryExpression { NodeType: ExpressionType.ArrayIndex } b:
                 return ((Array)Evaluate(b.Left)!).GetValue(Convert.ToInt64(Evaluate(b.Right), System.Globalization.CultureInfo.InvariantCulture));
             case NewArrayExpression { NodeType: ExpressionType.NewArrayInit } a:
-                var array = Array.CreateInstance(a.Type.GetElementType()!, a.Expressions.Count);
+                var array = Array.CreateInstanceFromArrayType(a.Type, a.Expressions.Count);
                 for (var i = 0; i < a.Expressions.Count; i++) array.SetValue(Evaluate(a.Expressions[i]), i);
                 return array;
             default:

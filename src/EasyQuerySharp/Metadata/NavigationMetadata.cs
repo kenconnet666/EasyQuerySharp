@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -52,6 +53,9 @@ public sealed class NavigationMetadata
     public IReadOnlyList<(LambdaExpression Key, bool Descending)> DefaultOrder { get; }
 
     // "OpenTime, Code desc nulls first" → [(x => x.OpenTime, false), (x => Sql.NullsFirst(x.Code), true)]
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = AotJustification.Rooted)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Marker)]
     internal static List<(LambdaExpression Key, bool Descending)> ParseOrder(string? orderBy, Type target)
     {
         if (string.IsNullOrWhiteSpace(orderBy)) return [];

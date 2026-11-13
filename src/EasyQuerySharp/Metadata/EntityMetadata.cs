@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace EasyQuerySharp.Metadata;
 
 /// <summary>一个实体的映射信息：表、列、主键、逻辑删除列等。由 <see cref="MetadataRegistry"/> 构建并缓存。</summary>
@@ -141,6 +143,7 @@ public sealed class EntityMetadata
     /// <inheritdoc />
     public override string ToString() => $"{Type.Name} → {TableName}";
 
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = AotJustification.Rooted)]
     private static Func<object> CreateFactory(Type type)
     {
         var ctor = type.GetConstructor(Type.EmptyTypes);

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using EasyQuerySharp.Metadata;
@@ -14,6 +15,8 @@ namespace EasyQuerySharp.Querying;
 internal static class AutoProjection
 {
     /// <summary>构造 <c>o => new TTarget { A = o.A, … }</c>；<paramref name="excluded"/> 里的属性名跳过（对应 Java 的 allFieldsExclude）。</summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Marker)]
     public static LambdaExpression Build(EntityMetadata source, Type target, IReadOnlySet<string>? excluded = null)
     {
         // Map：o => Sql.Columns(o)，键是列名
@@ -34,6 +37,8 @@ internal static class AutoProjection
     public static LambdaExpression BuildWithIncludes(MetadataRegistry registry, EntityMetadata source, Type target) => Build(registry, source, target, null, [], root: true);
 
     // registry 为 null 时只映射列。[MapExpression] 与对一路径的 [MapPath] 列与 Java 一致：根查询放最前面（Java 先应用额外的 select），带出查询放最后面
+    [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = AotJustification.Rooted)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     private static LambdaExpression Build(MetadataRegistry? registry, EntityMetadata source, Type target, IReadOnlySet<string>? excluded, HashSet<Type> visiting, bool root)
     {
         var parameter = Expression.Parameter(source.Type, "o");
@@ -60,6 +65,7 @@ internal static class AutoProjection
     }
 
     // [MapExpression(nameof(静态成员))]：成员是 Expression<Func<源实体, 值>>，参数换成当前行
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = AotJustification.Rooted)]
     private static Expression? MappedExpression(EntityMetadata source, ParameterExpression row, PropertyInfo property)
     {
         if (property.GetCustomAttribute<MapExpressionAttribute>() is not { } attribute) return null;
@@ -108,6 +114,8 @@ internal static class AutoProjection
 
     // AutoIncludeMarkers.One / Many(导航, 配置, 投影)：规划器据此建带出计划。嵌套 DTO 实现 IAutoIncludeConfigure 时先按它配置，
     // DTO 属性上的 [Navigate] 再补上它没写的排序与条数
+    [UnconditionalSuppressMessage("Trimming", "IL2060", Justification = AotJustification.Marker)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Marker)]
     private static MethodCallExpression Include(string marker, NavigationMetadata nav, Expression navValue, PropertyInfo property, Type element, LambdaExpression? selector)
     {
         var resultType = selector?.ReturnType ?? nav.Target.Type;
@@ -135,12 +143,17 @@ internal static class AutoProjection
     }
 
     // DTO 实现了 IAutoIncludeConfigure<目标实体> 时，把它的 Configure 包成对查询状态的配置
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = AotJustification.Rooted)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.ReferenceGeneric)]
     public static Func<QueryState, QueryState>? ConfigureOf(Type dto, Type entity)
     {
         var contract = typeof(IAutoIncludeConfigure<>).MakeGenericType(entity);
         if (!contract.IsAssignableFrom(dto)) return null;
-        var method = dto.GetInterfaceMap(contract).TargetMethods.Single();
+        // 按签名找实现（含显式实现）：Native AOT 下 GetInterfaceMap 不认静态抽象成员
         var queryType = typeof(Query<>).MakeGenericType(entity);
+        var method = dto.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.DeclaredOnly)
+            .Single(m => m.Name.EndsWith(nameof(IAutoIncludeConfigure<object>.Configure), StringComparison.Ordinal) && m.ReturnType == queryType
+                         && m.GetParameters() is [{ ParameterType: var p }] && p == queryType);
         return state =>
         {
             var query = Activator.CreateInstance(queryType, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance, null, [state], null)!;
@@ -150,6 +163,9 @@ internal static class AutoProjection
 
     // [MapPath("A.B.C")]：遇到集合导航时，剩下的路径在集合元素上取，结果是列表；全是对一导航时默认走带出查询（Flat 标记），
     // join 为 true（[MapPath(.., Join = true)]，或已经在带出查询里面）时直接成员访问（隐式 JOIN）
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = AotJustification.Rooted)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Marker)]
     private static Expression PathValue(MetadataRegistry registry, EntityMetadata source, Expression row, PropertyInfo property, string path, bool join,
         HashSet<Type> visiting)
     {
@@ -200,6 +216,8 @@ internal static class AutoProjection
     }
 
     // AutoIncludeMarkers.Through(第一个导航, 后续导航名, 配置, 投影)：最后一个导航的目标映射成属性的元素类型（实体本身或嵌套 DTO）
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Marker)]
     private static Expression ThroughValue(MetadataRegistry registry, Expression navigation, List<NavigationMetadata> chain, PropertyInfo? scalar, PropertyInfo property,
         HashSet<Type> visiting)
     {
@@ -218,6 +236,7 @@ internal static class AutoProjection
     }
 
     // 剩下的路径段全是导航（最后一段可以是标量属性，由 scalar 带回）时依次返回导航，否则为 null
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = AotJustification.Rooted)]
     private static List<NavigationMetadata>? NavigationChain(MetadataRegistry registry, EntityMetadata entity, IReadOnlyList<string> segments, out PropertyInfo? scalar)
     {
         scalar = null;
@@ -239,6 +258,7 @@ internal static class AutoProjection
     }
 
     // 剩下的路径段里有没有集合导航
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = AotJustification.Rooted)]
     private static bool HasCollection(MetadataRegistry registry, EntityMetadata entity, IEnumerable<string> segments)
     {
         foreach (var segment in segments)

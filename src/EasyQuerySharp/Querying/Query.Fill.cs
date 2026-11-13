@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Collections.Immutable;
 using System.Linq.Expressions;
@@ -60,9 +61,11 @@ public sealed partial class Query<T>
             : new Query<TChild>(new QueryState(state.Db, [new UnionSource(parts, All: true) { IndependentAliases = true }]));
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     private static LambdaExpression KeyIn<TChild, TKey>(Expression<Func<TChild, TKey>> childKey, List<TKey> keys) =>
         Expression.Lambda(Expression.Call(Expression.Constant(keys), typeof(List<TKey>).GetMethod(nameof(List<TKey>.Contains))!, childKey.Body), childKey.Parameters);
 
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     private static LambdaExpression KeyEquals<TChild, TKey>(Expression<Func<TChild, TKey>> childKey, TKey key) =>
         Expression.Lambda(Expression.Equal(childKey.Body, Expression.Constant(key, typeof(TKey))), childKey.Parameters);
 }

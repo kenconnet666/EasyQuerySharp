@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using EasyQuerySharp.SqlAst;
 
@@ -11,6 +12,7 @@ internal sealed partial class ExpressionTranslator
     /// <c>Any</c> / <c>!Any</c>（<paramref name="negated"/>）/ <c>All</c> / <c>Count</c> / <c>Sum</c> / <c>Max</c> / <c>Min</c> / <c>Average</c>。
     /// <c>Select(x =&gt; x.Col).Count()</c> 计的是非 NULL 的值（SQL 的 COUNT(列)，对应 Java 的 count(x -&gt; x.col)）。
     /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     private SqlExpr TranslateGroupJoin(GroupJoinPlan plan, List<MethodCallExpression> chain, bool negated, SqlExpr? separator = null)
     {
         var t = new ExpressionTranslator(new Dictionary<ParameterExpression, SourceBinding>(_scope)) { Context = plan.InnerContext };

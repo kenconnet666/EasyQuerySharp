@@ -43,6 +43,7 @@ internal sealed class VisibleColumnsReader(DbDataReader inner, int visible) : Db
 
     public override double GetDouble(int ordinal) => inner.GetDouble(ordinal);
 
+    [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
     public override Type GetFieldType(int ordinal) => inner.GetFieldType(ordinal);
 
     public override float GetFloat(int ordinal) => inner.GetFloat(ordinal);
@@ -67,6 +68,7 @@ internal sealed class VisibleColumnsReader(DbDataReader inner, int visible) : Db
 
     public override object GetProviderSpecificValue(int ordinal) => inner.GetProviderSpecificValue(ordinal);
 
+    [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
     public override Type GetProviderSpecificFieldType(int ordinal) => inner.GetProviderSpecificFieldType(ordinal);
 
     public override int GetValues(object[] values)

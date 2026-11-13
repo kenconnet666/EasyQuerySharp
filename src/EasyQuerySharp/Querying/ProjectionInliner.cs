@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using EasyQuerySharp.Translation;
@@ -55,6 +56,8 @@ internal sealed class ProjectionInliner : ExpressionVisitor
                 return null;
         }
     }
+    [UnconditionalSuppressMessage("Trimming", "IL2060", Justification = AotJustification.Marker)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Marker)]
     private static Expression? Inline(MethodCallExpression call)
     {
         if (call.Method.DeclaringType == typeof(Sql) && call.Method.Name == nameof(Sql.Project))

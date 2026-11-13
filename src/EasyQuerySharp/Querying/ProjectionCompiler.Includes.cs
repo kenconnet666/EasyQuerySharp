@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -17,6 +18,7 @@ internal sealed partial class ProjectionCompiler
     /// 一个成员的值：集合导航（<c>u.Cards</c>、<c>u.Cards.Where(…).Select(…).ToList()</c>）是带出，先放一个空 List，主查询后填充；
     /// 整个对一导航对象（<c>c.Bank</c>）也是带出（单独的 IN 查询），构造完父对象后回填；其余照常翻译。
     /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.GeneratedInstantiation)]
     private Expression ShapeMember(Expression value, MemberInfo? member, List<(IncludePlan Plan, MemberInfo Member, int? FlatIndex)> toOne)
     {
         // 平铺的对一路径：同一导航共用一条带出查询，父属性回填时取自己那一项
@@ -27,7 +29,8 @@ internal sealed partial class ProjectionCompiler
         }
         // 经过集合的路径：同一条路径上的几个属性共用一组带出查询，各自从每个子对象取自己那一项
         if (member is not null && TryFlatPath(value) is var (pathPlan, pathIndex, element))
-            return Expression.Call(FlatListMethod.MakeGenericMethod(element), Expression.Constant(pathPlan), _reader, Expression.Constant(pathIndex));
+            return Expression.Convert(Expression.Call(FlatListMethod, Expression.Constant(pathPlan), _reader, Expression.Constant(pathIndex), Expression.Constant(element)),
+                typeof(List<>).MakeGenericType(element));
         if (member is not null && TryInclude(value) is { } plan)
         {
             if (plan.IsCollection)
@@ -61,6 +64,7 @@ internal sealed partial class ProjectionCompiler
 
     // AutoIncludeMarkers.Through(第一个导航, 后续导航名, 配置, 投影) 经过集合、取的是目标实体本身或标量（Java 的 @NavigateFlat 列表）：
     // 按（所属来源, 路径）找共用的平铺计划，登记这一项；投影成 DTO、带配置的照常各自带出
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     private (IncludePlan Plan, int Index, Type Element)? TryFlatPath(Expression value)
     {
         if (ExpressionTranslator.StripConvert(value) is not MethodCallExpression { Method.Name: nameof(AutoIncludeMarkers.Through) } marker
@@ -105,11 +109,14 @@ internal sealed partial class ProjectionCompiler
 
     private static readonly MethodInfo FlatListMethod = typeof(ProjectionCompiler).GetMethod(nameof(FlatList))!;
 
-    /// <summary>经过集合的平铺属性的值：登记父键，子对象读回后取第 <paramref name="index"/> 项放进列表。</summary>
-    public static List<T> FlatList<T>(IncludePlan plan, DbDataReader reader, int index)
+    /// <summary>
+    /// 经过集合的平铺属性的值：登记父键，子对象读回后取第 <paramref name="index"/> 项放进 <c>List&lt;element&gt;</c>。
+    /// 不写成泛型方法：元素是值类型时 Native AOT 没法在运行时实例化它（列表类型本身就是 DTO 属性的类型，编译期已有）。
+    /// </summary>
+    public static object FlatList(IncludePlan plan, DbDataReader reader, int index, Type element)
     {
-        var list = new List<T>();
-        plan.Register(reader, child => list.Add((T)ValueReader.ConvertTo(plan.FlatItem(child, index), typeof(T))!));
+        var list = TypedLists.New(element);
+        plan.Register(reader, child => list.Add(ValueReader.ConvertTo(plan.FlatItem(child, index), element)));
         return list;
     }
 
@@ -122,12 +129,13 @@ internal sealed partial class ProjectionCompiler
         if (row is not object?[] values) return null;
         var value = converter is null ? values[index] : converter.FromProvider(values[index]);
         if (ScalarTypes.IsScalar(type) || type.IsInstanceOfType(value) || MetadataRegistry.ElementType(type) is var item && item == type) return ValueReader.ConvertTo(value, type);
-        var list = (System.Collections.IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(item))!;
+        var list = TypedLists.New(item);
         if (value is not null) list.Add(ValueReader.ConvertTo(value, item));
         return list;
     }
 
     // DTO 属性上声明的值转换器（同一类型共用一个实例）
+    [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = AotJustification.Rooted)]
     private static IValueConverter? DtoConverter(PropertyInfo property) =>
         property.GetCustomAttribute<ColumnAttribute>()?.Converter is { } type ? ConverterInstances.GetOrAdd(type, t => (IValueConverter)Activator.CreateInstance(t)!) : null;
 
@@ -279,6 +287,7 @@ internal sealed partial class ProjectionCompiler
 
     // 实体查询的 Include：实体读出后，集合导航先放一个空 List（主查询后填充），对一导航登记回填函数
     // 实体可以来自实体表，也可以来自按实体读的派生表（带出的子数据按父对象取了段时，再往下的 Include）
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = AotJustification.Rooted)]
     private Expression WithIncludes(Expression entity, (SourceBinding Binding, EntityMetadata Entity) owner, IReadOnlyList<IncludeSpec> includes)
     {
         var instance = Expression.Variable(entity.Type, "entity");
@@ -307,6 +316,7 @@ internal sealed partial class ProjectionCompiler
     }
 
     // 对一带出：父对象构造完后登记回填函数（构造函数参数 / init 属性都能通过反射赋值）
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = AotJustification.Rooted)]
     private Expression RegisterToOne(Expression created, List<(IncludePlan Plan, MemberInfo Member, int? FlatIndex)> toOne)
     {
         if (toOne.Count == 0) return created;

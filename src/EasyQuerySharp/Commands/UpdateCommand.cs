@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.Rendering;
@@ -54,6 +55,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
         return this;
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     private void AddSet(string path, Expression value, IReadOnlyList<ParameterExpression> parameters)
     {
         if (!Entity.ValueObjects.TryGetValue(path, out var valueObject))
@@ -79,6 +81,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     }
 
     /// <summary>把一列设为常量值。</summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     public UpdateCommand<T> Set<TValue>(Expression<Func<T, TValue>> column, TValue value)
     {
         _sets.Add(new SetSpec(ExpressionTranslator.MemberPath(column), Expression.Lambda(Expression.Constant(value, typeof(TValue)), column.Parameters), SetKind.Expression));
@@ -99,6 +102,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     public UpdateCommand<T> SetNull<TValue>(Expression<Func<T, TValue>> column) => Set(column, default(TValue)!);
 
     /// <summary>自增：<c>col = col + ?</c>（对应 Java 的 increment）。</summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     public UpdateCommand<T> Increment<TValue>(Expression<Func<T, TValue>> column, TValue by)
     {
         _sets.Add(new SetSpec(ExpressionTranslator.MemberPath(column), Expression.Lambda(Expression.Constant(by, typeof(TValue)), column.Parameters), SetKind.Increment));
@@ -106,6 +110,7 @@ public sealed class UpdateCommand<T> : WriteCommandBase<UpdateCommand<T>, T> whe
     }
 
     /// <summary>自减：<c>col = col - ?</c>（对应 Java 的 decrement）。</summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     public UpdateCommand<T> Decrement<TValue>(Expression<Func<T, TValue>> column, TValue by)
     {
         _sets.Add(new SetSpec(ExpressionTranslator.MemberPath(column), Expression.Lambda(Expression.Constant(by, typeof(TValue)), column.Parameters), SetKind.Decrement));

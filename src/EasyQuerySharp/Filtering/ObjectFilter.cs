@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Linq.Expressions;
 using System.Reflection;
 using EasyQuerySharp.Materialization;
 using EasyQuerySharp.Metadata;
+using EasyQuerySharp.Translation;
 
 namespace EasyQuerySharp.Filtering;
 
@@ -14,6 +16,7 @@ namespace EasyQuerySharp.Filtering;
 internal static class ObjectFilter
 {
     /// <summary>条件对象 → 一个参数依次对应 <paramref name="sources"/> 的谓词 lambda；没有任何条件时返回 null。</summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     public static LambdaExpression? Where(object request, IReadOnlyList<Type> sources)
     {
         var parameters = sources.Select((t, i) => Expression.Parameter(t, i == 0 ? "t" : "t" + i)).ToArray();
@@ -31,6 +34,7 @@ internal static class ObjectFilter
     }
 
     /// <summary>排序请求 → 排序键 lambda（参数依次对应 <paramref name="sources"/>）与方向。</summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     public static List<(LambdaExpression Key, bool Descending)> Sort(ISortRequest request, IReadOnlyList<Type> sources)
     {
         var builder = new SortBuilder();
@@ -129,6 +133,7 @@ internal static class ObjectFilter
             ? parameters[table]
             : throw new InvalidOperationException($"{path} 指定的表来源序号 {table} 超出范围（共 {parameters.Length} 个）");
 
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = AotJustification.Rooted)]
     private static PropertyInfo? Member(Type type, string name) =>
         type.GetProperty(name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
 
@@ -140,6 +145,7 @@ internal static class ObjectFilter
     }
 
     // 同一节点的条件在前，子节点依次在后；集合导航的子条件合成一个 Any
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     private static void Compose(Node node, List<Expression> output)
     {
         output.AddRange(node.Predicates);
@@ -161,6 +167,8 @@ internal static class ObjectFilter
     }
 
     // Enumerable 上参数个数为 parameterCount 的同名泛型方法（Any 的两个重载）
+    [UnconditionalSuppressMessage("Trimming", "IL2060", Justification = AotJustification.Marker)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Marker)]
     private static MethodInfo EnumerableMethod(string name, int parameterCount, Type element) =>
         typeof(Enumerable).GetMethods().First(m => m.Name == name && m.GetParameters().Length == parameterCount).MakeGenericMethod(element);
 
@@ -183,8 +191,7 @@ internal static class ObjectFilter
             case FilterOp.EndsWith: return StringCall(member, typeof(Sql).GetMethod(nameof(Sql.LikeEndsWith))!, value);
             case FilterOp.In or FilterOp.NotIn:
             {
-                var list = TypedList(value, member.Type);
-                var contains = Expression.Call(Expression.Constant(list), list.GetType().GetMethod(nameof(List<object>.Contains))!, member);
+                var contains = ClientValues.Contains(((IEnumerable)value).Cast<object?>(), member);
                 return op == FilterOp.In ? contains : Expression.Not(contains);
             }
             case FilterOp.AnyEqual:
@@ -221,14 +228,6 @@ internal static class ObjectFilter
 
     private static ConstantExpression Constant(object? value, Type type) =>
         Expression.Constant(ValueReader.ConvertTo(value, Nullable.GetUnderlyingType(type) ?? type), type);
-
-    private static IList TypedList(object values, Type memberType)
-    {
-        var elementType = Nullable.GetUnderlyingType(memberType) ?? memberType;
-        var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(memberType))!;
-        foreach (var v in (IEnumerable)values) list.Add(v is null ? null : ValueReader.ConvertTo(v, elementType));
-        return list;
-    }
 
     // 属性路径树上的一个节点：列、对一导航，或集合导航（Element 是 Any 的参数）
     private sealed class Node(string key, Expression? collection, ParameterExpression? element)

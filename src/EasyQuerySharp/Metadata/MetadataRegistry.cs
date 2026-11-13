@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.Reflection;
 
@@ -63,6 +64,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
     /// 导航上的固定条件：本实体上的静态属性 / 字段，类型是 <c>Expression&lt;Func&lt;目标或中间表, bool&gt;&gt;</c>。
     /// 每次翻译时重新取值（对应 Java 的 NavigateExtraFilterStrategy 每次构建都调用），属性返回 null 表示这次不加条件。
     /// </summary>
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = AotJustification.Rooted)]
     private static Func<System.Linq.Expressions.LambdaExpression?>? ExtraFilterOf(Type owner, PropertyInfo navigation, string option, string? memberName)
     {
         if (memberName is null) return null;
@@ -75,6 +77,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
     }
 
     /// <summary>集合类型的元素类型；不是集合时返回类型本身。</summary>
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = AotJustification.Rooted)]
     internal static Type ElementType(Type type)
     {
         if (type.IsArray) return type.GetElementType()!;
@@ -213,6 +216,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
     }
 
     // 值对象展开成本表上的列（嵌套的值对象递归展开）。前缀默认是外层前缀 + "属性的列名_"，显式的 Prefix 是完整前缀
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = AotJustification.Rooted)]
     private List<ColumnMetadata> ExpandValueObject(Type entityType, IReadOnlyList<PropertyInfo> ownerPath, PropertyInfo property, ValueObjectAttribute attribute,
         string outerPrefix, bool outerNullable, Dictionary<string, ValueObjectMetadata> valueObjects)
     {
@@ -245,7 +249,9 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
         return columns;
     }
 
-    // 基类属性在前，同一类型内按声明顺序（MetadataToken 递增即声明顺序）；派生类重写的属性只保留一次
+    // 基类属性在前，同一类型内按声明顺序（MetadataToken 递增即声明顺序；Native AOT 没有元数据令牌，反射本身按元数据顺序返回）；派生类重写的属性只保留一次
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = AotJustification.Rooted)]
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = AotJustification.Rooted)]
     internal static IEnumerable<PropertyInfo> OrderedProperties(Type type)
     {
         var chain = new Stack<Type>();
@@ -255,7 +261,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
         foreach (var t in chain)
         {
             var declared = t.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                .OrderBy(p => p.MetadataToken);
+                .OrderBy(p => p.HasMetadataToken() ? p.MetadataToken : 0);
             foreach (var p in declared)
                 if (seen.Add(p.Name)) yield return type.GetProperty(p.Name, BindingFlags.Public | BindingFlags.Instance) ?? p;
         }
@@ -270,18 +276,18 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
         return ScalarTypes.IsScalar(property.PropertyType);
     }
 
-    private static IKeyGenerator CreateKeyGenerator(Type generatorType, PropertyInfo property) =>
+    private static IKeyGenerator CreateKeyGenerator([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type generatorType, PropertyInfo property) =>
         typeof(IKeyGenerator).IsAssignableFrom(generatorType)
             ? (IKeyGenerator)(Activator.CreateInstance(generatorType) ?? throw new InvalidOperationException($"无法创建主键生成器 {generatorType.Name}"))
             : throw new InvalidOperationException($"{property.DeclaringType?.Name}.{property.Name} 的主键生成器 {generatorType.Name} 没有实现 IKeyGenerator");
 
-    private static ColumnSqlConversion CreateSqlConversion(Type conversionType, PropertyInfo property) =>
+    private static ColumnSqlConversion CreateSqlConversion([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type conversionType, PropertyInfo property) =>
         typeof(ColumnSqlConversion).IsAssignableFrom(conversionType) && Activator.CreateInstance(conversionType) is ColumnSqlConversion conversion
             ? conversion
             : throw new InvalidOperationException($"{property.DeclaringType?.Name}.{property.Name} 的 SqlConversion {conversionType.Name} 要继承 ColumnSqlConversion 并有无参构造函数");
 
     // 列的值转换：[Column(Converter = …)] 或 [Encryption(…)]（加密也是一种转换），两者不能同时用
-    private static IValueConverter? CreateConverter(Type entityType, PropertyInfo property, Type? converterType)
+    private static IValueConverter? CreateConverter(Type entityType, PropertyInfo property, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type? converterType)
     {
         var encryption = property.GetCustomAttribute<Encryption.EncryptionAttribute>();
         if (encryption is null) return converterType is null ? DefaultConverter(property) : CreateConverter(converterType, property);
@@ -289,15 +295,18 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
             throw new InvalidOperationException($"{entityType.Name}.{property.Name} 不能同时声明转换器和加密");
         if (property.PropertyType != typeof(string))
             throw new InvalidOperationException($"{entityType.Name}.{property.Name} 加密列必须是 string");
-        var strategy = EncryptionStrategies.GetOrAdd(encryption.Strategy, t =>
-            Activator.CreateInstance(t) as Encryption.IEncryptionStrategy
-            ?? throw new InvalidOperationException($"{t.Name} 没有实现 IEncryptionStrategy"));
+        var strategy = EncryptionStrategies.GetOrAdd(encryption.Strategy, _ => CreateStrategy(encryption.Strategy));
         return new Encryption.EncryptionConverter(strategy, entityType, property.Name, encryption.SupportQueryLike);
     }
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, Encryption.IEncryptionStrategy> EncryptionStrategies = new();
 
+    private static Encryption.IEncryptionStrategy CreateStrategy([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type) =>
+        Activator.CreateInstance(type) as Encryption.IEncryptionStrategy ?? throw new InvalidOperationException($"{type.Name} 没有实现 IEncryptionStrategy");
+
     // 没有声明转换器时的默认转换：枚举类型标了 [StoreAsName] 时按名字存
+    [UnconditionalSuppressMessage("Trimming", "IL2076", Justification = AotJustification.GeneratedInstantiation)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.GeneratedInstantiation)]
     private static IValueConverter? DefaultConverter(PropertyInfo property)
     {
         var type = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
@@ -306,7 +315,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
             : null;
     }
 
-    private static IValueConverter CreateConverter(Type converterType, PropertyInfo property)
+    private static IValueConverter CreateConverter([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type converterType, PropertyInfo property)
     {
         if (!typeof(IValueConverter).IsAssignableFrom(converterType))
             throw new InvalidOperationException($"{property.DeclaringType?.Name}.{property.Name} 的转换器 {converterType.Name} 没有实现 IValueConverter");
@@ -315,6 +324,7 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
     }
 
     // 计算列：实体上的静态属性 / 字段，值是参数为实体的 lambda
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = AotJustification.Rooted)]
     private static System.Linq.Expressions.LambdaExpression ComputedExpression(Type entityType, PropertyInfo property, string memberName)
     {
         const BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;

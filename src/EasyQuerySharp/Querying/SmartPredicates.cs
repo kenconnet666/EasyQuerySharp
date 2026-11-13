@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using EasyQuerySharp.Translation;
@@ -12,6 +13,7 @@ namespace EasyQuerySharp.Querying;
 internal static class SmartPredicates
 {
     /// <summary>尝试把 <paramref name="predicate"/>（参数是投影结果）的合取项推进 <paramref name="state"/> 唯一的派生表来源；返回留在外层的部分（全推进去时为 null）。</summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     public static (QueryState State, LambdaExpression? Remaining) PushDown(QueryState state, LambdaExpression predicate)
     {
         if (state.Sources is not [SubQuerySource { Inner: { Selector: { } selector } inner } sub]
@@ -35,6 +37,7 @@ internal static class SmartPredicates
     }
 
     // 第 index 个来源的 ON 后面追加条件（ON 的参数是前 index + 1 个来源）
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     private static QueryState AddToOn(QueryState inner, int index, Expression body, IReadOnlyList<ParameterExpression> parameters)
     {
         var source = inner.Sources[index];

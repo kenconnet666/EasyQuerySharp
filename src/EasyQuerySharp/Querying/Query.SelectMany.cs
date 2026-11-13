@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.SqlAst;
@@ -21,6 +22,7 @@ public sealed partial class Query<T>
     /// 沿集合导航展开后投影（LINQ 查询语法 <c>from a in q from b in a.Bs select …</c> 编译成的形式）：
     /// <paramref name="resultSelector"/> 同时拿到父行与元素，其余同 <see cref="SelectMany{TResult}(Expression{Func{T, IEnumerable{TResult}}})"/>。
     /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     public Query<TResult> SelectMany<TElement, TResult>(Expression<Func<T, IEnumerable<TElement>?>> navigation,
         Expression<Func<T, TElement, TResult>> resultSelector) where TElement : class
     {
@@ -65,6 +67,7 @@ public sealed partial class Query<T>
             : null;
 
     // 只有元素一个参数的 lambda，改写成连接上全部来源的参数（元素换成取出的那张表）
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     private LambdaExpression OverJoinedSources(LambdaExpression lambda, ParameterExpression picked) =>
         Expression.Lambda(new ExpressionTranslator.ParameterReplacer(lambda.Parameters[0], picked).Visit(lambda.Body), State.Selector!.Parameters);
 
@@ -82,6 +85,7 @@ public sealed partial class Query<T>
 
     // 每对关联列相等（两边类型不同时都转成可空的同一类型），再加上导航的固定条件（参数换成被连接的表）；
     // 键是逗号列表时写成 Sql.InCsv(目标键, 本表列)
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Marker)]
     private static Expression KeysEqual(ParameterExpression joined, IReadOnlyList<ColumnMetadata> joinedColumns,
         ParameterExpression other, IReadOnlyList<ColumnMetadata> otherColumns, LambdaExpression? extraFilter, KeyMatch match = KeyMatch.Equal)
     {
@@ -93,9 +97,10 @@ public sealed partial class Query<T>
             for (var i = 0; i < joinedColumns.Count; i++)
             {
                 Expression left = Expression.Property(joined, joinedColumns[i].Property), right = Expression.Property(other, otherColumns[i].Property);
+                // 一边是可空类型时两边都转成它（不在运行时构造 Nullable<T>：Native AOT 下值类型的实例化要编译期已有）
                 if (left.Type != right.Type)
                 {
-                    var common = typeof(Nullable<>).MakeGenericType(Nullable.GetUnderlyingType(left.Type) ?? left.Type);
+                    var common = Nullable.GetUnderlyingType(left.Type) is not null ? left.Type : right.Type;
                     left = Expression.Convert(left, common);
                     right = Expression.Convert(right, common);
                 }

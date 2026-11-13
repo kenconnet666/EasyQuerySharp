@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.Reflection;
 using EasyQuerySharp.Querying;
@@ -32,6 +33,7 @@ internal static class CteViews
     public static QueryState? Of(EasyDb db, Type entityType) =>
         ViewMethods.GetOrAdd(entityType, Find) is { } method ? ((IQueryStateAccessor)method.Invoke(null, [db])!).State : null;
 
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = AotJustification.Rooted)]
     private static MethodInfo? Find(Type type) =>
         type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICteView<>) && i.GetGenericArguments()[0] == type)
             ? type.GetMethod(nameof(ICteView<>.View), BindingFlags.Public | BindingFlags.Static, [typeof(EasyDb)])

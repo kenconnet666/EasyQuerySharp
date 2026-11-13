@@ -1,4 +1,4 @@
-using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using EasyQuerySharp.Materialization;
 using EasyQuerySharp.Metadata;
@@ -61,6 +61,8 @@ internal static partial class IncludeRunner
 
     // 按目标键取子数据的条件：键是逗号列表时写成 Sql.InCsv(目标键, "k1,k2,…")（与 Java 的 FIND_IN_SET 一致），否则 IN / 复合键 OR
     // single：只有一个父对象的键（UNION ALL 的一段），单列写成 = 而不是 IN (?)（与 Java 一致）
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Marker)]
     private static LambdaExpression KeyFilter(NavigationMetadata nav, IReadOnlyCollection<CompositeKey> keys, int groupSize, bool single = false)
     {
         if (nav.KeyMatch == KeyMatch.Equal)
@@ -148,6 +150,7 @@ internal static partial class IncludeRunner
     }
 
     // 导航的固定条件与键条件合成一组：x => Sql.Group(keys.Contains(x.Key) && extra(x))，写成 (… IN (…) AND …)（与 Java 一致）
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     private static LambdaExpression WithExtraFilter(LambdaExpression keyIn, LambdaExpression? extra)
     {
         if (extra is null) return keyIn;
@@ -156,6 +159,7 @@ internal static partial class IncludeRunner
         return Expression.Lambda(Expression.Call(typeof(Sql).GetMethod(nameof(Sql.Group))!, Expression.AndAlso(keyIn.Body, extraBody)), p);
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     private static LambdaExpression KeyEquals(Type entityType, ColumnMetadata column, CompositeKey key)
     {
         var p = Expression.Parameter(entityType, "x");
@@ -165,19 +169,14 @@ internal static partial class IncludeRunner
 
     // 单列键：x => keys.Contains(x.Key)，多于 groupSize 个时拆成 x => k1.Contains(x.Key) || k2.Contains(x.Key) …，写成 (… IN (…) OR … IN (…))；
     // 复合键：((x.A =? AND x.B =?) OR (…))（与 Java 一致，= 后面不留空格）。键值先转成列的 CLR 类型
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     private static LambdaExpression KeyIn(Type entityType, IReadOnlyList<ColumnMetadata> columns, IReadOnlyCollection<CompositeKey> keys, int groupSize)
     {
         var p = Expression.Parameter(entityType, "x");
         if (columns.Count == 1)
         {
             var column = columns[0];
-            var listType = typeof(List<>).MakeGenericType(column.ClrType);
-            Expression Contains(object[] values)
-            {
-                var list = (IList)Activator.CreateInstance(listType)!;
-                foreach (var value in values) list.Add(ValueReader.ConvertTo(CompositeKey.Unwrap(value), column.ClrType));
-                return Expression.Call(Expression.Constant(list), listType.GetMethod("Contains")!, Expression.Property(p, column.Property));
-            }
+            Expression Contains(object[] values) => ClientValues.Contains(values.Select(CompositeKey.Unwrap), Expression.Property(p, column.Property));
             return Expression.Lambda(keys.Select(k => k.First).Distinct().Chunk(groupSize).Select(Contains).Aggregate(Expression.OrElse), p);
         }
         var arguments = columns.Select(c => (Expression)Expression.Convert(Expression.Property(p, c.Property), typeof(object))).ToList();

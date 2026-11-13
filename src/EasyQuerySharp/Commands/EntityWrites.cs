@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -25,6 +26,8 @@ internal static class EntityWrites
     /// <summary>
     /// 多对多的中间表行：<c>DELETE FROM 中间表 WHERE 自身映射列 = ? AND 目标映射列 = ?</c>，<paramref name="setNull"/> 时改成把两列置 NULL（与 Java 一致）。
     /// </summary>
+    [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = AotJustification.Rooted)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     public static Task<long> DeleteMappingAsync(EasyDb db, NavigationMetadata nav, object parent, object target, bool setNull, CancellationToken ct)
     {
         var mapping = nav.Mapping!;
@@ -38,6 +41,7 @@ internal static class EntityWrites
     }
 
     /// <summary>插入一行中间表：自身映射列取父对象的键，目标映射列取目标的键（中间表自己的主键由拦截器或生成器给出）。</summary>
+    [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = AotJustification.Rooted)]
     public static Task<long> InsertMappingAsync(EasyDb db, NavigationMetadata nav, object parent, object target, CancellationToken ct)
     {
         var row = Activator.CreateInstance(nav.Mapping!.Type) ?? throw new InvalidOperationException($"无法创建中间表实体 {nav.Mapping.Type.Name}");

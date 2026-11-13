@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Data.Common;
 using System.Linq.Expressions;
 using EasyQuerySharp.Metadata;
@@ -187,6 +188,7 @@ internal static class QueryCompiler
     }
 
     // 投影的 DTO 上声明了导航时，取它的元数据（外层可以经这些导航隐式 JOIN）；匿名类型、标量、没有导航的 DTO 返回 null
+    [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = AotJustification.Rooted)]
     private static Metadata.EntityMetadata? DtoWithNavigations(EasyDb db, Type? dto) =>
         dto is { IsClass: true } && dto != typeof(string) && !ScalarTypes.IsScalar(dto)
         && dto.GetProperties().Any(p => p.IsDefined(typeof(Metadata.NavigateAttribute), true))
@@ -237,6 +239,9 @@ internal static class QueryCompiler
     }
 
     // Include 之后投影回同一实体（Java 的 include 再 select(s -> s.FETCHER.name())）：投影里没写的带出导航照样带出，带出查询按 loadInclude 的格式
+    [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = AotJustification.Rooted)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Marker)]
     private static LambdaExpression WithIncludedNavigations(LambdaExpression selector, IReadOnlyList<IncludeSpec> includes)
     {
         if (includes.Count == 0 || selector.Body is not MemberInitExpression init || selector.Parameters is not [var root, ..] || init.Type != root.Type) return selector;
@@ -250,6 +255,7 @@ internal static class QueryCompiler
         return added.Count == 0 ? selector : Expression.Lambda(init.Update(init.NewExpression, [.. init.Bindings, .. added]), selector.Parameters);
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = AotJustification.Lambda)]
     private static (QueryFrame Frame, ProjectionCompiler Projection) Project(
         QueryState state, IReadOnlyDictionary<ParameterExpression, SourceBinding>? outer = null, IReadOnlyList<ColumnMetadata>? relationKeys = null,
         TranslationContext? outerContext = null)
