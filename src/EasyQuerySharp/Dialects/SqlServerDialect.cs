@@ -276,7 +276,7 @@ public class SqlServerDialect : SqlDialect
     };
 
     // 单个格式符：从 CONVERT 出来的 yyyyMMdd（112）、yyMMdd（12）、hh:mm:ss（24）里截取
-    private static readonly Dictionary<string, string> DateFormatTokens = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, string> DateFormatTemplates = new(StringComparer.Ordinal)
     {
         ["yyyy"] = "SUBSTRING(CONVERT(CHAR(8), {0}, 112), 1, 4)",
         ["yy"] = "SUBSTRING(CONVERT(CHAR(6), {0}, 12), 1, 2)",
@@ -296,31 +296,25 @@ public class SqlServerDialect : SqlDialect
         ["s"] = "CASE WHEN SUBSTRING(CONVERT(CHAR(8), {0}, 24), 7, 1) = '0' THEN SUBSTRING(CONVERT(CHAR(8), {0}, 24), 8, 1) else SUBSTRING(CONVERT(CHAR(8), {0}, 24), 7, 2) END",
     };
 
-    // 把格式串切成格式符和夹在中间的字面量（a 不是格式符，和字面量一样当参数）
-    private static readonly System.Text.RegularExpressions.Regex DateFormatSegments =
-        new("(yyyy|yy|MM|dd|HH|hh|mm|ss|[MdHhmsa]|(?:(?!yyyy|yy|MM|dd|HH|hh|mm|ss|[MdHhmsa]).)+)");
-
     /// <summary>
     /// 日期格式化（与 Java 的 MsSQLDateTimeFormatSQLFunction 一致）：常见的整串格式对应一个 CONVERT 样式；
-    /// 其余的切成格式符与字面量，各自写成 SUBSTRING(CONVERT(…)) 或参数，用 <c>+</c> 连接。
+    /// 其余的切成格式符与文字，格式符写成 SUBSTRING(CONVERT(…))，文字作参数，用 <c>+</c> 连接。
     /// </summary>
     private static void WriteDateFormat(SqlRenderer renderer, IReadOnlyList<SqlExpr> args)
     {
         var format = ((LiteralExpr)args[1]).Sql;
-        CheckDateFormat(renderer, format, "yyyy", "yy", "MM", "M", "dd", "d", "HH", "H", "hh", "h", "mm", "m", "ss", "s");
+        var parts = DateFormatTokens(renderer, format, [.. DateFormatTemplates.Keys]);
         if (WholeDateFormats.TryGetValue(format, out var whole))
         {
             Template(whole)(renderer, args);
             return;
         }
         renderer.Append("(");
-        var first = true;
-        foreach (System.Text.RegularExpressions.Match segment in DateFormatSegments.Matches(format))
+        for (var i = 0; i < parts.Count; i++)
         {
-            if (!first) renderer.Append(" + ");
-            first = false;
-            if (DateFormatTokens.TryGetValue(segment.Value, out var token)) Template(token)(renderer, args);
-            else renderer.Write(new ParameterExpr(segment.Value, typeof(string)));
+            if (i > 0) renderer.Append(" + ");
+            if (parts[i].IsToken) Template(DateFormatTemplates[parts[i].Text])(renderer, args);
+            else renderer.Write(new ParameterExpr(parts[i].Text, typeof(string)));
         }
         renderer.Append(")");
     }

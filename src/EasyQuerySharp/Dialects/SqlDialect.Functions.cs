@@ -150,8 +150,11 @@ public abstract partial class SqlDialect
         if (parts.Count > 1) r.Append(")");
     };
 
-    /// <summary>自己转换格式串的方言（与 Java 逐字对齐的 Oracle、SQL Server）先用它检查：格式串里只能有 <paramref name="supported"/> 里的格式符。</summary>
-    private protected static void CheckDateFormat(SqlRenderer r, string format, params string[] supported) =>
+    /// <summary>
+    /// 自己拼格式化 SQL 的方言（与 Java 逐字对齐的 Oracle、SQL Server）用它切分格式串：格式符原样返回（只能是 <paramref name="supported"/> 里的），
+    /// 其余是去掉了 .NET 引号与转义的文字。
+    /// </summary>
+    private protected static List<(bool IsToken, string Text)> DateFormatTokens(SqlRenderer r, string format, params string[] supported) =>
         DateFormatParts(r, format, [.. supported.Select(s => (s, s))]);
 
     // .NET 自定义日期格式里有含义的字母：同一字母的连续重复是一个格式符（yyyy、MM、d、tt、fff）

@@ -284,9 +284,8 @@ public class OracleDialect : SqlDialect
         f[SqlFunctionNames.StringJoinDistinct] = (r, a) => r.Append("LISTAGG(DISTINCT TO_CHAR(").Write(a[0]).Append("), ").Write(a[1]).Append(") WITHIN GROUP(ORDER BY 1)");
         f[SqlFunctionNames.DateFormat] = (r, a) =>
         {
-            var format = ((LiteralExpr)a[1]).Sql;
-            CheckDateFormat(r, format, "yyyy", "yy", "MM", "M", "dd", "d", "HH", "H", "hh", "h", "mm", "m", "ss", "s");
-            r.Append("TO_CHAR(").Write(a[0]).Append(",'").Append(OracleDateFormat(format)).Append("')");
+            var parts = DateFormatTokens(r, ((LiteralExpr)a[1]).Sql, "yyyy", "yy", "MM", "M", "dd", "d", "HH", "H", "hh", "h", "mm", "m", "ss", "s");
+            r.Append("TO_CHAR(").Write(a[0]).Append(",'").Append(OracleDateFormat(parts)).Append("')");
         };
         // 相差：两个日期相减得到间隔，再拆成 DAY / HOUR / MINUTE / SECOND 累加（与 Java 一致）
         var interval = DateDiffInterval;
@@ -328,26 +327,34 @@ public class OracleDialect : SqlDialect
     /// <summary>日期相差用的间隔表达式（<c>{0}</c> 起点、<c>{1}</c> 终点）：两个日期相减得到天数，再转成 DAY TO SECOND 间隔。</summary>
     protected virtual string DateDiffInterval => "NUMTODSINTERVAL(({1}+0)-({0}+0),'DAY')";
 
-    // 与 Java 的 OracleDateTimeFormatSQLFunction.formatDefault 一致：格式记号与 :/-_ 空格原样转换，其余文字用双引号括起来
-    private static readonly System.Text.RegularExpressions.Regex DateFormatToken = new("yyyy|yy|MM|dd|HH|hh|mm|ss|[MdHhmsa:/_ -]");
+    // 与 Java 的 OracleDateTimeFormatSQLFunction.formatDefault 一致：格式符换成 Oracle 的写法，文字里的 :/_- 与空格原样保留，其余文字用双引号括起来
+    private const string OracleFormatSeparators = ":/_- ";
 
-    /// <summary>C# 的日期格式（yyyy-MM-dd HH:mm:ss 一类）转成 Oracle TO_CHAR 的格式串（不含两侧引号，单引号已转义）。</summary>
-    private static string OracleDateFormat(string format)
+    /// <summary>切好的 C# 日期格式（见 <see cref="SqlDialect.DateFormatTokens"/>）转成 Oracle TO_CHAR 的格式串（不含两侧引号，单引号已转义）。</summary>
+    private static string OracleDateFormat(List<(bool IsToken, string Text)> parts)
     {
         var sb = new System.Text.StringBuilder();
-        var cursor = 0;
-        foreach (System.Text.RegularExpressions.Match m in DateFormatToken.Matches(format))
+        foreach (var (isToken, text) in parts)
         {
-            if (m.Index > cursor) sb.Append('"').Append(format, cursor, m.Index - cursor).Append('"');
-            sb.Append(m.Value switch
+            if (isToken)
             {
-                "M" => "FMMM", "d" => "FMDD", "HH" => "HH24", "H" => "FMHH24", "h" => "FMHH",
-                "mm" => "MI", "m" => "FMMI", "s" => "FMSS", "a" => "AM",
-                _ => m.Value.ToUpperInvariant(),
-            });
-            cursor = m.Index + m.Length;
+                sb.Append(text switch
+                {
+                    "M" => "FMMM", "d" => "FMDD", "HH" => "HH24", "H" => "FMHH24", "h" => "FMHH", "mm" => "MI", "m" => "FMMI", "s" => "FMSS",
+                    _ => text.ToUpperInvariant(),
+                });
+                continue;
+            }
+            var quoted = false;
+            foreach (var c in text)
+            {
+                var separator = OracleFormatSeparators.Contains(c);
+                if (separator == quoted) sb.Append('"');
+                quoted = !separator;
+                sb.Append(c);
+            }
+            if (quoted) sb.Append('"');
         }
-        if (cursor < format.Length) sb.Append('"').Append(format, cursor, format.Length - cursor).Append('"');
         return sb.ToString().Replace("'", "''", StringComparison.Ordinal);
     }
 }
