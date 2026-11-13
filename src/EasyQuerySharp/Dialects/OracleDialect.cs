@@ -334,13 +334,21 @@ public class OracleDialect : SqlDialect
     private static string OracleDateFormat(List<(bool IsToken, string Text)> parts)
     {
         var sb = new System.Text.StringBuilder();
+        // FM 是开关：每写一次切换一次“去掉前导零”。不补零的格式符（M、d、H、h、m、s）要它开着，其余要它关着，状态不对时才写
+        var fillModeOff = false;
         foreach (var (isToken, text) in parts)
         {
             if (isToken)
             {
+                var unpadded = text.Length == 1 && text != "y";
+                if (unpadded != fillModeOff)
+                {
+                    sb.Append("FM");
+                    fillModeOff = unpadded;
+                }
                 sb.Append(text switch
                 {
-                    "M" => "FMMM", "d" => "FMDD", "HH" => "HH24", "H" => "FMHH24", "h" => "FMHH", "mm" => "MI", "m" => "FMMI", "s" => "FMSS",
+                    "M" => "MM", "d" => "DD", "HH" or "H" => "HH24", "h" => "HH", "mm" or "m" => "MI", "s" => "SS",
                     _ => text.ToUpperInvariant(),
                 });
                 continue;

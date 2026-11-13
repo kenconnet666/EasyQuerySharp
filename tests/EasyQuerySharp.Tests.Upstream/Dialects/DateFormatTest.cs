@@ -18,6 +18,7 @@ public sealed class DateFormatTest
     [InlineData("pgsql", "yyyy年M月d日", "TO_CHAR((t.\"create_time\")::TIMESTAMP,'YYYY年FMMM月FMDD日')")]
     [InlineData("sqlite", "hh:mm tt", "strftime('%I:%M %p', t.\"create_time\")")]
     [InlineData("oracle", "'at' HH \\h yyyy年MM-01", "TO_CHAR(t.\"create_time\",'\"at\" HH24 \"h\" YYYY\"年\"MM-\"01\"')")]
+    [InlineData("oracle", "M/d HH:mm yyyy%MM", "TO_CHAR(t.\"create_time\",'FMMM/DD FMHH24:MI YYYYFMMMMM')")]
     [InlineData("mssql", "'at' HH:mm", "(? + SUBSTRING(CONVERT(CHAR(8), t.[create_time], 24), 1, 2) + ? + SUBSTRING(CONVERT(CHAR(8), t.[create_time], 24), 4, 2))")]
     [InlineData("hana", "yyyy年MM月 hh", "(TO_NVARCHAR(t.\"create_time\",'YYYY') || '年' || TO_NVARCHAR(t.\"create_time\",'MM') || '月 ' || TO_NVARCHAR(t.\"create_time\",'HH12'))")]
     public void ConvertsSpecifiersAndEscapesText(string dialect, string format, string expected) =>
