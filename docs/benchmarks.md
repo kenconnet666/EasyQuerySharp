@@ -130,6 +130,7 @@ EasyQuerySharp 的 Simple 再拆开（一次性用反射调内部的 `QueryCompi
 - **翻译**：EasyQuerySharp 每次都完整翻译，仍是四家里最快的，简单查询 6.6 µs、复杂查询 21 µs，不到 EF Core 命中查询缓存后开销的一半；FreeSql 慢 5–7 倍，SqlSugar 慢 45–60 倍（SqlSugar 一条 10 行查询的大部分时间花在翻译上）。
 - **少量行**：读 10 行时 EasyQuerySharp 和 EF Core 预编译查询相当（实体 106 µs 对 106 µs，DTO 79 µs 对 73 µs），比 EF Core 普通查询快约三分之一，比 FreeSql 快 30%–60%。和手写 ADO.NET 的差距（约 40–50 µs）里，建查询对象、翻译、生成读取委托、渲染合起来约 8 µs，其余在执行与逐列读取上。
 - **大量行**：读 1000 行时 EasyQuerySharp 的逐行开销最高，实体 1.43 倍、DTO 2.16 倍于 ADO.NET，落后于 EF Core 和 Dapper。原因在读值：每一列都走 `ValueReader.Read`（`GetValue` 装箱，再 `ConvertTo` 转类型），DTO 每行比 ADO.NET 多分配约 100 字节。FreeSql 实体读取最快（与 ADO.NET 持平），但它的 DTO 投影慢。
+  - 2026-11-13 改为按列类型直接读（驱动报的列类型与属性类型一致时调 `GetInt32` / `GetString` 等，整数列读成别的整数、枚举、布尔时 checked 转换；实体按列编译好的读写委托，不再装箱）：1000 行的分配实体从 388 KB 降到 270 KB（ADO.NET 230 KB）、DTO 从 264 KB 降到 217 KB（ADO.NET 167 KB）；同机对比 DTO 1000 行从 ADO.NET 的 1.96 倍降到 1.35 倍，实体的耗时变化在这台机器的噪声以内。上表是改动前的数字。
 - **对象树**：EF Core 的拆分查询最快（一层 1.69 倍、两层 1.30 倍于手写 Dapper），EasyQuerySharp 次之（1.98 / 1.60 倍），FreeSql、SqlSugar 与它同量级、略慢；EF Core 默认的单条 JOIN 在两层时因为笛卡尔积膨胀，慢到 10 倍。EasyQuerySharp 两层的分配是手写的 2.5 倍，主要是逐列读取的装箱，以及子行按键挂回父对象时的中间对象（键、分组列表）。
 
 ## 翻译结果要不要缓存

@@ -12,11 +12,24 @@ namespace EasyQuerySharp.Materialization;
 public static class ValueReader
 {
     internal static readonly MethodInfo ReadMethod = typeof(ValueReader).GetMethod(nameof(Read))!;
+    internal static readonly MethodInfo ReadNotNullMethod = typeof(ValueReader).GetMethod(nameof(ReadNotNull), BindingFlags.NonPublic | BindingFlags.Static)!;
 
     /// <summary>读第 <paramref name="ordinal"/> 列；NULL 返回 <c>default</c>。有转换器时先读数据库类型再转回属性类型。</summary>
-    public static T Read<T>(DbDataReader reader, int ordinal, IValueConverter? converter)
+    public static T Read<T>(DbDataReader reader, int ordinal, IValueConverter? converter) =>
+        reader.IsDBNull(ordinal) ? default! : ReadNotNull<T>(reader, ordinal, converter);
+
+    /// <summary>读一个已知不是 NULL 的列。</summary>
+    internal static T ReadNotNull<T>(DbDataReader reader, int ordinal, IValueConverter? converter)
     {
-        if (reader.IsDBNull(ordinal)) return default!;
+        if (converter is null)
+        {
+            var fieldType = reader.GetFieldType(ordinal);
+            var typed = fieldType == Typed<T>.Target ? Typed<T>.Exact
+                : fieldType == typeof(long) ? Typed<T>.FromInt64
+                : fieldType == typeof(int) ? Typed<T>.FromInt32
+                : null;
+            if (typed is not null) return typed(reader, ordinal);
+        }
         object raw;
         try
         {
@@ -115,4 +128,49 @@ public static class ValueReader
 
     private static InvalidCastException Mismatch(object value, Type target) =>
         new($"无法把数据库返回的 {value.GetType().Name} 值 '{value}' 转成 {target.Name}");
+
+    /// <summary>
+    /// 不装箱的读法：驱动报的列类型就是目标类型（可空类型按底层类型）时，直接调类型化的 <c>GetInt32</c> / <c>GetString</c> 等；
+    /// 整数列（SQLite 都报成 Int64，MySQL 的 INT 是 Int32）读到别的整数或枚举时按 checked 转换，溢出与 <see cref="Convert"/> 一样抛异常。
+    /// 其余组合返回 null，退回 <see cref="ConvertTo"/>。
+    /// </summary>
+    private static class Typed<T>
+    {
+        public static readonly Type Target = Nullable.GetUnderlyingType(typeof(T)) ?? typeof(T);
+        public static readonly Func<DbDataReader, int, T>? Exact = Build(Target);
+        public static readonly Func<DbDataReader, int, T>? FromInt64 = IsInteger(Target) || Target.IsEnum || Target == typeof(bool) ? Build(typeof(long)) : null;
+        public static readonly Func<DbDataReader, int, T>? FromInt32 = IsInteger(Target) || Target.IsEnum || Target == typeof(bool) ? Build(typeof(int)) : null;
+
+        private static bool IsInteger(Type type) => Type.GetTypeCode(type) is >= TypeCode.SByte and <= TypeCode.UInt64;
+
+        private static Func<DbDataReader, int, T>? Build(Type fieldType)
+        {
+            var getter = fieldType switch
+            {
+                _ when fieldType == typeof(int) => nameof(DbDataReader.GetInt32),
+                _ when fieldType == typeof(long) => nameof(DbDataReader.GetInt64),
+                _ when fieldType == typeof(short) => nameof(DbDataReader.GetInt16),
+                _ when fieldType == typeof(byte) => nameof(DbDataReader.GetByte),
+                _ when fieldType == typeof(bool) => nameof(DbDataReader.GetBoolean),
+                _ when fieldType == typeof(string) => nameof(DbDataReader.GetString),
+                _ when fieldType == typeof(double) => nameof(DbDataReader.GetDouble),
+                _ when fieldType == typeof(float) => nameof(DbDataReader.GetFloat),
+                _ when fieldType == typeof(decimal) => nameof(DbDataReader.GetDecimal),
+                _ when fieldType == typeof(DateTime) => nameof(DbDataReader.GetDateTime),
+                _ when fieldType == typeof(Guid) => nameof(DbDataReader.GetGuid),
+                _ => null,
+            };
+            if (getter is null) return null;
+            var reader = System.Linq.Expressions.Expression.Parameter(typeof(DbDataReader), "reader");
+            var ordinal = System.Linq.Expressions.Expression.Parameter(typeof(int), "ordinal");
+            System.Linq.Expressions.Expression value = System.Linq.Expressions.Expression.Call(reader, typeof(DbDataReader).GetMethod(getter, [typeof(int)])!, ordinal);
+            // 整数列读成布尔：非 0 为真（SQLite、MySQL 系的布尔列）
+            if (fieldType != Target)
+                value = Target == typeof(bool)
+                    ? System.Linq.Expressions.Expression.NotEqual(value, System.Linq.Expressions.Expression.Default(fieldType))
+                    : System.Linq.Expressions.Expression.ConvertChecked(value, Target);
+            if (Target != typeof(T)) value = System.Linq.Expressions.Expression.Convert(value, typeof(T));
+            return System.Linq.Expressions.Expression.Lambda<Func<DbDataReader, int, T>>(value, reader, ordinal).Compile();
+        }
+    }
 }

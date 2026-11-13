@@ -23,12 +23,7 @@ public static class EntityMaterializer
         for (var i = 0; i < columns.Count; i++)
         {
             var column = columns[i];
-            if (column.Setter is null || reader.IsDBNull(start + i)) continue;
-            var raw = reader.GetValue(start + i);
-            var value = column.Converter is null
-                ? ValueReader.ConvertTo(raw, column.ClrType)
-                : column.Converter.FromProvider(ValueReader.ConvertTo(raw, column.Converter.ProviderType));
-            column.Setter(instance, value);
+            if (column.ReadInto is { } readInto && !reader.IsDBNull(start + i)) readInto(instance, reader, start + i);
         }
         return instance;
     }
@@ -45,12 +40,7 @@ public static class EntityMaterializer
             // 先按列名、再按属性名（与 Java 一致：create_time AS createTime 也能映射）
             var column = entity.Columns.FirstOrDefault(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase))
                 ?? entity.Columns.FirstOrDefault(c => string.Equals(c.PropertyName, name, StringComparison.OrdinalIgnoreCase));
-            if (column?.Setter is null || reader.IsDBNull(i)) continue;
-            var raw = reader.GetValue(i);
-            var value = column.Converter is null
-                ? ValueReader.ConvertTo(raw, column.ClrType)
-                : column.Converter.FromProvider(ValueReader.ConvertTo(raw, column.Converter.ProviderType));
-            column.Setter(instance, value);
+            if (column?.ReadInto is { } readInto && !reader.IsDBNull(i)) readInto(instance, reader, i);
         }
         return (T)instance;
     }

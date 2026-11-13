@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -93,6 +94,14 @@ public sealed class ColumnMetadata
     /// <summary>写属性值；只读属性为 null。</summary>
     public Action<object, object?>? Setter { get; }
 
+    /// <summary>
+    /// 从结果集读一个不是 NULL 的列直接写进实体（按属性类型读，不装箱；有转换器时经过转换器）；只读属性为 null。
+    /// 第一次用到时编译，物化实体时代替 <see cref="Setter"/>。
+    /// </summary>
+    internal Action<object, DbDataReader, int>? ReadInto => Setter is null ? null : _readInto ??= CompileReadInto();
+
+    private Action<object, DbDataReader, int>? _readInto;
+
     /// <summary>取实体上的值，并经过值转换器转成数据库值。</summary>
     public object? GetProviderValue(object entity)
     {
@@ -130,11 +139,26 @@ public sealed class ColumnMetadata
         }
     }
 
-    // 沿路径赋值，路上的值对象为 null 时先用无参构造函数建出来
     private static Action<object, object?> CompileSetter(IReadOnlyList<PropertyInfo> ownerPath, PropertyInfo property)
     {
         var obj = Expression.Parameter(typeof(object), "o");
         var value = Expression.Parameter(typeof(object), "v");
+        return Expression.Lambda<Action<object, object?>>(AssignAlongPath(obj, ownerPath, property, Expression.Convert(value, property.PropertyType)), obj, value).Compile();
+    }
+
+    private Action<object, DbDataReader, int> CompileReadInto()
+    {
+        var obj = Expression.Parameter(typeof(object), "o");
+        var reader = Expression.Parameter(typeof(DbDataReader), "reader");
+        var ordinal = Expression.Parameter(typeof(int), "ordinal");
+        var read = Expression.Call(Materialization.ValueReader.ReadNotNullMethod.MakeGenericMethod(Property.PropertyType),
+            reader, ordinal, Expression.Constant(Converter, typeof(IValueConverter)));
+        return Expression.Lambda<Action<object, DbDataReader, int>>(AssignAlongPath(obj, OwnerPath, Property, read), obj, reader, ordinal).Compile();
+    }
+
+    // 沿路径赋值，路上的值对象为 null 时先用无参构造函数建出来
+    private static BlockExpression AssignAlongPath(ParameterExpression obj, IReadOnlyList<PropertyInfo> ownerPath, PropertyInfo property, Expression value)
+    {
         var variables = new List<ParameterExpression>();
         var steps = new List<Expression>();
         Expression current = Expression.Convert(obj, (ownerPath.Count > 0 ? ownerPath[0] : property).DeclaringType!);
@@ -147,7 +171,7 @@ public sealed class ColumnMetadata
                 Expression.Block(Expression.Assign(next, Expression.New(owner.PropertyType)), Expression.Assign(Expression.Property(current, owner), next))));
             current = next;
         }
-        steps.Add(Expression.Assign(Expression.Property(current, property), Expression.Convert(value, property.PropertyType)));
-        return Expression.Lambda<Action<object, object?>>(Expression.Block(variables, steps), obj, value).Compile();
+        steps.Add(Expression.Assign(Expression.Property(current, property), value));
+        return Expression.Block(variables, steps);
     }
 }

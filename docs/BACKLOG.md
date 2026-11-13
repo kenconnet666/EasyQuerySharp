@@ -13,7 +13,6 @@
 - 对象树按批流式读取（`AsAsyncEnumerable(batchSize)`）与 `.AsSnapshot()`：没有对应的 Java 用例，有真实需求时再做。
 - 文档站（`apps/docs` 读卡片生成的 examples.json，方言切换、结果表格，可复用 TS 文档站的组件）：现在用 `docs/guide` 下的 Markdown 指南，要做站点时再做。
 - AOT 与裁剪（旧 1.1 / 9.4 / 10.3）：元数据与物化器的 Source Generator、用 interceptors 在编译期预翻译查询。表达式树查询在 NativeAOT 下只能解释执行；JIT 下一条 10 行查询已与 EF Core 预编译查询相当（见 [基准对比](benchmarks.md)）。等有 AOT 部署需求、且 interceptors 不再标为实验性时再做。
-- 逐列读取不装箱：现在每列都走 `ValueReader.Read`（`GetValue` 再 `ConvertTo`），读 1000 行的耗时是手写 ADO.NET 的 1.4–2.2 倍、落后 EF Core 和 Dapper（见 [基准对比](benchmarks.md)）。可以在生成读取委托时按列的 CLR 类型直接调 `GetInt64` / `GetDouble` / `GetString` / `GetFieldValue<T>`，读到的类型对不上（SQLite 的整数布尔、文本日期，各驱动的数值类型）时再退回 `ValueReader`。有大结果集的性能需求时做，改完重跑物化和对象树基准。
 - TS 版独有的能力（旧 M9）：多态（判别列加子类）、只读库 `AsReadOnly()`、开发期 N+1 检测、`dotnet eqs pull` 从库反向生成实体、多个模型程序集注册到同一个库。不在 Java 对标范围内，有真实需求时再做。
 - 带出查询的父键在 PG 上写成 `= ANY(?)`，只占一个参数：现在按 `IncludeGroupSize` 分批 IN，够用；基准显示参数绑定是瓶颈时再做。
 - 投影里直接写非导航的关联查询（`Select(o => new { o.No, Lines = db.Query<Line>().Where(l => l.OrderNo == o.No).ToList() })`），规划器自动按键批量：现在用 `FillMany` / `FillOne` 表达，Java 的 fill 用例都已覆盖。
