@@ -357,11 +357,13 @@ jobs:
         with:
           path: .hana-volume
           key: hana-volume-${{ hashFiles('infra/dev/hana/**') }}-${{ env.EQS_DEV_HANA_PASSWORD }}
-      # db.sh 首次运行生成 .local/db.env（其余库的密码，这些库不会启动）；环境变量里的 HANA 密码优先
+      # db.sh 首次运行生成 .local/db.env（其余库的密码，这些库不会启动）；环境变量里的 HANA 密码优先。
+      # 它默认写上本机 PG 的连接串，测试会去连：这个任务里注释掉
       - name: Start HANA Express
         run: |
           if [[ -f .hana-volume/volume.tar.gz ]]; then bash infra/dev/hana/volume.sh restore .hana-volume/volume.tar.gz; fi
           bash infra/dev/db.sh --profile hana up -d --build hana
+          sed -i 's/^EQS_PG_CS=/#EQS_PG_CS=/' .local/db.env
       - name: Cache HANA client
         id: hana-client
         uses: actions/cache@v6
