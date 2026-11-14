@@ -182,7 +182,7 @@ SELECT COUNT(*) FROM `t_order_item` WHERE `order_id` = ?;
 |---|---|
 | `IgnoreRoot` | 根不增不改，只处理子对象 |
 | `IgnoreRootUpdate` | 新根照常插入，已追踪的根不更新 |
-| `AllowOwnershipChange` | 允许把子对象挂到别的父对象（改写外键）；默认报错。外键没设（null，或 `long` 等非空类型的默认值 0）的子对象是新挂上的，不算挂到别处 |
+| `AllowOwnershipChange` | 允许把子对象挂到别的父对象（改写外键）；默认报错。外键没设（null，或 `long` 等非空类型的默认值 0）的子对象是新挂上的，不算挂到别处。新对象带着库里已有行的自增主键（如表单带上了别人的主键）时报错，不悄悄忽略主键另建一行；沿用已追踪实例的主键时按那个实例原来的外键核对归属 |
 | `IgnoreNull` | 已追踪父对象上为 null 的对一导航跳过，不当孤儿 |
 | `IgnoreEmpty` | 空集合跳过，不当成"全部拿掉" |
 | `PhysicalDelete` | 孤儿物理删除（默认有逻辑删除的按逻辑删除） |

@@ -97,6 +97,21 @@ public abstract partial class LiveSuite
             var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => db.Save(alice).ExecuteAsync(Ct));
             Assert.Contains(nameof(SaveBehavior.AllowOwnershipChange), ex.Message);
         }
+
+        // 新对象带着别人的子对象的主键（表单提交的 DTO，外键没设）：报错，不改别人的数据，也不悄悄忽略主键另建一行
+        var bobsPost = await db.Query<Post>().Where(p => p.UserId == 2).OrderBy(p => p.Id).FirstAsync(Ct);
+        foreach (var loadBob in new[] { false, true })
+            using (db.BeginTracking())
+            {
+                if (loadBob) await db.Query<User>().Where(u => u.Id == 2).Include(u => u.Posts).SingleAsync(Ct);
+                var alice = await LoadAliceAsync();
+                alice.Posts!.Add(new Post { Id = bobsPost.Id, Title = "hijacked", Amount = 1.00m });
+                await using var tx = db.BeginTransaction();
+                var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => db.Save(alice).ExecuteAsync(Ct));
+                Assert.Contains(loadBob ? nameof(SaveBehavior.AllowOwnershipChange) : "自增主键", ex.Message);
+            }
+        var after = await db.Query<Post>().Where(p => p.Id == bobsPost.Id).SingleAsync(Ct);
+        Assert.Equal((2L, bobsPost.Title), (after.UserId, after.Title));
     }
 
     // 外键可空的引用关系（公司的员工）：拿掉的员工外键置空，人还在

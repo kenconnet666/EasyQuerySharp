@@ -28,6 +28,9 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
     // RemoveRoot 的根：它已加载的子对象在规划完后按级联删除
     private readonly List<object> _removedRoots = [];
 
+    // 新对象沿用主键换成的已追踪实例，合并前属于别的父对象：规划完后仍要插入（没从原父对象拿掉）时报错
+    private readonly Dictionary<object, string> _foreignOwned = new(ReferenceEqualityComparer.Instance);
+
     // 留在原父对象上的子对象：同一实例不能再挂到别处
     private readonly HashSet<object> _kept = new(ReferenceEqualityComparer.Instance);
 
@@ -161,7 +164,7 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
 
         foreach (var item in current)
         {
-            var child = Canonical(item);
+            var child = Canonical(item, parent, nav);
             var existing = Match(child, original, originalByKey);
             if (existing is not null)
             {
@@ -201,6 +204,10 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
     {
         var tracked = db.Tracker.Find(child) is not null;
         CheckOwnership(parent, nav, child);
+        // 没追踪的新对象带着自增主键：那是库里别处的行（如表单带上了别人的主键），插入会忽略它另建一行，不能悄悄这样做
+        if (!tracked && Meta(child).Columns.FirstOrDefault(c => c.IsPrimaryKey && c.IsGenerated && !IsUnset(c, c.Property.GetValue(child))) is { } generated)
+            throw new InvalidOperationException(
+                $"{child.GetType().Name}.{generated.PropertyName} = {generated.Property.GetValue(child)} 是自增主键，但不在 {nav} 已加载的子对象里：新对象不要带主键；要把别处已有的行挂过来，先在同一个追踪范围里加载它，并加 SaveBehavior.AllowOwnershipChange");
         if (nav.Cascade != Cascade.Delete)
         {
             if (!tracked) throw new InvalidOperationException($"{nav} 是引用（级联 {nav.Cascade}），挂上的 {child.GetType().Name} 要先被追踪");
@@ -217,15 +224,20 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
     // 子对象的外键已指向别的父对象：默认报错，AllowOwnershipChange 时允许改写；外键还没设的子对象是新挂上的
     private void CheckOwnership(object parent, NavigationMetadata nav, object child)
     {
-        if (Has(SaveBehavior.AllowOwnershipChange)) return;
+        if (OwnershipConflict(parent, nav, child) is { } conflict) throw new InvalidOperationException(conflict);
+    }
+
+    private string? OwnershipConflict(object parent, NavigationMetadata nav, object child)
+    {
+        if (Has(SaveBehavior.AllowOwnershipChange)) return null;
         for (var i = 0; i < nav.TargetColumns.Count; i++)
         {
             var current = nav.TargetColumns[i].Property.GetValue(child);
             var should = nav.SelfColumns[i].Property.GetValue(parent);
             if (!IsUnset(nav.TargetColumns[i], current) && should is not null && !Equals(current, should))
-                throw new InvalidOperationException(
-                    $"{child.GetType().Name}.{nav.TargetColumns[i].PropertyName} 的值 {current} 不等于 {nav}，应为 {should}：要把子对象挂到别的父对象，请加 SaveBehavior.AllowOwnershipChange");
+                return $"{child.GetType().Name}.{nav.TargetColumns[i].PropertyName} 的值 {current} 不等于 {nav}，应为 {should}：要把子对象挂到别的父对象，请加 SaveBehavior.AllowOwnershipChange";
         }
+        return null;
     }
 
     // 外键没设：null，或非空值类型属性的默认值（long 的 0、Guid.Empty）。Java 的外键是包装类型，没设就是 null
@@ -295,10 +307,13 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
 
     // 新建的对象沿用了已追踪实体的主键（可能来自聚合里的任何位置）：换成那个已追踪的实例，
     // 于是它按快照差异更新、挂到了别处时改外键，而不是再插入一次（与 Java 按主键认对象一致）
-    private object Canonical(object child)
+    private object Canonical(object child, object parent, NavigationMetadata nav)
     {
         if (db.Tracker.Find(child) is not null || db.Tracker.TrackKeyOf(child) is not { } key || db.Tracker.FindByKey(key) is not { } entry)
             return child;
+        // 合并会用新对象（外键常常没设）覆盖已追踪实例的外键：先记下它原来是否属于别的父对象，规划完后
+        // 原父对象在这次保存里拿掉了它（移动）就没问题，否则报错
+        if (OwnershipConflict(parent, nav, entry.Current) is { } conflict) _foreignOwned[entry.Current] = conflict;
         Merge(child, entry.Current);
         return entry.Current;
     }
@@ -380,6 +395,8 @@ internal sealed class SavePlan(EasyDb db, SaveBehavior behavior, List<HashSet<st
         foreach (var (orphan, work, depth) in _orphans)
             if (orphans.Contains(orphan)) Delete(orphan, work, depth);
         foreach (var root in _removedRoots) DeleteChildren(root, depth: 1);
+        foreach (var child in _inserted.Keys)
+            if (_foreignOwned.TryGetValue(child, out var conflict)) throw new InvalidOperationException(conflict);
     }
 
     private void Delete(object entity, NavigationWork work, int depth)
