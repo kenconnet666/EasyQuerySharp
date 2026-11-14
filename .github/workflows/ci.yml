@@ -5,6 +5,7 @@
 #   core      SQLite + MySQL 8.4 + PostgreSQL 17，按测试项目 / 命名空间拆成并行的几片；进程内的 DuckDB 不需要服务，随这几片一起跑
 #   checks    对照表与文档卡片快照，不连库
 #   pack      打出 src 下的 NuGet 包与符号包，上传成 artifact，不推送（发布见 release.yml，推 v* tag 触发）
+#   aot       文档卡片按 JIT 与 Native AOT 各跑一遍，结果必须一致（tests/EasyQuerySharp.Tests.Aot/run.sh）
 #   其余任务  只跑实库测试项目，每个任务一种数据库；本地按需用 infra/dev 的 profile 复现
 # 镜像版本与 digest 和 infra/dev/compose.yaml 保持一致。密码只用于 CI 里的临时容器。
 name: CI
@@ -128,6 +129,29 @@ jobs:
           path: artifacts/packages
           if-no-files-found: error
           retention-days: 14
+
+  # Native AOT：文档卡片在 SQLite 上按 JIT 与 Native AOT 各跑一遍，结果逐行一致，发布时没有意外的裁剪 / AOT 警告（见 tests/EasyQuerySharp.Tests.Aot）
+  aot:
+    name: Native AOT (doc cards on SQLite)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      # ubuntu 的托管镜像自带 clang 与 zlib，Native AOT 不用另装工具链
+      - name: JIT vs Native AOT
+        run: bash tests/EasyQuerySharp.Tests.Aot/run.sh artifacts/aot
+      - name: Upload outputs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: aot
+          path: |
+            artifacts/aot/*.txt
+            artifacts/aot/publish.log
+          retention-days: 7
 
   # 生产 PolarDB MySQL 版的内核版本基线：MySQL 方言不能用到 8.0.19+ 的写法
   mysql8018:
@@ -310,7 +334,7 @@ jobs:
 
 
   # SAP HANA Express 2.0。镜像要自建（infra/dev/hana：启动时接受 SAP 开发者许可、裁掉测试用不到的服务），不能当服务容器，
-  # 用 infra/dev 的 compose 起，内存上限只在 compose 里写一处（runner 有 16 GB）。首次启动要初始化库，约 8 分钟，与客户端下载、构建并行。
+  # 用 infra/dev 的 compose 起，内存上限只在 compose 里写一处（runner 有 16 GB）。首次启动要初始化库，约 8 分钟；初始化好的数据卷按镜像与密码缓存，命中时不到 1 分钟。
   # ADO.NET 驱动随 HANA 客户端发布、不在 nuget.org：从 SAP Development Tools 下载固定版本的 Linux 客户端（同样接受 SAP 开发者许可），按版本缓存，
   # 用 EQS_HANA_DRIVER 指给 TestKit 在运行时加载。Upstream 项目里只有 fork 的 HANA 用例连库，其余用例与 core 任务重复但不连库，开销不大。
   hana:
@@ -325,11 +349,19 @@ jobs:
       EQS_HANA_DRIVER: ${{ github.workspace }}/.hdbclient/dotnetcore
     steps:
       - uses: actions/checkout@v7
+      # 首次启动要初始化系统库与租户库（约 7 分钟），带着初始化好的数据卷启动不到 1 分钟：按镜像与密码缓存初始化好的卷
+      # （infra/dev/hana/volume.sh，压缩后约 100 MB），命中就恢复再启动，没命中照常初始化、测试之后存起来
+      - name: Restore the initialized HANA volume
+        id: volume
+        uses: actions/cache/restore@v6
+        with:
+          path: .hana-volume
+          key: hana-volume-${{ hashFiles('infra/dev/hana/**') }}-${{ env.EQS_DEV_HANA_PASSWORD }}
+      # db.sh 首次运行生成 .local/db.env（其余库的密码，这些库不会启动）；环境变量里的 HANA 密码优先
       - name: Start HANA Express
-        # compose 会对整个文件做变量替换，其余服务的密码变量也要有值（这些服务不会启动）
         run: |
-          grep -o 'EQS_DEV_[A-Z0-9]*_PASSWORD' infra/dev/compose.yaml | sort -u | sed "s/$/=$EQS_DEV_HANA_PASSWORD/" > "$RUNNER_TEMP/db.env"
-          docker compose -f infra/dev/compose.yaml --env-file "$RUNNER_TEMP/db.env" --profile hana up -d --build hana
+          if [[ -f .hana-volume/volume.tar.gz ]]; then bash infra/dev/hana/volume.sh restore .hana-volume/volume.tar.gz; fi
+          bash infra/dev/db.sh --profile hana up -d --build hana
       - name: Cache HANA client
         id: hana-client
         uses: actions/cache@v6
@@ -348,8 +380,9 @@ jobs:
           "$installer" --batch --path="$GITHUB_WORKSPACE/.hdbclient"
           ls "$EQS_HANA_DRIVER"/v10.0/Sap.Data.Hana.Net.v10.0.dll
       - name: Wait for HANA
+        id: wait
         run: |
-          container=$(docker compose -f infra/dev/compose.yaml --env-file "$RUNNER_TEMP/db.env" --profile hana ps -q hana)
+          container=$(bash infra/dev/db.sh --profile hana ps -q hana)
           for _ in $(seq 1 120); do
             status=$(docker inspect -f '{{.State.Health.Status}}' "$container")
             if [[ $status == healthy ]]; then docker stats --no-stream "$container"; exit 0; fi
@@ -362,6 +395,16 @@ jobs:
           require-dbs: hana
           project: tests/EasyQuerySharp.Tests.Live tests/EasyQuerySharp.Tests.Upstream
           report-name: test-results-hana
+      # 测试失败也存：卷是初始化的产物，与测试结果无关，下次不用再初始化
+      - name: Pack the initialized HANA volume
+        if: ${{ !cancelled() && steps.volume.outputs.cache-hit != 'true' && steps.wait.outcome == 'success' }}
+        run: bash infra/dev/hana/volume.sh save .hana-volume/volume.tar.gz
+      - name: Save the initialized HANA volume
+        if: ${{ !cancelled() && steps.volume.outputs.cache-hit != 'true' && steps.wait.outcome == 'success' }}
+        uses: actions/cache/save@v6
+        with:
+          path: .hana-volume
+          key: ${{ steps.volume.outputs.cache-primary-key }}
 
   # ClickHouse：ClickHouseLiveSuite（主键由应用给值的分析型冒烟）；连接串里的会话设置由套件自己追加
   clickhouse:
