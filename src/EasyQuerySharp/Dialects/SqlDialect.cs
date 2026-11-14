@@ -209,7 +209,7 @@ public abstract partial class SqlDialect
 
     /// <summary>
     /// 带隔离级别的事务结束后、连接还回池之前执行的语句，把隔离级别改回默认；为 null 时不执行。
-    /// 隔离级别是会话级、驱动归还连接时又不复原的库（HANA）要它，否则下一个借到这个连接的语句跟着用上一个事务的级别。
+    /// 隔离级别是会话级、驱动归还连接时又不复原的库（HANA、SQL Server）要它，否则下一个借到这个连接的语句跟着用上一个事务的级别。
     /// </summary>
     public virtual string? ResetIsolationSql => null;
 

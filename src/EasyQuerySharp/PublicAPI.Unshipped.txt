@@ -3,3 +3,4 @@ EasyQuerySharp.EasyDb.TransactionAsync<TResult>(System.Func<System.Threading.Tas
 EasyQuerySharp.Metadata.JsonValueConverter<T>.JsonValueConverter(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>! typeInfo) -> void
 virtual EasyQuerySharp.Dialects.SqlDialect.ResetIsolationSql.get -> string?
 override EasyQuerySharp.Dialects.HanaDialect.ResetIsolationSql.get -> string?
+override EasyQuerySharp.Dialects.SqlServerDialect.ResetIsolationSql.get -> string?

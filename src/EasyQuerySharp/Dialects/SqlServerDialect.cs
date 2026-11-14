@@ -16,6 +16,9 @@ public class SqlServerDialect : SqlDialect
     /// <inheritdoc />
     public override string Name => "mssql";
 
+    /// <summary>SqlClient 归还连接时不复原 BeginTransaction(级别) 改过的会话隔离级别（CI 上实测）。</summary>
+    public override string? ResetIsolationSql => "SET TRANSACTION ISOLATION LEVEL READ COMMITTED";
+
     /// <inheritdoc />
     public override string QuoteIdentifier(string identifier) => $"[{identifier}]";
 
