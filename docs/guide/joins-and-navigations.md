@@ -111,12 +111,14 @@ SELECT t.`name`,t1.`name` AS `manager`,t2.`name` AS `managers_manager` FROM `t_u
 
 | 写法 | SQL |
 |---|---|
-| `u.Posts.Any(p => …)` / `!u.Posts.Any(..)` | `EXISTS (…)` / `NOT EXISTS (…)` |
+| `u.Posts.Any(p => …)` / `!u.Posts.Any(..)`、`List` 的 `Exists(p => …)` | `EXISTS (…)` / `NOT EXISTS (…)` |
+| `u.Posts.Select(p => p.Title).Contains(v)` | `EXISTS (… AND title = ?)` |
 | `u.Posts.All(p => …)` | `NOT EXISTS (… AND NOT 条件)` |
 | `u.Posts.Count(..)`、`Sum` / `Max` / `Min` / `Average` | 标量子查询 |
 | `u.Posts.Where(..).OrderBy(..).Select(..)` 之后接上面的方法 | 子查询里的条件、排序 |
 | `string.Join("、", u.Posts.Select(p => p.Title))` | 子查询里的字符串聚合 |
 | `u.Posts.OrderBy(..).First()` / `ElementAt(n)` | 按父行分区编行号的派生表 JOIN，见下文 |
+| `u.Posts.MaxBy(p => p.Views)` / `MinBy`、`OrderBy(..).Last()` / `LastOrDefault()` | 同上：分别是倒序 / 正序后的第一个、排序反过来后的第一个（`Last` 前面要有排序） |
 
 <!-- card: navigate/AnyNone sql=mysql -->
 ```csharp

@@ -17,6 +17,8 @@
 | `string.IsNullOrEmpty(s)` / `IsNullOrWhiteSpace` | `s IS NULL OR s = ''` 等 | |
 | `string.Compare(a, b)` / `a.CompareTo(b)` | `CASE WHEN a = b THEN 0 …` | |
 | `s.Contains(x)` / `StartsWith` / `EndsWith` | `LIKE ?` | 值里的通配符按字面匹配 |
+| 带 `StringComparison` 的 `Contains` / `StartsWith` / `EndsWith` / `Equals`、`string.Equals(a, b, c)` | `LOWER(s) LIKE LOWER(?)`、`LOWER(a) = LOWER(b)` | 忽略大小写的比较方式（`OrdinalIgnoreCase` 等）两边转小写；区分大小写的照常比较，结果仍取决于库的排序规则 |
+| 枚举的 `e.ToString()` | `CASE e WHEN .. THEN '成员名' .. END` | 与 C# 一样是成员名，与枚举怎么存无关；可空枚举没有值时是空串 |
 | `s.LikeContains(x)` / `LikeStartsWith` / `LikeEndsWith` | `LIKE CONCAT('%',?,'%')` | Java 的 `contains` / `startsWith` / `endsWith` |
 | `s.Like(pattern)` / `NotLike` | `LIKE ?` | 通配符自己写 |
 
@@ -115,6 +117,7 @@ SELECT t.`user_id` FROM `t_profile` t WHERE (t.`website` IS NULL OR t.`website` 
 | `d.ToString("yyyy-MM-dd HH:mm:ss")` | 按格式转字符串，格式符按方言翻译（MySQL `DATE_FORMAT`、PG `TO_CHAR`、SQL Server `CONVERT`、SQLite `strftime`） |
 | `(end - start).Days` / `TotalDays` / `TotalHours` / `TotalMinutes` / `TotalSeconds` / `TotalMilliseconds` | 相差的整数单位（截断） |
 | `d.DateTrunc(DateTruncUnit.Month)` | 截断到年 / 季 / 月 / 周（周一起）/ 日 / 时 / 分 / 秒的起点 |
+| `d.Date`、`DateOnly.FromDateTime(d)` | 当天零点 / 日期部分 |
 | `Sql.Now()` / `Sql.UtcNow()` | 数据库的当前时间 |
 
 支持 `DateTime`、`DateTimeOffset`、`DateOnly`（`DateTruncUnit` 只对 `DateTime`）。
@@ -171,7 +174,11 @@ SELECT t1."month" AS "month",t1."orders" AS "orders" FROM (SELECT DATE_TRUNC('mo
 
 ## 数值
 
-`Math.Abs` / `Round` / `Floor` / `Ceiling` / `Truncate` / `Sign` / `Pow` / `Sqrt` / `Exp` / `Log` / `Log10` / 三角函数直接写；`Sql.Random()` 取随机数（多用于随机排序）。
+`Math.Abs` / `Round` / `Floor` / `Ceiling` / `Truncate` / `Sign` / `Pow` / `Sqrt` / `Exp` / `Log` / `Log10` / 三角函数直接写；`Math.Max` / `Min` 写成 `Sql.MaxColumns` / `MinColumns`，`Math.Clamp(x, lo, hi)` 写成两者的嵌套；`Sql.Random()` 取随机数（多用于随机排序）。
+
+两个整数相除与 C# 一样向零截断（`7 / 2` 是 3，`-7 / 2` 是 -3）：PG、SQL Server、SQLite 这类库的 `/` 本来就是整除，原样输出；MySQL 写 `DIV`，Oracle、达梦、DuckDB、openGauss、Kingbase 写 `TRUNC(a / b)`，HANA、ClickHouse、TDengine 用取模减掉余数再除。有一边是小数时照常是小数除法，要小数结果就先转换一边（`(decimal)a / b`）。
+
+`Math.Round(x)` 交给库的 `ROUND`：小数（`decimal`）在各库上都是远离零舍入（2.5 → 3），与 .NET 默认的银行家舍入（2.5 → 2）不同，浮点数按各库自己的规则；带 `MidpointRounding` 的重载报不支持。
 
 <!-- card: func/Numbers sql=mysql,mssql -->
 ```csharp
@@ -198,6 +205,7 @@ SELECT (t.[price] * t.[quantity]) AS [total],ROUND((t.[price] * ?),?) AS [rounde
 | C# | SQL | 说明 |
 |---|---|---|
 | `a ?? b` | `IFNULL` / `COALESCE` / `ISNULL` / `NVL` | |
+| `a.GetValueOrDefault()` / `GetValueOrDefault(v)` | 同上 | 没有值时是类型的默认值 / `v` |
 | `a.NullIf(b)` | `NULLIF(a, b)` | |
 | `a.EqualsNullSafe(b)` | MySQL `<=>`、PG `IS NOT DISTINCT FROM`、SQLite `IS`，其余展开成 OR | 两边都是 NULL 也算相等 |
 | `Sql.MaxColumns(a, b, ..)` / `MinColumns` | MySQL / PG `GREATEST` / `LEAST`，SQLite 多参数 `MAX` / `MIN`，SQL Server `VALUES` 派生表，Oracle / 达梦 `UNION ALL` 派生表 | 同一行里几个值取最大 / 最小 |

@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+### 新增
+
+- 终结方法 `AnyAsync` / `CountAsync` / `FirstAsync` / `FirstOrDefaultAsync` / `SingleAsync` / `SingleOrDefaultAsync` 可以直接带条件；新增 `AllAsync(条件)`、`ToArrayAsync()`、`ToDictionaryAsync(key)` / `ToDictionaryAsync(key, value)`。
+- 查询表达式里可以写 `Math.Max` / `Min` / `Clamp`、`d.Date`、`DateOnly.FromDateTime(d)`、可空值的 `GetValueOrDefault()` / `GetValueOrDefault(v)`。
+- 集合导航上可以写 `List` 的 `Exists(..)`、`Select(..).Contains(v)`、`MaxBy` / `MinBy`、排序后的 `Last()` / `LastOrDefault()`。
+
+### 变更
+
+- 两个整数相除与 C# 一样向零截断：MySQL 写 `DIV`，Oracle、达梦、DuckDB、openGauss、Kingbase 写 `TRUNC(a / b)`，HANA、ClickHouse、TDengine 减掉余数再除；原来这些库上 `/` 得到小数。PG、SQL Server、SQLite、Db2 的 SQL 不变。要小数结果时先转换一边（`(decimal)a / b`）。
+
 ### 修复
 
 - 带 `StringComparison` 的 `Contains` / `StartsWith` / `EndsWith` / `string.Equals` 原来丢掉比较方式写成普通的 `LIKE` / `=`（大小写是否敏感取决于库的排序规则，PG 上忽略大小写的比较查不到）；忽略大小写时现在两边转小写再比较。`string.Equals(a, b, StringComparison)` 与 `object.Equals(a, b)` 原来报不支持。

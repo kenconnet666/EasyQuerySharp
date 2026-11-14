@@ -78,6 +78,8 @@ public class GaussDbDialect : PostgreSqlDialect
         base.RegisterFunctions(f);
         // 条件当值：与 Java 的 GaussDBBooleanSQLFunction 一致
         f[SqlFunctionNames.BooleanValue] = CaseBoolean;
+        // 整数 / 整数得到小数（Oracle 兼容）
+        f[SqlFunctionNames.IntegerDivide] = IntegerDivideByTrunc;
         // 没有 LOG10（PG 12 才有）；单参数的 LOG 就是以 10 为底
         f[SqlFunctionNames.Log10] = Call("LOG");
     }

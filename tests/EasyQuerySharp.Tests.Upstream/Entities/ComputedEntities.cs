@@ -27,7 +27,7 @@ public class UserExtra
 
     private static Expression<Func<UserExtra, string?>> FullNameSql => u => string.Concat(u.FirstName, u.LastName);
 
-    private static Expression<Func<UserExtra, int?>> AgeSql => u => (int?)Math.Ceiling((double)((Sql.Now() - u.Birthday!.Value).Days / 365));
+    private static Expression<Func<UserExtra, int?>> AgeSql => u => (int?)Math.Ceiling((double)(Sql.Now() - u.Birthday!.Value).Days / 365);
 }
 
 /// <summary>对应 Java：entity/school/SchoolClassAggregate（学生数是计算列：关联学生的计数子查询）。</summary>

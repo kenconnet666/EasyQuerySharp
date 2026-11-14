@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using EasyQuerySharp.SqlAst;
 
 namespace EasyQuerySharp.Translation;
@@ -51,6 +52,12 @@ internal sealed partial class ExpressionTranslator
         {
             var (l, r) = TranslatePair(call.Object, call.Arguments[0]);
             return new BinaryExpr(l, SqlBinaryOperator.Equal, r);
+        }
+        // x.GetValueOrDefault() / GetValueOrDefault(v)：COALESCE(x, 类型的默认值 / v)
+        if (method.Name == nameof(Nullable<int>.GetValueOrDefault) && call.Object is { } nullable && Nullable.GetUnderlyingType(nullable.Type) is { } valueType)
+        {
+            var fallback = call.Arguments.Count == 1 ? Translate(call.Arguments[0]) : new ParameterExpr(RuntimeHelpers.GetUninitializedObject(valueType), valueType);
+            return new FunctionExpr(SqlFunctionNames.NullOrDefault, [Translate(nullable), fallback]);
         }
         // object.Equals(a, b)：两个值相等（两边按各自的类型翻译）
         if (method.DeclaringType == typeof(object) && method.Name == nameof(Equals) && method.IsStatic && call.Arguments.Count == 2)

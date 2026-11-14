@@ -182,6 +182,8 @@ public class SqliteDialect : SqlDialect
     {
         base.RegisterFunctions(f);
         f[SqlFunctionNames.Length] = Call("LENGTH");
+        // DateOnly 存成 'yyyy-MM-dd'：按天截断得到的 'yyyy-MM-dd 00:00:00' 与它比较不相等
+        f[SqlFunctionNames.ToDateOnly] = Call("date");
         // trunc 只有一个参数（截断到整数）；按小数位截断没有对应写法
         f[SqlFunctionNames.Truncate] = (r, a) =>
         {

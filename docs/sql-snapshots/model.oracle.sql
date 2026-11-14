@@ -16,7 +16,7 @@ UPDATE "t_shop" SET "geo_lat" = ? WHERE "id" = ?;
 -- params: [30.2, 2]
 
 -- ComputedColumn：计算列：查询时就地展开，条件里也能用
-SELECT "id","title","views",("views" / ?) AS "kilo_views" FROM "t_post" WHERE ("views" / ?) >= ? ORDER BY "id" ASC;
+SELECT "id","title","views",TRUNC("views" / ?) AS "kilo_views" FROM "t_post" WHERE TRUNC("views" / ?) >= ? ORDER BY "id" ASC;
 -- params: [1000, 1000, 2]
 
 -- NotAutoSelected：AutoSelect = false：查实体时不带这一列，显式选择才查

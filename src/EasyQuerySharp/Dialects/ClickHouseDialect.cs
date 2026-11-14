@@ -203,6 +203,8 @@ public class ClickHouseDialect : SqlDialect
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {
         base.RegisterFunctions(f);
+        // / 总是浮点除法：减掉余数再除
+        f[SqlFunctionNames.IntegerDivide] = IntegerDivideByModulo;
         // 与 Java 的 ClickHouseBooleanSQLFunction 一致
         f[SqlFunctionNames.BooleanValue] = CaseBoolean;
         f[SqlFunctionNames.InCsv] = Template("has(splitByChar(',',{1}),toString({0}))");

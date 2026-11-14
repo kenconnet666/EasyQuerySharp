@@ -6,16 +6,20 @@
 
 | 方法 | 结果 | 查不到时 |
 |---|---|---|
-| `ToListAsync()` | `List<T>` | 空列表 |
+| `ToListAsync()` / `ToArrayAsync()` | `List<T>` / `T[]` | 空 |
+| `ToDictionaryAsync(key)` / `ToDictionaryAsync(key, value)` | `Dictionary`，键在读出后对每一行求值，重复时抛 `ArgumentException` | 空字典 |
 | `FirstOrDefaultAsync()` / `SingleOrDefaultAsync()` | `T?` | null |
 | `FirstAsync()` / `SingleAsync()` | `T` | 抛 `NotFoundException`；可传消息或异常工厂 `FirstAsync("用户不存在")` |
 | `FindAsync(id)` / `FindOrThrowAsync(id, 消息?)` | 按主键取一行 | null / 抛 `NotFoundException` |
 | `AnyAsync()` / `EnsureAnyAsync(消息?)` | 有没有 | false / 抛 `NotFoundException` |
+| `AllAsync(条件)` | 是否每行都满足；条件是 NULL 的行算不满足，与 C# 一致 | true |
 | `CountAsync()`、`SumAsync` / `MaxAsync` / `MinAsync` / `AverageAsync` | 聚合值 | — |
 | `ToPageAsync(page, size)` | `Page<T>`：`Rows`、`Total`、`PageIndex`、`PageSize`、`PageCount` | — |
 | `AsAsyncEnumerable()` / `ToChunksAsync(n)` | 流式、分块读取 | — |
 | `ToRowsAsync()` / `FirstRowOrDefaultAsync()` | 读成 `DynamicRow`（按列名取值） | — |
 | `ToSql()` / `ToStatement()` | 只生成 SQL，不执行 | — |
+
+`AnyAsync`、`CountAsync`、`FirstAsync`、`FirstOrDefaultAsync`、`SingleAsync`、`SingleOrDefaultAsync` 也可以直接带条件，等于先 `Where(条件)`：`users.CountAsync(u => u.Age >= 18)`。
 
 `SingleAsync` 查到多行时抛 `InvalidOperationException`。没有消息时，`NotFoundException` 的消息取 `[Table(NotFoundMessage = ..)]`。
 

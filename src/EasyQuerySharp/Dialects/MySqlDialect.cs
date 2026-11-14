@@ -182,6 +182,8 @@ public class MySqlDialect : SqlDialect
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {
         base.RegisterFunctions(f);
+        // DIV 是整数相除、向零截断（/ 得到小数）
+        f[SqlFunctionNames.IntegerDivide] = (r, a) => r.Append("(").Write(a[0]).Append(" DIV ").Write(a[1]).Append(")");
         f[SqlFunctionNames.NullOrDefault] = Call("IFNULL");
         // MySQL 的 LPAD / RPAD 必须给填充字符（Java 不给时写两个参数，执行不了）
         f[SqlFunctionNames.PadLeft] = Pad("LPAD", "' '");

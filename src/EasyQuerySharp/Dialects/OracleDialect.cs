@@ -264,6 +264,8 @@ public class OracleDialect : SqlDialect
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {
         base.RegisterFunctions(f);
+        // NUMBER 相除得到小数，TRUNC 向零截断
+        f[SqlFunctionNames.IntegerDivide] = IntegerDivideByTrunc;
         f[SqlFunctionNames.BooleanValue] = CaseBoolean;
         f[SqlFunctionNames.Log10] = Template("LOG(10,{0})");
         foreach (var (unit, format) in new[] { (DateTruncUnit.Year, "YYYY"), (DateTruncUnit.Quarter, "Q"), (DateTruncUnit.Month, "MM"), (DateTruncUnit.Week, "IW"), (DateTruncUnit.Day, "DD"), (DateTruncUnit.Hour, "HH24"), (DateTruncUnit.Minute, "MI") })

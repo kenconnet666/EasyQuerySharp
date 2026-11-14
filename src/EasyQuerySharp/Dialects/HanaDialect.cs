@@ -177,6 +177,8 @@ public class HanaDialect : SqlDialect
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {
         base.RegisterFunctions(f);
+        // 整数相除得到小数：减掉余数再除
+        f[SqlFunctionNames.IntegerDivide] = IntegerDivideByModulo;
         // 不能直接把条件当值选出来；三个分支保留 NULL（与 Java fork 一致）
         f[SqlFunctionNames.BooleanValue] = Template("(CASE WHEN {0} THEN TRUE WHEN NOT ({0}) THEN FALSE ELSE NULL END)");
         f[SqlFunctionNames.Concat] = PairwiseConcat;

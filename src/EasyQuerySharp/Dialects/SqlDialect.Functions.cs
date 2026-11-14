@@ -69,6 +69,8 @@ public abstract partial class SqlDialect
         f[SqlFunctionNames.Ln] = Call("LN");
         f[SqlFunctionNames.LogBase] = Reordered("LOG", 1, 0);
         f[SqlFunctionNames.Truncate] = WithDigits("TRUNC");
+        f[SqlFunctionNames.IntegerDivide] = (r, a) => r.Append("(").Write(a[0]).Append(" / ").Write(a[1]).Append(")");
+        f[SqlFunctionNames.ToDateOnly] = (r, a) => r.Write(new FunctionExpr(SqlFunctionNames.DateTrunc(DateTruncUnit.Day), a));
         f[SqlFunctionNames.CountDistinct] = Distinct("COUNT");
         f[SqlFunctionNames.SumDistinct] = Distinct("SUM");
         f[SqlFunctionNames.AvgDistinct] = Distinct("AVG");
@@ -235,6 +237,20 @@ public abstract partial class SqlDialect
         else r.Append("0");
         r.Append(")");
     };
+
+    /// <summary>
+    /// 整数相除写成 <c>((a - a % b) / b)</c>：被除数先减掉余数，再除得到的就是整数，相除得到小数的库也对；
+    /// 余数与 C# 一样跟被除数同号，所以结果向零截断。取余按方言写（<see cref="SqlDialect.WriteModulo"/>）。
+    /// </summary>
+    protected static FunctionWriter IntegerDivideByModulo => (r, a) =>
+    {
+        r.Append("((").Write(a[0]).Append(" - ");
+        r.Dialect.WriteModulo(r, a[0], a[1]);
+        r.Append(") / ").Write(a[1]).Append(")");
+    };
+
+    /// <summary>整数相除写成 <c>TRUNC(a / b)</c>：给 <c>/</c> 得到小数、又有向零截断的 <c>TRUNC</c> 的库用（<c>/</c> 本来就整除时 TRUNC 不改变结果）。</summary>
+    protected static FunctionWriter IntegerDivideByTrunc => (r, a) => r.Append("TRUNC(").Write(a[0]).Append(" / ").Write(a[1]).Append(")");
 
     /// <summary>按模板输出：<c>{n}</c> 处写第 n 个参数，其余原样。</summary>
     protected static FunctionWriter Template(string template) => (r, a) =>

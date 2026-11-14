@@ -42,6 +42,7 @@ internal sealed partial class ExpressionTranslator
     public SqlExpr Translate(Expression expression)
     {
         if (!ClientEvaluator.MustTranslate(expression)) return Parameter(ClientEvaluator.Evaluate(expression), expression.Type);
+        expression = LinqNormalizer.Rewrite(expression);
 
         return expression switch
         {
@@ -269,6 +270,9 @@ internal sealed partial class ExpressionTranslator
         }
 
         var (left, right) = TranslatePair(b.Left, b.Right);
+        // 整数相除按 C# 的语义向零截断：有的库（MySQL、Oracle、DuckDB…）整数相除得到小数，由方言改写
+        if (op == SqlBinaryOperator.Divide && Type.GetTypeCode(Nullable.GetUnderlyingType(b.Type) ?? b.Type) is >= TypeCode.SByte and <= TypeCode.UInt64)
+            return new FunctionExpr(SqlFunctionNames.IntegerDivide, [left, right]);
         return new BinaryExpr(left, op, right);
     }
 

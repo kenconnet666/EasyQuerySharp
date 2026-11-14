@@ -30,6 +30,8 @@ public class KingbaseDialect : PostgreSqlDialect
     {
         base.RegisterFunctions(f);
         f[SqlFunctionNames.BooleanValue] = CaseBoolean;
+        // Oracle 兼容模式下整数 / 整数得到小数；PG 模式下 TRUNC 不改变结果
+        f[SqlFunctionNames.IntegerDivide] = IntegerDivideByTrunc;
         // Oracle 兼容模式的 CONCAT 只接受两个参数，多个参数两两嵌套：CONCAT(CONCAT(a,b),c)（与 Java 的 KingbaseESConcatSQLFunction 一致）
         f[SqlFunctionNames.Concat] = (r, a) =>
         {

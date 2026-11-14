@@ -1,1 +1,15 @@
 #nullable enable
+const EasyQuerySharp.SqlAst.SqlFunctionNames.IntegerDivide = "IntegerDivide" -> string!
+static EasyQuerySharp.Dialects.SqlDialect.IntegerDivideByModulo.get -> EasyQuerySharp.Dialects.FunctionWriter!
+static EasyQuerySharp.Dialects.SqlDialect.IntegerDivideByTrunc.get -> EasyQuerySharp.Dialects.FunctionWriter!
+EasyQuerySharp.Querying.Query<T>.AllAsync(System.Linq.Expressions.Expression<System.Func<T, bool>!>! predicate, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+EasyQuerySharp.Querying.Query<T>.AnyAsync(System.Linq.Expressions.Expression<System.Func<T, bool>!>! predicate, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+EasyQuerySharp.Querying.Query<T>.CountAsync(System.Linq.Expressions.Expression<System.Func<T, bool>!>! predicate, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<long>!
+EasyQuerySharp.Querying.Query<T>.FirstAsync(System.Linq.Expressions.Expression<System.Func<T, bool>!>! predicate, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T>!
+EasyQuerySharp.Querying.Query<T>.FirstOrDefaultAsync(System.Linq.Expressions.Expression<System.Func<T, bool>!>! predicate, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T?>!
+EasyQuerySharp.Querying.Query<T>.SingleAsync(System.Linq.Expressions.Expression<System.Func<T, bool>!>! predicate, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T>!
+EasyQuerySharp.Querying.Query<T>.SingleOrDefaultAsync(System.Linq.Expressions.Expression<System.Func<T, bool>!>! predicate, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T?>!
+EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToArrayAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TElement[]!>!
+EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToDictionaryAsync<TKey, TValue>(System.Func<TElement, TKey>! keySelector, System.Func<TElement, TValue>! valueSelector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<TKey, TValue>!>!
+EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToDictionaryAsync<TKey>(System.Func<TElement, TKey>! keySelector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<TKey, TElement>!>!
+const EasyQuerySharp.SqlAst.SqlFunctionNames.ToDateOnly = "ToDateOnly" -> string!

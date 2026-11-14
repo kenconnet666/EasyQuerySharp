@@ -261,6 +261,40 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     /// <summary>INNER JOIN 一个子查询（作为派生表）。</summary>
     public Query<T, T2> InnerJoin<T2>(Query<T2> subQuery, Expression<Func<T, T2, bool>> on) => Join<T2>(JoinKind.Inner, subQuery.State.AsJoinSource(), on);
 
+    /// <summary>有没有满足 <paramref name="predicate"/> 的行（等同 <c>Where(predicate).AnyAsync()</c>）。</summary>
+    public Task<bool> AnyAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default) =>
+        Where(predicate).AnyAsync(cancellationToken);
+
+    /// <summary>
+    /// 是否每一行都满足 <paramref name="predicate"/>：没有不满足的行（没有行时为 true，与 LINQ 一致）。条件在库里是 NULL 的行
+    /// （如 <c>u.Age &gt; 10</c> 碰到 NULL）按 C# 的语义算不满足，写成 <c>CASE WHEN 条件 THEN 1 ELSE 0 END = 0</c> 而不是 <c>NOT 条件</c>。
+    /// </summary>
+    public async Task<bool> AllAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        var failing = Expression.Equal(Expression.Condition(predicate.Body, Expression.Constant(1), Expression.Constant(0)), Expression.Constant(0));
+        return !await Where(Expression.Lambda<Func<T, bool>>(failing, predicate.Parameters)).AnyAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>满足 <paramref name="predicate"/> 的行数（等同 <c>Where(predicate).CountAsync()</c>）。</summary>
+    public Task<long> CountAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default) =>
+        Where(predicate).CountAsync(cancellationToken);
+
+    /// <summary>第一行满足 <paramref name="predicate"/> 的（等同 <c>Where(predicate).FirstAsync()</c>）；没有时抛出 <see cref="NotFoundException"/>。</summary>
+    public Task<T> FirstAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default) =>
+        Where(predicate).FirstAsync(cancellationToken);
+
+    /// <summary>第一行满足 <paramref name="predicate"/> 的（等同 <c>Where(predicate).FirstOrDefaultAsync()</c>）；没有时返回 null。</summary>
+    public Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default) =>
+        Where(predicate).FirstOrDefaultAsync(cancellationToken);
+
+    /// <summary>唯一满足 <paramref name="predicate"/> 的一行（等同 <c>Where(predicate).SingleAsync()</c>）。</summary>
+    public Task<T> SingleAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default) =>
+        Where(predicate).SingleAsync(cancellationToken);
+
+    /// <summary>唯一满足 <paramref name="predicate"/> 的一行，没有时返回 null（等同 <c>Where(predicate).SingleOrDefaultAsync()</c>）。</summary>
+    public Task<T?> SingleOrDefaultAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default) =>
+        Where(predicate).SingleOrDefaultAsync(cancellationToken);
+
     /// <summary>按主键查一行（主键至多一行，不加 LIMIT）；没有时返回 null（对应 Java 的 findOrNull）。</summary>
     public Task<T?> FindAsync(object id, CancellationToken cancellationToken = default) => WhereById(id).SingleOrDefaultAsync(cancellationToken);
 

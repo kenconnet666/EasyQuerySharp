@@ -9,6 +9,9 @@ public sealed class QueryTest15(MySqlFixture fixture) : MySqlTest(fixture)
     // Java 的学生数子查询写成 select(Long.class, s -> s.columnCount("id"))，COUNT 列多了 AS `id`；C# 的计算列是普通的计数子查询
     private const string CountAlias = "Java 的学生数子查询里 COUNT 列带 AS `id`、且多占一个别名编号（selectColumn 建的匿名表）；C# 的计算列写成 Select(s => s.Id).Count()，不写别名、不跳号";
 
+    // 年龄计算列：C# 两个整数相除向零截断，要得到 Java 在 MySQL 上的小数除法要先转 double，365 随之是 Double 参数
+    private const string AgeDivisor = "年龄计算列写成 (double)天数 / 365（C# 两个整数相除向零截断，Java 的 / 在 MySQL 上是小数除法），参数 365 是 Double，Java 是 Integer";
+
     // Java 的子查询多建了一张匿名表：学生表是 t2、外层派生表是 t3；C# 依次是 t1、t2
     private static string WithoutCountAlias(string javaSql) => javaSql
         .Replace("(SELECT COUNT(t2.`id`) AS `id` FROM `school_student` t2 WHERE t2.`class_id`", "(SELECT COUNT(t1.`id`) FROM `school_student` t1 WHERE t1.`class_id`", StringComparison.Ordinal)
@@ -42,33 +45,33 @@ public sealed class QueryTest15(MySqlFixture fixture) : MySqlTest(fixture)
     }
 
     // 计算列在 SELECT 里写成表达式 AS 列名，条件里展开成表达式
-    [Fact, Upstream("QueryTest15.java#test1", Deviation = CountAlias)]
+    [Fact, Upstream("QueryTest15.java#test1", Deviation = CountAlias + "；" + AgeDivisor)]
     public async Task Test1()
     {
         string[] names = ["1", "2"];
         using var listen = SqlCapture.Listen();
         await Db.Query<UserExtra>().Where(u => u.FullName!.Contains("123") && names.Contains(u.FullName) && u.Age > 12).ToListAsync(Ct);
         listen.AssertSql("SELECT `id`,`first_name`,`last_name`,`birthday`,CONCAT(`first_name`,`last_name`) AS `full_name`,CEILING((timestampdiff(DAY, `birthday`, NOW()) / ?)) AS `age` FROM `t_user_extra` WHERE CONCAT(`first_name`,`last_name`) LIKE ? AND CONCAT(`first_name`,`last_name`) IN (?,?) AND CEILING((timestampdiff(DAY, `birthday`, NOW()) / ?)) > ?");
-        listen.AssertParams("365(Integer),%123%(String),1(String),2(String),365(Integer),12(Integer)");
+        listen.AssertParams("365(Double),%123%(String),1(String),2(String),365(Double),12(Integer)");
         await Db.Query<UserExtra>().Where(u => u.FullName!.Contains("123") && names.Contains(u.FullName) && u.Age > 12)
             .Select(u => new UserExtraDto { Id = u.Id, FirstName = u.FirstName, LastName = u.LastName, Birthday = u.Birthday, FullName = u.FullName, Age = u.Age })
             .ToListAsync(Ct);
         listen.AssertSql("SELECT t.`id`,t.`first_name`,t.`last_name`,t.`birthday`,CONCAT(t.`first_name`,t.`last_name`) AS `full_name`,CEILING((timestampdiff(DAY, t.`birthday`, NOW()) / ?)) AS `age` FROM `t_user_extra` t WHERE CONCAT(t.`first_name`,t.`last_name`) LIKE ? AND CONCAT(t.`first_name`,t.`last_name`) IN (?,?) AND CEILING((timestampdiff(DAY, t.`birthday`, NOW()) / ?)) > ?");
-        listen.AssertParams("365(Integer),%123%(String),1(String),2(String),365(Integer),12(Integer)");
+        listen.AssertParams("365(Double),%123%(String),1(String),2(String),365(Double),12(Integer)");
         await Db.Query<SchoolClassAggregate>().Where(u => u.Name!.Contains("123"))
             .Select(u => new SchoolClassAggregateDto { Id = u.Id, Name = u.Name, StudentSize = u.StudentSize }).ToListAsync(Ct);
         listen.AssertSql(WithoutCountAlias("SELECT t.`id`,t.`name`,(SELECT COUNT(t1.`id`) AS `id` FROM `school_student` t1 WHERE t1.`class_id` = t.`id`) AS `student_size` FROM `school_class` t WHERE t.`name` LIKE ?"));
         listen.AssertParams("%123%(String)");
     }
 
-    [Fact, Upstream("QueryTest15.java#testSimple")]
+    [Fact, Upstream("QueryTest15.java#testSimple", Deviation = AgeDivisor)]
     public async Task TestSimple()
     {
         string[] names = ["1", "2"];
         using var listen = SqlCapture.Listen();
         await Db.Query<UserExtra>().Where(u => u.FullName!.Contains("123") && names.Contains(u.FullName) && u.Age > 12).ToListAsync(Ct);
         listen.AssertSql("SELECT `id`,`first_name`,`last_name`,`birthday`,CONCAT(`first_name`,`last_name`) AS `full_name`,CEILING((timestampdiff(DAY, `birthday`, NOW()) / ?)) AS `age` FROM `t_user_extra` WHERE CONCAT(`first_name`,`last_name`) LIKE ? AND CONCAT(`first_name`,`last_name`) IN (?,?) AND CEILING((timestampdiff(DAY, `birthday`, NOW()) / ?)) > ?");
-        listen.AssertParams("365(Integer),%123%(String),1(String),2(String),365(Integer),12(Integer)");
+        listen.AssertParams("365(Double),%123%(String),1(String),2(String),365(Double),12(Integer)");
     }
 
     [Fact, Upstream("QueryTest15.java#test1_1", Deviation = CountAlias)]
@@ -108,7 +111,7 @@ public sealed class QueryTest15(MySqlFixture fixture) : MySqlTest(fixture)
     }
 
     // 计算列写入时跳过，查回时算出
-    [Fact, Upstream("QueryTest15.java#test2")]
+    [Fact, Upstream("QueryTest15.java#test2", Deviation = AgeDivisor)]
     public async Task Test2()
     {
         await Db.Delete<UserExtra>().WhereById("test2").ExecuteAsync(Ct);
@@ -118,7 +121,7 @@ public sealed class QueryTest15(MySqlFixture fixture) : MySqlTest(fixture)
             using var listen = SqlCapture.Listen();
             var list = await Db.Query<UserExtra>().Where(u => u.Id == "test2" && u.FullName!.Contains("悟")).ToListAsync(Ct);
             listen.AssertSql("SELECT `id`,`first_name`,`last_name`,`birthday`,CONCAT(`first_name`,`last_name`) AS `full_name`,CEILING((timestampdiff(DAY, `birthday`, NOW()) / ?)) AS `age` FROM `t_user_extra` WHERE `id` = ? AND CONCAT(`first_name`,`last_name`) LIKE ?");
-            listen.AssertParams("365(Integer),test2(String),%悟%(String)");
+            listen.AssertParams("365(Double),test2(String),%悟%(String)");
             var user = Assert.Single(list);
             Assert.Equal("孙悟空", user.FullName);
             Assert.True(user.Age > 4);
@@ -129,7 +132,7 @@ public sealed class QueryTest15(MySqlFixture fixture) : MySqlTest(fixture)
         }
     }
 
-    [Fact, Upstream("QueryTest15.java#test3")]
+    [Fact, Upstream("QueryTest15.java#test3", Deviation = AgeDivisor)]
     public async Task Test3()
     {
         await Db.Delete<UserExtra>().WhereById("test3").ExecuteAsync(Ct);
@@ -140,7 +143,7 @@ public sealed class QueryTest15(MySqlFixture fixture) : MySqlTest(fixture)
             var list = await Db.Query<UserExtra>().Where(u => u.Id == "test3" && u.FullName!.Contains("悟"))
                 .OrderBy(x => x.FullName).ThenBy(x => x.Age).ThenBy(x => Sql.NullsLast(x.FullName)).ToListAsync(Ct);
             listen.AssertSql("SELECT `id`,`first_name`,`last_name`,`birthday`,CONCAT(`first_name`,`last_name`) AS `full_name`,CEILING((timestampdiff(DAY, `birthday`, NOW()) / ?)) AS `age` FROM `t_user_extra` WHERE `id` = ? AND CONCAT(`first_name`,`last_name`) LIKE ? ORDER BY CONCAT(`first_name`,`last_name`) ASC,CEILING((timestampdiff(DAY, `birthday`, NOW()) / ?)) ASC,CASE WHEN CONCAT(`first_name`,`last_name`) IS NULL THEN 1 ELSE 0 END ASC,CONCAT(`first_name`,`last_name`) ASC");
-            listen.AssertParams("365(Integer),test3(String),%悟%(String),365(Integer)");
+            listen.AssertParams("365(Double),test3(String),%悟%(String),365(Double)");
             var user = Assert.Single(list);
             Assert.Equal("孙悟空", user.FullName);
             Assert.True(user.Age > 4);
@@ -152,7 +155,7 @@ public sealed class QueryTest15(MySqlFixture fixture) : MySqlTest(fixture)
     }
 
     // 计算列作分组键与聚合的值
-    [Fact, Upstream("QueryTest15.java#test4")]
+    [Fact, Upstream("QueryTest15.java#test4", Deviation = AgeDivisor)]
     public async Task Test4()
     {
         using var listen = SqlCapture.Listen();
@@ -160,17 +163,17 @@ public sealed class QueryTest15(MySqlFixture fixture) : MySqlTest(fixture)
             .GroupBy(u => new { u.Age, u.FullName })
             .Select(g => new Draft<int?, string?, string?>(g.Key.Age, g.Key.FullName, g.Max(x => x.FullName))).ToListAsync(Ct);
         listen.AssertSql("SELECT CEILING((timestampdiff(DAY, t.`birthday`, NOW()) / ?)) AS `value1`,CONCAT(t.`first_name`,t.`last_name`) AS `value2`,MAX(CONCAT(t.`first_name`,t.`last_name`)) AS `value3` FROM `t_user_extra` t WHERE t.`id` = ? AND CONCAT(t.`first_name`,t.`last_name`) LIKE ? GROUP BY CEILING((timestampdiff(DAY, t.`birthday`, NOW()) / ?)),CONCAT(t.`first_name`,t.`last_name`)");
-        listen.AssertParams("365(Integer),test3(String),%悟%(String),365(Integer)");
+        listen.AssertParams("365(Double),test3(String),%悟%(String),365(Double)");
     }
 
     // 计算列用在 JOIN 的 ON、条件、排序里
-    [Fact, Upstream("QueryTest15.java#test5")]
+    [Fact, Upstream("QueryTest15.java#test5", Deviation = AgeDivisor)]
     public async Task Test5()
     {
         using var listen = SqlCapture.Listen();
         await Db.Query<UserExtra>().LeftJoin<BlogEntity>((u, b2) => u.FullName == b2.Id).Where((u1, b2) => u1.FullName == "123").OrderBy((u1, b2) => u1.FullName).ToListAsync(Ct);
         listen.AssertSql("SELECT t.`id`,t.`first_name`,t.`last_name`,t.`birthday`,CONCAT(t.`first_name`,t.`last_name`) AS `full_name`,CEILING((timestampdiff(DAY, t.`birthday`, NOW()) / ?)) AS `age` FROM `t_user_extra` t LEFT JOIN `t_blog` t1 ON t1.`deleted` = ? AND CONCAT(t.`first_name`,t.`last_name`) = t1.`id` WHERE CONCAT(t.`first_name`,t.`last_name`) = ? ORDER BY CONCAT(t.`first_name`,t.`last_name`) ASC");
-        listen.AssertParams("365(Integer),false(Boolean),123(String)");
+        listen.AssertParams("365(Double),false(Boolean),123(String)");
     }
 
     [Fact, Upstream("QueryTest15.java#test6")]

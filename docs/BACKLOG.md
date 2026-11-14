@@ -34,3 +34,4 @@
 - 二级缓存的多实例本机层失效通知（TS 的 CacheTransport、Java 的 Redis 发布订阅）：1.0 靠 `LocalCacheExpiration` 兜底（0007 §8），要更及时时再做，或等带 backplane 的 HybridCache 实现。
 - 二级缓存同一实例里同时的未命中各查一次库：HybridCache 的工厂里不能查库（AsyncLocal 不流动，见 0007 末尾），要合并时自己按键做单飞；小表的 all 一般用不上。
 - 依赖注入包自动接上容器里的 `IWriteListener`（像 `IExecutionListener` 那样）：现在在配置函数里写 `o.UseCache(sp.GetRequiredService<EasyCache>())`；有第二种写入监听器的需求时再加。
+- 还不翻译的 C# / LINQ 写法（翻译时报不支持）：`TimeSpan` 的 `TimeOfDay`、`Enum.HasFlag`、bool 的 `^`、字符串下标 `s[0]` / `Split` / `LastIndexOf`；集合导航上 `Skip` / `Take` 之后再 `Select`、`DefaultIfEmpty`、嵌套 `SelectMany`；查询语法的 `join … into`；`Intersect` / `Except`（MySQL 8.0.18 基线没有）。最终投影里调用客户端方法也不会自动改成读出后求值，要写 `Sql.ClientSide`。有人用到时再逐个补。

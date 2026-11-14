@@ -177,6 +177,8 @@ public class TDengineDialect : SqlDialect
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {
         base.RegisterFunctions(f);
+        // / 总是浮点除法：减掉余数再除
+        f[SqlFunctionNames.IntegerDivide] = IntegerDivideByModulo;
         // 与 Java 的 TSDBMaxMinColumnsSQLFunction 一致
         f[SqlFunctionNames.MaxColumns] = Call("GREATEST");
         f[SqlFunctionNames.MinColumns] = Call("LEAST");

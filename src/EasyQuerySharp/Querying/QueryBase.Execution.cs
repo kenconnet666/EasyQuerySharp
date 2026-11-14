@@ -100,6 +100,20 @@ public abstract partial class QueryBase<TSelf, TElement>
         return list.Count == 0 ? null : list[0];
     }
 
+    /// <summary>执行查询，结果放进数组。</summary>
+    public async Task<TElement[]> ToArrayAsync(CancellationToken cancellationToken = default) =>
+        [.. await ToListAsync(cancellationToken).ConfigureAwait(false)];
+
+    /// <summary>执行查询，按 <paramref name="keySelector"/>（在内存里对每一行求值）放进字典；键重复时抛出 <see cref="ArgumentException"/>（与 LINQ 一致）。</summary>
+    public async Task<Dictionary<TKey, TElement>> ToDictionaryAsync<TKey>(Func<TElement, TKey> keySelector, CancellationToken cancellationToken = default)
+        where TKey : notnull =>
+        (await ToListAsync(cancellationToken).ConfigureAwait(false)).ToDictionary(keySelector);
+
+    /// <summary>同 <see cref="ToDictionaryAsync{TKey}(Func{TElement, TKey}, CancellationToken)"/>，值取 <paramref name="valueSelector"/>。</summary>
+    public async Task<Dictionary<TKey, TValue>> ToDictionaryAsync<TKey, TValue>(Func<TElement, TKey> keySelector, Func<TElement, TValue> valueSelector,
+        CancellationToken cancellationToken = default) where TKey : notnull =>
+        (await ToListAsync(cancellationToken).ConfigureAwait(false)).ToDictionary(keySelector, valueSelector);
+
     /// <summary>第一行（追加 LIMIT 1）；没有时返回 null（对应 Java 的 firstOrNull）。</summary>
     public async Task<TElement?> FirstOrDefaultAsync(CancellationToken cancellationToken = default)
     {

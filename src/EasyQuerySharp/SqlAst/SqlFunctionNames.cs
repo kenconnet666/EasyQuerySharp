@@ -159,6 +159,12 @@ public static class SqlFunctionNames
     /// <summary>(x, [digits])：截断。</summary>
     public const string Truncate = "Truncate";
 
+    /// <summary>(a, b)：整数相除，结果向零截断（C# 的 <c>int / int</c>）；默认写 <c>(a / b)</c>，相除得到小数的库由方言改写。</summary>
+    public const string IntegerDivide = "IntegerDivide";
+
+    /// <summary>(x)：日期时间的日期部分（<c>DateOnly.FromDateTime(x)</c>）；默认按天截断，日期存成文本的库（SQLite）写成只有日期的文本。</summary>
+    public const string ToDateOnly = "ToDateOnly";
+
     /// <summary>(y, x)：点 (x, y) 与 x 轴正方向的夹角（弧度）。</summary>
     public const string Atan2 = "ATAN2";
 

@@ -103,6 +103,17 @@ internal static class MethodTranslators
             }
         }
 
+        // DateOnly.FromDateTime(x)：日期部分（读回时转成 DateOnly）
+        Add(typeof(DateOnly).GetMethod(nameof(DateOnly.FromDateTime), [typeof(DateTime)]), (t, c) => Fn(SqlFunctionNames.ToDateOnly, t.Translate(c.Arguments[0])));
+        // Math.Max(a, b) / Math.Min(a, b) / Math.Clamp(x, lo, hi)：同一行里几个值取最大 / 最小（与 Sql.MaxColumns / MinColumns 相同）
+        foreach (var m in typeof(Math).GetMethods(BindingFlags.Public | BindingFlags.Static).Where(m => m.GetParameters().All(p => IsNumeric(p.ParameterType))))
+        {
+            if (m.Name == nameof(Math.Max)) Add(m, (t, c) => Fn(SqlFunctionNames.MaxColumns, Arguments(t, c)));
+            else if (m.Name == nameof(Math.Min)) Add(m, (t, c) => Fn(SqlFunctionNames.MinColumns, Arguments(t, c)));
+            else if (m.Name == nameof(Math.Clamp))
+                Add(m, (t, c) => Fn(SqlFunctionNames.MaxColumns, t.Translate(c.Arguments[1]), Fn(SqlFunctionNames.MinColumns, t.Translate(c.Arguments[0]), t.Translate(c.Arguments[2]))));
+        }
+
         // ---------- Math ----------
         foreach (var name in new[]
                  {
@@ -167,6 +178,9 @@ internal static class MethodTranslators
             result = Fn(SqlFunctionNames.Length, t.Translate(owner));
         else if (IsDate(ownerType) && DateParts.TryGetValue(m.Member.Name, out var part))
             result = Fn(SqlFunctionNames.DatePartOf(part), t.Translate(owner));
+        // x.Date：截断到天（与 DateTrunc(Day) 相同）
+        else if ((ownerType == typeof(DateTime) || ownerType == typeof(DateTimeOffset)) && m.Member.Name == nameof(DateTime.Date))
+            result = Fn(SqlFunctionNames.DateTrunc(DateTruncUnit.Day), t.Translate(owner));
         else if (ownerType == typeof(TimeSpan) && TimeSpanTotals.TryGetValue(m.Member.Name, out var unit)
                  && UnwrapValue(owner) is BinaryExpression { NodeType: ExpressionType.Subtract } diff && IsDate(Nullable.GetUnderlyingType(diff.Left.Type) ?? diff.Left.Type))
             result = Fn(SqlFunctionNames.DateDiff(unit), t.Translate(diff.Right), t.Translate(diff.Left));

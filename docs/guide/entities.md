@@ -285,7 +285,7 @@ db.Query<PostStats>().Where(p => p.KiloViews >= 2).OrderBy(p => p.Id).ToListAsyn
 
 ```sql
 -- MySQL
-SELECT `id`,`title`,`views`,(`views` / ?) AS `kilo_views` FROM `t_post` WHERE (`views` / ?) >= ? ORDER BY `id` ASC;
+SELECT `id`,`title`,`views`,(`views` DIV ?) AS `kilo_views` FROM `t_post` WHERE (`views` DIV ?) >= ? ORDER BY `id` ASC;
 -- params: [1000, 1000, 2]
 ```
 <!-- /card -->

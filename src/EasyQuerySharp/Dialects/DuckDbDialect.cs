@@ -140,6 +140,8 @@ public class DuckDbDialect : PostgreSqlDialect
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {
         base.RegisterFunctions(f);
+        // 整数 / 整数得到 DOUBLE，TRUNC 向零截断
+        f[SqlFunctionNames.IntegerDivide] = IntegerDivideByTrunc;
         // 与 Java 的 DuckDBSQLMathSQLFunction 一致：TRUNC 不带小数位
         f[SqlFunctionNames.Truncate] = (r, a) =>
         {

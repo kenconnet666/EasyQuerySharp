@@ -265,7 +265,7 @@ internal static class QueryCompiler
         var projection = new ProjectionCompiler(frame.Translator, state.Db.Options.NameConversion, alwaysAlias: state.GroupKey is not null || state.SmartPredicate, neverAlias: state.ImplicitSelector, aliasScalar: state.AliasScalar, uniqueNames: state.UniqueColumnNames);
         LambdaExpression selector;
         // 可复用投影（Project、[Projection] 方法）先内联成普通的投影表达式
-        if (state.Selector is not null) selector = WithIncludedNavigations(ProjectionInliner.Expand(state.Selector), state.Includes);
+        if (state.Selector is not null) selector = WithIncludedNavigations(LinqNormalizer.Normalize(ProjectionInliner.Expand(state.Selector)), state.Includes);
         else
         {
             var root = Expression.Parameter(state.ElementType, "root");
