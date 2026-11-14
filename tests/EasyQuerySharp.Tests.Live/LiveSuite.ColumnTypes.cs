@@ -158,6 +158,10 @@ public abstract partial class LiveSuite
         Assert.Equal([TokenLevel.High], await db.Query<Token>().Where(t => levels.Contains(t.Level)).Select(t => t.Level).ToListAsync(Ct));
         Assert.Equal(1, await db.Query<Token>().Where(t => t.Named == TokenLevel.High).CountAsync(Ct));
         Assert.Empty((await db.CodeFirst.PlanSyncAsync([typeof(Token)], Ct)).Statements);
+
+        // 枚举的 ToString() 是成员名，不是存的数字（Level）或转换器写进库的文字（Named）；可空的没有值时是空串（Oracle 系把空串当 NULL）
+        Assert.Equal([("High", "High"), ("Low", "")],
+            (await db.Query<Token>().OrderByDescending(t => t.Hits).Select(t => new { L = t.Level.ToString(), N = t.Named.ToString() }).ToListAsync(Ct)).Select(r => (r.L, r.N ?? "")));
     }
 
     // Guid 键的带出：从结果集读出的键（SQLite 是文本、MySQL 的 CHAR(36) 是字符串）与内存里实体上的 Guid 要对得上

@@ -26,9 +26,6 @@ public sealed record LiveSuiteOptions
     /// <summary>LPAD / RPAD：SQLite 没有这两个函数，SQL Server 也没有；方言没有给出替代写法。</summary>
     public bool PadFunctions { get; init; } = true;
 
-    /// <summary>TRUNC(x, n) 截断小数：SQLite 的 trunc 只有一个参数。</summary>
-    public bool TruncateWithScale { get; init; } = true;
-
     /// <summary>MaxColumns / MinColumns 忽略 NULL：SQLite 的 MAX(a, b) 与 MySQL 系、Db2 的 GREATEST 碰到 NULL 就返回 NULL。</summary>
     public bool ExtremesIgnoreNull { get; init; } = true;
 

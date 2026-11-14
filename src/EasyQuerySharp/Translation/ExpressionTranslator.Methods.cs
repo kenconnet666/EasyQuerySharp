@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Linq.Expressions;
+using System.Reflection;
 using EasyQuerySharp.SqlAst;
 
 namespace EasyQuerySharp.Translation;
@@ -36,6 +37,13 @@ internal sealed partial class ExpressionTranslator
         if (TryTranslateCollectionStringJoin(call, out var joined)) return joined;
         if (method.DeclaringType == typeof(string) && method.Name is nameof(string.Contains) or nameof(string.StartsWith) or nameof(string.EndsWith) && call.Object is not null)
             return TranslateString(call);
+        // string.Equals(a, b, StringComparison) / a.Equals(b, StringComparison)
+        if (method.DeclaringType == typeof(string) && method.Name == nameof(string.Equals) && ComparisonOf(call) is { } comparison)
+        {
+            var (left, right) = call.Object is null ? (call.Arguments[0], call.Arguments[1]) : (call.Object, call.Arguments[0]);
+            var (l, r) = IgnoresCase(comparison) ? TranslatePair(Lower(left), Lower(right)) : TranslatePair(left, right);
+            return new BinaryExpr(l, SqlBinaryOperator.Equal, r);
+        }
         if (MethodTranslators.TryTranslate(this, call, out var function)) return function;
         if (TryExpandClientCollection(call, out var expanded)) return expanded;
         if (method.Name == "Contains" && TryTranslateCollectionContains(call, out var inExpr)) return inExpr;
@@ -44,6 +52,16 @@ internal sealed partial class ExpressionTranslator
             var (l, r) = TranslatePair(call.Object, call.Arguments[0]);
             return new BinaryExpr(l, SqlBinaryOperator.Equal, r);
         }
+        // object.Equals(a, b)：两个值相等（两边按各自的类型翻译）
+        if (method.DeclaringType == typeof(object) && method.Name == nameof(Equals) && method.IsStatic && call.Arguments.Count == 2)
+        {
+            var (l, r) = TranslatePair(StripConvert(call.Arguments[0]), StripConvert(call.Arguments[1]));
+            return new BinaryExpr(l, SqlBinaryOperator.Equal, r);
+        }
+        // 枚举的 ToString() 是成员名：按名字存的列就是它本身，按数值存的列写成 CASE（与 C# 一致，不是数字）
+        if (method.Name == nameof(ToString) && call.Arguments.Count == 0 && call.Object is not null
+            && (Nullable.GetUnderlyingType(StripConvert(call.Object).Type) ?? StripConvert(call.Object).Type) is { IsEnum: true } enumType)
+            return EnumName(Translate(StripConvert(call.Object)), enumType, Nullable.GetUnderlyingType(StripConvert(call.Object).Type) is not null);
         // 无参 ToString()：数字、日期等转字符串（任意类型的 ToString 都是同一个形状，不进函数表）
         if (method.Name == nameof(ToString) && call.Arguments.Count == 0 && call.Object is not null)
             return new CastExpr(Translate(call.Object), typeof(string));
@@ -205,9 +223,12 @@ internal sealed partial class ExpressionTranslator
         return new FunctionExpr(function, [value]);
     }
 
-    // string 的实例方法：Contains / StartsWith / EndsWith 翻译成 LIKE，值在客户端拼好 %（与 Java 版的 like 一致）
+    // string 的实例方法：Contains / StartsWith / EndsWith 翻译成 LIKE，值在客户端拼好 %（与 Java 版的 like 一致）。
+    // 带 StringComparison 的重载：忽略大小写时两边都转小写再比较；其余比较方式与不带参数时相同（区分大小写与否取决于库的排序规则）
     private SqlExpr TranslateString(MethodCallExpression call)
     {
+        if (ComparisonOf(call) is { } comparison && IgnoresCase(comparison))
+            call = Expression.Call(Lower(call.Object!), typeof(string).GetMethod(call.Method.Name, [typeof(string)])!, Lower(call.Arguments[0]));
         switch (call.Method.Name)
         {
             case nameof(string.Contains) when call.Object is not null && call.Arguments.Count >= 1:
@@ -219,6 +240,43 @@ internal sealed partial class ExpressionTranslator
             default:
                 throw Unsupported(call);
         }
+    }
+
+    private static readonly MethodInfo ToLowerMethod = typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes)!;
+
+    // 转小写：客户端能求值的直接在客户端转（参数里就是小写），否则在 SQL 里 LOWER
+    private static Expression Lower(Expression value)
+    {
+        if (value.Type == typeof(char)) value = Expression.Call(value, typeof(char).GetMethod(nameof(ToString), Type.EmptyTypes)!);
+        return ClientEvaluator.MustTranslate(value)
+            ? Expression.Call(value, ToLowerMethod)
+            : Expression.Constant((ClientEvaluator.Evaluate(value) as string)?.ToLowerInvariant(), typeof(string));
+    }
+
+    // 方法的最后一个参数是 StringComparison 时取它的值（在客户端求值）
+    private static System.StringComparison? ComparisonOf(MethodCallExpression call) =>
+        call.Arguments.Count > 0 && call.Arguments[^1].Type == typeof(System.StringComparison) ? (System.StringComparison)ClientEvaluator.Evaluate(call.Arguments[^1])! : null;
+
+    private static bool IgnoresCase(System.StringComparison comparison) =>
+        comparison is System.StringComparison.OrdinalIgnoreCase or System.StringComparison.CurrentCultureIgnoreCase or System.StringComparison.InvariantCultureIgnoreCase;
+
+    // 枚举列 → CASE WHEN 列 = 存的值 THEN '成员名' … END：按数值存的比底层整数，有转换器的（按名字存、名字可能不同于成员名）比转换器给出的值；
+    // 可空枚举没有值时是空串（Nullable<T>.ToString() 的行为）
+    private static SqlExpr EnumName(SqlExpr column, Type enumType, bool nullable)
+    {
+        var converter = column is ColumnExpr { Column.Converter: { } c } ? c : null;
+        var underlying = Enum.GetUnderlyingType(enumType);
+        var branches = Enum.GetValuesAsUnderlyingType(enumType).Cast<object>().Distinct()
+            .Select(v =>
+            {
+                SqlExpr stored = converter is null
+                    ? new ParameterExpr(v, underlying)
+                    : new ParameterExpr(converter.ToProvider(Enum.ToObject(enumType, v)), converter.ProviderType);
+                return ((SqlExpr)new BinaryExpr(column, SqlBinaryOperator.Equal, stored), (SqlExpr)new ParameterExpr(Enum.GetName(enumType, v), typeof(string)));
+            })
+            .ToList();
+        if (nullable) branches.Insert(0, (new IsNullExpr(column, negated: false), new ParameterExpr("", typeof(string))));
+        return new CaseExpr(branches, null);
     }
 
     // Pattern 是拼好 % 的通用写法；同时带上原值与匹配方式，供方言改写（PG 的 ESCAPE、Oracle / SQLite 的 INSTR）。

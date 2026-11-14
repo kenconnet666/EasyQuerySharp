@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+### 修复
+
+- 带 `StringComparison` 的 `Contains` / `StartsWith` / `EndsWith` / `string.Equals` 原来丢掉比较方式写成普通的 `LIKE` / `=`（大小写是否敏感取决于库的排序规则，PG 上忽略大小写的比较查不到）；忽略大小写时现在两边转小写再比较。`string.Equals(a, b, StringComparison)` 与 `object.Equals(a, b)` 原来报不支持。
+- 枚举的 `ToString()` 原来翻译成数字（按数值存）或库里的文字（按名字存、`[EnumMember]` 改过名字时与成员名不同），现在与 C# 一样是成员名；可空枚举没有值时是空串。
+- `Math.Round(x, MidpointRounding)` 把舍入方式当成小数位数写进 `ROUND`，结果不对；现在报不支持。
+- SQLite 上的 `Math.Truncate(x)` 写成 SQLite 没有的两参数 `TRUNC(x,0)`，现在写 `trunc(x)`。
+
 ## [1.1.0] - 2026-11-14
 
 ### 新增

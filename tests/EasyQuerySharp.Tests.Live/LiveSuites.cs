@@ -16,7 +16,7 @@ public sealed class SqliteLiveSuite : LiveSuite
     protected override LiveSuiteOptions Options { get; } = new()
     {
         RowLocks = false, Rollup = false, Cube = false, GroupingFunction = false,
-        TruncateWithScale = false, ExtremesIgnoreNull = false,
+        ExtremesIgnoreNull = false,
     };
     protected override Task<string> ConnectionStringAsync() => Task.FromResult($"Data Source={File};Pooling=False");
     protected internal override Task<string> ShardConnectionStringAsync() => Task.FromResult($"Data Source={Path.ChangeExtension(File, null)}_ds1.db;Pooling=False");

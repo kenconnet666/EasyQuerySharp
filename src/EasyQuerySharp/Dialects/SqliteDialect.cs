@@ -182,6 +182,12 @@ public class SqliteDialect : SqlDialect
     {
         base.RegisterFunctions(f);
         f[SqlFunctionNames.Length] = Call("LENGTH");
+        // trunc 只有一个参数（截断到整数）；按小数位截断没有对应写法
+        f[SqlFunctionNames.Truncate] = (r, a) =>
+        {
+            if (a.Count > 1) throw new NotSupportedException("SQLite 的 trunc 不能按小数位截断：Math.Truncate(x) 只截断到整数");
+            r.Append("trunc(").Write(a[0]).Append(")");
+        };
         // 多参数的 MAX / MIN 是标量函数（SQLite 没有 GREATEST / LEAST，Java 版在这里写 GREATEST，在 SQLite 上执行不了）
         f[SqlFunctionNames.MaxColumns] = Call("MAX");
         f[SqlFunctionNames.MinColumns] = Call("MIN");

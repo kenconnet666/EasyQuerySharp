@@ -263,5 +263,6 @@ internal static class MethodTranslators
     private static SqlExpr Text(ExpressionTranslator t, Expression e) =>
         ClientEvaluator.MustTranslate(e) ? t.Translate(e) : new ParameterExpr(ClientEvaluator.Evaluate(e)?.ToString(), typeof(string));
 
-    private static bool IsNumeric(Type type) => Type.GetTypeCode(type) is >= TypeCode.SByte and <= TypeCode.Decimal;
+    // 枚举的类型码是底层整数，要排除（Math.Round 的 MidpointRounding 参数没有 SQL 对应）
+    private static bool IsNumeric(Type type) => !type.IsEnum && Type.GetTypeCode(type) is >= TypeCode.SByte and <= TypeCode.Decimal;
 }

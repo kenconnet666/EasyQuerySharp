@@ -54,9 +54,22 @@ public abstract partial class LiveSuite
     [Fact]
     public async Task TruncatesDecimals()
     {
-        SkipUnless(Options.TruncateWithScale, "带位数的 TRUNC");
         var db = await SeededAsync();
         Assert.Equal(10m, await db.Query<Post>().Where(p => p.Title == "orm tips").Select(p => Math.Truncate(p.Amount)).SingleAsync(Ct));
+    }
+
+    // 带 StringComparison 的重载：忽略大小写时两边转小写再比较，不管库的排序规则区不区分大小写
+    [Fact]
+    public async Task ComparesStringsIgnoringCase()
+    {
+        var db = await SeededAsync();
+        async Task<List<string>> Names(System.Linq.Expressions.Expression<Func<User, bool>> predicate) =>
+            await db.Query<User>().Where(predicate).OrderBy(u => u.Id).Select(u => u.Name).ToListAsync(Ct);
+        Assert.Equal(["alice"], await Names(u => u.Name.StartsWith("ALI", StringComparison.OrdinalIgnoreCase)));
+        Assert.Equal(["alice", "carol"], await Names(u => u.Name.Contains("L", StringComparison.OrdinalIgnoreCase) && !u.Name.EndsWith("B", StringComparison.InvariantCultureIgnoreCase)));
+        Assert.Equal(["bob"], await Names(u => string.Equals(u.Name, "BOB", StringComparison.OrdinalIgnoreCase)));
+        Assert.Equal(["bob"], await Names(u => u.Name.Equals("Bob", StringComparison.CurrentCultureIgnoreCase)));
+        Assert.Equal(["carol"], await Names(u => Equals(u.Age, 17)));
     }
 
     // C# 的 Math.Log(x, newBase) 与多数库的 LOG(base, x) 参数顺序相反：10.5 - 2.5 = 8 的以 2 为底的对数是 3
