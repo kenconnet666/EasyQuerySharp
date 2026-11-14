@@ -79,10 +79,10 @@ internal sealed partial class ExpressionTranslator
             {
                 var value = Value(0, new ParameterExpr(0L, typeof(long)));
                 var sum = new FunctionExpr(distinct ? SqlFunctionNames.SumDistinct : SqlFunctionNames.Sum, [value]);
-                // C# 里可空值的和不会是 null（全是 null 时为 0），SQL 的 SUM 是 NULL
-                return CSharpNulls && Nullable.GetUnderlyingType(call.Type) is not null && MayBeNull(value)
-                    ? new FunctionExpr(SqlFunctionNames.NullOrDefault, [sum, new LiteralExpr("0")])
-                    : sum;
+                // C# 里可空值的和不会是 null（全是 null 时为 0），SQL 的 SUM 是 NULL；补的 0 与和同类型（TDengine 的 CASE 两支类型不同时得到文本）
+                if (!CSharpNulls || Nullable.GetUnderlyingType(call.Type) is not { } sumType || !MayBeNull(value)) return sum;
+                var zero = sumType == typeof(double) || sumType == typeof(float) || sumType == typeof(decimal) ? "0.0" : "0";
+                return new FunctionExpr(SqlFunctionNames.NullOrDefault, [sum, new LiteralExpr(zero)]);
             }
             case nameof(IGroup<object, object>.Max):
                 return new FunctionExpr(SqlFunctionNames.Max, [Value(0, LiteralExpr.Null)]);
