@@ -10,6 +10,9 @@ namespace EasyQuerySharp.Dialects;
 /// </summary>
 public class OracleDialect : SqlDialect
 {
+    /// <inheritdoc />
+    public override string? WindowOrderPlaceholder => "NULL";
+
     /// <summary>共享实例。</summary>
     public static OracleDialect Instance { get; } = new();
 

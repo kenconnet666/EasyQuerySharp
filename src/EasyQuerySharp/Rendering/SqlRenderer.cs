@@ -451,10 +451,22 @@ public sealed class SqlRenderer
             }
             any = true;
         }
+        else if (Dialect.WindowOrderPlaceholder is { } placeholder && NeedsWindowOrder(w.Function))
+        {
+            Append(any ? " " : "").Append("ORDER BY ").Append(placeholder);
+            any = true;
+        }
         if (w.Frame is { } frame) Append(any ? " " : "").Append(frame);
         Append(")");
         if (!w.Compact) Append(")");
     }
+
+    // 排名与取值函数要求 ORDER BY 的库（SQL Server、Oracle）；聚合函数不能补（补了就变成累计值）
+    private static bool NeedsWindowOrder(SqlExpr function) =>
+        function is FragmentExpr { Template: var t } && RankingFunctions.Any(f => t.StartsWith(f, StringComparison.Ordinal));
+
+    private static readonly string[] RankingFunctions =
+        ["ROW_NUMBER(", "RANK(", "DENSE_RANK(", "PERCENT_RANK(", "CUME_DIST(", "NTILE(", "LAG(", "LEAD(", "FIRST_VALUE(", "LAST_VALUE(", "NTH_VALUE("];
 
     private void WriteLogical(LogicalExpr l)
     {

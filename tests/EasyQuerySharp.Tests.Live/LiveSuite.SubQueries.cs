@@ -149,6 +149,17 @@ public abstract partial class LiveSuite
         Assert.Equal([["sql 100%"], ["hello"], []], users.Select(u => u.Posts!.Select(p => p.Title).ToArray()));
     }
 
+    // 没写排序的按父对象取段、只分区的编号：SQL Server、Oracle 的 ROW_NUMBER() 要求 ORDER BY，补占位排序（取到哪一行不确定，只看条数）
+    [Fact]
+    public async Task NumbersRowsWithoutAnOrder()
+    {
+        var db = await SeededAsync();
+        var users = await db.Query<User>().OrderBy(u => u.Id).Include(u => u.Posts, q => q.Take(1)).ToListAsync(Ct);
+        Assert.Equal([1, 1, 0], users.Select(u => u.Posts!.Count));
+        var rows = await db.Query<Post>().Select(p => new Draft<long, long>(p.UserId, Sql.Over.RowNumber(w => w.PartitionBy(p.UserId)))).ToListAsync(Ct);
+        Assert.Equal([[1L, 2L], [1L, 2L]], rows.GroupBy(r => r.Value1).OrderBy(g => g.Key).Select(g => g.Select(r => r.Value2).Order().ToArray()));
+    }
+
     // CTE 和真实的表连接，第二个 CTE 建立在第一个之上
     [Fact]
     public async Task RegistersCtesAndJoinsThemChainingOneOnAnother()

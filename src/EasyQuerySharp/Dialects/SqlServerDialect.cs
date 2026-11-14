@@ -10,6 +10,9 @@ namespace EasyQuerySharp.Dialects;
 /// </summary>
 public class SqlServerDialect : SqlDialect
 {
+    /// <inheritdoc />
+    public override string? WindowOrderPlaceholder => "(SELECT NULL)";
+
     /// <summary>共享实例。</summary>
     public static SqlServerDialect Instance { get; } = new();
 

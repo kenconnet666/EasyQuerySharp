@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### 修复
+
+- 带出按父对象取段（`Include(.., q => q.Take(n))`）没写排序、以及只分区不排序的排名与取值窗口函数（`Sql.Over.RowNumber(w => w.PartitionBy(..))` 等）在 SQL Server、Oracle、达梦上写成没有 ORDER BY 的 `ROW_NUMBER() OVER (..)`，执行报错；现在补占位排序（SQL Server `ORDER BY (SELECT NULL)`、Oracle / 达梦 `ORDER BY NULL`）。新增 `SqlDialect.WindowOrderPlaceholder`。
+
 ## [1.2.2] - 2026-11-14
 
 ### 修复

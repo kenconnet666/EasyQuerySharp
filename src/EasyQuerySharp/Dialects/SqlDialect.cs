@@ -269,6 +269,12 @@ public abstract partial class SqlDialect
     public virtual NullsOrder DefaultNullsOrder(bool descending) => descending ? NullsOrder.Last : NullsOrder.First;
 
     /// <summary>
+    /// 排名与取值的窗口函数（ROW_NUMBER、RANK、LAG…）没写排序时补的排序表达式；null（默认）表示库允许不写。
+    /// SQL Server（<c>(SELECT NULL)</c>）、Oracle 与达梦（<c>NULL</c>）要求这类函数带 ORDER BY，没写排序时补一个不改变顺序的占位。
+    /// </summary>
+    public virtual string? WindowOrderPlaceholder => null;
+
+    /// <summary>
     /// 写 ORDER BY 的一项。指定了 NULL 位置时按 <see cref="NativeNullsOrder"/> 写成 <c>x ASC NULLS LAST</c>，
     /// 或 <c>CASE WHEN x IS NULL THEN 1 ELSE 0 END ASC,x ASC</c>；原生片段不追加方向。
     /// </summary>

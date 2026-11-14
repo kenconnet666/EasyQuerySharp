@@ -474,7 +474,7 @@ SELECT t.`title` FROM `t_post` t WHERE REPLACE(t.`title`, ' ', '') LIKE ?;
 | 日期加减 | TDengine 只能写字面量时长，按参数加减报不支持 |
 | 字符串聚合 | TDengine 不支持；HANA 的 `STRING_AGG` 不能去重；ClickHouse 不能带组内排序 |
 | `Math.Round(x)` / `Atan2` / `Truncate` | SQL Server 按 Java 的写法改写（`ROUND(x,0)`、ATAN 加象限 CASE、FLOOR / CEILING 的 CASE） |
-| 窗口函数 | MySQL 8.0+、SQLite 3.25+ |
+| 窗口函数 | MySQL 8.0+、SQLite 3.25+；排名与取值函数（`RowNumber`、`Rank`、`Lag`…）没写排序时，SQL Server 补 `ORDER BY (SELECT NULL)`、Oracle / 达梦补 `ORDER BY NULL`（这几个库要求写 ORDER BY），编号的先后不确定 |
 
 ## 限制
 

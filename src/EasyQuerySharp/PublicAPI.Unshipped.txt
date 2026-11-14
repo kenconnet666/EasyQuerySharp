@@ -1,1 +1,4 @@
 #nullable enable
+virtual EasyQuerySharp.Dialects.SqlDialect.WindowOrderPlaceholder.get -> string?
+override EasyQuerySharp.Dialects.SqlServerDialect.WindowOrderPlaceholder.get -> string?
+override EasyQuerySharp.Dialects.OracleDialect.WindowOrderPlaceholder.get -> string?
