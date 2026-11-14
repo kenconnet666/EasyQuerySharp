@@ -353,6 +353,7 @@ EasyQuerySharp.EasyDb.SqlQueryAsync<T>(System.FormattableString! sql, System.Thr
 EasyQuerySharp.EasyDb.SqlQueryRawAsync<T>(string! sql, System.Collections.Generic.IReadOnlyList<object?>? parameters = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.List<T>!>!
 EasyQuerySharp.EasyDb.Table(string! tableName) -> EasyQuerySharp.Querying.Query<EasyQuerySharp.DynamicRow!>!
 EasyQuerySharp.EasyDb.TransactionAsync(System.Func<System.Threading.Tasks.Task!>! work, System.Data.IsolationLevel isolation = System.Data.IsolationLevel.Unspecified, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+EasyQuerySharp.EasyDb.TransactionAsync<TResult>(System.Func<System.Threading.Tasks.Task<TResult>!>! work, System.Data.IsolationLevel isolation = System.Data.IsolationLevel.Unspecified, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult>!
 EasyQuerySharp.EasyDb.Update<T>() -> EasyQuerySharp.Commands.UpdateCommand<T!>!
 EasyQuerySharp.EasyDb.Update<T>(params System.Collections.Generic.IEnumerable<T!>! entities) -> EasyQuerySharp.Commands.UpdateCommand<T!>!
 EasyQuerySharp.EasyDb.UpdateMap(string! tableName, params System.Collections.Generic.IEnumerable<System.Collections.Generic.IReadOnlyDictionary<string!, object?>!>! rows) -> EasyQuerySharp.Commands.MapUpdateCommand!
@@ -701,6 +702,7 @@ EasyQuerySharp.Metadata.InsertIgnoreAttribute
 EasyQuerySharp.Metadata.InsertIgnoreAttribute.InsertIgnoreAttribute() -> void
 EasyQuerySharp.Metadata.JsonValueConverter<T>
 EasyQuerySharp.Metadata.JsonValueConverter<T>.JsonValueConverter() -> void
+EasyQuerySharp.Metadata.JsonValueConverter<T>.JsonValueConverter(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>! typeInfo) -> void
 EasyQuerySharp.Metadata.KeyMatch
 EasyQuerySharp.Metadata.KeyMatch.Equal = 0 -> EasyQuerySharp.Metadata.KeyMatch
 EasyQuerySharp.Metadata.KeyMatch.SelfCsv = 1 -> EasyQuerySharp.Metadata.KeyMatch
@@ -2064,6 +2066,7 @@ override EasyQuerySharp.Dialects.HanaDialect.ParameterPlaceholder(int index, Eas
 override EasyQuerySharp.Dialects.HanaDialect.QualifySetColumns.get -> bool
 override EasyQuerySharp.Dialects.HanaDialect.RecursiveWith.get -> string!
 override EasyQuerySharp.Dialects.HanaDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
+override EasyQuerySharp.Dialects.HanaDialect.ResetIsolationSql.get -> string?
 override EasyQuerySharp.Dialects.HanaDialect.WriteJoinedDelete(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.DeleteStatement! statement) -> void
 override EasyQuerySharp.Dialects.HanaDialect.WriteJoinedUpdate(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.UpdateStatement! update) -> void
 override EasyQuerySharp.Dialects.HanaDialect.WriteLike(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.LikeExpr! predicate) -> void
@@ -2132,6 +2135,7 @@ override EasyQuerySharp.Dialects.SqlServerDialect.Name.get -> string!
 override EasyQuerySharp.Dialects.SqlServerDialect.QuoteIdentifier(string! identifier) -> string!
 override EasyQuerySharp.Dialects.SqlServerDialect.RecursiveWith.get -> string!
 override EasyQuerySharp.Dialects.SqlServerDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
+override EasyQuerySharp.Dialects.SqlServerDialect.ResetIsolationSql.get -> string?
 override EasyQuerySharp.Dialects.SqlServerDialect.WriteCompoundPart(EasyQuerySharp.Rendering.SqlRenderer! renderer, EasyQuerySharp.SqlAst.SelectQuery! part) -> void
 override EasyQuerySharp.Dialects.SqlServerDialect.WriteInsertOutput(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! returning) -> void
 override EasyQuerySharp.Dialects.SqlServerDialect.WriteInsertReturning(EasyQuerySharp.Rendering.SqlRenderer! renderer, System.Collections.Generic.IReadOnlyList<EasyQuerySharp.SqlAst.SqlExpr!>! returning) -> void
@@ -2550,6 +2554,7 @@ virtual EasyQuerySharp.Dialects.SqlDialect.RecursiveCteColumnList.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.RecursiveCteCommaJoin.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.RecursiveWith.get -> string!
 virtual EasyQuerySharp.Dialects.SqlDialect.RegisterFunctions(System.Collections.Generic.IDictionary<string!, EasyQuerySharp.Dialects.FunctionWriter!>! f) -> void
+virtual EasyQuerySharp.Dialects.SqlDialect.ResetIsolationSql.get -> string?
 virtual EasyQuerySharp.Dialects.SqlDialect.SupportsTransactions.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.SupportsWriteReturning.get -> bool
 virtual EasyQuerySharp.Dialects.SqlDialect.TreeDeepStart.get -> string!

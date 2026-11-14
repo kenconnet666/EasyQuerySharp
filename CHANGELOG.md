@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-14
+
 ### 新增
 
 - 支持裁剪与 Native AOT（核心、依赖注入、二级缓存三个包），见[裁剪与 Native AOT](https://github.com/kenconnet666/EasyQuerySharp/blob/master/docs/guide/native-aot.md)：核心包自带的生成器保留实体、DTO、值对象的成员；`EasyDb`、`AddEasyQuery`、`EasyCache` 不再标 `RequiresUnreferencedCode` / `RequiresDynamicCode`。
@@ -46,5 +48,6 @@
 - 对标 Java 版的 2404 个用例：已移植 2071、偏离 191、不适用 142，每条偏离与不适用都写了理由（见 [docs/parity-tests.md](https://github.com/kenconnet666/EasyQuerySharp/blob/master/docs/parity-tests.md)）。
 - CI 在 14 种数据库上跑实库测试：SQLite、DuckDB、MySQL 8.4 / 8.0.18、MariaDB、PostgreSQL、SQL Server、Oracle、达梦、openGauss、SAP HANA、ClickHouse、Db2、TDengine。人大金仓没有可用的容器镜像，只比对 SQL 文本。
 
-[Unreleased]: https://github.com/kenconnet666/EasyQuerySharp/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/kenconnet666/EasyQuerySharp/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/kenconnet666/EasyQuerySharp/releases/tag/v1.1.0
 [1.0.0]: https://github.com/kenconnet666/EasyQuerySharp/releases/tag/v1.0.0
