@@ -70,7 +70,7 @@ internal static class MethodTranslators
         Add(s.GetMethod(nameof(string.Compare), [s, s]), (t, c) => Fn(SqlFunctionNames.CompareTo, t.Translate(c.Arguments[0]), t.Translate(c.Arguments[1])));
         foreach (var concat in s.GetMethods(BindingFlags.Public | BindingFlags.Static)
                      .Where(m => m.Name == nameof(string.Concat) && m.GetParameters().All(p => p.ParameterType == s || p.ParameterType == typeof(string[]) || p.ParameterType == typeof(object))))
-            Add(concat, (t, c) => t.Concat(Arguments(t, c)));
+            Add(concat, (t, c) => Fn(SqlFunctionNames.Concat, Arguments(t, c, t.ConcatPart)));
         foreach (var format in s.GetMethods(BindingFlags.Public | BindingFlags.Static)
                      .Where(m => m.Name == nameof(string.Format) && m.GetParameters()[0].ParameterType == s))
             Add(format, TranslateFormat);
@@ -224,13 +224,14 @@ internal static class MethodTranslators
     private static FunctionExpr Fn(string name, IReadOnlyList<SqlExpr> args) => new(name, args);
 
     // string.Concat(params string[]) 与 Concat(a, b, …) 都展开成平铺的参数
-    private static List<SqlExpr> Arguments(ExpressionTranslator t, MethodCallExpression c)
+    private static List<SqlExpr> Arguments(ExpressionTranslator t, MethodCallExpression c, Func<Expression, SqlExpr>? translate = null)
     {
+        translate ??= t.Translate;
         var result = new List<SqlExpr>();
         foreach (var a in c.Arguments)
         {
-            if (a is NewArrayExpression array) result.AddRange(array.Expressions.Select(t.Translate));
-            else result.Add(t.Translate(a));
+            if (a is NewArrayExpression array) result.AddRange(array.Expressions.Select(translate));
+            else result.Add(translate(a));
         }
         return result;
     }
@@ -253,12 +254,12 @@ internal static class MethodTranslators
             var comma = spec.IndexOfAny([',', ':']);
             var index = int.Parse(comma < 0 ? spec : spec[..comma], CultureInfo.InvariantCulture);
             if (i > start) parts.Add(new ParameterExpr(format[start..i], typeof(string)));
-            parts.Add(t.Translate(args[index]));
+            parts.Add(t.ConcatPart(args[index]));
             start = close + 1;
             i = close;
         }
         if (start < format.Length) parts.Add(new ParameterExpr(format[start..], typeof(string)));
-        return parts.Count == 1 ? parts[0] : t.Concat(parts);
+        return parts.Count == 1 ? parts[0] : Fn(SqlFunctionNames.Concat, parts);
     }
 
     /// <summary>

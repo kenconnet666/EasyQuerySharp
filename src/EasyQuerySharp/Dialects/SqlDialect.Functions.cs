@@ -57,7 +57,8 @@ public abstract partial class SqlDialect
         f[SqlFunctionNames.MaxColumns] = UnionAllExtreme("MAX", "");
         f[SqlFunctionNames.MinColumns] = UnionAllExtreme("MIN", "");
         f[SqlFunctionNames.Concat] = Call("CONCAT");
-        f[SqlFunctionNames.NullAsEmpty] = (r, a) => r.Write(a[0]);
+        // 不补空串时去掉为 COALESCE 加的转字符串（拼接本来就会转换）
+        f[SqlFunctionNames.NullAsEmpty] = (r, a) => r.Write(a[0] is CastExpr { TargetType: var type } cast && type == typeof(string) ? cast.Operand : a[0]);
         f[SqlFunctionNames.Length] = Call("CHAR_LENGTH");
         f[SqlFunctionNames.Trim] = Call("TRIM");
         f[SqlFunctionNames.SubString] = Call("SUBSTR");

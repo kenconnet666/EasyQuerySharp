@@ -68,9 +68,16 @@ internal sealed partial class ExpressionTranslator
     // x => !p(x)
     private static LambdaExpression NegatedLambda(LambdaExpression predicate) => Expression.Lambda(predicate.Type, Expression.Not(predicate.Body), predicate.Parameters);
 
-    /// <summary>C# 的拼接把 null 当空串：可能为 NULL 的项包一层 <see cref="SqlFunctionNames.NullAsEmpty"/>（拼接遇到 NULL 得 NULL 的库补成空串）。</summary>
-    internal FunctionExpr Concat(IReadOnlyList<SqlExpr> parts) =>
-        new(SqlFunctionNames.Concat, CSharpNulls ? [.. parts.Select(p => MayBeNull(p) ? new FunctionExpr(SqlFunctionNames.NullAsEmpty, [p]) : p)] : parts);
+    /// <summary>
+    /// 拼接的一项：C# 的拼接把 null 当空串，可能为 NULL 的项包一层 <see cref="SqlFunctionNames.NullAsEmpty"/>（拼接遇到 NULL 得 NULL 的库补成空串）。
+    /// 不是字符串的项先转成字符串：<c>COALESCE(数字, '')</c> 在 HANA、Db2 上会把 <c>''</c> 当数字。
+    /// </summary>
+    internal SqlExpr ConcatPart(Expression part)
+    {
+        var sql = Translate(part);
+        if (!CSharpNulls || !MayBeNull(sql)) return sql;
+        return new FunctionExpr(SqlFunctionNames.NullAsEmpty, [StripConvert(part).Type == typeof(string) ? sql : new CastExpr(sql, typeof(string))]);
+    }
 
     /// <summary>C# 的 <c>x.ToString()</c> 在 x 是没有值的可空类型时是空串。</summary>
     private SqlExpr NullableToString(Expression value, SqlExpr text) =>

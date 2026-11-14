@@ -257,7 +257,7 @@ internal sealed partial class ExpressionTranslator
 
         // 字符串相加 → 方言的拼接函数
         if (op == SqlBinaryOperator.Add && b.Type == typeof(string))
-            return Concat([.. Flatten(b, ExpressionType.Add).Select(Translate)]);
+            return new FunctionExpr(SqlFunctionNames.Concat, [.. Flatten(b, ExpressionType.Add).Select(ConcatPart)]);
 
         // string.Compare(a, b) > 0 … → a > b（C# 里字符串只能这样比大小，对应 Java 的 gt / le…；与 1 / -1 比较时仍按函数翻译）。
         // 实例方法 a.CompareTo(b) 总是写成比较函数（对应 Java 的 compareTo(b)，MySQL 的 STRCMP）

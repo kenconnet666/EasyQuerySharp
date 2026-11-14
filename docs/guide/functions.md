@@ -68,7 +68,7 @@ db.Query<User>().Where(u => u.Age != null).OrderBy(u => u.Id).Take(3).Select(u =
 
 ```sql
 -- MySQL
-SELECT CONCAT(t.`name`,?,IFNULL(t.`age`,''),?) FROM `t_user` t WHERE t.`age` IS NOT NULL ORDER BY t.`id` ASC LIMIT 3;
+SELECT CONCAT(t.`name`,?,IFNULL(CAST(t.`age` AS CHAR),''),?) FROM `t_user` t WHERE t.`age` IS NOT NULL ORDER BY t.`id` ASC LIMIT 3;
 -- params: ['（', ' 岁）']
 ```
 

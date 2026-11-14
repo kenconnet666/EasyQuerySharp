@@ -179,6 +179,9 @@ public class TDengineDialect : SqlDialect
         base.RegisterFunctions(f);
         // CONCAT 遇到 NULL 得 NULL：C# 的拼接把 null 当空串
         f[SqlFunctionNames.NullAsEmpty] = NullAsEmptyByCoalesce;
+        // 3.3 没有 COALESCE / IFNULL：写成 CASE WHEN x IS NOT NULL THEN x ELSE y END，多个参数依次嵌套
+        f[SqlFunctionNames.NullOrDefault] = (r, a) => r.Write(a.SkipLast(1).Reverse().Aggregate(a[^1],
+            (otherwise, x) => new CaseExpr([(new IsNullExpr(x, negated: true), x)], otherwise)));
         // / 总是浮点除法：减掉余数再除
         f[SqlFunctionNames.IntegerDivide] = IntegerDivideByModulo;
         // 与 Java 的 TSDBMaxMinColumnsSQLFunction 一致
