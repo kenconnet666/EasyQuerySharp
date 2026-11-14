@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-14
+
 ### 修复
 
 - 带出按父对象取段（`Include(.., q => q.Take(n))`）没写排序、以及只分区不排序的排名与取值窗口函数（`Sql.Over.RowNumber(w => w.PartitionBy(..))` 等）在 SQL Server、Oracle、达梦上写成没有 ORDER BY 的 `ROW_NUMBER() OVER (..)`，执行报错；现在补占位排序（SQL Server `ORDER BY (SELECT NULL)`、Oracle / 达梦 `ORDER BY NULL`）。新增 `SqlDialect.WindowOrderPlaceholder`。
@@ -87,7 +89,8 @@
 - 对标 Java 版的 2404 个用例：已移植 2071、偏离 191、不适用 142，每条偏离与不适用都写了理由（见 [docs/parity-tests.md](https://github.com/kenconnet666/EasyQuerySharp/blob/master/docs/parity-tests.md)）。
 - CI 在 14 种数据库上跑实库测试：SQLite、DuckDB、MySQL 8.4 / 8.0.18、MariaDB、PostgreSQL、SQL Server、Oracle、达梦、openGauss、SAP HANA、ClickHouse、Db2、TDengine。人大金仓没有可用的容器镜像，只比对 SQL 文本。
 
-[Unreleased]: https://github.com/kenconnet666/EasyQuerySharp/compare/v1.2.2...HEAD
+[Unreleased]: https://github.com/kenconnet666/EasyQuerySharp/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/kenconnet666/EasyQuerySharp/releases/tag/v1.3.0
 [1.2.2]: https://github.com/kenconnet666/EasyQuerySharp/releases/tag/v1.2.2
 [1.2.1]: https://github.com/kenconnet666/EasyQuerySharp/releases/tag/v1.2.1
 [1.2.0]: https://github.com/kenconnet666/EasyQuerySharp/releases/tag/v1.2.0
