@@ -120,6 +120,24 @@ public abstract partial class LiveSuite
         Assert.Equal(1, (await db.Query<User>().FindAsync(1L, Ct))!.Age);
     }
 
+    // 带隔离级别的事务结束后，连接以默认级别回到池里：HANA、SQL Server 的隔离级别是会话级的，驱动归还连接时不一定复原
+    [Fact]
+    public async Task ReturnsPooledConnectionsWithTheDefaultIsolationLevel()
+    {
+        SkipUnless(Options.IsolationLevelQuery is not null, "查询当前隔离级别");
+        var db = await SeededAsync();
+        async Task<string> Current() => (await db.SqlQueryRawAsync<string>(Options.IsolationLevelQuery!, cancellationToken: Ct)).Single();
+        var before = await Current();
+        await db.TransactionAsync(() => db.Query<User>().CountAsync(Ct), System.Data.IsolationLevel.Serializable, Ct);
+        Assert.Equal(before, await Current());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => db.TransactionAsync(async () =>
+        {
+            await db.Query<User>().CountAsync(Ct);
+            throw new InvalidOperationException("boom");
+        }, System.Data.IsolationLevel.Serializable, Ct));
+        Assert.Equal(before, await Current());
+    }
+
     // 不追踪的差异更新：只写和修改前不同的列，别人同时改过的其它列不会被覆盖
     [Fact]
     public async Task UpdatesOnlyChangedColumnsWithoutTracking()

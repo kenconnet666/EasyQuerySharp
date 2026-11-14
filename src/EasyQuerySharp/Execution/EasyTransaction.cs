@@ -89,6 +89,7 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
             await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
             _branches.RemoveAt(0);
             await transaction.DisposeAsync().ConfigureAwait(false);
+            await ResetIsolationAsync(connection).ConfigureAwait(false);
             await connection.DisposeAsync().ConfigureAwait(false);
         }
         End();
@@ -110,6 +111,8 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
                 try
                 {
                     await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                    await transaction.DisposeAsync().ConfigureAwait(false);
+                    await ResetIsolationAsync(connection).ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
@@ -160,6 +163,13 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
                 try
                 {
                     transaction.Rollback();
+                    transaction.Dispose();
+                    if (ResetIsolationSql is { } sql)
+                    {
+                        using var command = connection.CreateCommand();
+                        command.CommandText = sql;
+                        command.ExecuteNonQuery();
+                    }
                 }
                 catch (Exception)
                 {
@@ -177,6 +187,17 @@ public sealed class EasyTransaction : IAsyncDisposable, IDisposable
             _branches.Clear();
             End();
         }
+    }
+
+    // 指定了隔离级别、方言又说驱动不复原时，连接还回池之前改回默认级别（见 SqlDialect.ResetIsolationSql）
+    private string? ResetIsolationSql => _isolation == IsolationLevel.Unspecified ? null : _db.Options.Dialect.ResetIsolationSql;
+
+    private async Task ResetIsolationAsync(DbConnection connection)
+    {
+        if (ResetIsolationSql is not { } sql) return;
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        await command.ExecuteNonQueryAsync().ConfigureAwait(false);
     }
 
     private static void ThrowIfAny(List<Exception>? errors)

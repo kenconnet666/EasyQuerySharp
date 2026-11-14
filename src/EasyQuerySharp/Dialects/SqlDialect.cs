@@ -207,6 +207,12 @@ public abstract partial class SqlDialect
     /// </summary>
     public virtual bool SupportsTransactions => true;
 
+    /// <summary>
+    /// 带隔离级别的事务结束后、连接还回池之前执行的语句，把隔离级别改回默认；为 null 时不执行。
+    /// 隔离级别是会话级、驱动归还连接时又不复原的库（HANA）要它，否则下一个借到这个连接的语句跟着用上一个事务的级别。
+    /// </summary>
+    public virtual string? ResetIsolationSql => null;
+
     /// <summary>插入后读回生成列：写在列清单与 VALUES 之间的部分（SQL Server 的 <c>OUTPUT INSERTED.[id]</c>）；默认不写。</summary>
     public virtual void WriteInsertOutput(SqlRenderer renderer, IReadOnlyList<SqlExpr> returning)
     {

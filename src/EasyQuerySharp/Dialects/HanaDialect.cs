@@ -26,6 +26,9 @@ public class HanaDialect : SqlDialect
     /// <inheritdoc />
     public override string Name => "hana";
 
+    /// <summary>Sap.Data.Hana 的 BeginTransaction(级别) 改的是会话的隔离级别，事务结束、连接归还都不复原（实测）。</summary>
+    public override string? ResetIsolationSql => "SET TRANSACTION ISOLATION LEVEL READ COMMITTED";
+
     /// <summary>HANA 的客户端驱动只认位置参数 <c>?</c>。</summary>
     public override string ParameterPlaceholder(int index, SqlParameterValue parameter) => "?";
 

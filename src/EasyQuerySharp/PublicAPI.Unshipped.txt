@@ -1,3 +1,5 @@
 #nullable enable
 EasyQuerySharp.EasyDb.TransactionAsync<TResult>(System.Func<System.Threading.Tasks.Task<TResult>!>! work, System.Data.IsolationLevel isolation = System.Data.IsolationLevel.Unspecified, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult>!
 EasyQuerySharp.Metadata.JsonValueConverter<T>.JsonValueConverter(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T>! typeInfo) -> void
+virtual EasyQuerySharp.Dialects.SqlDialect.ResetIsolationSql.get -> string?
+override EasyQuerySharp.Dialects.HanaDialect.ResetIsolationSql.get -> string?

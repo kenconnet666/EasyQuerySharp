@@ -55,6 +55,11 @@ public sealed record LiveSuiteOptions
 
     /// <summary>分库用例要第二个库（<see cref="LiveSuite.ShardConnectionStringAsync"/>）：Oracle 的测试用户没有建第二个 schema 的权限。</summary>
     public bool ShardDataSources { get; init; } = true;
+
+    /// <summary>
+    /// 查当前连接的隔离级别（返回名字）的 SQL：隔离级别是会话级的库（HANA、SQL Server）用它核对事务结束后连接以默认级别回到池里；为 null 时跳过。
+    /// </summary>
+    public string? IsolationLevelQuery { get; init; }
 }
 
 /// <summary>

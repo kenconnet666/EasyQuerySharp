@@ -71,7 +71,12 @@ public sealed class SqlServerLiveSuite : LiveSuite
     protected override TestDatabase Database => TestDatabases.SqlServer;
     protected override SqlDialect Dialect => SqlServerDialect.Instance;
     // SQL Server 没有 FOR UPDATE（要用表提示），与 Java 一样直接报错；也没有 NTH_VALUE
-    protected override LiveSuiteOptions Options { get; } = new() { RowLocks = false, NthValue = false, JsonFunctions = false };
+    protected override LiveSuiteOptions Options { get; } = new()
+    {
+        RowLocks = false, NthValue = false, JsonFunctions = false,
+        IsolationLevelQuery = "SELECT CASE transaction_isolation_level WHEN 1 THEN 'READ UNCOMMITTED' WHEN 2 THEN 'READ COMMITTED' WHEN 3 THEN 'REPEATABLE READ' "
+                              + "WHEN 4 THEN 'SERIALIZABLE' WHEN 5 THEN 'SNAPSHOT' END FROM sys.dm_exec_sessions WHERE session_id = @@SPID",
+    };
     protected override Task<string> ConnectionStringAsync() =>
         LiveDatabase.EnsureAsync(Database, "IF DB_ID('eqs_live') IS NULL CREATE DATABASE eqs_live");
     protected internal override Task<string> ShardConnectionStringAsync() =>
@@ -152,7 +157,11 @@ public sealed class HanaLiveSuite : LiveSuite
     protected override TestDatabase Database => TestDatabases.Hana;
     protected override SqlDialect Dialect => HanaDialect.Instance;
     // GREATEST / LEAST 碰到 NULL 返回 NULL；方言还没有 Sql.Json 的写法（Java fork 也没有）
-    protected override LiveSuiteOptions Options { get; } = new() { RecursiveCte = false, ExtremesIgnoreNull = false, JsonFunctions = false };
+    protected override LiveSuiteOptions Options { get; } = new()
+    {
+        RecursiveCte = false, ExtremesIgnoreNull = false, JsonFunctions = false,
+        IsolationLevelQuery = "SELECT ISOLATION_LEVEL FROM M_TRANSACTIONS WHERE CONNECTION_ID = CURRENT_CONNECTION",
+    };
     protected override Task<string> ConnectionStringAsync() => SchemaAsync("EQS_LIVE");
     protected internal override Task<string> ShardConnectionStringAsync() => SchemaAsync("EQS_LIVE_DS1");
 
