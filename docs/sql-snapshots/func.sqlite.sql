@@ -18,7 +18,7 @@ SELECT t."title" FROM "t_post" t WHERE (t."title" LIKE ('%'||?||'%') OR t."title
 SELECT t."user_id" FROM "t_profile" t WHERE (t."website" IS NULL OR t."website" = '') ORDER BY t."user_id" ASC;
 
 -- Dates：日期：取部分、格式化、加减、相差
-SELECT CAST(strftime('%Y',t."created_at") AS INTEGER) AS "year",CAST(strftime('%m',t."created_at") AS INTEGER) AS "month",strftime('%Y-%m-%d', t."created_at") AS "day",datetime(t."created_at",(?)||' days') AS "next_week",(strftime('%s',t."created_at")-strftime('%s',?))/86400 AS "days_since_new_year" FROM "t_order" t WHERE t."id" <= ? ORDER BY t."id" ASC;
+SELECT CAST(strftime('%Y',t."created_at") AS INTEGER) AS "year",CAST(strftime('%m',t."created_at") AS INTEGER) AS "month",strftime('%Y-%m-%d', t."created_at") AS "day",rtrim(rtrim(strftime('%Y-%m-%d %H:%M:%f',t."created_at",(?)||' days'),'0'),'.') AS "next_week",(strftime('%s',t."created_at")-strftime('%s',?))/86400 AS "days_since_new_year" FROM "t_order" t WHERE t."id" <= ? ORDER BY t."id" ASC;
 -- params: [7, '2025-01-01 00:00:00', 2]
 
 -- DateTrunc：日期截断：按月分组

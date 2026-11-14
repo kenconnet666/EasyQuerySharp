@@ -159,6 +159,10 @@ public class SqliteDialect : SqlDialect
         OracleDialect.WriteInstrComparison(renderer, predicate);
     }
 
+    // 日期时间的文本与 Microsoft.Data.Sqlite 存的一致：保留毫秒（datetime() 会丢掉），去掉末尾的 0 与小数点（整秒不带小数），
+    // 这样与存储的值、参数按文本比较才对
+    private static string DateTimeText(string arguments) => "rtrim(rtrim(strftime('%Y-%m-%d %H:%M:%f'," + arguments + "),'0'),'.')";
+
     /// <summary>SQLite 的类型转换（对应 Java 的 SQLiteCastSQLFunction）。</summary>
     public override string CastTemplate(Type targetType) => targetType switch
     {
@@ -166,7 +170,8 @@ public class SqliteDialect : SqlDialect
         _ when targetType == typeof(char) => "substr(cast({0} as character), 1, 1)",
         _ when targetType == typeof(TimeOnly) || targetType == typeof(TimeSpan) => "time({0})",
         _ when targetType == typeof(DateOnly) => "date({0})",
-        _ when targetType == typeof(DateTime) || targetType == typeof(DateTimeOffset) => "datetime({0})",
+        _ when targetType == typeof(DateTime) => DateTimeText("{0}"),
+        _ when targetType == typeof(DateTimeOffset) => "datetime({0})",
         _ when targetType == typeof(decimal) => "cast({0} as decimal(36,18))",
         _ when targetType == typeof(double) || targetType == typeof(float) => "cast({0} as double)",
         _ when targetType == typeof(byte) || targetType == typeof(sbyte) => "cast({0} as int2)",
@@ -220,7 +225,7 @@ public class SqliteDialect : SqlDialect
         f[SqlFunctionNames.PadLeft] = (r, a) => Padding(r.Append("substr("), a).Append(" || ").Write(a[0]).Append(", 1, ").Write(a[1]).Append(")");
         f[SqlFunctionNames.PadRight] = (r, a) => Padding(r.Append("substr(").Write(a[0]).Append(" || "), a).Append(", 1, ").Write(a[1]).Append(")");
         DateFunctions(f,
-            unit => unit == DateUnit.Millisecond ? "datetime({0},(({1})/1000)||' seconds')" : "datetime({0},({1})||' " + Lower(unit) + "s')",
+            unit => unit == DateUnit.Millisecond ? DateTimeText("{0},(({1})/1000.0)||' seconds'") : DateTimeText("{0},({1})||' " + Lower(unit) + "s'"),
             part => part == DatePart.IsoDayOfWeek
                 ? "(CASE WHEN CAST(strftime('%w',{0}) AS INTEGER) = 0 THEN 7 ELSE CAST(strftime('%w',{0}) AS INTEGER) END)"
                 : "CAST(strftime('" + part switch

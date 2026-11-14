@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### 修复
+
+- SQLite 上的日期加减（`AddDays` 等）与转成 `DateTime` 丢掉毫秒，`AddMilliseconds` 不到一秒的部分整个丢掉，带毫秒的值加减后与参数比较对不上；现在保留毫秒，文本与 Microsoft.Data.Sqlite 存的一致。
+
 ## [1.2.0] - 2026-11-14
 
 ### 新增

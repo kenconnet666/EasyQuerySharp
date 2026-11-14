@@ -27,4 +27,23 @@ public sealed class SqliteDialectTest
         var rows = await db.Query<Topic>().OrderBy(t => t.Id).Select(t => new Draft<string?, string?>(t.Title!.PadLeft(5, '*'), t.Title!.PadRight(5))).ToListAsync(Ct);
         Assert.Equal([("***ab", "ab   "), ("abcde", "abcde"), (null, null)], rows.Select(r => (r.Value1, r.Value2)));
     }
+
+    // 日期加减与转换保留毫秒，文本与 Microsoft.Data.Sqlite 存的一致（整秒不带小数），按文本比较才对；datetime() 会丢掉毫秒
+    [Fact]
+    public async Task KeepsMillisecondsWhenAddingToDates()
+    {
+        var cs = $"Data Source=eqs-sqlite-ms-{Guid.NewGuid():N};Mode=Memory;Cache=Shared";
+        await using var keepAlive = new SqliteConnection(cs);
+        await keepAlive.OpenAsync(Ct);
+        var db = new EasyDb(o => o.WithJavaNulls().UseSqlite(SqliteFactory.Instance.CreateDataSource(cs)));
+        await db.ExecuteSqlRawAsync("CREATE TABLE t_topic (id TEXT PRIMARY KEY, stars INTEGER, title TEXT, create_time TEXT)", cancellationToken: Ct);
+        var at = new DateTime(2026, 1, 2, 3, 4, 5, 780);
+        var whole = new DateTime(2026, 1, 2, 3, 4, 5);
+        await db.Insert(new Topic { Id = "1", CreateTime = at }, new Topic { Id = "2", CreateTime = whole }).ExecuteAsync(Ct);
+        var rows = await db.Query<Topic>().OrderBy(t => t.Id)
+            .Select(t => new Draft<DateTime?, DateTime?>(t.CreateTime!.Value.AddDays(1), t.CreateTime!.Value.AddMilliseconds(500))).ToListAsync(Ct);
+        Assert.Equal([(at.AddDays(1), at.AddMilliseconds(500)), (whole.AddDays(1), whole.AddMilliseconds(500))], rows.Select(r => (r.Value1, r.Value2)));
+        Assert.Equal(["1"], await db.Query<Topic>().Where(t => t.CreateTime!.Value.AddHours(1) == at.AddHours(1)).Select(t => t.Id).ToListAsync(Ct));
+        Assert.Equal(["2"], await db.Query<Topic>().Where(t => t.CreateTime!.Value.AddHours(1) == whole.AddHours(1)).Select(t => t.Id).ToListAsync(Ct));
+    }
 }
