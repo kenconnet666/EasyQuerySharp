@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-11-14
+
 ### 修复
 
 - 聚合保存时，新对象带着库里已有行的自增主键（如表单提交时带上了别人的子对象的主键）原来会被当成新行插入、悄悄忽略那个主键，现在报错；沿用了已追踪实例主键的新对象，原来先合并、用没设的外键覆盖了原外键，归属核对被绕过，现在按原外键核对（原父对象在同一次保存里拿掉了它的照常算移动）。
@@ -81,7 +83,8 @@
 - 对标 Java 版的 2404 个用例：已移植 2071、偏离 191、不适用 142，每条偏离与不适用都写了理由（见 [docs/parity-tests.md](https://github.com/kenconnet666/EasyQuerySharp/blob/master/docs/parity-tests.md)）。
 - CI 在 14 种数据库上跑实库测试：SQLite、DuckDB、MySQL 8.4 / 8.0.18、MariaDB、PostgreSQL、SQL Server、Oracle、达梦、openGauss、SAP HANA、ClickHouse、Db2、TDengine。人大金仓没有可用的容器镜像，只比对 SQL 文本。
 
-[Unreleased]: https://github.com/kenconnet666/EasyQuerySharp/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/kenconnet666/EasyQuerySharp/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/kenconnet666/EasyQuerySharp/releases/tag/v1.2.2
 [1.2.1]: https://github.com/kenconnet666/EasyQuerySharp/releases/tag/v1.2.1
 [1.2.0]: https://github.com/kenconnet666/EasyQuerySharp/releases/tag/v1.2.0
 [1.1.0]: https://github.com/kenconnet666/EasyQuerySharp/releases/tag/v1.1.0
