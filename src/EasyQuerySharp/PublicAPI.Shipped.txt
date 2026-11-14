@@ -410,6 +410,8 @@ EasyQuerySharp.EasyDbOptions.UseKingbase(System.Data.Common.DbDataSource? dataSo
 EasyQuerySharp.EasyDbOptions.UseMySql(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseOracle(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UsePostgreSql(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
+EasyQuerySharp.EasyDbOptions.UseRelationalNulls.get -> bool
+EasyQuerySharp.EasyDbOptions.UseRelationalNulls.set -> void
 EasyQuerySharp.EasyDbOptions.UseSqlServer(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseSqlite(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
 EasyQuerySharp.EasyDbOptions.UseTDengine(System.Data.Common.DbDataSource? dataSource = null) -> EasyQuerySharp.EasyDbOptions!
@@ -1289,6 +1291,8 @@ EasyQuerySharp.Querying.Query<T1, T2>.WhereIf(bool condition, System.Linq.Expres
 EasyQuerySharp.Querying.Query<T1, T2>.WithTableLink(System.Func<string!, string!>! link) -> EasyQuerySharp.Querying.Query<T1, T2>!
 EasyQuerySharp.Querying.Query<T1, T2>.WithTableLink(string! link) -> EasyQuerySharp.Querying.Query<T1, T2>!
 EasyQuerySharp.Querying.Query<T>
+EasyQuerySharp.Querying.Query<T>.AllAsync(System.Linq.Expressions.Expression<System.Func<T, bool>!>! predicate, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+EasyQuerySharp.Querying.Query<T>.AnyAsync(System.Linq.Expressions.Expression<System.Func<T, bool>!>! predicate, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
 EasyQuerySharp.Querying.Query<T>.AsAlias(string! alias) -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.Querying.Query<T>.AsCte(string? name = null) -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.Querying.Query<T>.AsSubQuery() -> EasyQuerySharp.Querying.Query<T>!
@@ -1299,6 +1303,7 @@ EasyQuerySharp.Querying.Query<T>.AsTreeCte(System.Action<EasyQuerySharp.Querying
 EasyQuerySharp.Querying.Query<T>.AsTreeCte<TKey>(System.Linq.Expressions.Expression<System.Func<T, TKey>!>! self, System.Linq.Expressions.Expression<System.Func<T, TKey>!>! parent, System.Action<EasyQuerySharp.Querying.TreeCteOptions!>? configure = null, System.Linq.Expressions.Expression<System.Func<T, bool>!>? childFilter = null) -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.Querying.Query<T>.AverageAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<double?>!
 EasyQuerySharp.Querying.Query<T>.AverageDecimalAsync<TValue>(System.Linq.Expressions.Expression<System.Func<T, TValue>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<decimal?>!
+EasyQuerySharp.Querying.Query<T>.CountAsync(System.Linq.Expressions.Expression<System.Func<T, bool>!>! predicate, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<long>!
 EasyQuerySharp.Querying.Query<T>.CrossJoin<T2>(System.Linq.Expressions.Expression<System.Func<T, T2, bool>!>! on) -> EasyQuerySharp.Querying.Query<T, T2>!
 EasyQuerySharp.Querying.Query<T>.DisableTableLogicDelete() -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.Querying.Query<T>.FillMany<TChild, TKey>(System.Func<EasyQuerySharp.Querying.Query<TChild>!>! source, System.Linq.Expressions.Expression<System.Func<TChild, TKey>!>! childKey, System.Func<T, TKey>! parentKey, System.Action<T, System.Collections.Generic.List<TChild>!>! assign, bool assignEmpty = true) -> EasyQuerySharp.Querying.Query<T>!
@@ -1307,6 +1312,8 @@ EasyQuerySharp.Querying.Query<T>.FilterNavigation<TChild>(System.Linq.Expression
 EasyQuerySharp.Querying.Query<T>.FilterNavigation<TTarget>(System.Linq.Expressions.Expression<System.Func<T, TTarget?>!>! navigation, System.Linq.Expressions.Expression<System.Func<TTarget!, bool>!>! predicate) -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.Querying.Query<T>.FindAsync(object! id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T?>!
 EasyQuerySharp.Querying.Query<T>.FindOrThrowAsync(object! id, string? message = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T>!
+EasyQuerySharp.Querying.Query<T>.FirstAsync(System.Linq.Expressions.Expression<System.Func<T, bool>!>! predicate, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T>!
+EasyQuerySharp.Querying.Query<T>.FirstOrDefaultAsync(System.Linq.Expressions.Expression<System.Func<T, bool>!>! predicate, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T?>!
 EasyQuerySharp.Querying.Query<T>.ForEach(System.Action<T>! action) -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.Querying.Query<T>.From<T2>() -> EasyQuerySharp.Querying.Query<T, T2>!
 EasyQuerySharp.Querying.Query<T>.GroupBy<TKey>(System.Linq.Expressions.Expression<System.Func<T, TKey>!>! key) -> EasyQuerySharp.Querying.GroupQuery<TKey, T>!
@@ -1335,6 +1342,8 @@ EasyQuerySharp.Querying.Query<T>.SelectExcept<TResult>(System.Linq.Expressions.E
 EasyQuerySharp.Querying.Query<T>.SelectMany<TElement, TResult>(System.Linq.Expressions.Expression<System.Func<T, System.Collections.Generic.IEnumerable<TElement!>?>!>! navigation, System.Linq.Expressions.Expression<System.Func<T, TElement!, TResult>!>! resultSelector) -> EasyQuerySharp.Querying.Query<TResult>!
 EasyQuerySharp.Querying.Query<T>.SelectMany<TResult>(System.Linq.Expressions.Expression<System.Func<T, System.Collections.Generic.IEnumerable<TResult!>?>!>! navigation) -> EasyQuerySharp.Querying.Query<TResult!>!
 EasyQuerySharp.Querying.Query<T>.SelectRaw(string! selectSql) -> EasyQuerySharp.Querying.Query<T>!
+EasyQuerySharp.Querying.Query<T>.SingleAsync(System.Linq.Expressions.Expression<System.Func<T, bool>!>! predicate, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T>!
+EasyQuerySharp.Querying.Query<T>.SingleOrDefaultAsync(System.Linq.Expressions.Expression<System.Func<T, bool>!>! predicate, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T?>!
 EasyQuerySharp.Querying.Query<T>.SumAsync<TResult>(System.Linq.Expressions.Expression<System.Func<T, TResult>!>! selector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult>!
 EasyQuerySharp.Querying.Query<T>.ThenBy<TKey>(System.Linq.Expressions.Expression<System.Func<T, TKey>!>! key) -> EasyQuerySharp.Querying.Query<T>!
 EasyQuerySharp.Querying.Query<T>.ThenByDescending<TKey>(System.Linq.Expressions.Expression<System.Func<T, TKey>!>! key) -> EasyQuerySharp.Querying.Query<T>!
@@ -1396,8 +1405,11 @@ EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.SmartPredicate() -> TSelf!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.SortBy(EasyQuerySharp.Filtering.ISortRequest? request) -> TSelf!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.SortByIf(bool condition, EasyQuerySharp.Filtering.ISortRequest? request) -> TSelf!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.Take(long count) -> TSelf!
+EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToArrayAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TElement[]!>!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToChunksAsync(int size, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<System.Collections.Generic.List<TElement>!>!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToCountStatement() -> EasyQuerySharp.SqlStatement!
+EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToDictionaryAsync<TKey, TValue>(System.Func<TElement, TKey>! keySelector, System.Func<TElement, TValue>! valueSelector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<TKey, TValue>!>!
+EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToDictionaryAsync<TKey>(System.Func<TElement, TKey>! keySelector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<TKey, TElement>!>!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToListAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.List<TElement>!>!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToPageAsync(EasyQuerySharp.Filtering.TableRequest! request, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<EasyQuerySharp.Querying.Page<TElement>!>!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToPageAsync(long page, long size, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<EasyQuerySharp.Querying.Page<TElement>!>!
@@ -1944,6 +1956,7 @@ const EasyQuerySharp.SqlAst.SqlFunctionNames.Floor = "FLOOR" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Grouping = "GROUPING" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.InCsv = "InCsv" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.IndexOf = "IndexOf" -> string!
+const EasyQuerySharp.SqlAst.SqlFunctionNames.IntegerDivide = "IntegerDivide" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.JsonContainsKey = "JsonContainsKey" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.JsonGet = "JsonGet" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.JsonGetIndex = "JsonGetIndex" -> string!
@@ -1960,6 +1973,7 @@ const EasyQuerySharp.SqlAst.SqlFunctionNames.MaxColumns = "MaxColumns" -> string
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Min = "MIN" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.MinColumns = "MinColumns" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Now = "Now" -> string!
+const EasyQuerySharp.SqlAst.SqlFunctionNames.NullAsEmpty = "NullAsEmpty" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.NullIf = "NULLIF" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.NullOrDefault = "NullOrDefault" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.NullSafeEquals = "NullSafeEquals" -> string!
@@ -1976,6 +1990,7 @@ const EasyQuerySharp.SqlAst.SqlFunctionNames.StringJoinDistinct = "StringJoinDis
 const EasyQuerySharp.SqlAst.SqlFunctionNames.SubString = "SubString" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Sum = "SUM" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.SumDistinct = "SumDistinct" -> string!
+const EasyQuerySharp.SqlAst.SqlFunctionNames.ToDateOnly = "ToDateOnly" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.Trim = "Trim" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.TrimEnd = "RTRIM" -> string!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.TrimStart = "LTRIM" -> string!
@@ -2302,10 +2317,13 @@ static EasyQuerySharp.Dialects.SqlDialect.DateFunctions(System.Collections.Gener
 static EasyQuerySharp.Dialects.SqlDialect.Distinct(string! name) -> EasyQuerySharp.Dialects.FunctionWriter!
 static EasyQuerySharp.Dialects.SqlDialect.EscapeLike(string! value) -> string!
 static EasyQuerySharp.Dialects.SqlDialect.Infix(string! separator) -> EasyQuerySharp.Dialects.FunctionWriter!
+static EasyQuerySharp.Dialects.SqlDialect.IntegerDivideByModulo.get -> EasyQuerySharp.Dialects.FunctionWriter!
+static EasyQuerySharp.Dialects.SqlDialect.IntegerDivideByTrunc.get -> EasyQuerySharp.Dialects.FunctionWriter!
 static EasyQuerySharp.Dialects.SqlDialect.IsInteger(System.Type! type) -> bool
 static EasyQuerySharp.Dialects.SqlDialect.IsNullable(EasyQuerySharp.Metadata.ColumnMetadata! column) -> bool
 static EasyQuerySharp.Dialects.SqlDialect.IsOrderedOrPaged(EasyQuerySharp.SqlAst.SelectQuery! part) -> bool
 static EasyQuerySharp.Dialects.SqlDialect.Lower<TEnum>(TEnum value) -> string!
+static EasyQuerySharp.Dialects.SqlDialect.NullAsEmptyByCoalesce.get -> EasyQuerySharp.Dialects.FunctionWriter!
 static EasyQuerySharp.Dialects.SqlDialect.Pad(string! name, string? defaultPad) -> EasyQuerySharp.Dialects.FunctionWriter!
 static EasyQuerySharp.Dialects.SqlDialect.Reordered(string! name, params int[]! order) -> EasyQuerySharp.Dialects.FunctionWriter!
 static EasyQuerySharp.Dialects.SqlDialect.SegmentedDateFormat(string! function, params (string! CSharp, string! Sql)[]! tokens) -> EasyQuerySharp.Dialects.FunctionWriter!

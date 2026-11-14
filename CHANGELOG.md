@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-14
+
 ### 新增
 
 - 终结方法 `AnyAsync` / `CountAsync` / `FirstAsync` / `FirstOrDefaultAsync` / `SingleAsync` / `SingleOrDefaultAsync` 可以直接带条件；新增 `AllAsync(条件)`、`ToArrayAsync()`、`ToDictionaryAsync(key)` / `ToDictionaryAsync(key, value)`。
@@ -23,6 +25,7 @@
 - 枚举的 `ToString()` 原来翻译成数字（按数值存）或库里的文字（按名字存、`[EnumMember]` 改过名字时与成员名不同），现在与 C# 一样是成员名；可空枚举没有值时是空串。
 - `Math.Round(x, MidpointRounding)` 把舍入方式当成小数位数写进 `ROUND`，结果不对；现在报不支持。
 - SQLite 上的 `Math.Truncate(x)` 写成 SQLite 没有的两参数 `TRUNC(x,0)`，现在写 `trunc(x)`。
+- TDengine 上的 `??`、`GetValueOrDefault` 写成 3.3 没有的 `COALESCE`，现在写 `CASE WHEN x IS NOT NULL THEN x ELSE y END`。
 
 ## [1.1.0] - 2026-11-14
 
@@ -68,6 +71,7 @@
 - 对标 Java 版的 2404 个用例：已移植 2071、偏离 191、不适用 142，每条偏离与不适用都写了理由（见 [docs/parity-tests.md](https://github.com/kenconnet666/EasyQuerySharp/blob/master/docs/parity-tests.md)）。
 - CI 在 14 种数据库上跑实库测试：SQLite、DuckDB、MySQL 8.4 / 8.0.18、MariaDB、PostgreSQL、SQL Server、Oracle、达梦、openGauss、SAP HANA、ClickHouse、Db2、TDengine。人大金仓没有可用的容器镜像，只比对 SQL 文本。
 
-[Unreleased]: https://github.com/kenconnet666/EasyQuerySharp/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/kenconnet666/EasyQuerySharp/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/kenconnet666/EasyQuerySharp/releases/tag/v1.2.0
 [1.1.0]: https://github.com/kenconnet666/EasyQuerySharp/releases/tag/v1.1.0
 [1.0.0]: https://github.com/kenconnet666/EasyQuerySharp/releases/tag/v1.0.0
