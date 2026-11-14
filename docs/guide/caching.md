@@ -100,7 +100,7 @@ await cache.Of(db).InvalidateAsync<User>();    // 整表
 - 缓存旁路（cache-aside）的竞态（读到旧值的请求在失效之后写回）靠 `LateEvictDelay` 与过期时间兜底。
 - 只缓存实体自己的列，不缓存投影、DTO、聚合、对象树；只支持单列主键；主键类型要能与文本互转（字符串、整数、Guid、日期，或带转换器转成这些类型）。
 - 不用 `HybridCache` 的标签：标签的失效时间记在进程内，有分布式层时别的实例看不到。
-- 和核心一样，不支持裁剪和 Native AOT，`EasyCache` 的构造函数标注了 `RequiresUnreferencedCode` / `RequiresDynamicCode`。
+- 裁剪 / Native AOT 下要在 `EasyCacheOptions.Json` 里给源生成的 `JsonSerializerContext`，见[裁剪与 Native AOT](native-aot.md)。
 - 分片实体（见[分库分表](sharding.md)）不能缓存：写入落在各分片的实际表上，缓存的失效对不上，`cache.Of(db)` 会抛 `NotSupportedException`。
 
 ## 写入监听

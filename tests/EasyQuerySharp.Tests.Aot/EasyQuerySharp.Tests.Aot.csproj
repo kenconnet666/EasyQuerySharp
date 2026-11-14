@@ -17,10 +17,9 @@
         <!-- 示例模型的标签列用的是反射版的 JsonValueConverter；源生成版在 Program 末尾单独核对 -->
         <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
         <!--
-          允许的两类裁剪警告（run.sh 核对发布时的警告只剩这两类）：这个程序自己按反射找卡片、输出结果（程序集整体保留，见下面的 TrimmerRootAssembly）；
-          示例模型与卡片用了反射版的 JsonValueConverter（上面开了反射 JSON）。EasyQuerySharp 自己的警告由它的 IsAotCompatible 在编译时报错。
+          示例模型与卡片用了反射版的 JsonValueConverter（上面开了反射 JSON），卡片的表达式树里有 .NET 自己标注的 Expression.Bind / New / NewArrayInit：
+          这两类裁剪警告不当错误，run.sh 核对发布时的警告只剩它们。EasyQuerySharp 自己的警告由它的 IsAotCompatible 在编译时报错。
         -->
-        <NoWarn>$(NoWarn);IL2070;IL2075</NoWarn>
         <WarningsNotAsErrors>$(WarningsNotAsErrors);IL2026;IL3050</WarningsNotAsErrors>
     </PropertyGroup>
 

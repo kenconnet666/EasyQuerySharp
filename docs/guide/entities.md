@@ -376,7 +376,7 @@ public class User
 
 ## 限制
 
-- 元数据靠反射读取，不支持 Native AOT 与裁剪。
+- 元数据靠反射读取；裁剪 / Native AOT 下由核心包自带的生成器保留实体的成员，见[裁剪与 Native AOT](native-aot.md)。
 - 没有 Fluent API：映射只能写在特性上。不想改实体时，逻辑删除可以用 `options.ApplyLogicDelete(..)` 配置（见[列规则](rules.md)），其余映射暂不支持外部配置。
 - 不支持多态实体（TS 版的 `entity.union`），记在 BACKLOG。
 - `DbType`、`Comment`、`DbDefault` 只在建表时使用，见[建表与同步](code-first.md)。

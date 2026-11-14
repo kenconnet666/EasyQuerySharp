@@ -61,7 +61,7 @@ public sealed class ReportService([FromKeyedServices("reporting")] EasyDb report
 ## 限制
 
 - 配置错误（比如没有指定方言）要到第一次解析时才报出来，消息里会写明是哪一次 `AddEasyQuery`。
-- 和核心一样，不支持裁剪和 Native AOT。`AddEasyQuery` 同样标注了 `RequiresUnreferencedCode` / `RequiresDynamicCode`。
+- 可以用在裁剪 / Native AOT 的应用里，见[裁剪与 Native AOT](native-aot.md)。
 - 不绑定 `IConfiguration`。Java 写在 `application.yml` 里的 `easy-query.*` 配置项，在 C# 里由配置函数设置 `EasyDbOptions`。
 
 ## 对应 Java

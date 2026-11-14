@@ -4,6 +4,7 @@
         <PackageId>EasyQuerySharp.Caching</PackageId>
         <Description>EasyQuerySharp 的二级缓存（对应 easy-query 的 sql-cache）：按主键（kv）与按条件的主键索引（all）缓存实体，存储用 HybridCache（本机与分布式两级），经本库的写入自动失效。</Description>
         <PackageTags>$(PackageTags);cache;hybridcache</PackageTags>
+        <IsAotCompatible>true</IsAotCompatible>
     </PropertyGroup>
 
     <!--

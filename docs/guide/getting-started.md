@@ -206,7 +206,7 @@ DELETE FROM `t_company` WHERE `name` = ?;
 ## 限制
 
 - 只有异步 API（`…Async`），没有同步版本。
-- 不支持 Native AOT 和裁剪：元数据靠反射读取，读取结果的委托在运行时编译。
+- 支持裁剪与 Native AOT（读取结果在 AOT 下解释执行，比 JIT 慢），见[裁剪与 Native AOT](native-aot.md)。
 - 查询不实现 `IQueryable<T>`：方法是 EasyQuerySharp 自己的（`WhereIf`、`ToPageAsync`、带配置的 `Include` 等），但 `from … where … select` 查询语法照样能用。
 - 写不进表达式树的语法（`?.`、`switch` 表达式、元组字面量、集合表达式 `[..]`）有对应写法，见 [0001](../decisions/0001-query-api-route.md#表达式树里不能写的语法)；分析器会在编译期提示。
 

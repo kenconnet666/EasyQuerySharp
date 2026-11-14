@@ -37,6 +37,7 @@ dotnet add package EasyQuerySharp
 
 - 需要 .NET 10。核心包只依赖 BCL，不引用数据库驱动：驱动由你的项目引用，通过 ADO.NET 的 `DbDataSource` 传入。
 - `[Projection]` 生成器与分析器随核心包分发，不用另装。
+- 支持裁剪与 Native AOT（`PublishAot`），见[裁剪与 Native AOT](https://github.com/kenconnet666/EasyQuerySharp/blob/master/docs/guide/native-aot.md)。
 - 可选：`EasyQuerySharp.DependencyInjection`（`services.AddEasyQuery(..)`）、`EasyQuerySharp.Caching`（二级缓存）。详见[入门](https://github.com/kenconnet666/EasyQuerySharp/blob/master/docs/guide/getting-started.md#安装)。
 
 <!-- snippet: start-db -->

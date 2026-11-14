@@ -12,9 +12,9 @@ dotnet run -c Release --project "$project" -- "$out/jit.txt"
 dotnet publish "$project" -c Release -o "$out/bin" -p:TreatWarningsAsErrors=false | tee "$out/publish.log"
 "$out/bin/EasyQuerySharp.Tests.Aot" "$out/aot.txt"
 
-# 允许的：冒烟程序自己的反射（Program）；示例模型与卡片里反射版的 JsonValueConverter；卡片的表达式树里
+# 允许的：示例模型与卡片里反射版的 JsonValueConverter；卡片的表达式树里
 # 对象初始化、构造与数组编译出来的 Expression.Bind / New / NewArrayInit（.NET 自己的标注，使用者的查询都会有，成员由生成器保留）
-unexpected=$(grep -E '(warning|error) IL[0-9]+' "$out/publish.log" | grep -vE 'Program\.<|JsonValueConverter|System\.Linq\.Expressions\.Expression\.(Bind|New|NewArrayInit)\(' || true)
+unexpected=$(grep -E '(warning|error) IL[0-9]+' "$out/publish.log" | grep -vE 'JsonValueConverter|System\.Linq\.Expressions\.Expression\.(Bind|New|NewArrayInit)\(' || true)
 if [[ -n $unexpected ]]; then
   echo "::error::Native AOT 发布出现了意外的裁剪 / AOT 警告"
   echo "$unexpected"

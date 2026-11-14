@@ -22,4 +22,4 @@ EQ0001、EQ0002 只检查**查询表达式**：作为表达式树传给 EasyQuer
 
 没有做自动修复：代码修复要引用 Roslyn Workspaces，而分析器程序集不能引用它（RS1038），要单独再建一个程序集。等规则多到值得时再拆。
 
-EQ0001 不报 `[Projection]` 方法（它们会内联）。`[MapFrom<T>]` 的映射表达式在运行时构造（与其它 DTO 的 `Select<TDto>()` 相同），编译期生成随 AOT 一起做，见 [BACKLOG](../BACKLOG.md)。
+EQ0001 不报 `[Projection]` 方法（它们会内联）。`[MapFrom<T>]` 的映射表达式在运行时构造（与其它 DTO 的 `Select<TDto>()` 相同），编译期生成随预编译查询一起做，见 [BACKLOG](../BACKLOG.md)。

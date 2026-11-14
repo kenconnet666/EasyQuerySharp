@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using System.Text.Json;
 using EasyQuerySharp.Execution;
 using EasyQuerySharp.Metadata;
 using EasyQuerySharp.Querying;
@@ -87,7 +86,7 @@ public sealed class CacheClient
         {
             var item = await _cache.Store.GetRowAsync(table, epoch, texts[i], variant, ct).ConfigureAwait(false);
             if (item is null) missing.Add(i);
-            else if (item.Json is { } json) result[i] = JsonSerializer.Deserialize<T>(json, state.Json);
+            else if (item.Json is { } json) result[i] = state.Deserialize<T>(json);
         }
         if (missing.Count == 0) return result;
 
@@ -100,7 +99,7 @@ public sealed class CacheClient
             var row = loaded.GetValueOrDefault(text);
             var item = row is null
                 ? new CachedItem(null, now + (long)_cache.Store.NullExpiration.TotalMilliseconds)
-                : new CachedItem(JsonSerializer.Serialize(row, state.Json), now + (long)_cache.Store.Expiration.TotalMilliseconds);
+                : new CachedItem(state.Serialize(row), now + (long)_cache.Store.Expiration.TotalMilliseconds);
             await _cache.Store.SetRowAsync(table, epoch, text, variant, item, ct).ConfigureAwait(false);
         }
         foreach (var i in missing) result[i] = loaded.GetValueOrDefault(texts[i]);

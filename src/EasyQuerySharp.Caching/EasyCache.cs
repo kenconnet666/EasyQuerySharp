@@ -26,15 +26,11 @@ namespace EasyQuerySharp.Caching;
 /// </code></example>
 public sealed class EasyCache : IWriteListener
 {
-    private const string NotAotReady = "实体用 System.Text.Json 的反射序列化，不支持裁剪与 Native AOT（与核心一致，见 BACKLOG）";
-
     private readonly EasyCacheOptions _options;
     private readonly HashSet<Type> _entities;
     private readonly ConditionalWeakTable<EasyDb, DbState> _states = new();
 
     /// <summary>用 HybridCache 与配置函数创建；配置里用 <see cref="EasyCacheOptions.Cache{T}"/> 登记要缓存的实体。</summary>
-    [RequiresUnreferencedCode(NotAotReady)]
-    [RequiresDynamicCode(NotAotReady)]
     public EasyCache(HybridCache store, Action<EasyCacheOptions> configure)
     {
         ArgumentNullException.ThrowIfNull(store);
@@ -175,10 +171,11 @@ public sealed class EasyCache : IWriteListener
                 // 实体自己的列：普通列是属性本身，值对象里的列取从实体出发的第一个属性
                 columns[type] = entity.Columns.Select(c => c.OwnerPath.Count > 0 ? c.OwnerPath[0].Name : c.Property.Name).ToHashSet(StringComparer.Ordinal);
             }
-            var json = cache._options.Json ?? JsonSerializerOptions.Default;
-            Json = new JsonSerializerOptions(json)
+            // 不用 JsonSerializerOptions.Default（它带着反射解析器）：没给选项时从空的选项开始
+            var json = cache._options.Json;
+            Json = new JsonSerializerOptions(json ?? new JsonSerializerOptions())
             {
-                TypeInfoResolver = (json.TypeInfoResolver ?? new DefaultJsonTypeInfoResolver()).WithAddedModifier(info =>
+                TypeInfoResolver = (json?.TypeInfoResolver ?? ReflectionResolver()).WithAddedModifier(info =>
                 {
                     if (info.Kind != JsonTypeInfoKind.Object || !columns.TryGetValue(info.Type, out var keep)) return;
                     for (var i = info.Properties.Count - 1; i >= 0; i--)
@@ -192,6 +189,22 @@ public sealed class EasyCache : IWriteListener
         public Dictionary<string, ColumnMetadata> Tables { get; }
 
         public JsonSerializerOptions Json { get; }
+
+        public string Serialize<T>(T value) => JsonSerializer.Serialize(value, TypeInfo<T>());
+
+        public T? Deserialize<T>(string json) => JsonSerializer.Deserialize(json, TypeInfo<T>());
+
+        private JsonTypeInfo<T> TypeInfo<T>() => (JsonTypeInfo<T>)Json.GetTypeInfo(typeof(T));
+
+        // 没给 TypeInfoResolver 时按反射序列化；裁剪 / Native AOT 下反射 JSON 默认关闭，要在 EasyCacheOptions.Json 里给源生成的 JsonSerializerContext
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "只在 JsonSerializer.IsReflectionEnabledByDefault 为 true 时用反射解析器")]
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "只在 JsonSerializer.IsReflectionEnabledByDefault 为 true 时用反射解析器")]
+        private static IJsonTypeInfoResolver ReflectionResolver() =>
+            JsonSerializer.IsReflectionEnabledByDefault
+                ? new DefaultJsonTypeInfoResolver()
+                : throw new InvalidOperationException(
+                    "反射 JSON 已关闭（裁剪 / Native AOT）：在 EasyCacheOptions.Json 里设置 TypeInfoResolver，给一个包含要缓存的实体的源生成 JsonSerializerContext，"
+                    + "如 o.Json = new JsonSerializerOptions { TypeInfoResolver = AppJson.Default }");
     }
 }
 

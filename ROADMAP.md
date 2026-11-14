@@ -24,7 +24,7 @@
 - 不做，对应的用例标为不适用：
   - search 扩展（`sql-search`，45 个）：第三方贡献的 URL 参数约定，由前端选运算符；同类需求用 `FilterBy` / `SortBy`。
   - SQL Server 2008 的 ROW_NUMBER 分页（13 个）：SQL Server 2008 已于 2019 年停止支持。
-- 暂不做，记在 BACKLOG：文档站、AOT 与元数据 / 物化器的 Source Generator、TS 版独有的能力。
+- 暂不做，记在 BACKLOG：文档站、编译期预编译查询（interceptors）、TS 版独有的能力。
 - 对标基准冻结在现有快照，不随上游增长；fork 仓库不在本机，fork 的 89 个用例只存在于快照里。
 
 **架构**

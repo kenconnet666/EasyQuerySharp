@@ -28,7 +28,11 @@ public sealed class EasyCacheOptions
     /// </summary>
     public TimeSpan? LateEvictDelay { get; set; }
 
-    /// <summary>实体序列化的选项（System.Text.Json）；为 null 时用默认选项。只序列化实体自己的列，导航属性等总是排除。</summary>
+    /// <summary>
+    /// 实体序列化的选项（System.Text.Json）；为 null 时用默认选项。只序列化实体自己的列，导航属性等总是排除。
+    /// 裁剪 / Native AOT 下反射 JSON 默认关闭，要在这里给源生成的元数据：<c>o.Json = new JsonSerializerOptions { TypeInfoResolver = AppJson.Default }</c>
+    /// （<c>AppJson</c> 是标了 <c>[JsonSerializable(typeof(User))]</c> 等的 <c>JsonSerializerContext</c>，包含要缓存的实体）。
+    /// </summary>
     public JsonSerializerOptions? Json { get; set; }
 
     /// <summary>登记要缓存的实体：只有登记过的实体能用 <c>Kv&lt;T&gt;()</c> / <c>All&lt;T&gt;()</c>，写入它们的表时失效。</summary>

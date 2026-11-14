@@ -21,6 +21,7 @@
 - [0005 关联键的匹配方式](decisions/0005-relation-key-match.md)：`KeyMatch.SelfCsv`（本表一列存逗号分隔的目标键）与 `Sql.InCsv` 的各方言写法、三种场景与限制。
 - [0006 分库分表](decisions/0006-sharding.md)：节点与规则、按 WHERE 裁剪、库内 UNION ALL 与跨库归并、写入路由、事务，以及 48 个 Java 用例的归属。
 - [0007 二级缓存](decisions/0007-second-level-cache.md)：显式的 kv / all 缓存包、核心的写入监听、HybridCache 上的键与桶、失效规则与一致性限制。
+- [0008 裁剪与 Native AOT](decisions/0008-native-aot.md)：生成器保留使用者类型的成员与值类型实例化，库里不在运行时按值类型实例化泛型，共享模板与运算符的保留，JIT 与 AOT 逐张卡片比对。
 
 ## 指南
 
@@ -48,6 +49,7 @@
 | [依赖注入](guide/dependency-injection.md) | `services.AddEasyQuery(..)`，多个库按名字注入，从容器取数据源、监听器、拦截器，生命周期 |
 | [分库分表](guide/sharding.md) | 登记规则与数据源、按条件裁剪、同库分表的 UNION ALL 与跨库归并、写入路由、事务、code-first、限制 |
 | [二级缓存](guide/caching.md) | `EasyQuerySharp.Caching` 的 kv / all 缓存、HybridCache 两级存储、写入后的自动失效与写入监听、一致性限制 |
+| [裁剪与 Native AOT](guide/native-aot.md) | 开 `PublishAot` 就能用：生成器替你保留实体；JSON 列与二级缓存要给源生成的元数据；会看到的警告与限制 |
 
 ## 设计
 

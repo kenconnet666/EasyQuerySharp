@@ -99,6 +99,16 @@ public sealed class CacheTest : IAsyncLifetime
         Assert.NotSame(second, await app.Client.Kv<CtTopic>().FindAsync("1", Ct));
     }
 
+    // 源生成的 JSON 元数据（裁剪 / Native AOT 下的写法）：同样只存实体自己的列，导航与 [ColumnIgnore] 不进缓存
+    [Fact]
+    public async Task KvWorksWithSourceGeneratedJson()
+    {
+        var app = NewApp(configure: o => o.Json = new System.Text.Json.JsonSerializerOptions { TypeInfoResolver = CacheTestJson.Default });
+        await OneSqlAsync(() => app.Client.Kv<CtTopic>().FindAsync("1", Ct), TopicSql + "(?)", "1(String)");
+        var cached = await NoSqlAsync(() => app.Client.Kv<CtTopic>().FindAsync("1", Ct));
+        Assert.Equal(("1", 1, "t1", "not cached", (List<CtPost>?)null), (cached!.Id, cached.Stars, cached.Title, cached.Alias, cached.Posts));
+    }
+
     // 查无此行也缓存（防穿透），NullExpiration 之后再查库
     [Fact]
     public async Task MissingRowsAreCachedForTheNullExpiration()
@@ -411,6 +421,13 @@ public sealed class CacheTest : IAsyncLifetime
         Assert.Throws<ArgumentOutOfRangeException>(() => new EasyCache(CacheSupport.NewHybridCache(), o => o.Expiration = TimeSpan.Zero));
     }
 }
+
+/// <summary>缓存用例的源生成 JSON 元数据。</summary>
+[System.Text.Json.Serialization.JsonSerializable(typeof(CtTopic))]
+[System.Text.Json.Serialization.JsonSerializable(typeof(CtTopicLong))]
+[System.Text.Json.Serialization.JsonSerializable(typeof(CtPost))]
+[System.Text.Json.Serialization.JsonSerializable(typeof(CtCode))]
+internal sealed partial class CacheTestJson : System.Text.Json.Serialization.JsonSerializerContext;
 
 [Table("ct_topic")]
 public class CtTopic
