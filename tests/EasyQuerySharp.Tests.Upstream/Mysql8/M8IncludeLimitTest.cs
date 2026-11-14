@@ -43,7 +43,7 @@ public sealed class M8IncludeLimitTest(Mysql8Fixture fixture) : Mysql8Test(fixtu
     public async Task TestIncludeLimitPagingUnionAll()
     {
         await InsertDataAsync();
-        var unionAll = new EasyDb(o => { o.UseMySql(new MySqlDataSource(TestDatabases.MySql.TryConnectionString(Mysql8Fixture.Database)!)); o.IncludeLimitMode = IncludeLimitMode.UnionAll; });
+        var unionAll = new EasyDb(o => { o.WithJavaNulls(); o.UseMySql(new MySqlDataSource(TestDatabases.MySql.TryConnectionString(Mysql8Fixture.Database)!)); o.IncludeLimitMode = IncludeLimitMode.UnionAll; });
         await AssertPage2Async(unionAll);
     }
 

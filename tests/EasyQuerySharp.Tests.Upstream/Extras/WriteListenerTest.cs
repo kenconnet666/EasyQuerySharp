@@ -19,7 +19,7 @@ public sealed class WriteListenerTest : IAsyncLifetime
     public WriteListenerTest()
     {
         _keepAlive = new SqliteConnection(_cs);
-        _db = new EasyDb(o => o.UseSqlite(SqliteFactory.Instance.CreateDataSource(_cs)).AddListener(SqlCapture.Instance).AddWriteListener(_listener));
+        _db = new EasyDb(o => o.WithJavaNulls().UseSqlite(SqliteFactory.Instance.CreateDataSource(_cs)).AddListener(SqlCapture.Instance).AddWriteListener(_listener));
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;

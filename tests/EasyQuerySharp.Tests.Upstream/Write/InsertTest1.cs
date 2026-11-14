@@ -75,6 +75,7 @@ public sealed class InsertTest1(MySqlFixture fixture) : MySqlTest(fixture)
     {
         var db = new EasyDb(o =>
         {
+            o.WithJavaNulls();
             o.Use(OracleDialect.Instance);
             o.UpdateStrategy = ColumnStrategy.OnlyNotNull;
             o.MapKeyConversion = key => key.ToUpperInvariant();

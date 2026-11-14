@@ -14,7 +14,8 @@ public abstract partial class LiveSuite
         Assert.Equal(["bob"], await Names(u => u.Age.EqualsNullSafe(none)));
         Assert.Equal(["alice"], await Names(u => u.Age.EqualsNullSafe(30)));
         Assert.Equal(["alice", "bob", "carol"], await Names(u => u.Age.EqualsNullSafe(u.Age)));
-        Assert.Equal(["alice", "carol"], await Names(u => u.Age == u.Age));
+        // == 按 C# 的语义，两个 NULL 也相等
+        Assert.Equal(["alice", "bob", "carol"], await Names(u => u.Age == u.Age));
     }
 
     // 各粒度的截断已在 TruncatesDatesToEachUnit 里验证；这里按月分组统计

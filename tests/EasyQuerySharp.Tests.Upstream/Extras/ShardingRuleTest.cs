@@ -47,7 +47,7 @@ public sealed class ShardingRuleTest : IAsyncLifetime
         public string Id { get; set; } = "";
     }
 
-    private EasyDb Db { get; } = new(o => o
+    private EasyDb Db { get; } = new(o => o.WithJavaNulls()
         .Use(SqliteDialect.Instance, SqliteFactory.Instance.CreateDataSource(First)).AddListener(SqlCapture.Instance)
         .AddDataSource("ds1", SqliteFactory.Instance.CreateDataSource(Second))
         .Shard<ModRow>(r => r.Mod(t => t.Id, 3))
@@ -166,6 +166,7 @@ public sealed class ShardingRuleTest : IAsyncLifetime
     {
         var narrow = new EasyDb(o =>
         {
+            o.WithJavaNulls();
             o.MaxShardNodes = 2;
             o.Use(SqliteDialect.Instance, SqliteFactory.Instance.CreateDataSource(First)).Shard<ModRow>(r => r.Mod(t => t.Id, 3));
         });
@@ -175,6 +176,6 @@ public sealed class ShardingRuleTest : IAsyncLifetime
         await Assert.ThrowsAsync<InvalidOperationException>(() => Db.Insert(new MonthRow { Id = "x", CreatedAt = new DateTime(2023, 1, 1) }).ExecuteAsync(Ct));
         Assert.Throws<NotSupportedException>(() => Db.Delete<ModRow>().Where(t => t.Amount > 0).Returning());
         await Assert.ThrowsAsync<NotSupportedException>(() => Db.Query<ModRow>().InsertInto("t_rule_plain").ExecuteAsync(Ct));
-        Assert.Throws<InvalidOperationException>(() => new EasyDb(o => o.UseSqlite().Shard<ModRow>(r => r.Mod(t => t.Id, 3, dataSource: "nowhere"))));
+        Assert.Throws<InvalidOperationException>(() => new EasyDb(o => o.WithJavaNulls().UseSqlite().Shard<ModRow>(r => r.Mod(t => t.Id, 3, dataSource: "nowhere"))));
     }
 }

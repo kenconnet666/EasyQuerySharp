@@ -38,6 +38,12 @@ public sealed class ColumnMetadata
     /// <summary>所在的值对象（或外层的值对象）本身可空：建表时这一列可空。</summary>
     internal bool InNullableValueObject { get; init; }
 
+    /// <summary>
+    /// 按 C# 的声明这一列可能是 null：可空值类型、标注了 <c>?</c> 的引用类型（没有可空上下文时也算），或在可空的值对象里；主键不会是 null。
+    /// 条件里按 C# 语义比较 NULL 时据此决定要不要补 IS NULL 判断。
+    /// </summary>
+    internal bool MayBeNull { get; init; }
+
     /// <summary>列名（未加引号）。</summary>
     public string Name { get; }
 
@@ -116,7 +122,7 @@ public sealed class ColumnMetadata
         IsPrimaryKey = IsPrimaryKey, IsGenerated = IsGenerated, KeyGenerator = KeyGenerator, GeneratedSql = GeneratedSql, AutoSelect = AutoSelect,
         Computed = Computed, InsertIgnore = InsertIgnore, UpdateIgnore = UpdateIgnore, UpdateWhenTrackedChanged = UpdateWhenTrackedChanged,
         Converter = Converter, SqlConversion = SqlConversion, DbType = DbType, Comment = Comment, DbDefault = DbDefault, InNullableValueObject = InNullableValueObject,
-        RenamedFrom = RenamedFrom,
+        RenamedFrom = RenamedFrom, MayBeNull = MayBeNull,
     };
 
     /// <inheritdoc />

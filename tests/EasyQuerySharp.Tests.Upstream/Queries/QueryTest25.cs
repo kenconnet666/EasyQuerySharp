@@ -20,7 +20,7 @@ public sealed class QueryTest25(MySqlFixture fixture) : MySqlTest(fixture)
     private CacheClient NewCache()
     {
         var cache = new EasyCache(CacheSupport.NewHybridCache(), o => o.Cache<BlogEntity>().Cache<Topic>().Cache<TopicInteger>());
-        var db = new EasyDb(o => o.UseMySql(Db.Options.DataSource).AddListener(SqlCapture.Instance).AddInterceptor(new BlogPredicateInterceptor()).UseCache(cache));
+        var db = new EasyDb(o => o.WithJavaNulls().UseMySql(Db.Options.DataSource).AddListener(SqlCapture.Instance).AddInterceptor(new BlogPredicateInterceptor()).UseCache(cache));
         return cache.Of(db);
     }
 

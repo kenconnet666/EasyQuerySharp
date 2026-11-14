@@ -25,7 +25,7 @@ public sealed class CacheTest : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        var db = new EasyDb(o => o.UseSqlite(SqliteFactory.Instance.CreateDataSource(_cs)));
+        var db = new EasyDb(o => o.WithJavaNulls().UseSqlite(SqliteFactory.Instance.CreateDataSource(_cs)));
         await db.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL", cancellationToken: Ct);
         await db.CodeFirst.CreateTablesAsync([typeof(CtTopic), typeof(CtPost), typeof(CtCode)], Ct);
         await db.Insert(Enumerable.Range(1, 5).Select(i => new CtTopic { Id = i.ToString(), Stars = i, Title = "t" + i })).ExecuteAsync(Ct);
@@ -58,14 +58,14 @@ public sealed class CacheTest : IAsyncLifetime
     }
 
     private EasyDb NewDb(EasyCache cache) =>
-        new(o => o.UseSqlite(SqliteFactory.Instance.CreateDataSource(_cs)).AddListener(SqlCapture.Instance).AddInterceptor(new CtStarsFilter()).UseCache(cache));
+        new(o => o.WithJavaNulls().UseSqlite(SqliteFactory.Instance.CreateDataSource(_cs)).AddListener(SqlCapture.Instance).AddInterceptor(new CtStarsFilter()).UseCache(cache));
 
     // 分片实体不能进二级缓存：分片写入的事件里是各分片的实际表名（ct_topic_0…），按逻辑表登记的失效对不上
     [Fact]
     public void RefusesShardedEntities()
     {
         var cache = new EasyCache(CacheSupport.NewHybridCache(null), o => o.Cache<CtTopic>());
-        var db = new EasyDb(o => o.UseSqlite(SqliteFactory.Instance.CreateDataSource(_cs)).Shard<CtTopic>(r => r.Mod(t => t.Id, 2)).UseCache(cache));
+        var db = new EasyDb(o => o.WithJavaNulls().UseSqlite(SqliteFactory.Instance.CreateDataSource(_cs)).Shard<CtTopic>(r => r.Mod(t => t.Id, 2)).UseCache(cache));
         Assert.Contains("分片实体", Assert.Throws<NotSupportedException>(() => cache.Of(db)).Message, StringComparison.Ordinal);
     }
     private static async Task<T> NoSqlAsync<T>(Func<Task<T>> read)
@@ -414,9 +414,9 @@ public sealed class CacheTest : IAsyncLifetime
     public void MisconfigurationsAreReported()
     {
         var cache = new EasyCache(CacheSupport.NewHybridCache(), o => o.Cache<CtTopic>());
-        var plain = new EasyDb(o => o.UseSqlite(SqliteFactory.Instance.CreateDataSource(_cs)));
+        var plain = new EasyDb(o => o.WithJavaNulls().UseSqlite(SqliteFactory.Instance.CreateDataSource(_cs)));
         Assert.Contains("UseCache", Assert.Throws<InvalidOperationException>(() => cache.Of(plain)).Message);
-        var client = cache.Of(new EasyDb(o => o.UseSqlite(SqliteFactory.Instance.CreateDataSource(_cs)).UseCache(cache)));
+        var client = cache.Of(new EasyDb(o => o.WithJavaNulls().UseSqlite(SqliteFactory.Instance.CreateDataSource(_cs)).UseCache(cache)));
         Assert.Contains("没有登记", Assert.Throws<InvalidOperationException>(() => client.Kv<CtPost>()).Message);
         Assert.Throws<ArgumentOutOfRangeException>(() => new EasyCache(CacheSupport.NewHybridCache(), o => o.Expiration = TimeSpan.Zero));
     }

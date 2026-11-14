@@ -21,7 +21,7 @@ public sealed class SqliteDialectTest
         var cs = $"Data Source=eqs-sqlite-pad-{Guid.NewGuid():N};Mode=Memory;Cache=Shared";
         await using var keepAlive = new SqliteConnection(cs);
         await keepAlive.OpenAsync(Ct);
-        var db = new EasyDb(o => o.UseSqlite(SqliteFactory.Instance.CreateDataSource(cs)));
+        var db = new EasyDb(o => o.WithJavaNulls().UseSqlite(SqliteFactory.Instance.CreateDataSource(cs)));
         await db.ExecuteSqlRawAsync("CREATE TABLE t_topic (id TEXT PRIMARY KEY, stars INTEGER, title TEXT, create_time TEXT)", cancellationToken: Ct);
         await db.ExecuteSqlRawAsync("INSERT INTO t_topic (id, title) VALUES ('1', 'ab'), ('2', 'abcdefg'), ('3', NULL)", cancellationToken: Ct);
         var rows = await db.Query<Topic>().OrderBy(t => t.Id).Select(t => new Draft<string?, string?>(t.Title!.PadLeft(5, '*'), t.Title!.PadRight(5))).ToListAsync(Ct);

@@ -13,3 +13,7 @@ EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToArrayAsync(System.Threading
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToDictionaryAsync<TKey, TValue>(System.Func<TElement, TKey>! keySelector, System.Func<TElement, TValue>! valueSelector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<TKey, TValue>!>!
 EasyQuerySharp.Querying.QueryBase<TSelf, TElement>.ToDictionaryAsync<TKey>(System.Func<TElement, TKey>! keySelector, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.Dictionary<TKey, TElement>!>!
 const EasyQuerySharp.SqlAst.SqlFunctionNames.ToDateOnly = "ToDateOnly" -> string!
+EasyQuerySharp.EasyDbOptions.UseRelationalNulls.get -> bool
+EasyQuerySharp.EasyDbOptions.UseRelationalNulls.set -> void
+static EasyQuerySharp.Dialects.SqlDialect.NullAsEmptyByCoalesce.get -> EasyQuerySharp.Dialects.FunctionWriter!
+const EasyQuerySharp.SqlAst.SqlFunctionNames.NullAsEmpty = "NullAsEmpty" -> string!

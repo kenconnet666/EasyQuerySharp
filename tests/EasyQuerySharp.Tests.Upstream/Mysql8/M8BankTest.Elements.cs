@@ -127,7 +127,7 @@ public sealed partial class M8BankTest
     {
         _ = Db; // 没有 MySQL 时跳过
         var counter = new CountingCardFilter();
-        var db = new EasyDb(o => o.UseMySql(new MySqlDataSource(TestDatabases.MySql.TryConnectionString(Mysql8Fixture.Database)!)).AddInterceptor(counter));
+        var db = new EasyDb(o => o.WithJavaNulls().UseMySql(new MySqlDataSource(TestDatabases.MySql.TryConnectionString(Mysql8Fixture.Database)!)).AddInterceptor(counter));
 
         await db.Update<SysBankCard>().Set(c => c.Id, "123123").Where(c => c.Id == "1" && c.Id == null).ExecuteAsync(Ct);
         Assert.Equal(1, counter.Calls);

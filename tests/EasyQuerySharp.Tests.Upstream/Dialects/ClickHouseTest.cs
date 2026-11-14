@@ -10,6 +10,7 @@ public sealed class ClickHouseTest
 {
     internal static EasyDb ClickHouse { get; } = new(o =>
     {
+        o.WithJavaNulls();
         o.UseClickHouse();
         o.NameConversion = NameConversion.UpperUnderlined;
     });

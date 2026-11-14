@@ -13,6 +13,9 @@
 ### 变更
 
 - 两个整数相除与 C# 一样向零截断：MySQL 写 `DIV`，Oracle、达梦、DuckDB、openGauss、Kingbase 写 `TRUNC(a / b)`，HANA、ClickHouse、TDengine 减掉余数再除；原来这些库上 `/` 得到小数。PG、SQL Server、SQLite、Db2 的 SQL 不变。要小数结果时先转换一边（`(decimal)a / b`）。
+- 条件按 C# 的语义处理 NULL：可空列的 `!=`、取反（`!(a > b)`、`== false`）包含值为 NULL 的行，两边都可空的 `==` 在都是 NULL 时成立，`Contains` 的值列表里的 null 匹配 NULL（原来 `NOT IN` 遇到 null 一行都不剩），集合导航的 `All(p)` 把 `p` 是 NULL 的行算作不满足。新增 `EasyDbOptions.UseRelationalNulls`，设为 true 时按 SQL 原样比较（与 Java 版一致）。
+- 字符串拼接与 C# 一样把 null 当空串：MySQL、HANA、Db2、ClickHouse、TDengine 上可能为 NULL 的项包一层 `COALESCE(x, '')`（原来整个结果是 NULL）；可空值没有值时 `ToString()` 是空串。
+- 聚合没有行时与 C# 一致：`SumAsync` 得 0（原来结果类型可空时是 null），`MaxAsync` / `MinAsync` 的结果类型不可空时抛 `InvalidOperationException`（原来是 0）；分组里可空值的 `Sum` 全是 NULL 时得 0；集合导航上可空的 `Average` 没有行时是 null（原来是 0）。`UseRelationalNulls` 时保持原来的行为。
 
 ### 修复
 

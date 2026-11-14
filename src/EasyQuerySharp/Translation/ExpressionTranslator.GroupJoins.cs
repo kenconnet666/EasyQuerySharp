@@ -116,7 +116,8 @@ internal sealed partial class ExpressionTranslator
             if (NavigationPredicate(original, plan.ValueFilter) is not { } predicate) return;
             if (negate)
             {
-                filters.Add(new GroupFilter(NotSatisfying(t.ElementPredicate(predicate, element)), "!" + GroupJoinKey(predicate)));
+                var failing = CSharpNulls ? t.ElementPredicate(NegatedLambda(predicate), element) : NotSatisfying(t.ElementPredicate(predicate, element));
+                filters.Add(new GroupFilter(failing, "!" + GroupJoinKey(predicate)));
                 return;
             }
             // 按 AND 拆成合取项：几个聚合共有的合取项可以提到派生表的 WHERE

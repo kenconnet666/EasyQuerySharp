@@ -13,7 +13,7 @@
 | `FindAsync(id)` / `FindOrThrowAsync(id, 消息?)` | 按主键取一行 | null / 抛 `NotFoundException` |
 | `AnyAsync()` / `EnsureAnyAsync(消息?)` | 有没有 | false / 抛 `NotFoundException` |
 | `AllAsync(条件)` | 是否每行都满足；条件是 NULL 的行算不满足，与 C# 一致 | true |
-| `CountAsync()`、`SumAsync` / `MaxAsync` / `MinAsync` / `AverageAsync` | 聚合值 | — |
+| `CountAsync()`、`SumAsync` / `MaxAsync` / `MinAsync` / `AverageAsync` | 聚合值 | 与 C# 一致：和是 0；最大 / 最小值的结果类型可空时是 null，不可空时抛 `InvalidOperationException`；平均值是 null |
 | `ToPageAsync(page, size)` | `Page<T>`：`Rows`、`Total`、`PageIndex`、`PageSize`、`PageCount` | — |
 | `AsAsyncEnumerable()` / `ToChunksAsync(n)` | 流式、分块读取 | — |
 | `ToRowsAsync()` / `FirstRowOrDefaultAsync()` | 读成 `DynamicRow`（按列名取值） | — |
@@ -112,6 +112,34 @@ db.Query<User>().Where(u => u.Age == null || u.CompanyId == null).Select(u => u.
 ```sql
 -- MySQL
 SELECT t.`name` FROM `t_user` t WHERE (t.`age` IS NULL OR t.`company_id` IS NULL);
+```
+<!-- /card -->
+
+### NULL 的比较
+
+条件按 C# 的语义处理 NULL，结果与在内存里对同样的数据求值一致。SQL 里与 NULL 比较得到 UNKNOWN、行被丢掉，所以可能为 NULL 的一边会补上 IS NULL 判断：
+
+| C# | 补成 | 原因 |
+|---|---|---|
+| `u.Age != 30` | `age <> ? OR age IS NULL` | C# 里 `null != 30` 成立 |
+| `!(u.Age > 30)`、`(u.Age > 30) == false` | `NOT (age > ?) OR age IS NULL` | `null > 30` 不成立，取反后成立 |
+| 两边都可空的 `a == b` / `a != b` | 加上"都是 NULL"/"恰有一边是 NULL" | C# 里两个 null 相等 |
+| `new int?[] { 30, null }.Contains(u.Age)` | `age IN (?) OR age IS NULL` | IN 列表里的 NULL 什么都不匹配，`NOT IN` 遇到它一行都不剩 |
+| `!ids.Contains(u.Age)` | `age NOT IN (…) OR age IS NULL` | |
+
+正向的 `==`、`>` 等不用补（UNKNOWN 与 false 一样被丢掉）。可不可能为 NULL 看列的声明：可空值类型（`int?`）、标了 `?` 的引用类型（`string?`）；`string` 这类不可空的声明不补。集合导航的 `All(p)` 同样把 `p` 是 NULL 的行算作不满足。
+
+`EasyDbOptions.UseRelationalNulls = true` 时按 SQL 原样比较，不补判断（与 Java 版一致）。
+
+<!-- card: query/basics/NullSemantics sql=mysql -->
+```csharp
+db.Query<User>().Where(u => u.Age != 30 && !(u.Age > 40)).OrderBy(u => u.Id).Select(u => u.Name).ToListAsync();
+```
+
+```sql
+-- MySQL
+SELECT t.`name` FROM `t_user` t WHERE (t.`age` <> ? OR t.`age` IS NULL) AND ((NOT (t.`age` > ?)) OR t.`age` IS NULL) ORDER BY t.`id` ASC;
+-- params: [30, 40]
 ```
 <!-- /card -->
 
@@ -635,6 +663,7 @@ SELECT `id`,`name` FROM `t_tag` ORDER BY `id` ASC LIMIT 4 OFFSET 4;
 
 - 投影里有带出（集合导航、`Select<TDto>()` 的嵌套 DTO）时不能 `AsAsyncEnumerable()`，要用 `ToListAsync()`。
 - `MaxResultSize(n)`：结果超过 n 行时抛 `ResultSizeLimitException`，防止误查整张大表。
+- 有几处按数据库自己的规则，与 C# 不同：NULL 的排序位置（PG、Oracle 升序时排最后，C# 排最前，要固定用 `Sql.NullsFirst` / `Sql.NullsLast`）；字符串的比较与排序按库的排序规则（MySQL 默认不区分大小写，C# 按序号）；整数运算不会像 C# 那样溢出回绕；小数除法的精度由库决定。
 - `SelectMany` 之外的 LINQ 方法（`Zip`、`Aggregate` 等）不支持；不支持的写法在翻译时抛 `NotSupportedException`，消息里带原表达式。
 - DTO 自动映射只认同名属性和 `[MapPath]`，不按名字猜导航路径（`CompanyName` 不会自动对应 `Company.Name`，与 Java 的 `selectAutoInclude` 一致）：平铺的属性要写 `[MapPath("Company.Name")]`。
 

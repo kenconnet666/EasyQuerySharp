@@ -105,6 +105,19 @@ public sealed class EasyDbOptions
         set => field = Mutable(value);
     }
 
+    /// <summary>
+    /// 按 SQL 原样比较 NULL（与 Java 版一致），默认 false：按 C# 的语义，可能为 NULL 的一边补上 IS NULL 判断——
+    /// <c>u.Age != 30</c> 写成 <c>age &lt;&gt; ? OR age IS NULL</c>，<c>!(u.Age &gt; 30)</c> 包含年龄为 NULL 的行，
+    /// 两边都可空的 <c>==</c> 在两边都是 NULL 时成立，<c>Contains</c> 的值列表里的 null 匹配 NULL；
+    /// <c>SumAsync</c> 没有行时得到 0，<c>MaxAsync</c> / <c>MinAsync</c> 结果类型不可空而没有行时抛 <see cref="InvalidOperationException"/>。
+    /// 设为 true 时都按 SQL 原样：与 NULL 比较的行不满足条件，聚合没有行时得到 <c>default</c>。
+    /// </summary>
+    public bool UseRelationalNulls
+    {
+        get;
+        set => field = Mutable(value);
+    }
+
     /// <summary>Include 的子数据带了 Take / Skip 时怎样按父对象各取一段（对应 Java 的 includeLimitMode），默认按父对象分区编行号。</summary>
     public IncludeLimitMode IncludeLimitMode
     {

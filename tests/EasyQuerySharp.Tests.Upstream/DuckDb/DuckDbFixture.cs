@@ -31,7 +31,7 @@ public sealed class DuckDbFixture : IAsyncLifetime
         var connectionString = $"Data Source={_file}";
         _anchor = new DuckDBConnection(connectionString);
         _anchor.Open();
-        Db = new EasyDb(o => o.UseDuckDb(TestDatabases.DuckDb.Factory.CreateDataSource(connectionString)).AddListener(SqlCapture.Instance));
+        Db = new EasyDb(o => o.WithJavaNulls().UseDuckDb(TestDatabases.DuckDb.Factory.CreateDataSource(connectionString)).AddListener(SqlCapture.Instance));
         await Db.CodeFirst.DropTablesIfExistsAsync(Tables);
         await Db.CodeFirst.CreateTablesAsync(Tables);
         await SeedAsync(Db);

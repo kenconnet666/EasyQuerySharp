@@ -66,6 +66,7 @@ public sealed class DamengForUpdateTest : DamengTest
         }
         var db = new EasyDb(o =>
         {
+            o.WithJavaNulls();
             o.UseDameng(dameng.CreateDataSource(schema)).AddListener(SqlCapture.Instance);
             o.NameConversion = NameConversion.UpperUnderlined;
         });

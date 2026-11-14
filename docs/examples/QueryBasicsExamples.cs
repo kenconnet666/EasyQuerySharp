@@ -155,6 +155,10 @@ public static class QueryBasicsExamples
     public static Task<List<string>> NullChecks(EasyDb db) =>
         db.Query<User>().Where(u => u.Age == null || u.CompanyId == null).Select(u => u.Name).ToListAsync();
 
+    [Example("query/basics", "可空列的不等与取反：按 C# 的语义包含 NULL 的行")]
+    public static Task<List<string>> NullSemantics(EasyDb db) =>
+        db.Query<User>().Where(u => u.Age != 30 && !(u.Age > 40)).OrderBy(u => u.Id).Select(u => u.Name).ToListAsync();
+
     [Example("query/basics", "条件成立时才加的 Where")]
     public static Task<List<string>> WhereIf(EasyDb db)
     {

@@ -13,7 +13,7 @@
 | `s.Replace(a, b)` | `REPLACE` | |
 | `s.IndexOf(x)` | `LOCATE(x, s) - 1` | 找不到是 -1，与 C# 一致 |
 | `s.PadLeft(n, c)` / `PadRight` | `LPAD` / `RPAD` | 比 n 长时截断成前 n 个字符（与 LPAD 一致，.NET 原样返回），各方言相同；SQLite、SQL Server 没有 LPAD，用拼接模拟 |
-| `a + b`、`string.Concat`、插值字符串 `$"{a}-{b}"` | `CONCAT(..)` | Oracle / SQLite 用 `||` |
+| `a + b`、`string.Concat`、插值字符串 `$"{a}-{b}"` | `CONCAT(..)` | Oracle / Db2 用 `||`；与 C# 一样 null 当空串，拼接遇到 NULL 得 NULL 的库（MySQL、HANA、Db2、ClickHouse、TDengine）给可能为 NULL 的项包一层 `COALESCE(x, '')` |
 | `string.IsNullOrEmpty(s)` / `IsNullOrWhiteSpace` | `s IS NULL OR s = ''` 等 | |
 | `string.Compare(a, b)` / `a.CompareTo(b)` | `CASE WHEN a = b THEN 0 …` | |
 | `s.Contains(x)` / `StartsWith` / `EndsWith` | `LIKE ?` | 值里的通配符按字面匹配 |
@@ -68,7 +68,7 @@ db.Query<User>().Where(u => u.Age != null).OrderBy(u => u.Id).Take(3).Select(u =
 
 ```sql
 -- MySQL
-SELECT CONCAT(t.`name`,?,t.`age`,?) FROM `t_user` t WHERE t.`age` IS NOT NULL ORDER BY t.`id` ASC LIMIT 3;
+SELECT CONCAT(t.`name`,?,IFNULL(t.`age`,''),?) FROM `t_user` t WHERE t.`age` IS NOT NULL ORDER BY t.`id` ASC LIMIT 3;
 -- params: ['（', ' 岁）']
 ```
 
@@ -211,7 +211,7 @@ SELECT (t.[price] * t.[quantity]) AS [total],ROUND((t.[price] * ?),?) AS [rounde
 | `Sql.MaxColumns(a, b, ..)` / `MinColumns` | MySQL / PG `GREATEST` / `LEAST`，SQLite 多参数 `MAX` / `MIN`，SQL Server `VALUES` 派生表，Oracle / 达梦 `UNION ALL` 派生表 | 同一行里几个值取最大 / 最小 |
 | 三元表达式 `c ? a : b` | `CASE WHEN c THEN a ELSE b END` | 多分支写成嵌套三元 |
 | 条件当值（`p.Views > 1000` 放在投影里） | 原样；SQL Server、Oracle、达梦、HANA、Kingbase、GaussDB 写成 `CASE WHEN … THEN ? ELSE ? END` | |
-| `x.ToString()`、`int.Parse(s)`、`Convert.ToXxx(x)`（任一个参数的重载）、`Sql.Cast<T>(x)` | `CAST(x AS …)` | 目标类型按方言；`Convert.ToInt32(2.5)` 在 .NET 里四舍六入，数据库按各自的 CAST 规则 |
+| `x.ToString()`、`int.Parse(s)`、`Convert.ToXxx(x)`（任一个参数的重载）、`Sql.Cast<T>(x)` | `CAST(x AS …)` | 目标类型按方言；可空值没有值时 `ToString()` 与 C# 一样是空串；`Convert.ToInt32(2.5)` 在 .NET 里四舍六入，数据库按各自的 CAST 规则 |
 | `Sql.Constant(v)` | `?` | 客户端的值作为参数放进 SQL，接着的运算（如 `.ToLower()`）在数据库里做 |
 
 <!-- card: func/NullHandling sql=mysql,mssql,oracle -->

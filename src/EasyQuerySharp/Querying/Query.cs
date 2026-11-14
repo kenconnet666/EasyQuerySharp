@@ -305,15 +305,15 @@ public sealed partial class Query<T> : QueryBase<Query<T>, T>
     public Task<T> FindOrThrowAsync(object id, string? message = null, CancellationToken cancellationToken = default) =>
         message is null ? WhereById(id).SingleAsync(cancellationToken) : WhereById(id).SingleAsync(message, cancellationToken);
 
-    /// <summary>SUM。没有行时返回 <c>default</c>（结果类型写成可空即得到 null）。</summary>
+    /// <summary>SUM。没有行时与 C# 一致返回 0（<see cref="EasyDbOptions.UseRelationalNulls"/> 时返回 <c>default</c>，结果类型可空即 null）。</summary>
     public Task<TResult> SumAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default) =>
         AggregateAsync<TResult>(SqlFunctionNames.Sum, selector, cancellationToken);
 
-    /// <summary>MAX。</summary>
+    /// <summary>MAX。没有行时：结果类型可空返回 null，否则与 C# 一致抛 <see cref="InvalidOperationException"/>（<see cref="EasyDbOptions.UseRelationalNulls"/> 时返回 <c>default</c>）。</summary>
     public Task<TResult> MaxAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default) =>
         AggregateAsync<TResult>(SqlFunctionNames.Max, selector, cancellationToken);
 
-    /// <summary>MIN。</summary>
+    /// <summary>MIN。没有行时同 <see cref="MaxAsync{TResult}"/>。</summary>
     public Task<TResult> MinAsync<TResult>(Expression<Func<T, TResult>> selector, CancellationToken cancellationToken = default) =>
         AggregateAsync<TResult>(SqlFunctionNames.Min, selector, cancellationToken);
 

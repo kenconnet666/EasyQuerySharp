@@ -55,7 +55,7 @@ public sealed class Mysql8Fixture : IAsyncLifetime
             await SqlScript.ExecuteAsync(server, $"DROP DATABASE IF EXISTS `{Database}`; CREATE DATABASE `{Database}` CHARACTER SET utf8mb4;");
         }
 
-        _db = new EasyDb(o => o.UseMySql(new MySqlDataSource(TestDatabases.MySql.TryConnectionString(Database)!)).AddListener(SqlCapture.Instance)
+        _db = new EasyDb(o => o.WithJavaNulls().UseMySql(new MySqlDataSource(TestDatabases.MySql.TryConnectionString(Database)!)).AddListener(SqlCapture.Instance)
             .AddInterceptor(new MyProtectInterceptor())
             .AddInterceptor(new M8UserNameInterceptor())
             .AddInterceptor(new SaveInterceptor())

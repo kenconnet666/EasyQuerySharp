@@ -61,6 +61,7 @@ public sealed class MyKingbaseESTest : IAsyncLifetime
 
     private static EasyDb Db(int groupSize) => new(o =>
     {
+        o.WithJavaNulls();
         o.UseSqlite(SqliteFactory.Instance.CreateDataSource(Database)).AddListener(SqlCapture.Instance);
         o.IncludeGroupSize = groupSize;
     });

@@ -177,6 +177,8 @@ public class HanaDialect : SqlDialect
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {
         base.RegisterFunctions(f);
+        // CONCAT / || 遇到 NULL 得 NULL：C# 的拼接把 null 当空串
+        f[SqlFunctionNames.NullAsEmpty] = NullAsEmptyByCoalesce;
         // 整数相除得到小数：减掉余数再除
         f[SqlFunctionNames.IntegerDivide] = IntegerDivideByModulo;
         // 不能直接把条件当值选出来；三个分支保留 NULL（与 Java fork 一致）

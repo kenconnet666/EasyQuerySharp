@@ -198,8 +198,7 @@ internal sealed partial class ExpressionTranslator
                 // 分组合并的 !nav.Any(…) 是单独的 None 列（与 Java 的 none() 一致）
                 if (StripConvert(u.Operand) is MethodCallExpression call && TryTranslateCollection(call, out var none, negated: true)) return none;
                 // 条件取反；布尔值（列等）取反是值 (NOT (x))，与 Java 的 not() 一致，用在 WHERE 里时再补 = true
-                var operand = Translate(u.Operand);
-                return IsPredicate(operand) ? Negate(operand) : new FragmentExpr("(NOT ({0}))", [operand]);
+                return TranslateNegated(u.Operand);
             }
             case ExpressionType.Negate or ExpressionType.NegateChecked:
                 return new FragmentExpr("-{0}", [Translate(u.Operand)]);
@@ -258,7 +257,7 @@ internal sealed partial class ExpressionTranslator
 
         // 字符串相加 → 方言的拼接函数
         if (op == SqlBinaryOperator.Add && b.Type == typeof(string))
-            return new FunctionExpr(SqlFunctionNames.Concat, [.. Flatten(b, ExpressionType.Add).Select(Translate)]);
+            return Concat([.. Flatten(b, ExpressionType.Add).Select(Translate)]);
 
         // string.Compare(a, b) > 0 … → a > b（C# 里字符串只能这样比大小，对应 Java 的 gt / le…；与 1 / -1 比较时仍按函数翻译）。
         // 实例方法 a.CompareTo(b) 总是写成比较函数（对应 Java 的 compareTo(b)，MySQL 的 STRCMP）
@@ -299,16 +298,25 @@ internal sealed partial class ExpressionTranslator
 
     private static bool IsZero(Expression e) => !ClientEvaluator.MustTranslate(e) && ClientEvaluator.Evaluate(e) is 0;
 
-    private SqlExpr TranslateEquality(BinaryExpression b)
+    // invert：翻译 !(a == b)（C# 的语义下与 a != b 相同）
+    private SqlExpr TranslateEquality(BinaryExpression b, bool invert = false)
     {
-        var negated = b.NodeType == ExpressionType.NotEqual;
+        var negated = (b.NodeType == ExpressionType.NotEqual) != invert;
         // x == null → IS NULL（字面量 null 或运行时为 null 的变量都算）；整个实体判空即主键判空（Java 的 t.isNull()）
         if (IsNullValue(b.Right)) return NullCheck(b.Left, negated);
         if (IsNullValue(b.Left)) return NullCheck(b.Right, negated);
+        // C# 的语义下条件与 true / false 比较就是条件本身或取反（(u.Age > 30) == false 包含年龄为 NULL 的行）
+        if (CSharpNulls && (BoolConstant(b.Right) ?? BoolConstant(b.Left)) is { } constant && (BoolConstant(b.Right) is null ? b.Right : b.Left) is var condition
+            && StripConvert(condition) is BinaryExpression { NodeType: not ExpressionType.Coalesce } or UnaryExpression { NodeType: ExpressionType.Not })
+            return constant != negated ? TranslatePredicate(condition) : TranslateNegated(condition);
 
         var (left, right) = TranslatePair(b.Left, b.Right);
-        return new BinaryExpr(AsValue(left), negated ? SqlBinaryOperator.NotEqual : SqlBinaryOperator.Equal, AsValue(right));
+        return EqualityWithNulls(b.Left, left, b.Right, right, negated);
     }
+
+    // 客户端求值得到的 true / false；不是 bool 常量时为 null
+    private static bool? BoolConstant(Expression e) =>
+        e.Type == typeof(bool) && !ClientEvaluator.MustTranslate(e) ? ClientEvaluator.Evaluate(e) as bool? : null;
 
     // 实体按主键判空；值对象是它的列全为 NULL（不为 null 是至少一列有值）
     private SqlExpr NullCheck(Expression operand, bool negated)

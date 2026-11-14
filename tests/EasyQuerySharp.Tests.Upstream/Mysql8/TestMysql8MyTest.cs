@@ -88,7 +88,7 @@ public sealed class TestMysql8MyTest
             await SqlScript.ExecuteAsync(server, $"CREATE DATABASE IF NOT EXISTS `{Database}` CHARACTER SET utf8mb4;", ct: Ct);
         }
 
-        var db = new EasyDb(o => o.UseMySql(new MySqlDataSource(TestDatabases.MySql.TryConnectionString(Database)!)));
+        var db = new EasyDb(o => o.WithJavaNulls().UseMySql(new MySqlDataSource(TestDatabases.MySql.TryConnectionString(Database)!)));
         Type[] tables = [typeof(SysUser), typeof(SysRole), typeof(SysModule)];
         await db.CodeFirst.SyncTablesAsync(tables, Ct);
         Assert.Empty((await db.CodeFirst.PlanSyncAsync(tables, Ct)).Statements);

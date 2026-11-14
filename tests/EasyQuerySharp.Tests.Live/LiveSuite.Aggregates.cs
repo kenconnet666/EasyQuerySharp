@@ -17,12 +17,13 @@ public abstract partial class LiveSuite
         Assert.Equal(47, await db.Query<User>().SumAsync(u => u.Age, Ct));
     }
 
+    // 没有行时与 C# 一致：和是 0，可空的最大值是 null
     [Fact]
-    public async Task ReturnsNullForAggregatesOverNoRows()
+    public async Task AggregatesNoRowsLikeCSharp()
     {
         var db = await SeededAsync();
         var none = db.Query<Post>().Where(p => p.UserId == 999);
-        Assert.Null(await none.SumAsync(p => (decimal?)p.Amount, Ct));
+        Assert.Equal(0m, await none.SumAsync(p => (decimal?)p.Amount, Ct));
         Assert.Null(await none.MaxAsync(p => (decimal?)p.Amount, Ct));
         Assert.Equal(0L, await none.Select(p => Sql.CountDistinct(p.UserId)).SingleAsync(Ct));
     }

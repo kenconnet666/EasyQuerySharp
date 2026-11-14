@@ -12,6 +12,7 @@ public sealed class UpdateTest2(MySqlFixture fixture) : MySqlTest(fixture)
 {
     private static EasyDb Oracle(Action<EasyDbOptions>? configure = null) => new(o =>
     {
+        o.WithJavaNulls();
         o.Use(OracleDialect.Instance);
         o.UpdateStrategy = ColumnStrategy.OnlyNotNull;
         configure?.Invoke(o);

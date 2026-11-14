@@ -70,7 +70,7 @@ internal static class MethodTranslators
         Add(s.GetMethod(nameof(string.Compare), [s, s]), (t, c) => Fn(SqlFunctionNames.CompareTo, t.Translate(c.Arguments[0]), t.Translate(c.Arguments[1])));
         foreach (var concat in s.GetMethods(BindingFlags.Public | BindingFlags.Static)
                      .Where(m => m.Name == nameof(string.Concat) && m.GetParameters().All(p => p.ParameterType == s || p.ParameterType == typeof(string[]) || p.ParameterType == typeof(object))))
-            Add(concat, (t, c) => Fn(SqlFunctionNames.Concat, Arguments(t, c)));
+            Add(concat, (t, c) => t.Concat(Arguments(t, c)));
         foreach (var format in s.GetMethods(BindingFlags.Public | BindingFlags.Static)
                      .Where(m => m.Name == nameof(string.Format) && m.GetParameters()[0].ParameterType == s))
             Add(format, TranslateFormat);
@@ -258,7 +258,7 @@ internal static class MethodTranslators
             i = close;
         }
         if (start < format.Length) parts.Add(new ParameterExpr(format[start..], typeof(string)));
-        return parts.Count == 1 ? parts[0] : Fn(SqlFunctionNames.Concat, parts);
+        return parts.Count == 1 ? parts[0] : t.Concat(parts);
     }
 
     /// <summary>

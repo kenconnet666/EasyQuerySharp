@@ -15,7 +15,7 @@ public sealed class H2V2Test : IAsyncLifetime
 
     // 共享内存库只要还有一个连接开着就一直在
     private readonly SqliteConnection _keepAlive = new(ConnectionString);
-    private readonly EasyDb _db = new(o => o.UseSqlite(SqliteFactory.Instance.CreateDataSource(ConnectionString)));
+    private readonly EasyDb _db = new(o => o.WithJavaNulls().UseSqlite(SqliteFactory.Instance.CreateDataSource(ConnectionString)));
 
     public async ValueTask InitializeAsync()
     {

@@ -7,7 +7,7 @@ SELECT LPAD(t.`name`, 6, ?) FROM `t_user` t WHERE t.`id` <= ? ORDER BY t.`id` AS
 -- params: ['*', 3]
 
 -- Concat：拼接：+、string.Concat、插值字符串
-SELECT CONCAT(t.`name`,?,t.`age`,?) FROM `t_user` t WHERE t.`age` IS NOT NULL ORDER BY t.`id` ASC LIMIT 3;
+SELECT CONCAT(t.`name`,?,IFNULL(t.`age`,''),?) FROM `t_user` t WHERE t.`age` IS NOT NULL ORDER BY t.`id` ASC LIMIT 3;
 -- params: ['（', ' 岁）']
 
 -- LikeVariants：包含：Contains 的 % 在参数里，LikeContains 写成 LIKE CONCAT

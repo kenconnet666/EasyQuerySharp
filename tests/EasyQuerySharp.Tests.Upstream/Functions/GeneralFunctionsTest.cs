@@ -138,7 +138,7 @@ public sealed class GeneralFunctionsTest
     }
 
     // Java 的 mysqlInsertIgnoreToUpdateKey：忽略冲突写成 ON DUPLICATE KEY UPDATE 主键 = VALUES(主键)，不用 INSERT IGNORE
-    private static readonly EasyDb IgnoreAsKeyUpdate = new(o => o.Use(new EasyQuerySharp.Dialects.MySqlDialect { IgnoreConflictAsKeyUpdate = true }));
+    private static readonly EasyDb IgnoreAsKeyUpdate = new(o => o.WithJavaNulls().Use(new EasyQuerySharp.Dialects.MySqlDialect { IgnoreConflictAsKeyUpdate = true }));
 
     [Fact, Upstream("GeneralFunctionsTest.java#MySQLInsertIgnore2UpdateKey")]
     public void MySQLInsertIgnore2UpdateKey() =>

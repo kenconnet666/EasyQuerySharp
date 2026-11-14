@@ -336,7 +336,12 @@ public abstract partial class QueryBase<TSelf, TElement>
         frame.Query.Columns.Add(new SelectColumn(new FunctionExpr(function, [value]), null));
         frame.Query.ExplicitProjection = true;
         var raw = await Db.Executor.AggregateAsync(frame.Query, function, ct).ConfigureAwait(false);
-        // 聚合没有行时数据库返回 NULL：结果类型可空就是 null，否则是 default
-        return raw is null ? default! : (TResult)Materialization.ValueReader.ConvertTo(raw, typeof(TResult))!;
+        if (raw is not null) return (TResult)Materialization.ValueReader.ConvertTo(raw, typeof(TResult))!;
+        // 聚合没有行（或全是 NULL）时数据库返回 NULL。按 SQL 原样时是 default；C# 的语义下和是 0，结果不可空的最大 / 最小值抛异常
+        if (Db.Options.UseRelationalNulls) return default!;
+        if (function == SqlFunctionNames.Sum) return (TResult)Materialization.ValueReader.ConvertTo(0, Nullable.GetUnderlyingType(typeof(TResult)) ?? typeof(TResult))!;
+        if (function is SqlFunctionNames.Max or SqlFunctionNames.Min && typeof(TResult).IsValueType && Nullable.GetUnderlyingType(typeof(TResult)) is null)
+            throw new InvalidOperationException($"没有行可以取 {(function == SqlFunctionNames.Max ? "MAX" : "MIN")}：结果类型 {typeof(TResult).Name} 不可空，要得到 null 时把选择器写成可空类型");
+        return default!;
     }
 }

@@ -182,6 +182,8 @@ public class MySqlDialect : SqlDialect
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {
         base.RegisterFunctions(f);
+        // CONCAT 遇到 NULL 得 NULL：C# 的拼接把 null 当空串
+        f[SqlFunctionNames.NullAsEmpty] = NullAsEmptyByCoalesce;
         // DIV 是整数相除、向零截断（/ 得到小数）
         f[SqlFunctionNames.IntegerDivide] = (r, a) => r.Append("(").Write(a[0]).Append(" DIV ").Write(a[1]).Append(")");
         f[SqlFunctionNames.NullOrDefault] = Call("IFNULL");

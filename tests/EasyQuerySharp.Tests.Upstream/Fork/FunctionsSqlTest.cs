@@ -20,7 +20,7 @@ public sealed class DateTruncSqlTest
          Deviation = "Java 用 SQL Server 演示；C# 的 SQL Server 用 2022 的 DATETRUNC，内置方言都支持，这里用一个没登记函数的方言演示")]
     public void UnsupportedDialectSaysSo() =>
         Assert.Contains("DateTrunc(Day)", Assert.Throws<NotSupportedException>(() =>
-            new EasyDb(o => o.Use(new BareDialect())).Query<ForkUser>().Select(u => new Draft<DateTime?>(u.CreatedAt.DateTrunc(DateTruncUnit.Day))).ToSql()).Message);
+            new EasyDb(o => o.WithJavaNulls().Use(new BareDialect())).Query<ForkUser>().Select(u => new Draft<DateTime?>(u.CreatedAt.DateTrunc(DateTruncUnit.Day))).ToSql()).Message);
 
     // 只用基类默认写法的方言
     private sealed class BareDialect : EasyQuerySharp.Dialects.SqlDialect

@@ -56,7 +56,7 @@ internal sealed partial class ExpressionTranslator
         // x.GetValueOrDefault() / GetValueOrDefault(v)：COALESCE(x, 类型的默认值 / v)
         if (method.Name == nameof(Nullable<int>.GetValueOrDefault) && call.Object is { } nullable && Nullable.GetUnderlyingType(nullable.Type) is { } valueType)
         {
-            var fallback = call.Arguments.Count == 1 ? Translate(call.Arguments[0]) : new ParameterExpr(RuntimeHelpers.GetUninitializedObject(valueType), valueType);
+            var fallback = call.Arguments.Count == 1 ? Translate(call.Arguments[0]) : new ParameterExpr(DefaultValue(valueType), valueType);
             return new FunctionExpr(SqlFunctionNames.NullOrDefault, [Translate(nullable), fallback]);
         }
         // object.Equals(a, b)：两个值相等（两边按各自的类型翻译）
@@ -71,10 +71,14 @@ internal sealed partial class ExpressionTranslator
             return EnumName(Translate(StripConvert(call.Object)), enumType, Nullable.GetUnderlyingType(StripConvert(call.Object).Type) is not null);
         // 无参 ToString()：数字、日期等转字符串（任意类型的 ToString 都是同一个形状，不进函数表）
         if (method.Name == nameof(ToString) && call.Arguments.Count == 0 && call.Object is not null)
-            return new CastExpr(Translate(call.Object), typeof(string));
+            return NullableToString(call.Object, new CastExpr(Translate(call.Object), typeof(string)));
 
         throw Unsupported(call);
     }
+
+    // 值类型的默认值：全零的实例，不经过构造函数（类型来自可空属性，已经被引用）
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2067", Justification = AotJustification.Rooted)]
+    private static object DefaultValue(Type valueType) => RuntimeHelpers.GetUninitializedObject(valueType);
 
     private SqlExpr TranslateSqlMarker(MethodCallExpression call)
     {

@@ -12,6 +12,7 @@ public abstract class DamengTest
     /// <summary>只生成 SQL 的达梦 EasyDb（对应 Java 的 entityQuery）。</summary>
     protected static EasyDb Db { get; } = new(o =>
     {
+        o.WithJavaNulls();
         o.UseDameng();
         o.NameConversion = NameConversion.UpperUnderlined;
     });

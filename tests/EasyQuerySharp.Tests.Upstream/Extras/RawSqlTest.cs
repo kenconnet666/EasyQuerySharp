@@ -19,7 +19,7 @@ public sealed class RawSqlTest : IAsyncLifetime
     public RawSqlTest()
     {
         _keepAlive = new SqliteConnection(_cs);
-        _db = new EasyDb(o => o.UseSqlite(SqliteFactory.Instance.CreateDataSource(_cs)).AddListener(SqlCapture.Instance));
+        _db = new EasyDb(o => o.WithJavaNulls().UseSqlite(SqliteFactory.Instance.CreateDataSource(_cs)).AddListener(SqlCapture.Instance));
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;

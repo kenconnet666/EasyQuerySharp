@@ -64,6 +64,7 @@ public sealed class MySqlFixture : IAsyncLifetime
         // 与 Java 的 BaseTest 一致：深分页反向排序的阈值为 10，带出取段用 UNION ALL
         _db = new EasyDb(o =>
         {
+            o.WithJavaNulls();
             o.ReverseOffsetThreshold = 10;
             o.IncludeLimitMode = IncludeLimitMode.UnionAll;
             o.UseMySql(new MySqlDataSource(cs)).AddListener(SqlCapture.Instance)

@@ -167,7 +167,7 @@ db.Query<Post>().Where(p => p.Id <= 4).OrderBy(p => p.Id)
 
 ```sql
 -- MySQL
-SELECT CONCAT(t.`title`,?,(SELECT GROUP_CONCAT(t1.`name` ORDER BY t1.`id` ASC SEPARATOR ?) FROM `t_tag` t1 WHERE EXISTS(SELECT 1 FROM `t_post_tag` t2 WHERE t2.`tag_id` = t1.`id` AND t2.`post_id` = t.`id` LIMIT 1))) FROM `t_post` t WHERE t.`id` <= ? ORDER BY t.`id` ASC;
+SELECT CONCAT(t.`title`,?,IFNULL((SELECT GROUP_CONCAT(t1.`name` ORDER BY t1.`id` ASC SEPARATOR ?) FROM `t_tag` t1 WHERE EXISTS(SELECT 1 FROM `t_post_tag` t2 WHERE t2.`tag_id` = t1.`id` AND t2.`post_id` = t.`id` LIMIT 1)),'')) FROM `t_post` t WHERE t.`id` <= ? ORDER BY t.`id` ASC;
 -- params: ['：', '、', 4]
 ```
 

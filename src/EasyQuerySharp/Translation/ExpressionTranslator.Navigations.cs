@@ -106,7 +106,10 @@ internal sealed partial class ExpressionTranslator
         // All 的条件不做值过滤（去掉后"全部满足"没有意义）
         var predicate = terminal.Arguments.Count > 1 && terminal.Method.Name is nameof(Enumerable.Any) or nameof(Enumerable.All)
             or nameof(Enumerable.Count) or nameof(Enumerable.LongCount)
-            ? scope.Predicate(Lambda(terminal.Arguments[1]), filtered: terminal.Method.Name != nameof(Enumerable.All))
+            ? terminal.Method.Name == nameof(Enumerable.All)
+                // All(p) 找不满足的行：C# 的语义下就是 !p 的翻译（p 是 NULL 的行也算不满足）
+                ? scope.Predicate(CSharpNulls ? NegatedLambda(Lambda(terminal.Arguments[1])) : Lambda(terminal.Arguments[1]), filtered: false)
+                : scope.Predicate(Lambda(terminal.Arguments[1]))
             : null;
         // Any / All 只看有没有行，LIMIT 留在 EXISTS 里不影响结果；计数与聚合只算取到的那段行
         if (terminal.Method.Name is not (nameof(Enumerable.Any) or nameof(Enumerable.All))) scope.BeforeAggregate();
@@ -130,7 +133,8 @@ internal sealed partial class ExpressionTranslator
                 return true;
             case nameof(Enumerable.All):
                 // 没有不满足的：NOT (EXISTS(… AND (NOT (p)) LIMIT 1))（与 Java 一致）
-                sub.Where.Add(NotSatisfying(predicate ?? throw Unsupported(terminal)));
+                if (predicate is null) throw Unsupported(terminal);
+                sub.Where.Add(CSharpNulls ? predicate : NotSatisfying(predicate));
                 sub.Columns.Add(new SelectColumn(LiteralExpr.One, null));
                 sub.Limit ??= 1;
                 result = new NotExpr(new ExistsExpr(sub, negated: false) { FromNavigation = true });
@@ -159,7 +163,10 @@ internal sealed partial class ExpressionTranslator
                 break;
             case nameof(Enumerable.Average):
                 sub.Columns.Add(new SelectColumn(new FunctionExpr(distinct ? SqlFunctionNames.AvgDistinct : SqlFunctionNames.Avg, [Value()]), null));
-                result = new FunctionExpr(SqlFunctionNames.NullOrDefault, [new SubQueryExpr(sub), new LiteralExpr("0")]);
+                // 结果可空时与 C# 一致：没有行是 null；不可空时（C# 会抛异常）与 Java 一致补成 0
+                result = CSharpNulls && Nullable.GetUnderlyingType(terminal.Type) is not null
+                    ? new SubQueryExpr(sub)
+                    : new FunctionExpr(SqlFunctionNames.NullOrDefault, [new SubQueryExpr(sub), new LiteralExpr("0")]);
                 return true;
             default:
                 throw Unsupported(terminal, "集合导航上不支持这个方法");

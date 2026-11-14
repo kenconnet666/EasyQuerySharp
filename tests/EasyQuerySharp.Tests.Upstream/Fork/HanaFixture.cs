@@ -54,7 +54,7 @@ public sealed class HanaFixture : IAsyncLifetime
             await Execute(server, $"CREATE SCHEMA {Schema}", CancellationToken.None);
         }
         _connectionString = hana.TryConnectionString(Schema)!;
-        _db = new EasyDb(o => o.UseHana(hana.Factory.CreateDataSource(_connectionString)).AddListener(SqlCapture.Instance));
+        _db = new EasyDb(o => o.WithJavaNulls().UseHana(hana.Factory.CreateDataSource(_connectionString)).AddListener(SqlCapture.Instance));
     }
 
     /// <inheritdoc />

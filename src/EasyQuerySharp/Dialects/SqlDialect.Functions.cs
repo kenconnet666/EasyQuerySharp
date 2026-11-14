@@ -57,6 +57,7 @@ public abstract partial class SqlDialect
         f[SqlFunctionNames.MaxColumns] = UnionAllExtreme("MAX", "");
         f[SqlFunctionNames.MinColumns] = UnionAllExtreme("MIN", "");
         f[SqlFunctionNames.Concat] = Call("CONCAT");
+        f[SqlFunctionNames.NullAsEmpty] = (r, a) => r.Write(a[0]);
         f[SqlFunctionNames.Length] = Call("CHAR_LENGTH");
         f[SqlFunctionNames.Trim] = Call("TRIM");
         f[SqlFunctionNames.SubString] = Call("SUBSTR");
@@ -248,6 +249,9 @@ public abstract partial class SqlDialect
         r.Dialect.WriteModulo(r, a[0], a[1]);
         r.Append(") / ").Write(a[1]).Append(")");
     };
+
+    /// <summary>拼接里的一项 NULL 当空串，写成 <c>COALESCE(x, '')</c>：给拼接遇到 NULL 得到 NULL 的库用。</summary>
+    protected static FunctionWriter NullAsEmptyByCoalesce => (r, a) => r.Write(new FunctionExpr(SqlFunctionNames.NullOrDefault, [a[0], new LiteralExpr("''")]));
 
     /// <summary>整数相除写成 <c>TRUNC(a / b)</c>：给 <c>/</c> 得到小数、又有向零截断的 <c>TRUNC</c> 的库用（<c>/</c> 本来就整除时 TRUNC 不改变结果）。</summary>
     protected static FunctionWriter IntegerDivideByTrunc => (r, a) => r.Append("TRUNC(").Write(a[0]).Append(" / ").Write(a[1]).Append(")");

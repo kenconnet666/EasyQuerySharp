@@ -54,6 +54,7 @@ public sealed class MsSqlFixture : IAsyncLifetime
 
         _db = new EasyDb(o =>
         {
+            o.WithJavaNulls();
             o.UseSqlServer(TestDatabases.SqlServer.CreateDataSource(Database)).AddListener(SqlCapture.Instance);
             o.NameConversion = NameConversion.UpperCamelCase;
         });

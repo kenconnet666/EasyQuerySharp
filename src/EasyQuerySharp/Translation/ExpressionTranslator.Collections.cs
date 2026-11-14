@@ -11,7 +11,8 @@ internal sealed partial class ExpressionTranslator
     /// 集合的 Contains 翻译成 IN。三种形状：<c>Enumerable.Contains(src, x)</c>、实例方法 <c>list.Contains(x)</c>，
     /// 以及 C# 14 first-class span 下数组绑定到的 <c>MemoryExtensions.Contains(ReadOnlySpan&lt;T&gt;, T)</c>（参数外包一层 op_Implicit）。
     /// </summary>
-    private bool TryTranslateCollectionContains(MethodCallExpression call, out SqlExpr result)
+    // negated：翻译 !list.Contains(x)
+    private bool TryTranslateCollectionContains(MethodCallExpression call, out SqlExpr result, bool negated = false)
     {
         result = null!;
         Expression source, item;
@@ -30,7 +31,20 @@ internal sealed partial class ExpressionTranslator
 
         if (ClientEvaluator.MustTranslate(source)) return false;
         var operand = Translate(item);
-        result = InList(operand, ValuesOf(source, operand), negated: false);
+        var values = ValuesOf(source, operand);
+        if (!CSharpNulls || !values.Any(v => v is ParameterExpr { Value: null }))
+        {
+            result = InList(operand, values, negated);
+            // C# 的语义：x 是 NULL 时不在不含 null 的列表里，NOT IN 得到的 UNKNOWN 要补成成立
+            if (negated && CSharpNulls && MayBeNull(item) && MayBeNull(operand)) result = LogicalExpr.Or([result, new IsNullExpr(operand, negated: false)]);
+            return true;
+        }
+        // 列表里有 null：C# 里它匹配 NULL；IN 里的 NULL 什么都不匹配（NOT IN 更是一行都不剩），去掉后另补 IS NULL
+        var nonNull = values.Where(v => v is not ParameterExpr { Value: null }).ToList();
+        var isNull = new IsNullExpr(operand, negated);
+        result = nonNull.Count == 0 ? isNull
+            : negated ? LogicalExpr.And([InList(operand, nonNull, negated: true), isNull])
+            : LogicalExpr.Or([InList(operand, nonNull, negated: false), isNull]);
         return true;
     }
 

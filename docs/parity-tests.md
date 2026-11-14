@@ -375,11 +375,11 @@
 | QueryTest25.java#topicIntegerTest | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:279 |  |
 | QueryTest25.java#tupleTest7 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:96 | `SELECT t.'id' AS 'value1',t.'create_time' AS 'value2' FROM 't_blog' t WHERE t.'deleted' = ?` |
 | QueryTest26.java#switchCase | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:137：参数类型：Java 的 Map 键是整数 1、2，C# 与字符串列比较时写成字符串 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
-| QueryTest26.java#test11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:284 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
-| QueryTest26.java#test22 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:292 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
+| QueryTest26.java#test11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:285 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
+| QueryTest26.java#test22 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:293 | `SELECT t.'id',t.'uid',t.'code',t.'type',t.'bank_id',t.'open_time' FROM 't_bank_card' t INNER JOIN 't…` |
 | QueryTest26.java#testFindInSet | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:102 | `SELECT t.'id',t.'create_time',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'c…` |
 | QueryTest26.java#testMaxInCaluse | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:212：Java 的 contains 在 Oracle 上写成 LIKE ('%'\|\|TO_CHAR(?)\|\|'%')，C# 的 string.Contains 写成 LIKE ?（值里带好 %） | `SELECT "id","stars","title","create_time" FROM "t_topic" WHERE ("id" IN (?,?,?,?,?,?,?,?,?,?) OR "id…` |
-| QueryTest26.java#testQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:309 | `SELECT 'id','name',AES_DECRYPT(from_base64('phone'),?) AS 'phone' FROM 'sys_user2' WHERE AES_DECRYPT…` |
+| QueryTest26.java#testQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:310 | `SELECT 'id','name',AES_DECRYPT(from_base64('phone'),?) AS 'phone' FROM 'sys_user2' WHERE AES_DECRYPT…` |
 | QueryTest26.java#testSetConstant | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:122 |  |
 | QueryTest26.java#testaa1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:113 | `SELECT t.'id' AS 'title',t.'title' AS 'id' FROM 't_topic' t WHERE t.'id' IS NOT NULL` |
 | QueryTest27.java#selectAllMap | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest27.cs:204：C# 的 Sql.Columns 以列名作键，不写 AS；没有按属性名作键的模式 | `SELECT t.'id' AS 'id',t.'create_time' AS 'createTime',t.'update_time' AS 'updateTime',t.'create_by' …` |
@@ -445,7 +445,7 @@
 | SubJoinTest.java#testSubJoinSumBigDecimal2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:34 | `SELECT IFNULL((SELECT SUM(t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 ON t2.'id…` |
 | SubJoinTest.java#testSubJoinSumBigDecimalDistinct | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:37 | `SELECT IFNULL((SELECT SUM(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
 | SubJoinTest.java#testSubJoinSumBigDecimalDistinct2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:37 | `SELECT IFNULL((SELECT SUM(DISTINCT t2.'age') FROM 'sub_join_book' t1 LEFT JOIN 'sub_join_author' t2 …` |
-| UpdateTest2.java#test11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest2.cs:21 | `SELECT t."id",t."abc" AS "title" FROM "t_topic" t WHERE t."abc" = ?` |
+| UpdateTest2.java#test11 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest2.cs:22 | `SELECT t."id",t."abc" AS "title" FROM "t_topic" t WHERE t."abc" = ?` |
 | doc/DocTest.java#testDoc3x | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/DocTest.cs:19：Java 用例体全部被注释掉，没有可移植的内容 |  |
 | doc/DocTest1.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DocTest1.cs:14 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | doc/DocTest1.java#test2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/DocTest1.cs:25 | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
@@ -514,7 +514,7 @@
 | pgsql/QueryTest19.java#testMapChain | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:34：Java 的 Map 投影写成带 [Column] 的 DTO，SQL 相同；Map 的值是 Object，Java 的比较参数保持 Integer，C# 按 DTO 属性的 decimal 传参 | `SELECT t1."aaa" AS "aaa",t1."bbb" AS "bbb" FROM (SELECT t."score" AS "aaa",t."star" AS "bbb" FROM "t…` |
 | pgsql/QueryTest19.java#testMapChain2 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgQueryTest19Queries.cs:43：Java 的 Map 投影写成带 [Column] 的 DTO，SQL 相同；Map 的值是 Object，Java 的比较参数保持 Integer，C# 按 DTO 属性的 decimal 传参 | `SELECT t1."aaa" AS "aaa",t1."bbb" AS "bbb" FROM (SELECT (t."score" * ?) AS "aaa",t."star" AS "bbb" F…` |
 | sqlite/SQLiteTest.java#testQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:33 |  |
-| sqlite/SQLiteTest.java#testQuery1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:75 |  |
+| sqlite/SQLiteTest.java#testQuery1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:76 |  |
 
 ### 分页结果（`query.page`，M1）
 
@@ -617,7 +617,7 @@
 | GenericWithDatabaseTest.java#queryLargeColumnTest14 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:87 |  |
 | GenericWithDatabaseTest.java#queryLargeColumnTest15 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/GenericWithDatabaseTest.cs:91 | `DELETE FROM 'query_large_column_test' WHERE 'id' = ?` |
 | QueryTest12.java#testDoc23 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.Part2.cs:144 | `DELETE FROM 'relation_user' t WHERE EXISTS(SELECT 1 FROM 'relation_teacher' t1 WHERE EXISTS(SELECT 1…` |
-| QueryTest26.java#testAAA | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:233：Java 的达梦删除不支持连接（抛 UnsupportedOperationException，用例吞掉异常）；C# 沿用 Oracle 按 ROWID 删除的写法，实库验证在 3.1 冒烟里做 |  |
+| QueryTest26.java#testAAA | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:234：Java 的达梦删除不支持连接（抛 UnsupportedOperationException，用例吞掉异常）；C# 沿用 Oracle 按 ROWID 删除的写法，实库验证在 3.1 冒烟里做 |  |
 | TestDeleteFlatAndPredicate.java#testExpressionKey | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/FlatAndPredicateTest.cs:20：测的是 Java 表达式树的内部结构（getFlatAndPredicates 提取主键值），C# 不暴露 SQL 表达式树 |  |
 | TestDeleteFlatAndPredicate.java#testExpressionKey2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/FlatAndPredicateTest.cs:21：测的是 Java 表达式树的内部结构（getFlatAndPredicates 提取主键值），C# 不暴露 SQL 表达式树 |  |
 | TestDeleteFlatAndPredicate.java#testExpressionKey3 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/FlatAndPredicateTest.cs:22：测的是 Java 表达式树的内部结构（getFlatAndPredicates 提取主键值），C# 不暴露 SQL 表达式树 |  |
@@ -699,9 +699,9 @@
 | QueryTest18.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest18.More.cs:132 |  |
 | QueryTest21.java#TestReverse | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest21.cs:78 | `SELECT COUNT(*) FROM 't_topic' WHERE 'id' IS NOT NULL` |
 | QueryTest24.java#test123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:249 |  |
-| QueryTest26.java#testQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:319 | `UPDATE 'sys_user_encrypt' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
-| QueryTest26.java#testQuery3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:329 | `UPDATE 'sys_user2' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
-| QueryTest26.java#updateConcat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:264 |  |
+| QueryTest26.java#testQuery2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:320 | `UPDATE 'sys_user_encrypt' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
+| QueryTest26.java#testQuery3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:330 | `UPDATE 'sys_user2' SET 'phone' = to_base64(AES_ENCRYPT(?,?)) WHERE 'id' = ?` |
+| QueryTest26.java#updateConcat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:265 |  |
 | QueryTest28.java#testIncrementNullZero | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest28.cs:72 | `UPDATE 't_topic' SET 'stars' = (IFNULL('stars',?) + ?) WHERE 'id' = ?` |
 | TestUpdateFlatAndPredicate.java#testExpressionKey | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/FlatAndPredicateTest.cs:12：测的是 Java 表达式树的内部结构（getFlatAndPredicates 提取主键值），C# 不暴露 SQL 表达式树 |  |
 | TestUpdateFlatAndPredicate.java#testExpressionKey2 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Write/FlatAndPredicateTest.cs:13：测的是 Java 表达式树的内部结构（getFlatAndPredicates 提取主键值），C# 不暴露 SQL 表达式树 |  |
@@ -741,9 +741,9 @@
 | UpdateTest1.java#updateTestUpdate | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest1.cs:87 |  |
 | UpdateTest1.java#updateTestUpdate1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest1.cs:98 | `UPDATE 't_topic' SET 'stars' = ?,'title' = ?,'create_time' = ? WHERE 'id' = ?` |
 | UpdateTest1.java#updateTestUpdate3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest1.cs:124 | `UPDATE 't_topic' SET 'title' = ?,'create_time' = ? WHERE 'id' = ?` |
-| UpdateTest2.java#testUpdateNull | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest2.cs:27 | `UPDATE "t_topic" SET "title" = ? WHERE "id" = ?` |
-| UpdateTest2.java#testUpdateValueTest | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest2.cs:38：C# 的 == null 按 C# 语义翻译成 IS NULL（Java 的 eq(null) 写成 = ? 并传 null，永远不成立）；值过滤只作用于查询这一点相同 | `UPDATE "t_topic" SET "title" = ? WHERE "stars" = ?` |
-| UpdateTest2.java#update1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest2.cs:53 |  |
+| UpdateTest2.java#testUpdateNull | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest2.cs:28 | `UPDATE "t_topic" SET "title" = ? WHERE "id" = ?` |
+| UpdateTest2.java#testUpdateValueTest | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest2.cs:39：C# 的 == null 按 C# 语义翻译成 IS NULL（Java 的 eq(null) 写成 = ? 并传 null，永远不成立）；值过滤只作用于查询这一点相同 | `UPDATE "t_topic" SET "title" = ? WHERE "stars" = ?` |
+| UpdateTest2.java#update1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Write/UpdateTest2.cs:54 |  |
 | mysql8/M8BankTest.java#testaa1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8BankTest.Elements.cs:125 |  |
 | mysql8/ManyJoinTest.java#test2GroupJoinCombine | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/ManyJoinTest.cs:288 | `UPDATE 't_sys_user' t LEFT JOIN (SELECT t1.'uid' AS '__group_key1__',(COUNT(?) > 0) AS '__any2__' FR…` |
 
@@ -1306,8 +1306,8 @@
 | QueryTest25.java#tupleTest3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:71 | `SELECT t1.'value1' AS 'value1' FROM (SELECT t.'id' AS 'value1' FROM 't_topic' t GROUP BY t.'id') t1 …` |
 | QueryTest25.java#tupleTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:79 | `SELECT t.'id' AS 'value1',COUNT(*) AS 'value2' FROM 't_topic' t GROUP BY t.'id'` |
 | QueryTest25.java#tupleTest5 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:87 | `SELECT t.'id' AS 'value1',COUNT(*) AS 'value2',SUM(t.'stars') AS 'value3' FROM 't_topic' t GROUP BY …` |
-| QueryTest26.java#test | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:239：测的是 Java 的 Linq / Stream 在内存里分组，与查询无关 |  |
-| QueryTest26.java#test23 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:301 | `SELECT t1.'uid' AS 'uid',t1.'count' AS 'count' FROM (SELECT t.'uid' AS 'uid',COUNT(*) AS 'count' FRO…` |
+| QueryTest26.java#test | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:240：测的是 Java 的 Linq / Stream 在内存里分组，与查询无关 |  |
+| QueryTest26.java#test23 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:302 | `SELECT t1.'uid' AS 'uid',t1.'count' AS 'count' FROM (SELECT t.'uid' AS 'uid',COUNT(*) AS 'count' FRO…` |
 | QueryTest28.java#testQueryAggregate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest28.cs:100 | `SELECT COUNT(*) AS 'value1',AVG(t.'stars') AS 'value2' FROM 't_topic' t WHERE t.'title' LIKE CONCAT(…` |
 | QueryTest3.java#query122 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:121 | `SELECT t.'id' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'deleted' = ? AND t.'id' = t1.'id' LEFT J…` |
 | QueryTest3.java#query123 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest3.cs:131 | `SELECT DISTINCT t.'id' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'deleted' = ? AND t.'id' = t1.'i…` |
@@ -1379,9 +1379,9 @@
 | QueryTest24.java#aaa | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest24.cs:50 |  |
 | QueryTest25.java#testDraft | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:140 | `SELECT t1.'id',t1.'star',t.'title' AS 'content' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'delete…` |
 | QueryTest25.java#testDraft2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:140 | `SELECT t1.'id',t1.'star',t.'title' AS 'content' FROM 't_topic' t LEFT JOIN 't_blog' t1 ON t1.'delete…` |
-| QueryTest26.java#testRelationOn | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:273 | `SELECT t.'aid',t.'aname' FROM 'on_relation_a' t LEFT JOIN 'on_relation_b' t2 ON t2.'aid' = t.'aid' L…` |
-| QueryTest26.java#testViewWhere | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:243 |  |
-| QueryTest26.java#testViewWhere2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:253 |  |
+| QueryTest26.java#testRelationOn | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:274 | `SELECT t.'aid',t.'aname' FROM 'on_relation_a' t LEFT JOIN 'on_relation_b' t2 ON t2.'aid' = t.'aid' L…` |
+| QueryTest26.java#testViewWhere | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:244 |  |
+| QueryTest26.java#testViewWhere2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:254 |  |
 | QueryTest26.java#testaa | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest12.Part2.cs:20 | `SELECT t.'id',t.'update_time',t.'create_by',t.'update_by',t.'deleted',t.'title',t.'content',t.'url',…` |
 | QueryTest27.java#testDerivedTable2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest27.cs:254 | `SELECT t2.'score' AS 'score',t2.'status1' AS 'status1',t2.'order' AS 'order',t2.'is_top' AS 'is_top'…` |
 | QueryTest27.java#testDerivedTable3 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest27.cs:264 | `SELECT t2.'score' AS 'score',t2.'status1' AS 'status1',t2.'order' AS 'order',t2.'is_top' AS 'is_top'…` |
@@ -1554,7 +1554,7 @@
 | QueryTest25.java#test11a | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:183：SQL 与参数逐字搬；Java 读 Caffeine 里的条件键、行 JSON 与关联条件缓存键的 MD5，是 Java 私有的存储布局，换成行为断言：两种条件下各自缓存了行与查无此行，再查不发 SQL | `SELECT 'id','create_time','update_time','create_by','update_by','deleted','title','content','url','s…` |
 | QueryTest25.java#testToListFlat1 | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:47：Java 的 toList(flatElement…) 先只查关联键、再逐层带出并在内存里去重；C# 的 SelectMany 按 LINQ 语义写成一条 INNER JOIN（保留重复，去重加 Distinct） |  |
 | QueryTest25.java#xxx22 | 不适用 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest25.cs:177：用 Hikari 连本机 3306、替换多个内部服务另建客户端，属于 Java 的启动配置 |  |
-| QueryTest26.java#includeFlat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:339 |  |
+| QueryTest26.java#includeFlat | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTest26.cs:340 |  |
 | QueryTestRelationTest.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/QueryTestRelationTest.cs:13 | `SELECT t.'id',t.'com_id',t.'user_id',t.'gw' FROM 'my_com_user' t LEFT JOIN 'my_company_info' t1 ON t…` |
 | SubJoinTest.java#testSubJoinCaseWhen1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SubJoinTest.cs:54 | `SELECT IFNULL((SELECT SUM(t3.'age') FROM 'sub_join_book' t2 LEFT JOIN 'sub_join_author' t3 ON t3.'id…` |
 | mysql8/CTETest.java#cteTest4 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/CTETest.cs:67 | `WITH 'm8_user_temp' AS (SELECT t.'id',t.'name' FROM 'm8_user' t WHERE t.'age' IS NULL) SELECT t2.'id…` |
@@ -2133,18 +2133,18 @@
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| click/ClickHouseTest.java#testDelete1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ClickHouseTest.cs:27 | `ALTER TABLE 't_topic' DELETE WHERE 'ID' = ?` |
-| click/ClickHouseTest.java#testDelete2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ClickHouseTest.cs:32 | `ALTER TABLE 't_topic' DELETE WHERE 'ID' = ?` |
-| click/ClickHouseTest.java#testUpdate1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ClickHouseTest.cs:17 | `ALTER TABLE 't_topic' UPDATE 'TITLE' = ? WHERE 'ID' = ?` |
-| click/ClickHouseTest.java#testUpdate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ClickHouseTest.cs:22 | `ALTER TABLE 't_topic' UPDATE 'STARS' = ?,'TITLE' = ?,'CREATE_TIME' = ? WHERE 'ID' = ?` |
+| click/ClickHouseTest.java#testDelete1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ClickHouseTest.cs:28 | `ALTER TABLE 't_topic' DELETE WHERE 'ID' = ?` |
+| click/ClickHouseTest.java#testDelete2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ClickHouseTest.cs:33 | `ALTER TABLE 't_topic' DELETE WHERE 'ID' = ?` |
+| click/ClickHouseTest.java#testUpdate1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ClickHouseTest.cs:18 | `ALTER TABLE 't_topic' UPDATE 'TITLE' = ? WHERE 'ID' = ?` |
+| click/ClickHouseTest.java#testUpdate2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dialects/ClickHouseTest.cs:23 | `ALTER TABLE 't_topic' UPDATE 'STARS' = ?,'TITLE' = ?,'CREATE_TIME' = ? WHERE 'ID' = ?` |
 
 ### 达梦方言（`dialect.dameng`，M6）
 
 | 用例 | 状态 | C# 位置 / 说明 | 断言的 SQL（摘要） |
 | --- | --- | --- | --- |
-| dameng/DamengForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:79 |  |
+| dameng/DamengForUpdateTest.java#testForUpdateAppliesOnlyOnOuterQueryForExistsAndInSubQuery | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:80 |  |
 | dameng/DamengForUpdateTest.java#testForUpdateBlocksConcurrentTransaction | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:51 |  |
-| dameng/DamengForUpdateTest.java#testForUpdateDerivedCountAndExistsSqlBehaviorConsistent | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:92 |  |
+| dameng/DamengForUpdateTest.java#testForUpdateDerivedCountAndExistsSqlBehaviorConsistent | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:93 |  |
 | dameng/DamengForUpdateTest.java#testForUpdateDuplicateCallThrows | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:41 |  |
 | dameng/DamengForUpdateTest.java#testForUpdateJoinNotSupported | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:33 |  |
 | dameng/DamengForUpdateTest.java#testForUpdateSqlAppendInTransaction | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Dameng/DamengForUpdateTest.cs:17 |  |
@@ -2441,8 +2441,8 @@
 | mysql8/M8Test1.java#testNoKeyCodeFirst | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/M8Test1.cs:46 |  |
 | mysql8/MySQL8Test2.java#test | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/MySQL8Test2.CodeFirst.cs:11 |  |
 | pgsql/MigrationTest.java#test1 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Pgsql/PgMigrationTest.cs:7 |  |
-| sqlite/SQLiteTest.java#testDDL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:47 | `CREATE TABLE IF NOT EXISTS "t_topic" ( "Id" VARCHAR(255) NOT NULL , "Stars" integer NULL , "Title" V…` |
-| sqlite/SQLiteTest.java#testDDL2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:62 | `CREATE TABLE IF NOT EXISTS "t_multi_primary" ( "Id1" VARCHAR(255) NOT NULL , "Id2" VARCHAR(255) NOT …` |
+| sqlite/SQLiteTest.java#testDDL | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:48 | `CREATE TABLE IF NOT EXISTS "t_topic" ( "Id" VARCHAR(255) NOT NULL , "Stars" integer NULL , "Title" V…` |
+| sqlite/SQLiteTest.java#testDDL2 | 已移植 | tests/EasyQuerySharp.Tests.Upstream/Queries/SQLiteTest.cs:63 | `CREATE TABLE IF NOT EXISTS "t_multi_primary" ( "Id1" VARCHAR(255) NOT NULL , "Id2" VARCHAR(255) NOT …` |
 | testmysql8/MyTest.java#testaa | 偏离 | tests/EasyQuerySharp.Tests.Upstream/Mysql8/TestMysql8MyTest.cs:79：C# 没有 createDatabaseIfNotExists（库由连接串决定，建库属于部署）：测试先用服务器连接建库 easy-query-test123，再同步三张表 |  |
 
 ### 按对象筛选排序（whereObject / orderByObject）（`dto.object`，M7）

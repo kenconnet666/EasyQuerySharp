@@ -34,7 +34,7 @@ public static class SqlOnly
         lock (Gate)
         {
             if (!Cache.TryGetValue(dialect, out var db))
-                Cache[dialect] = db = new EasyDb(o => o.Use(Dialects[dialect]).AddListener(SqlCapture.Instance));
+                Cache[dialect] = db = new EasyDb(o => o.WithJavaNulls().Use(Dialects[dialect]).AddListener(SqlCapture.Instance));
             return db;
         }
     }

@@ -76,6 +76,10 @@ SELECT t.`name` FROM `t_user` t WHERE t.`company_id` IN (?,?) AND t.`level` NOT 
 -- NullChecks：可空列与 NULL
 SELECT t.`name` FROM `t_user` t WHERE (t.`age` IS NULL OR t.`company_id` IS NULL);
 
+-- NullSemantics：可空列的不等与取反：按 C# 的语义包含 NULL 的行
+SELECT t.`name` FROM `t_user` t WHERE (t.`age` <> ? OR t.`age` IS NULL) AND ((NOT (t.`age` > ?)) OR t.`age` IS NULL) ORDER BY t.`id` ASC;
+-- params: [30, 40]
+
 -- WhereIf：条件成立时才加的 Where
 SELECT t.`title` FROM `t_post` t WHERE t.`title` LIKE ?;
 -- params: ['%数据%']

@@ -62,6 +62,7 @@ public sealed class ShardingFixture : IAsyncLifetime
 
         _db = new EasyDb(o =>
         {
+            o.WithJavaNulls();
             // 与 Java 的 ShardingBaseTest 一致：深分页反向排序的阈值为 10，与 BaseTest 相同的拦截器
             o.ReverseOffsetThreshold = 10;
             o.UseMySql(new MySqlDataSource(TestDatabases.MySql.TryConnectionString(MySqlFixture.Database)!)).WithDefaultDataSourceName("ds2020")

@@ -59,6 +59,9 @@ public static class SqlFunctionNames
     /// <summary>(a, b, …)：拼接。MySQL / PG / SQL Server 的 CONCAT，Oracle 的 ||。</summary>
     public const string Concat = "Concat";
 
+    /// <summary>(x)：拼接里的一项，NULL 当空串（C# 的拼接语义）；默认原样输出，拼接遇到 NULL 得到 NULL 的库（MySQL、HANA、Db2、ClickHouse、TDengine）写成 <c>COALESCE(x, '')</c>。</summary>
+    public const string NullAsEmpty = "NullAsEmpty";
+
     /// <summary>(s)：字符数。</summary>
     public const string Length = "Length";
 

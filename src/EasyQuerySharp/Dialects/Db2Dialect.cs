@@ -256,6 +256,8 @@ public class Db2Dialect : SqlDialect
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {
         base.RegisterFunctions(f);
+        // || 遇到 NULL 得 NULL：C# 的拼接把 null 当空串
+        f[SqlFunctionNames.NullAsEmpty] = NullAsEmptyByCoalesce;
         f[SqlFunctionNames.NullSafeEquals] = Template("({0} IS NOT DISTINCT FROM {1})");
         f[SqlFunctionNames.InCsv] = Template("(LOCATE(',' || {0} || ',',',' || {1} || ',') > 0)");
         f[SqlFunctionNames.MaxColumns] = Call("GREATEST");

@@ -13,7 +13,7 @@ public sealed class SQLiteTest : IAsyncLifetime
 
     // 共享内存库只要还有一个连接开着就一直在
     private readonly SqliteConnection _keepAlive = new("Data Source=eqs-sqlite-test;Mode=Memory;Cache=Shared");
-    private readonly EasyDb _db = new(o => o.UseSqlite(SqliteFactory.Instance.CreateDataSource("Data Source=eqs-sqlite-test;Mode=Memory;Cache=Shared")));
+    private readonly EasyDb _db = new(o => o.WithJavaNulls().UseSqlite(SqliteFactory.Instance.CreateDataSource("Data Source=eqs-sqlite-test;Mode=Memory;Cache=Shared")));
 
     public async ValueTask InitializeAsync()
     {
@@ -39,6 +39,7 @@ public sealed class SQLiteTest : IAsyncLifetime
 
     private static EasyDb UpperCamelCase() => new(o =>
     {
+        o.WithJavaNulls();
         o.NameConversion = Metadata.NameConversion.UpperCamelCase;
         o.UseSqlite(SqliteFactory.Instance.CreateDataSource("Data Source=eqs-sqlite-test;Mode=Memory;Cache=Shared"));
     });

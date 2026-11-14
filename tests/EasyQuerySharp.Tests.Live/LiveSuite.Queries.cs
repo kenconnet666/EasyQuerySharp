@@ -178,8 +178,8 @@ public abstract partial class LiveSuite
     {
         var db = await SeededAsync();
         Assert.Equal(2, await db.Query<User>().Where(u => (u.Age >= 18 && u.Name == "alice") || u.Company == null).CountAsync(Ct));
-        // NOT 走 SQL 的三值逻辑：年龄为 NULL 的 bob 既不满足条件也不满足它的否定
-        Assert.Equal(1, await db.Query<User>().Where(u => !(u.Age >= 18)).CountAsync(Ct));
+        // 与 C# 一致：年龄为 NULL 的 bob 不满足 Age >= 18，满足它的否定
+        Assert.Equal(2, await db.Query<User>().Where(u => !(u.Age >= 18)).CountAsync(Ct));
     }
 
     [Fact]

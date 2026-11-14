@@ -16,7 +16,7 @@ public sealed class CodeFirstTest(DuckDbFixture duck) : IAsyncLifetime
     // 共享内存库只要还有一个连接开着就一直在
     private const string SqliteCs = "Data Source=eqs-code-first;Mode=Memory;Cache=Shared";
     private readonly SqliteConnection _keepAlive = new(SqliteCs);
-    private readonly EasyDb _sqlite = new(o => o.UseSqlite(SqliteFactory.Instance.CreateDataSource(SqliteCs)).AddListener(SqlCapture.Instance));
+    private readonly EasyDb _sqlite = new(o => o.WithJavaNulls().UseSqlite(SqliteFactory.Instance.CreateDataSource(SqliteCs)).AddListener(SqlCapture.Instance));
 
     public async ValueTask InitializeAsync() => await _keepAlive.OpenAsync(Ct);
 

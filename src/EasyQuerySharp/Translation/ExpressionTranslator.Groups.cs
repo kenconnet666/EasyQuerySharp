@@ -76,7 +76,14 @@ internal sealed partial class ExpressionTranslator
             case nameof(IGroup<object, object>.Count):
                 return new FunctionExpr(distinct ? SqlFunctionNames.CountDistinct : SqlFunctionNames.Count, [Value(0, LiteralExpr.Null)]);
             case nameof(IGroup<object, object>.Sum):
-                return new FunctionExpr(distinct ? SqlFunctionNames.SumDistinct : SqlFunctionNames.Sum, [Value(0, new ParameterExpr(0L, typeof(long)))]);
+            {
+                var value = Value(0, new ParameterExpr(0L, typeof(long)));
+                var sum = new FunctionExpr(distinct ? SqlFunctionNames.SumDistinct : SqlFunctionNames.Sum, [value]);
+                // C# 里可空值的和不会是 null（全是 null 时为 0），SQL 的 SUM 是 NULL
+                return CSharpNulls && Nullable.GetUnderlyingType(call.Type) is not null && MayBeNull(value)
+                    ? new FunctionExpr(SqlFunctionNames.NullOrDefault, [sum, new LiteralExpr("0")])
+                    : sum;
+            }
             case nameof(IGroup<object, object>.Max):
                 return new FunctionExpr(SqlFunctionNames.Max, [Value(0, LiteralExpr.Null)]);
             case nameof(IGroup<object, object>.Min):

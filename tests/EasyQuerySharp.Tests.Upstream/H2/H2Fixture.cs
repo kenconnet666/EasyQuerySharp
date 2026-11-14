@@ -32,6 +32,7 @@ public sealed class H2Fixture : IAsyncLifetime
     /// </summary>
     public EasyDb Db { get; } = new(o =>
     {
+        o.WithJavaNulls();
         o.MaxUnionTables = 1;
         o.Use(UnquotedSqliteDialect.Instance, SqliteFactory.Instance.CreateDataSource(ConnectionString)).AddListener(SqlCapture.Instance)
             .Shard<ALLTYPESharding>(r => r.Mod(t => t.Id, 2));
@@ -40,6 +41,7 @@ public sealed class H2Fixture : IAsyncLifetime
     /// <summary>Java 的 easyEntityQuery2：只有按 id 取模分成 5 张表的 <see cref="H2Order"/>（Java 的 dsorder 库），每张表一条语句、在内存里归并。</summary>
     public EasyDb OrderDb { get; } = new(o =>
     {
+        o.WithJavaNulls();
         o.MaxUnionTables = 1;
         o.Use(UnquotedSqliteDialect.Instance, SqliteFactory.Instance.CreateDataSource(OrderConnectionString)).AddListener(SqlCapture.Instance)
             .Shard<H2Order>(r => r.Mod(t => t.Id, 5));

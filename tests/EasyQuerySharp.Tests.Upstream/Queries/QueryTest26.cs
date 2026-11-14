@@ -214,6 +214,7 @@ public sealed class QueryTest26(MySqlFixture fixture) : MySqlTest(fixture)
     {
         var db = new EasyDb(o =>
         {
+            o.WithJavaNulls();
             o.MaxInClauseSize = 10;
             o.Use(OracleDialect.Instance);
         });

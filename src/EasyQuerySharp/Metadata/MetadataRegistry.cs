@@ -212,8 +212,15 @@ public sealed class MetadataRegistry(NameConversion nameConversion)
             DbDefault = attr?.DbDefault,
             RenamedFrom = property.GetCustomAttribute<RenamedFromAttribute>()?.Name,
             InNullableValueObject = inNullableValueObject,
+            MayBeNull = attr?.PrimaryKey != true && (inNullableValueObject || DeclaredNullable(property)),
         };
     }
+
+    // 可空值类型；引用类型看可空标注（剪裁后的程序没有标注信息，读到 Unknown，按可空处理）
+    private static bool DeclaredNullable(PropertyInfo property) =>
+        property.PropertyType.IsValueType
+            ? Nullable.GetUnderlyingType(property.PropertyType) is not null
+            : new NullabilityInfoContext().Create(property).ReadState != NullabilityState.NotNull;
 
     // 值对象展开成本表上的列（嵌套的值对象递归展开）。前缀默认是外层前缀 + "属性的列名_"，显式的 Prefix 是完整前缀
     [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = AotJustification.Rooted)]

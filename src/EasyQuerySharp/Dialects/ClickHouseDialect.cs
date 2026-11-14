@@ -203,6 +203,8 @@ public class ClickHouseDialect : SqlDialect
     protected override void RegisterFunctions(IDictionary<string, FunctionWriter> f)
     {
         base.RegisterFunctions(f);
+        // concat 遇到 NULL 得 NULL：C# 的拼接把 null 当空串
+        f[SqlFunctionNames.NullAsEmpty] = NullAsEmptyByCoalesce;
         // / 总是浮点除法：减掉余数再除
         f[SqlFunctionNames.IntegerDivide] = IntegerDivideByModulo;
         // 与 Java 的 ClickHouseBooleanSQLFunction 一致
